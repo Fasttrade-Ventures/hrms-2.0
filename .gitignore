@@ -1,0 +1,4 @@
+.DS_Store
+*.empty-backup
+.env
+.env.*
