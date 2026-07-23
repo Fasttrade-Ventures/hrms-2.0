@@ -50,6 +50,15 @@ function emailForRole(role: SystemRole, domain: string): string {
   return `${role.replace(/_/g, "-")}@${domain}`;
 }
 
+function employeeNumberForAccount(account: SeedAccount, domain: string): string {
+  if (domain === "demo.hrms.local") {
+    return account.employeeNumber;
+  }
+
+  const slug = domain.split(".")[0]?.toUpperCase().slice(0, 6) ?? "ORG";
+  return `${account.employeeNumber}-${slug}`;
+}
+
 async function main() {
   const password = getArg("--password");
   const domain = getArg("--domain") ?? "demo.hrms.local";
@@ -160,11 +169,12 @@ async function main() {
     }
 
     if (!employeeId) {
+      const employeeNumber = employeeNumberForAccount(account, domain);
       const { data: employee, error: employeeError } = await admin
         .from("employees")
         .insert({
           organization_id: organizationId,
-          employee_number: account.employeeNumber,
+          employee_number: employeeNumber,
           full_name: account.label,
           email,
           status: "active",
