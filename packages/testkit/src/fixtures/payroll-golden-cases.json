@@ -1,0 +1,83 @@
+{
+  "calculatorVersion": "2026.07.23-scaffold",
+  "sourceHierarchy": [
+    "official_kwsp_perkeso_lhdn_schedules",
+    "payroll_my_comparison_fixtures",
+    "legacy_php_behaviour_reference"
+  ],
+  "cases": [
+    {
+      "id": "epf-ceil-rm50-6955",
+      "description": "EPF contributable wage rounded up to nearest RM50 (legacy PayrollStatutoryMyTest)",
+      "inputs": {
+        "grossWage": 6955,
+        "epfEmployeeRate": 12,
+        "epfEmployerRate": 13,
+        "epfWageRounding": "ceil_rm50"
+      },
+      "expected": {
+        "epfContributableWage": 7000,
+        "epfEmployee": 840,
+        "epfEmployer": 910
+      }
+    },
+    {
+      "id": "eis-4000-bracket",
+      "description": "EIS uses assumed monthly wage band at RM4000",
+      "inputs": {
+        "statutoryWageBase": 4000,
+        "eisEligible": true
+      },
+      "expected": {
+        "eisEmployee": 7.9,
+        "eisEmployer": 7.9
+      }
+    },
+    {
+      "id": "pcb-4000-no-ytd",
+      "description": "PCB computerised MTD — equal monthly twelfth when no YTD",
+      "inputs": {
+        "monthlyGross": 4000,
+        "monthlyEpf": 480,
+        "additionalReliefs": 0,
+        "ytdGross": 0,
+        "ytdEpf": 0,
+        "ytdPcb": 0,
+        "month": 1
+      },
+      "expected": {
+        "pcb": 16.67,
+        "tolerance": 0.02
+      }
+    },
+    {
+      "id": "pcb-8100-aug-no-ytd",
+      "description": "Progressive annual tax ÷ 12 for RM8100 with no prior YTD",
+      "inputs": {
+        "monthlyGross": 8100,
+        "monthlyEpf": 891,
+        "additionalReliefs": 0,
+        "ytdGross": 0,
+        "ytdEpf": 0,
+        "ytdPcb": 0,
+        "month": 8
+      },
+      "expected": {
+        "pcb": 615.17,
+        "tolerance": 0.02
+      }
+    },
+    {
+      "id": "socso-ceiling-6000",
+      "description": "SOCSO Cat 1 ceiling RM6000 effective Oct 2024",
+      "inputs": {
+        "statutoryWageBase": 7500,
+        "socsoCategory": 1
+      },
+      "expected": {
+        "wageForSocso": 6000,
+        "note": "Band lookup from malaysia-payroll-official-2026 tables at implementation"
+      }
+    }
+  ]
+}

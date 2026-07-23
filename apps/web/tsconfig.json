@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": false,
+    "noEmit": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [{ "name": "next" }],
+    "paths": {
+      "@/*": ["./src/*"],
+      "@hrms/domain": ["../../packages/domain/src/index.ts"],
+      "@hrms/platform": ["../../packages/platform/src/index.ts"],
+      "@hrms/db": ["../../packages/db/src/index.ts"],
+      "@hrms/ui": ["../../packages/ui/src/index.tsx"],
+      "@hrms/validation": ["../../packages/validation/src/index.ts"],
+      "@hrms/testkit": ["../../packages/testkit/src/index.ts"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}

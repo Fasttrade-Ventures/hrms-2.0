@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+:root {
+  --accent-primary: #2563eb;
+  --surface-primary: #f8fafc;
+  --surface-card: #ffffff;
+  --foreground-primary: #0f172a;
+  --foreground-muted: #64748b;
+}
+
+body {
+  background: var(--surface-primary);
+  color: var(--foreground-primary);
+}

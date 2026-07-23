@@ -1,0 +1,27 @@
+{
+  "organization": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "name": "Acme Demo Sdn Bhd",
+    "slug": "acme-demo",
+    "deploymentMode": "standalone",
+    "timezone": "Asia/Kuala_Lumpur"
+  },
+  "branches": [
+    {
+      "id": "00000000-0000-4000-8000-000000000010",
+      "name": "HQ Kuala Lumpur",
+      "weekendMode": "sat_sun",
+      "payrollCutoffDay": 6
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000011",
+      "name": "Penang",
+      "weekendMode": "fri_sat",
+      "payrollCutoffDay": 6
+    }
+  ],
+  "departments": [
+    { "id": "00000000-0000-4000-8000-000000000020", "branchId": "00000000-0000-4000-8000-000000000010", "name": "Human Resources" },
+    { "id": "00000000-0000-4000-8000-000000000021", "branchId": "00000000-0000-4000-8000-000000000010", "name": "Operations" }
+  ]
+}

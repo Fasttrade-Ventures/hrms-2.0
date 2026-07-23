@@ -1,0 +1,23 @@
+{
+  "name": "@hrms/platform",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "node -e \"process.exit(0)\"",
+    "test": "node -e \"process.exit(0)\""
+  },
+  "dependencies": {
+    "@hrms/domain": "workspace:*",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}

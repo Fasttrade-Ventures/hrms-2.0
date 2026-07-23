@@ -1,0 +1,46 @@
+{
+  "employees": [
+    {
+      "id": "00000000-0000-4000-8000-000000000100",
+      "employeeNumber": "EMP001",
+      "fullName": "Aina Rahman",
+      "email": "aina@example.test",
+      "branchId": "00000000-0000-4000-8000-000000000010",
+      "departmentId": "00000000-0000-4000-8000-000000000021",
+      "role": "employee",
+      "managerEmployeeId": "00000000-0000-4000-8000-000000000101",
+      "joinDate": "2024-03-01",
+      "basicSalary": "4500.00",
+      "epfEmployeeRate": 11,
+      "eisEligible": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000101",
+      "employeeNumber": "EMP002",
+      "fullName": "Hafiz Abdullah",
+      "email": "hafiz@example.test",
+      "branchId": "00000000-0000-4000-8000-000000000010",
+      "departmentId": "00000000-0000-4000-8000-000000000021",
+      "role": "manager",
+      "managerEmployeeId": null,
+      "joinDate": "2022-01-15",
+      "basicSalary": "7200.00",
+      "epfEmployeeRate": 11,
+      "eisEligible": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000102",
+      "employeeNumber": "EMP003",
+      "fullName": "Siti HR Admin",
+      "email": "hr@example.test",
+      "branchId": "00000000-0000-4000-8000-000000000010",
+      "departmentId": "00000000-0000-4000-8000-000000000020",
+      "role": "hr_administrator",
+      "managerEmployeeId": null,
+      "joinDate": "2021-06-01",
+      "basicSalary": "6500.00",
+      "epfEmployeeRate": 11,
+      "eisEligible": true
+    }
+  ]
+}

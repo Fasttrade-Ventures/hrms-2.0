@@ -2,3 +2,19 @@
 *.empty-backup
 .env
 .env.*
+!.env.example
+
+node_modules
+.pnpm-store
+.turbo
+dist
+.next
+out
+coverage
+
+# Pencil backups
+pencil-new.pen.bak*
+
+# Supabase local
+supabase/.branches
+supabase/.temp
