@@ -7,8 +7,8 @@ import {
   eisEmployee,
   eisEmployer,
   pcbMtdComputerised,
-} from "./malaysia-statutory.js";
-import { money } from "../money.js";
+} from "./malaysia-statutory";
+import { money } from "../money";
 
 describe("malaysia statutory scaffold", () => {
   it("EIS at 4000 uses bracket assumed wage", () => {

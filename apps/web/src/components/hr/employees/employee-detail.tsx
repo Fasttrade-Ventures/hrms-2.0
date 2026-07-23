@@ -26,30 +26,24 @@ import {
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import type { EmployeeDetail } from "@/lib/employees/queries";
 
-const tabs = [
-  { id: "personal", label: "Personal" },
-  { id: "address", label: "Address" },
-  { id: "emergency", label: "Emergency" },
-  { id: "employment", label: "Employment" },
-  { id: "bank", label: "Bank" },
-  { id: "security", label: "Security" },
-] as const;
+import type { EmployeeTabId } from "@/lib/employees/tabs";
+import { employeeTabs } from "@/lib/employees/tabs";
 
-type TabId = (typeof tabs)[number]["id"];
+type TabId = EmployeeTabId;
 
 const initialState: EmployeeActionState = {};
 
 function TabNav({ employeeId, activeTab }: { employeeId: string; activeTab: TabId }) {
   return (
     <div className="flex flex-wrap gap-2 border-b border-[var(--border-primary)]">
-      {tabs.map((tab) => (
+      {employeeTabs.map((tab) => (
         <Link
           className={`px-4 py-3 text-sm font-medium ${
             activeTab === tab.id
               ? "border-b-2 border-[var(--accent-primary)] text-[var(--accent-primary)]"
               : "text-[var(--foreground-secondary)] hover:text-[var(--foreground-primary)]"
           }`}
-          href={`/hr/employees/${employeeId}?tab=${tab.id}`}
+          href={`/hr/employees/${employeeId}/edit?tab=${tab.id}`}
           key={tab.id}
         >
           {tab.label}
@@ -351,15 +345,23 @@ export function EmployeeDetailView({
     <div className="space-y-6">
       <PortalPageHeader
         actions={
-          <Link
-            className="inline-flex h-11 items-center border border-[var(--border-primary)] bg-[var(--surface-card)] px-5 text-sm font-medium hover:bg-[var(--surface-muted)]"
-            href="/hr/employees"
-          >
-            Back to list
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              className="inline-flex h-10 items-center rounded-[var(--radius-sm)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-4 text-sm font-medium hover:bg-[var(--surface-muted)]"
+              href={`/hr/employees/${employee.id}`}
+            >
+              View profile
+            </Link>
+            <Link
+              className="inline-flex h-10 items-center rounded-[var(--radius-sm)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-4 text-sm font-medium hover:bg-[var(--surface-muted)]"
+              href="/hr/employees"
+            >
+              Back to list
+            </Link>
+          </div>
         }
         description={`${employee.employeeNumber} · ${employee.email}`}
-        title={employee.fullName}
+        title={`Edit · ${employee.fullName}`}
       />
 
       <div className="flex flex-wrap items-center gap-3">
@@ -398,9 +400,3 @@ export function EmployeeDetailView({
     </div>
   );
 }
-
-export function isEmployeeTab(value: string | undefined): value is TabId {
-  return tabs.some((tab) => tab.id === value);
-}
-
-export const employeeTabs = tabs;

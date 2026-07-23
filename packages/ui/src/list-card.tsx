@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-/** Documents-style list card (padding 16, soft shadow, rounded muted header). */
+/** Documents-style list card (Pencil list tables). */
 export function ListCard({
   header,
   columns,
@@ -17,8 +17,10 @@ export function ListCard({
   }
 
   return (
-    <div className="overflow-hidden border border-[var(--border-primary)] bg-[var(--surface-card)]">
-      <div className="border-b border-[var(--border-primary)] bg-[var(--surface-muted)] px-4 py-3">{header}</div>
+    <div className="overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-card)] shadow-[var(--shadow-card)]">
+      <div className="border-b border-[var(--border-primary)] bg-[var(--surface-muted)] px-4 py-3">
+        {header}
+      </div>
       <div className="divide-y divide-[var(--border-primary)]">
         {rows.map((row) => (
           <div key={row.id} className="flex items-center gap-4 px-4 py-4">

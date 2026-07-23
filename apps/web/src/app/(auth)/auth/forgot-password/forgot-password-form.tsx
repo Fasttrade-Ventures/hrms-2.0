@@ -64,6 +64,7 @@ export function ForgotPasswordForm() {
           autoComplete="email"
           id="email"
           label="Email address"
+          muted
           name="email"
           placeholder="you@company.com"
           required

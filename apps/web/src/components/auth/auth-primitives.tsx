@@ -4,7 +4,7 @@ export function AuthBrand({ inverted = false }: { inverted?: boolean }) {
   return (
     <div className="flex items-center gap-3">
       <div
-        className={`flex h-9 w-9 items-center justify-center ${
+        className={`flex h-9 w-9 items-center justify-center rounded-md ${
           inverted ? "bg-white text-[var(--surface-inverse)]" : "bg-[var(--accent-primary)] text-white"
         }`}
       >
@@ -47,7 +47,7 @@ export function AuthPrimaryButton({
 }: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
-      className={`flex h-12 w-full items-center justify-center bg-[var(--accent-primary)] px-5 text-[15px] font-semibold text-[var(--foreground-inverse)] transition-colors hover:bg-[var(--accent-hover)] disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+      className={`flex h-10 w-full items-center justify-center rounded-md bg-[var(--accent-primary)] px-5 text-[15px] font-semibold text-[var(--foreground-inverse)] transition-colors hover:bg-[var(--accent-hover)] disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
       {...props}
     >
       {children}
@@ -62,7 +62,7 @@ export function AuthGhostButton({
 }: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
-      className={`flex h-12 w-full items-center justify-center border border-[var(--border-primary)] bg-[var(--surface-card)] px-5 text-[15px] font-medium text-[var(--foreground-primary)] transition-colors hover:bg-[var(--surface-muted)] disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+      className={`flex h-10 w-full items-center justify-center rounded-md border border-[var(--border-primary)] bg-[var(--surface-card)] px-5 text-[15px] font-medium text-[var(--foreground-primary)] transition-colors hover:bg-[var(--surface-muted)] disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
       {...props}
     >
       {children}
@@ -100,7 +100,7 @@ export function AuthTextField({
       </label>
       <input
         autoComplete={autoComplete}
-        className={`h-12 w-full border border-[var(--border-primary)] px-3.5 text-[15px] text-[var(--foreground-primary)] outline-none placeholder:text-[var(--foreground-muted)] focus:border-[var(--border-focus)] ${
+        className={`h-10 w-full rounded-lg border border-[var(--border-primary)] px-3.5 text-[15px] text-[var(--foreground-primary)] outline-none placeholder:text-[var(--foreground-muted)] focus:border-[var(--border-focus)] ${
           muted ? "bg-[var(--surface-muted)] text-[var(--foreground-secondary)]" : "bg-[var(--surface-card)]"
         }`}
         defaultValue={defaultValue}

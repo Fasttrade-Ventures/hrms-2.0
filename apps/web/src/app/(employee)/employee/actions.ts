@@ -6,6 +6,8 @@ import { redirect } from "next/navigation";
 import { clockIn, clockOut } from "@/lib/employee/attendance";
 import { createLeaveRequest } from "@/lib/employee/leave";
 import { requireEmployeeContext } from "@/lib/employee/leave";
+import { submitEmployeeRequest } from "@/lib/employee/submit-request";
+import { requireModule } from "@/lib/entitlements";
 import { createClient } from "@/lib/supabase/server";
 
 export type EmployeeActionState = {
@@ -62,17 +64,32 @@ export async function submitClaim(
     const { employeeId, organizationId } = await requireEmployeeContext();
     const supabase = await createClient();
 
-    const { error } = await supabase.from("claims").insert({
-      organization_id: organizationId,
-      employee_id: employeeId,
-      claim_type_id: parsed.data.claimTypeId,
-      amount: parsed.data.amount,
-      receipt_date: parsed.data.receiptDate,
-      description: parsed.data.description ?? null,
-      status: "pending",
-    });
+    const { data, error } = await supabase
+      .from("claims")
+      .insert({
+        organization_id: organizationId,
+        employee_id: employeeId,
+        claim_type_id: parsed.data.claimTypeId,
+        amount: parsed.data.amount,
+        receipt_date: parsed.data.receiptDate,
+        description: parsed.data.description ?? null,
+        status: "draft",
+      })
+      .select("id, claim_types(name)")
+      .single();
 
-    if (error) throw new Error(error.message);
+    if (error || !data) throw new Error(error?.message ?? "Failed to submit claim.");
+
+    await submitEmployeeRequest({
+      requestType: "claim",
+      sourceTable: "claims",
+      sourceId: data.id,
+      payload: {
+        claimTypeName: (data.claim_types as { name?: string } | null)?.name ?? "Claim",
+        amount: parsed.data.amount,
+        receiptDate: parsed.data.receiptDate,
+      },
+    });
 
     revalidatePath("/employee/claims");
     return { success: "Claim submitted for approval." };
@@ -98,17 +115,28 @@ export async function submitOvertime(
     const { employeeId, organizationId } = await requireEmployeeContext();
     const supabase = await createClient();
 
-    const { error } = await supabase.from("overtime_requests").insert({
-      organization_id: organizationId,
-      employee_id: employeeId,
-      work_date: workDate,
-      hours,
-      rate_type: rateType,
-      reason: reason ?? null,
-      status: "pending",
-    });
+    const { data, error } = await supabase
+      .from("overtime_requests")
+      .insert({
+        organization_id: organizationId,
+        employee_id: employeeId,
+        work_date: workDate,
+        hours,
+        rate_type: rateType,
+        reason: reason ?? null,
+        status: "draft",
+      })
+      .select("id")
+      .single();
 
-    if (error) throw new Error(error.message);
+    if (error || !data) throw new Error(error?.message ?? "Failed to submit overtime.");
+
+    await submitEmployeeRequest({
+      requestType: "overtime",
+      sourceTable: "overtime_requests",
+      sourceId: data.id,
+      payload: { workDate, hours, rateType, reason },
+    });
 
     revalidatePath("/employee/overtime");
     return { success: "Overtime request submitted." };
@@ -133,16 +161,27 @@ export async function submitReplacementCredit(
     const { employeeId, organizationId } = await requireEmployeeContext();
     const supabase = await createClient();
 
-    const { error } = await supabase.from("replacement_credits").insert({
-      organization_id: organizationId,
-      employee_id: employeeId,
-      work_date: workDate,
-      credit_days: creditDays,
-      description: description ?? null,
-      status: "pending",
-    });
+    const { data, error } = await supabase
+      .from("replacement_credits")
+      .insert({
+        organization_id: organizationId,
+        employee_id: employeeId,
+        work_date: workDate,
+        credit_days: creditDays,
+        description: description ?? null,
+        status: "draft",
+      })
+      .select("id")
+      .single();
 
-    if (error) throw new Error(error.message);
+    if (error || !data) throw new Error(error?.message ?? "Failed to submit replacement credit.");
+
+    await submitEmployeeRequest({
+      requestType: "replacement_credit",
+      sourceTable: "replacement_credits",
+      sourceId: data.id,
+      payload: { workDate, creditDays, description },
+    });
 
     revalidatePath("/employee/replacement-credit");
     return { success: "Replacement credit submitted." };
@@ -169,16 +208,27 @@ export async function submitLateReport(
     const { employeeId, organizationId } = await requireEmployeeContext();
     const supabase = await createClient();
 
-    const { error } = await supabase.from("late_requests").insert({
-      organization_id: organizationId,
-      employee_id: employeeId,
-      request_date: requestDate,
-      actual_arrival_time: actualArrivalTime,
-      reason: reason ?? null,
-      status: "pending",
-    });
+    const { data, error } = await supabase
+      .from("late_requests")
+      .insert({
+        organization_id: organizationId,
+        employee_id: employeeId,
+        request_date: requestDate,
+        actual_arrival_time: actualArrivalTime,
+        reason: reason ?? null,
+        status: "draft",
+      })
+      .select("id")
+      .single();
 
-    if (error) throw new Error(error.message);
+    if (error || !data) throw new Error(error?.message ?? "Failed to submit late report.");
+
+    await submitEmployeeRequest({
+      requestType: "late",
+      sourceTable: "late_requests",
+      sourceId: data.id,
+      payload: { requestDate, actualArrivalTime, reason },
+    });
 
     revalidatePath("/employee/report-late");
     return { success: "Late report submitted." };
@@ -204,17 +254,28 @@ export async function submitManualAttendance(
     const { employeeId, organizationId } = await requireEmployeeContext();
     const supabase = await createClient();
 
-    const { error } = await supabase.from("attendance_requests").insert({
-      organization_id: organizationId,
-      employee_id: employeeId,
-      request_date: requestDate,
-      clock_in_time: clockInTime,
-      clock_out_time: clockOutTime,
-      reason: reason ?? null,
-      status: "pending",
-    });
+    const { data, error } = await supabase
+      .from("attendance_requests")
+      .insert({
+        organization_id: organizationId,
+        employee_id: employeeId,
+        request_date: requestDate,
+        clock_in_time: clockInTime,
+        clock_out_time: clockOutTime,
+        reason: reason ?? null,
+        status: "draft",
+      })
+      .select("id")
+      .single();
 
-    if (error) throw new Error(error.message);
+    if (error || !data) throw new Error(error?.message ?? "Failed to submit manual attendance.");
+
+    await submitEmployeeRequest({
+      requestType: "attendance",
+      sourceTable: "attendance_requests",
+      sourceId: data.id,
+      payload: { requestDate, clockInTime, clockOutTime, reason },
+    });
 
     revalidatePath("/employee/manual-attendance");
     return { success: "Manual attendance request submitted." };

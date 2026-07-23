@@ -33,7 +33,7 @@ export function AuthPasswordField({
       <div className="relative">
         <input
           autoComplete={autoComplete}
-          className="h-12 w-full border border-[var(--border-primary)] bg-[var(--surface-card)] px-3.5 pr-11 text-[15px] text-[var(--foreground-primary)] outline-none placeholder:text-[var(--foreground-muted)] focus:border-[var(--border-focus)]"
+          className="h-10 w-full rounded-lg border border-[var(--border-primary)] bg-[var(--surface-card)] px-3.5 pr-11 text-[15px] text-[var(--foreground-primary)] outline-none placeholder:text-[var(--foreground-muted)] focus:border-[var(--border-focus)]"
           id={id}
           name={name}
           placeholder="••••••••"

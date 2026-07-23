@@ -58,6 +58,13 @@ export async function createEmployeeRecord(
       branch_id: input.branchId ?? null,
       department_id: input.departmentId ?? null,
       manager_employee_id: input.managerEmployeeId ?? null,
+      shift_id: input.shiftId ?? null,
+      pay_group_id: input.payGroupId ?? null,
+      employment_type: input.employmentType ?? null,
+      job_title: input.jobTitle ?? null,
+      confirmation_status: input.confirmationStatus ?? null,
+      annual_leave_entitlement: input.annualLeaveEntitlement ?? 14,
+      annual_leave_carry_forward: input.annualLeaveCarryForward ?? 0,
       status: "active",
       join_date: input.joinDate,
     })
@@ -71,11 +78,85 @@ export async function createEmployeeRecord(
   const { error: profileError } = await admin.from("employee_profiles").insert({
     employee_id: employee.id,
     organization_id: organizationId,
+    phone: input.phone ?? null,
+    ic_number: input.icNumber ?? null,
+    date_of_birth: input.dateOfBirth ?? null,
+    gender: input.gender ?? null,
+    race: input.race ?? null,
+    religion: input.religion ?? null,
+    marital_status: input.maritalStatus ?? null,
+    residential_address: input.residentialAddress ?? null,
+    address_line1: input.addressLine1 ?? null,
+    address_line2: input.addressLine2 ?? null,
+    city: input.city ?? null,
+    state: input.state ?? null,
+    postcode: input.postcode ?? null,
+    country: input.country ?? "MY",
+    pay_basis: input.payBasis ?? "monthly",
+    working_days_per_month: input.workingDaysPerMonth ?? 21,
+    basic_salary: input.basicSalary ?? 0,
+    bank_name: input.bankName ?? null,
+    bank_account_number: input.bankAccountNumber ?? null,
+    epf_number: input.epfNumber ?? null,
+    socso_number: input.socsoNumber ?? null,
+    tax_number: input.taxNumber ?? null,
+    profile_photo_path: input.profilePhotoPath ?? null,
   });
 
   if (profileError) {
     await admin.from("employees").delete().eq("id", employee.id);
     throw new Error(profileError.message);
+  }
+
+  if (input.dependents?.length) {
+    const { error: dependentsError } = await admin.from("employee_dependents").insert(
+      input.dependents.map((dependent) => ({
+        organization_id: organizationId,
+        employee_id: employee.id,
+        dependent_type: dependent.dependentType,
+        full_name: dependent.fullName,
+        ic_number: dependent.icNumber ?? null,
+        is_working: dependent.isWorking ?? null,
+        date_of_birth: dependent.dateOfBirth ?? null,
+      })),
+    );
+
+    if (dependentsError) {
+      await admin.from("employees").delete().eq("id", employee.id);
+      throw new Error(dependentsError.message);
+    }
+  }
+
+  if (input.emergencyContacts?.length) {
+    const { error: emergencyError } = await admin.from("employee_emergency_contacts").insert(
+      input.emergencyContacts.map((contact) => ({
+        organization_id: organizationId,
+        employee_id: employee.id,
+        name: contact.name,
+        relationship: contact.relationship ?? null,
+        phone: contact.phone,
+      })),
+    );
+
+    if (emergencyError) {
+      await admin.from("employees").delete().eq("id", employee.id);
+      throw new Error(emergencyError.message);
+    }
+  }
+
+  if (input.allowedLeaveTypeIds?.length) {
+    const { error: leaveAccessError } = await admin.from("employee_allowed_leave_types").insert(
+      input.allowedLeaveTypeIds.map((leaveTypeId) => ({
+        organization_id: organizationId,
+        employee_id: employee.id,
+        leave_type_id: leaveTypeId,
+      })),
+    );
+
+    if (leaveAccessError) {
+      await admin.from("employees").delete().eq("id", employee.id);
+      throw new Error(leaveAccessError.message);
+    }
   }
 
   let userId: string | null = null;
@@ -103,7 +184,7 @@ export async function createEmployeeRecord(
         organization_id: organizationId,
         user_id: userId,
         employee_id: employee.id,
-        roles: ["employee"],
+        roles: [input.portalRole || "employee"],
         branch_id: input.branchId ?? null,
       });
 
@@ -120,24 +201,15 @@ export async function createEmployeeRecord(
       });
 
       activationEmailSent = mailResult.sent;
-
       if (!mailResult.sent) {
         activationEmailError =
           mailResult.reason === "not_configured"
-            ? "Employee created, but email is not configured (RESEND_API_KEY / MAIL_FROM)."
-            : mailResult.detail ?? "Failed to send activation email.";
+            ? "Email provider is not configured."
+            : mailResult.detail ?? "Activation email failed.";
       }
     }
   } catch (error) {
-    if (userId) {
-      await admin.from("organization_memberships").delete().eq("user_id", userId);
-      await admin.auth.admin.deleteUser(userId);
-    }
-
-    await admin.from("employee_profiles").delete().eq("employee_id", employee.id);
-    await admin.from("employees").delete().eq("id", employee.id);
-
-    throw error instanceof Error ? error : new Error("Failed to create employee login.");
+    activationEmailError = error instanceof Error ? error.message : "Activation setup failed.";
   }
 
   await logEmployeeEvent({
@@ -146,10 +218,9 @@ export async function createEmployeeRecord(
     organizationId,
     employeeId: employee.id,
     metadata: {
-      email: input.email,
       employeeNumber,
-      sendActivationEmail: input.sendActivationEmail,
       activationEmailSent,
+      portalRole: input.portalRole,
     },
   });
 
@@ -161,31 +232,21 @@ export async function createEmployeeRecord(
   };
 }
 
-export async function resendEmployeeActivationEmail(
-  employeeId: string,
-  actorUserId: string,
-): Promise<{ sent: boolean; error?: string }> {
+export async function resendEmployeeActivationEmail(employeeId: string, actorUserId: string) {
   const admin = createAdminClient();
   const organizationId = getOrganizationId();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
   const { data: employee, error } = await admin
     .from("employees")
-    .select("id, email, full_name")
+    .select("id, full_name, email, branch_id")
     .eq("organization_id", organizationId)
     .eq("id", employeeId)
     .maybeSingle();
 
   if (error || !employee) {
-    throw new Error("Employee not found.");
+    throw new Error(error?.message ?? "Employee not found.");
   }
-
-  const { data: membership } = await admin
-    .from("organization_memberships")
-    .select("user_id")
-    .eq("organization_id", organizationId)
-    .eq("employee_id", employeeId)
-    .maybeSingle();
 
   const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
     type: "invite",
@@ -197,19 +258,27 @@ export async function resendEmployeeActivationEmail(
   });
 
   if (linkError || !linkData.user) {
-    throw new Error(linkError?.message ?? "Failed to generate activation link.");
+    return { sent: false, error: linkError?.message ?? "Failed to generate activation link." };
   }
 
-  if (!membership) {
+  const { data: existingMembership } = await admin
+    .from("organization_memberships")
+    .select("id")
+    .eq("organization_id", organizationId)
+    .eq("employee_id", employeeId)
+    .maybeSingle();
+
+  if (!existingMembership) {
     const { error: membershipError } = await admin.from("organization_memberships").insert({
       organization_id: organizationId,
       user_id: linkData.user.id,
-      employee_id: employee.id,
+      employee_id: employeeId,
       roles: ["employee"],
+      branch_id: employee.branch_id,
     });
 
     if (membershipError) {
-      throw new Error(membershipError.message);
+      return { sent: false, error: membershipError.message };
     }
   }
 
@@ -221,23 +290,21 @@ export async function resendEmployeeActivationEmail(
     activationLink: linkData.properties.action_link,
   });
 
-  await logEmployeeEvent({
-    action: "employee.activation_resent",
-    actorUserId,
-    organizationId,
-    employeeId,
-    metadata: { email: employee.email, sent: mailResult.sent },
-  });
-
-  if (!mailResult.sent) {
-    return {
-      sent: false,
-      error:
-        mailResult.reason === "not_configured"
-          ? "Email is not configured (RESEND_API_KEY / MAIL_FROM)."
-          : mailResult.detail ?? "Failed to send activation email.",
-    };
+  if (mailResult.sent) {
+    await logEmployeeEvent({
+      action: "employee.activation_resent",
+      actorUserId,
+      organizationId,
+      employeeId,
+    });
   }
 
-  return { sent: true };
+  return {
+    sent: mailResult.sent,
+    error: mailResult.sent
+      ? undefined
+      : mailResult.reason === "not_configured"
+        ? "Email provider is not configured."
+        : mailResult.detail ?? "Failed to send email.",
+  };
 }

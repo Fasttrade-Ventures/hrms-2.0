@@ -31,6 +31,34 @@ export function CalendarIcon(props: IconProps) {
   );
 }
 
+/** Lucide calendar-days — matches Pencil Card/Stat chip icon (20×20). */
+export function CalendarDaysIcon(props: IconProps) {
+  return (
+    <svg
+      fill="none"
+      height="20"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.75"
+      viewBox="0 0 24 24"
+      width="20"
+      {...props}
+    >
+      <path d="M8 2v4" />
+      <path d="M16 2v4" />
+      <rect height="18" rx="2" width="18" x="3" y="4" />
+      <path d="M3 10h18" />
+      <path d="M8 14h.01" />
+      <path d="M12 14h.01" />
+      <path d="M16 14h.01" />
+      <path d="M8 18h.01" />
+      <path d="M12 18h.01" />
+      <path d="M16 18h.01" />
+    </svg>
+  );
+}
+
 export function TimerIcon(props: IconProps) {
   return (
     <IconBase {...props}>

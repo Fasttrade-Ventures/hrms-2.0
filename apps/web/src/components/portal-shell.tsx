@@ -4,9 +4,22 @@ import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
 import { EmployeeMobileNav } from "@/components/employee/employee-mobile-nav";
+import { ManagerMobileNav } from "@/components/manager/manager-mobile-nav";
+import { PortalAccountMenu } from "@/components/portal/portal-account-menu";
 import { CloseIcon, MenuIcon } from "@/components/portal/portal-icons";
-import { PortalBrand, PortalNavItem, PortalUserMenu } from "@/components/portal/portal-primitives";
-import { getPortalLabel, getPortalNav } from "@/lib/portal-nav";
+import {
+  PortalBellButton,
+  PortalBrand,
+  PortalNavItem,
+  PortalSidebarUserBlock,
+} from "@/components/portal/portal-primitives";
+import {
+  getPortalLabel,
+  getPortalNav,
+  getPortalNavSections,
+  getPortalProfileHref,
+  getPortalSettingsHref,
+} from "@/lib/portal-nav";
 
 function isActivePath(pathname: string, href: string): boolean {
   if (pathname === href) {
@@ -20,9 +33,23 @@ function isActivePath(pathname: string, href: string): boolean {
   return pathname.startsWith(`${href}/`) || pathname === href;
 }
 
+function notificationsHref(portal: string): string {
+  if (portal === "Manager") return "/manager/notifications";
+  if (portal === "HR Administrator") return "/hr/announcements";
+  return "/employee/notifications";
+}
+
+function roleHint(portal: string): string | undefined {
+  if (portal === "Manager") return "Manager";
+  if (portal === "HR Administrator") return "HR Admin";
+  if (portal === "Employee") return "Employee";
+  return undefined;
+}
+
 export function PortalShell({
   portal,
   user,
+  pageSubtitle,
   children,
 }: {
   portal: string;
@@ -30,12 +57,24 @@ export function PortalShell({
     fullName?: string;
     email?: string;
   };
+  pageSubtitle?: string;
   children: ReactNode;
 }) {
   const pathname = usePathname();
+  const sections = getPortalNavSections(portal);
   const nav = getPortalNav(portal);
   const portalLabel = getPortalLabel(portal);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const currentPage =
+    nav.find((item) => isActivePath(pathname, item.href))?.label ?? portalLabel;
+  const showMobileNav = portal === "Employee" || portal === "Manager";
+  const sidebarUserMuted = portal === "Manager" || portal === "HR Administrator";
+  const todayLabel = new Date().toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 
   return (
     <div className="portal-theme flex min-h-screen bg-[var(--surface-primary)]">
@@ -53,11 +92,11 @@ export function PortalShell({
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="mb-7 flex items-center justify-between">
+        <div className="mb-5 flex items-center justify-between px-2">
           <PortalBrand />
           <button
             aria-label="Close navigation"
-            className="p-2 text-[var(--foreground-secondary)] lg:hidden"
+            className="rounded-[var(--radius-md)] p-2 text-[var(--foreground-secondary)] lg:hidden"
             onClick={() => setMobileOpen(false)}
             type="button"
           >
@@ -65,33 +104,35 @@ export function PortalShell({
           </button>
         </div>
 
-        <p className="mb-3 px-2 text-[11px] font-medium uppercase tracking-wide text-[var(--foreground-muted)]">
-          {portalLabel}
-        </p>
-
-        <nav className="flex-1 space-y-1 overflow-y-auto">
-          {nav.map((item) => (
-            <PortalNavItem
-              active={isActivePath(pathname, item.href)}
-              href={item.href}
-              icon={item.icon}
-              key={item.href}
-              label={item.label}
-              onNavigate={() => setMobileOpen(false)}
-            />
+        <nav className="flex-1 space-y-5 overflow-y-auto pb-4">
+          {sections.map((section) => (
+            <div className="space-y-1" key={section.label ?? section.items[0]?.href}>
+              {section.label ? (
+                <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--foreground-muted)]">
+                  {section.label}
+                </p>
+              ) : null}
+              {section.items.map((item) => (
+                <PortalNavItem
+                  active={isActivePath(pathname, item.href)}
+                  href={item.href}
+                  icon={item.icon}
+                  key={item.href}
+                  label={item.label}
+                  onNavigate={() => setMobileOpen(false)}
+                />
+              ))}
+            </div>
           ))}
         </nav>
 
-        <div className="mt-6 space-y-3 border-t border-[var(--border-primary)] pt-4">
-          <PortalUserMenu email={user?.email} name={user?.fullName} />
-          <form action="/api/auth/logout" method="post">
-            <button
-              className="w-full px-3 py-2 text-left text-sm text-[var(--foreground-muted)] transition-colors hover:bg-[var(--surface-muted)] hover:text-[var(--foreground-primary)]"
-              type="submit"
-            >
-              Sign out
-            </button>
-          </form>
+        <div className="pt-2">
+          <PortalSidebarUserBlock
+            email={user?.email}
+            muted={sidebarUserMuted}
+            name={user?.fullName}
+            roleHint={roleHint(portal)}
+          />
         </div>
       </aside>
 
@@ -100,23 +141,41 @@ export function PortalShell({
           <div className="flex items-center gap-3">
             <button
               aria-label="Open navigation"
-              className="p-2 text-[var(--foreground-secondary)] lg:hidden"
+              className="rounded-[var(--radius-md)] p-2 text-[var(--foreground-secondary)] lg:hidden"
               onClick={() => setMobileOpen(true)}
               type="button"
             >
               <MenuIcon />
             </button>
-            <p className="text-sm font-medium text-[var(--foreground-secondary)]">{portalLabel}</p>
+            <div>
+              <h1 className="text-lg font-semibold text-[var(--foreground-primary)]">{currentPage}</h1>
+              {pageSubtitle ? (
+                <p className="text-xs text-[var(--foreground-muted)]">{pageSubtitle}</p>
+              ) : null}
+            </div>
           </div>
-          <PortalUserMenu email={user?.email} name={user?.fullName} />
+          <div className="flex items-center gap-3 sm:gap-4">
+            <p className="hidden text-[13px] text-[var(--foreground-muted)] md:block">{todayLabel}</p>
+            <PortalBellButton href={notificationsHref(portal)} />
+            <PortalAccountMenu
+              email={user?.email}
+              name={user?.fullName}
+              profileHref={getPortalProfileHref(portal)}
+              settingsHref={getPortalSettingsHref(portal)}
+            />
+          </div>
         </header>
 
         <main
-          className={`flex-1 px-4 py-6 sm:px-8 sm:py-8 ${portal === "Employee" ? "pb-24 lg:pb-8" : ""}`}
+          className={`flex-1 ${showMobileNav ? "pb-24 lg:pb-6" : ""}`}
+          style={{ padding: portal === "HR Administrator" ? 24 : undefined }}
         >
-          {children}
+          <div className={portal === "HR Administrator" ? "" : "px-4 py-6 sm:px-6 sm:py-6 lg:px-8"}>
+            {children}
+          </div>
         </main>
         {portal === "Employee" ? <EmployeeMobileNav /> : null}
+        {portal === "Manager" ? <ManagerMobileNav /> : null}
       </div>
     </div>
   );

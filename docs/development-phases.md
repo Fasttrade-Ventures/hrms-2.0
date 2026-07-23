@@ -31,10 +31,15 @@ Each phase has:
 | Auth: login, session, logout, password reset/activate | ✅ Done |
 | Auth UI (Forest Sage split layout) | ✅ Deployed |
 | Bootstrap admin account | ✅ Created |
-| Portal routes (Employee, Manager, HR, etc.) | 🟡 Employee portal functional (Phase 4) |
+| Portal routes (Employee, Manager, HR) | ✅ Functional (Phases 4–5) |
 | Role-based route guards | ✅ Done |
 | HR Create Employee | ✅ Done |
-| Business modules (leave, payroll, …) | ❌ Schema only |
+| Approvals engine + manager inbox | ✅ Done (Phases 5–7) |
+| HR supporting modules (announcements, documents, assets, audit) | ✅ Done (Phase 8) |
+| Malaysia payroll (draft payrun + lock) | ✅ Done (Phase 9) |
+| SaaS registration API + entitlements | ✅ Done (Phase 10, SaaS mode only) |
+| Legacy import reconciliation CLI | 🟡 Postgres counts (Phase 11 scaffold) |
+| Business modules (full UAT / SOCSO / email) | 🟡 In progress |
 
 ---
 

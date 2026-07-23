@@ -52,6 +52,7 @@ export function LoginForm({ showRegister }: { showRegister: boolean }) {
           autoComplete="email"
           id="email"
           label="Email address"
+          muted
           name="email"
           placeholder="you@company.com"
           required
@@ -67,7 +68,7 @@ export function LoginForm({ showRegister }: { showRegister: boolean }) {
           required
         />
 
-        <AuthCheckbox defaultChecked id="remember" label="Keep me signed in on this device" name="remember" />
+        <AuthCheckbox defaultChecked id="remember" label="Keep me signed in for 30 days" name="remember" />
 
         {errorMessage ? <AuthError>{errorMessage}</AuthError> : null}
 
@@ -79,7 +80,7 @@ export function LoginForm({ showRegister }: { showRegister: boolean }) {
           <>
             <AuthDivider />
             <Link
-              className="flex h-12 w-full items-center justify-center border border-[var(--border-primary)] bg-[var(--surface-card)] px-5 text-[15px] font-medium text-[var(--foreground-primary)] transition-colors hover:bg-[var(--surface-muted)]"
+              className="flex h-10 w-full items-center justify-center rounded-md border border-[var(--border-primary)] bg-[var(--surface-card)] px-5 text-[15px] font-medium text-[var(--foreground-primary)] transition-colors hover:bg-[var(--surface-muted)]"
               href="/auth/register"
             >
               Create an organization

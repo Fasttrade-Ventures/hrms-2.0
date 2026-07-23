@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from "react";
+import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 
 export function HrField({
   id,
@@ -23,7 +23,7 @@ export function HrField({
 }
 
 const fieldClassName =
-  "h-11 w-full border border-[var(--border-primary)] bg-[var(--surface-card)] px-3.5 text-[15px] text-[var(--foreground-primary)] outline-none placeholder:text-[var(--foreground-muted)] focus:border-[var(--border-focus)]";
+  "h-10 w-full rounded-[var(--radius-md)] border border-[var(--border-primary)] bg-[var(--surface-muted)] px-3.5 text-[15px] text-[var(--foreground-primary)] outline-none placeholder:text-[var(--foreground-muted)] focus:border-[var(--border-focus)] focus:bg-[var(--surface-card)]";
 
 export function HrTextInput(props: InputHTMLAttributes<HTMLInputElement>) {
   return <input className={fieldClassName} {...props} />;
@@ -33,16 +33,27 @@ export function HrSelect(props: SelectHTMLAttributes<HTMLSelectElement>) {
   return <select className={fieldClassName} {...props} />;
 }
 
+export function HrTextarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <textarea
+      className="min-h-[88px] w-full rounded-[var(--radius-md)] border border-[var(--border-primary)] bg-[var(--surface-muted)] px-3.5 py-2.5 text-[15px] text-[var(--foreground-primary)] outline-none placeholder:text-[var(--foreground-muted)] focus:border-[var(--border-focus)] focus:bg-[var(--surface-card)]"
+      {...props}
+    />
+  );
+}
+
 export function HrCheckbox({
   id,
   label,
   defaultChecked,
   name,
+  value,
 }: {
   id: string;
   label: string;
   defaultChecked?: boolean;
   name?: string;
+  value?: string;
 }) {
   return (
     <label className="flex items-center gap-2.5 text-sm text-[var(--foreground-secondary)]" htmlFor={id}>
@@ -52,6 +63,7 @@ export function HrCheckbox({
         id={id}
         name={name}
         type="checkbox"
+        value={value}
       />
       {label}
     </label>
@@ -65,7 +77,7 @@ export function HrPrimaryButton({
 }: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
-      className={`inline-flex h-11 items-center justify-center bg-[var(--accent-primary)] px-5 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-hover)] disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+      className={`inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--accent-primary)] px-5 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-hover)] disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
       {...props}
     >
       {children}
@@ -80,7 +92,7 @@ export function HrGhostButton({
 }: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
-      className={`inline-flex h-11 items-center justify-center border border-[var(--border-primary)] bg-[var(--surface-card)] px-5 text-sm font-medium text-[var(--foreground-primary)] transition-colors hover:bg-[var(--surface-muted)] disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+      className={`inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-5 text-sm font-medium text-[var(--foreground-primary)] transition-colors hover:bg-[var(--surface-muted)] disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
       {...props}
     >
       {children}

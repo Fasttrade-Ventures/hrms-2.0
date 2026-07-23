@@ -1,6 +1,7 @@
 import type { LeaveRequestInput } from "@hrms/validation";
 import { countWorkingDays } from "@hrms/domain";
 
+import { submitForApproval } from "@/lib/approvals/service";
 import { requireAuth } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
@@ -183,9 +184,16 @@ export function calculateLeaveDays(input: LeaveRequestInput): number {
 }
 
 export async function createLeaveRequest(input: LeaveRequestInput): Promise<string> {
+  const session = await requireAuth();
   const { employeeId, organizationId } = await requireEmployeeContext();
   const days = calculateLeaveDays(input);
   const supabase = await createClient();
+
+  const { data: leaveType } = await supabase
+    .from("leave_types")
+    .select("name")
+    .eq("id", input.leaveTypeId)
+    .maybeSingle();
 
   const { data, error } = await supabase
     .from("leave_requests")
@@ -198,7 +206,7 @@ export async function createLeaveRequest(input: LeaveRequestInput): Promise<stri
       half_day: input.halfDay,
       days,
       reason: input.reason ?? null,
-      status: "pending",
+      status: "draft",
     })
     .select("id")
     .single();
@@ -206,6 +214,22 @@ export async function createLeaveRequest(input: LeaveRequestInput): Promise<stri
   if (error || !data) {
     throw new Error(error?.message ?? "Failed to create leave request.");
   }
+
+  await submitForApproval({
+    organizationId,
+    requesterEmployeeId: employeeId,
+    requestType: "leave",
+    sourceTable: "leave_requests",
+    sourceId: data.id,
+    actorUserId: session.user.id,
+    payload: {
+      leaveTypeName: leaveType?.name ?? "Leave",
+      startDate: input.startDate,
+      endDate: input.endDate,
+      days,
+      reason: input.reason ?? null,
+    },
+  });
 
   return data.id;
 }

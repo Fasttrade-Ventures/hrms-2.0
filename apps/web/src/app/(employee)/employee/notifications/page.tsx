@@ -1,15 +1,14 @@
-import { EmptyState } from "@hrms/ui";
-
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
+import { NotificationsList } from "@/components/notifications/notifications-list";
+import { listUserNotifications } from "@/lib/notifications/inbox";
 
-export default function Page() {
+export default async function Page() {
+  const notifications = await listUserNotifications().catch(() => []);
+
   return (
     <div className="space-y-6">
       <PortalPageHeader description="In-app and email notifications." title="Notifications" />
-      <EmptyState
-        description="Notification delivery will connect in Phase 6 shared services."
-        title="No notifications"
-      />
+      <NotificationsList notifications={notifications} />
     </div>
   );
 }

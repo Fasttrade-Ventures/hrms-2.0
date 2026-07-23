@@ -1,17 +1,26 @@
+import type { ReactNode } from "react";
+
 export function EmptyState({
   title,
   description,
   action,
+  icon,
 }: {
   title: string;
   description?: string;
-  action?: React.ReactNode;
+  action?: ReactNode;
+  icon?: ReactNode;
 }) {
   return (
-    <div className="border border-dashed border-[var(--border-primary)] bg-[var(--surface-card)] p-10 text-center">
-      <h3 className="text-base font-medium text-[var(--foreground-primary)]">{title}</h3>
-      {description ? <p className="mt-2 text-sm text-[var(--foreground-secondary)]">{description}</p> : null}
-      {action ? <div className="mt-4">{action}</div> : null}
+    <div className="flex min-h-28 flex-col items-center justify-center rounded-[var(--radius-lg)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-4 py-5 text-center">
+      {icon ? <div className="mb-2 text-[var(--foreground-muted)]">{icon}</div> : null}
+      <h3 className="text-[13px] font-semibold text-[var(--foreground-primary)]">{title}</h3>
+      {description ? (
+        <p className="mt-1 max-w-sm text-[11px] leading-relaxed text-[var(--foreground-muted)]">
+          {description}
+        </p>
+      ) : null}
+      {action ? <div className="mt-3">{action}</div> : null}
     </div>
   );
 }

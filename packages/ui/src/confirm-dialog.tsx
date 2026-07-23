@@ -8,6 +8,7 @@ export function ConfirmDialog({
   cancelLabel = "Cancel",
   onConfirm,
   onCancel,
+  tone = "primary",
 }: {
   open: boolean;
   title: string;
@@ -16,25 +17,36 @@ export function ConfirmDialog({
   cancelLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
+  tone?: "primary" | "danger";
 }) {
   if (!open) return null;
+
+  const confirmClass =
+    tone === "danger"
+      ? "bg-[var(--danger)] text-white hover:opacity-90"
+      : "bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-hover)]";
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg" role="dialog" aria-modal="true">
-        <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-        <p className="mt-2 text-sm text-slate-600">{message}</p>
-        <div className="mt-6 flex justify-end gap-2">
+      <div
+        aria-modal="true"
+        className="w-full max-w-[380px] rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-card)] p-[18px] shadow-[var(--shadow-elevated)]"
+        role="dialog"
+      >
+        <h2 className="text-base font-semibold text-[var(--foreground-primary)]">{title}</h2>
+        <p className="mt-3 text-[13px] leading-relaxed text-[var(--foreground-muted)]">{message}</p>
+        <div className="mt-4 flex justify-end gap-2">
           <button
-            type="button"
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm"
+            className="inline-flex h-10 min-w-[90px] items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-4 text-[15px] font-medium text-[var(--foreground-primary)] hover:bg-[var(--surface-muted)]"
             onClick={onCancel}
+            type="button"
           >
             {cancelLabel}
           </button>
           <button
-            type="button"
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white"
+            className={`inline-flex h-10 min-w-[120px] items-center justify-center rounded-[var(--radius-sm)] px-4 text-[15px] font-semibold ${confirmClass}`}
             onClick={onConfirm}
+            type="button"
           >
             {confirmLabel}
           </button>

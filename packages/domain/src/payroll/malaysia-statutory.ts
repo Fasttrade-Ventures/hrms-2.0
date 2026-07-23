@@ -1,4 +1,4 @@
-import { ceilToNext5Sen, ceilToNextRinggit, money, roundRinggit, type Money } from "../money.js";
+import { ceilToNext5Sen, ceilToNextRinggit, money, roundRinggit, type Money } from "../money";
 
 export type EpfWageRounding = "none" | "ceil_rm50";
 

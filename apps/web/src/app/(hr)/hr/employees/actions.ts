@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import {
-  createEmployeeSchema,
   emergencyContactSchema,
   updateEmployeeAddressSchema,
   updateEmployeeBankSchema,
@@ -14,6 +13,8 @@ import {
 
 import { logEmployeeEvent } from "@/lib/audit/log-employee-event";
 import { createEmployeeRecord, resendEmployeeActivationEmail } from "@/lib/employees/create-employee";
+import { parseEmployeeProfileFormData } from "@/lib/employees/parse-profile-form";
+import { updateEmployeeFullProfile } from "@/lib/employees/update-employee";
 import { requireRole } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
@@ -47,20 +48,10 @@ export async function createEmployee(
   formData: FormData,
 ): Promise<EmployeeActionState> {
   const session = await requireRole("hr_administrator");
-
-  const parsed = createEmployeeSchema.safeParse({
-    fullName: String(formData.get("fullName") ?? "").trim(),
-    email: String(formData.get("email") ?? "").trim(),
-    employeeNumber: String(formData.get("employeeNumber") ?? "").trim() || undefined,
-    branchId: readOptionalUuid(formData, "branchId"),
-    departmentId: readOptionalUuid(formData, "departmentId"),
-    managerEmployeeId: readOptionalUuid(formData, "managerEmployeeId"),
-    joinDate: String(formData.get("joinDate") ?? "").trim(),
-    sendActivationEmail: readCheckbox(formData, "sendActivationEmail"),
-  });
+  const parsed = parseEmployeeProfileFormData(formData);
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid employee details." };
+    return { error: parsed.error };
   }
 
   try {
@@ -69,13 +60,38 @@ export async function createEmployee(
     revalidatePath("/hr/employees");
 
     if (result.activationEmailError) {
-      redirect(`/hr/employees/${result.employeeId}?created=1&emailWarning=1`);
+      redirect(`/hr/employees/${result.employeeId}/edit?created=1&emailWarning=1`);
     }
 
-    redirect(`/hr/employees/${result.employeeId}?created=1`);
+    redirect(`/hr/employees/${result.employeeId}/edit?created=1`);
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : "Failed to create employee.",
+    };
+  }
+}
+
+export async function updateEmployeeFull(
+  employeeId: string,
+  _prevState: EmployeeActionState,
+  formData: FormData,
+): Promise<EmployeeActionState> {
+  const session = await requireRole("hr_administrator");
+  const parsed = parseEmployeeProfileFormData(formData);
+
+  if (!parsed.success) {
+    return { error: parsed.error };
+  }
+
+  try {
+    await updateEmployeeFullProfile(employeeId, parsed.data, session.user.id);
+    revalidatePath("/hr/employees");
+    revalidatePath(`/hr/employees/${employeeId}`);
+    revalidatePath(`/hr/employees/${employeeId}/edit`);
+    return { success: "Employee profile saved." };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Failed to update employee.",
     };
   }
 }
@@ -359,6 +375,7 @@ export async function deactivateEmployee(
   });
 
   revalidatePath(`/hr/employees/${employeeId}`);
+  revalidatePath(`/hr/employees/${employeeId}/edit`);
   revalidatePath("/hr/employees");
 
   return { success: `Employee marked as ${status}.` };
