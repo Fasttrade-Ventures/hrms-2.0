@@ -32,6 +32,14 @@ export function PortalShell({
             </Link>
           ))}
         </nav>
+        <form action="/api/auth/logout" className="mt-8" method="post">
+          <button
+            className="w-full rounded-md px-3 py-2 text-left text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+            type="submit"
+          >
+            Sign out
+          </button>
+        </form>
       </aside>
       <div className="flex-1 p-8">{children}</div>
     </div>

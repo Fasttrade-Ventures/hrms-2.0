@@ -13,6 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "legacy-import": "tsx scripts/legacy-import/src/index.ts",
+    "bootstrap-admin": "tsx scripts/bootstrap-admin.ts",
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\""
   },
   "devDependencies": {
