@@ -10,6 +10,7 @@ Hand these docs to engineering before implementation.
 | [Development phases](./development-phases.md) | Phased roadmap — auth, portals, modules, cutover |
 | [Auth session policy](./auth-session.md) | Remember me, password rules, route guards |
 | [Bootstrap admin](./bootstrap-admin.md) | First admin account setup |
+| [Seed role accounts](./seed-role-accounts.md) | Demo login for every portal role |
 | [Architecture notes](./architecture-notes.md) | Deployment modes, authz model, packages, data boundaries |
 | [Architecture decisions](./architecture/README.md) | ADRs |
 | [Legacy feature map](./legacy-feature-map/README.md) | Phase 0 baseline — tables, modules, migration domains |
