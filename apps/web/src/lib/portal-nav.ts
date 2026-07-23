@@ -4,6 +4,7 @@ export type PortalNavItem = {
   href: string;
   label: string;
   icon: PortalIconName;
+  children?: PortalNavItem[];
 };
 
 export type PortalNavSection = {
@@ -78,8 +79,28 @@ const hrNav: PortalNavSection[] = [
   {
     label: "People",
     items: [
-      { href: "/hr/employees", label: "Employees", icon: "employees" },
-      { href: "/hr/organization", label: "Organization", icon: "organization" },
+      {
+        href: "/hr/employees",
+        label: "Employees",
+        icon: "employees",
+        children: [
+          { href: "/hr/employees", label: "Directory", icon: "employees" },
+          { href: "/hr/employees/create", label: "Create employee", icon: "apply-behalf" },
+        ],
+      },
+      {
+        href: "/hr/organization",
+        label: "Organization",
+        icon: "organization",
+        children: [
+          { href: "/hr/organization", label: "Overview", icon: "organization" },
+          { href: "/hr/organization/branches", label: "Branches", icon: "organization" },
+          { href: "/hr/organization/departments", label: "Departments", icon: "team-performance" },
+          { href: "/hr/organization/shifts", label: "Shifts", icon: "attendance" },
+          { href: "/hr/organization/holidays", label: "Holidays", icon: "calendar" },
+          { href: "/hr/organization/leave-types", label: "Leave types", icon: "leave" },
+        ],
+      },
       { href: "/hr/apply-behalf", label: "Apply behalf", icon: "apply-behalf" },
     ],
   },
@@ -96,7 +117,12 @@ const hrNav: PortalNavSection[] = [
     label: "Finance & compliance",
     items: [
       { href: "/hr/reports", label: "Reports", icon: "reports" },
-      { href: "/hr/payroll", label: "Payroll", icon: "payroll" },
+      {
+        href: "/hr/payroll",
+        label: "Payroll",
+        icon: "payroll",
+        children: [{ href: "/hr/payroll", label: "Pay runs", icon: "payroll" }],
+      },
       { href: "/hr/audit", label: "Audit", icon: "audit" },
     ],
   },
@@ -141,9 +167,29 @@ export function getPortalNavSections(portal: string): PortalNavSection[] {
   }
 }
 
-/** Flat list for active-path / page-title lookups. */
+function flattenNavItems(items: PortalNavItem[]): PortalNavItem[] {
+  return items.flatMap((item) => {
+    const self = [{ href: item.href, label: item.label, icon: item.icon }];
+    return item.children?.length ? [...self, ...flattenNavItems(item.children)] : self;
+  });
+}
+
+/** Flat list for active-path / page-title lookups (includes nested children). */
 export function getPortalNav(portal: string): PortalNavItem[] {
-  return getPortalNavSections(portal).flatMap((section) => section.items);
+  return getPortalNavSections(portal).flatMap((section) => flattenNavItems(section.items));
+}
+
+/** Prefer the most specific (longest) matching href for page titles. */
+export function resolvePortalNavLabel(portal: string, pathname: string): string | undefined {
+  const matches = getPortalNav(portal)
+    .filter((item) => {
+      if (pathname === item.href) return true;
+      if (item.href.endsWith("/dashboard")) return pathname === item.href;
+      return pathname.startsWith(`${item.href}/`);
+    })
+    .sort((a, b) => b.href.length - a.href.length);
+
+  return matches[0]?.label;
 }
 
 export function getPortalLabel(portal: string): string {

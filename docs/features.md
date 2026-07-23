@@ -45,11 +45,11 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Feature | Tier | UI | Notes |
 |---------|------|-----|--------|
 | Organizations | Core | — | |
-| Branches | Core | 🟡 HR Org | |
-| Departments | Core | 🟡 HR Org | |
-| Positions / job titles | Core | 🟡 HR Org | |
-| Shifts | Core | 🟡 | Used by attendance |
-| Public holidays / observed holidays | Core | 🟡 HR Calendar | |
+| Branches | Core | ✅ HR Org | CRUD under `/hr/organization/branches` |
+| Departments | Core | ✅ HR Org | CRUD under `/hr/organization/departments` |
+| Positions / job titles | Core | 🟡 HR Org | Free-text `job_title` on employees for now |
+| Shifts | Core | ✅ HR Org | CRUD under `/hr/organization/shifts` |
+| Public holidays / observed holidays | Core | ✅ HR Org | Managed under `/hr/organization/holidays`; Calendar consumes |
 | Reporting relationships (manager → team) | Core | — | Drives manager scope |
 | **HR create employee** | Core | ⬜ | Not invite; optional activation email |
 | Employee CSV bulk create | Core | ⬜ | |
@@ -70,7 +70,7 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 
 | Feature | Tier | UI | Notes |
 |---------|------|-----|--------|
-| Leave types & entitlements | Core | — | |
+| Leave types & entitlements | Core | ✅ HR Org | CRUD under `/hr/organization/leave-types` |
 | Apply leave | Core | ✅ Employee | Half-day / multi-day |
 | Working-day calculation | Core | — | Weekends + holidays by branch |
 | Leave attachments | Core | — | e.g. MC |

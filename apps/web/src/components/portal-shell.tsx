@@ -7,31 +7,19 @@ import { EmployeeMobileNav } from "@/components/employee/employee-mobile-nav";
 import { ManagerMobileNav } from "@/components/manager/manager-mobile-nav";
 import { PortalAccountMenu } from "@/components/portal/portal-account-menu";
 import { CloseIcon, MenuIcon } from "@/components/portal/portal-icons";
+import { PortalNavGroup } from "@/components/portal/portal-nav-group";
 import {
   PortalBellButton,
   PortalBrand,
-  PortalNavItem,
   PortalSidebarUserBlock,
 } from "@/components/portal/portal-primitives";
 import {
   getPortalLabel,
-  getPortalNav,
   getPortalNavSections,
   getPortalProfileHref,
   getPortalSettingsHref,
+  resolvePortalNavLabel,
 } from "@/lib/portal-nav";
-
-function isActivePath(pathname: string, href: string): boolean {
-  if (pathname === href) {
-    return true;
-  }
-
-  if (href.endsWith("/dashboard")) {
-    return pathname === href;
-  }
-
-  return pathname.startsWith(`${href}/`) || pathname === href;
-}
 
 function notificationsHref(portal: string): string {
   if (portal === "Manager") return "/manager/notifications";
@@ -62,11 +50,9 @@ export function PortalShell({
 }) {
   const pathname = usePathname();
   const sections = getPortalNavSections(portal);
-  const nav = getPortalNav(portal);
   const portalLabel = getPortalLabel(portal);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const currentPage =
-    nav.find((item) => isActivePath(pathname, item.href))?.label ?? portalLabel;
+  const currentPage = resolvePortalNavLabel(portal, pathname) ?? portalLabel;
   const showMobileNav = portal === "Employee" || portal === "Manager";
   const sidebarUserMuted = portal === "Manager" || portal === "HR Administrator";
   const todayLabel = new Date().toLocaleDateString("en-GB", {
@@ -113,13 +99,11 @@ export function PortalShell({
                 </p>
               ) : null}
               {section.items.map((item) => (
-                <PortalNavItem
-                  active={isActivePath(pathname, item.href)}
-                  href={item.href}
-                  icon={item.icon}
+                <PortalNavGroup
+                  item={item}
                   key={item.href}
-                  label={item.label}
                   onNavigate={() => setMobileOpen(false)}
+                  pathname={pathname}
                 />
               ))}
             </div>

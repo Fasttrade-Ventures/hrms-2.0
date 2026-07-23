@@ -112,7 +112,7 @@ Status legend: ✅ designed · 🟡 partial / needs polish · ⬜ not designed
 | HR Admin / Employee Detail — Employment | HR-editable |
 | HR Admin / Employee Detail — Bank | HR-editable statutory/bank |
 | HR Admin / Employee Detail — Security | |
-| HR Admin / Organization | May need detail polish |
+| HR Admin / Organization | ✅ Hub + Branches / Departments / Shifts / Holidays / Leave types / Form |
 | HR Admin / Apply Behalf | |
 | HR Admin / Documents | |
 | HR Admin / Announcements | |

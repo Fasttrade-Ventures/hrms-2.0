@@ -167,6 +167,7 @@ Phases 1–3 unlock real users. Phases 4–9 deliver product value. Phases 10–
 - [x] Employee detail read/update with RLS
 - [x] Branch / department / manager assignment
 - [x] Deactivate employee (status → inactive/terminated)
+- [x] Organization hub + CRUD: branches, departments, shifts, holidays, leave types
 
 **Exit gate:** HR creates employee → activation email → employee sets password → logs in as Employee portal. *(Verify end-to-end on production.)*
 

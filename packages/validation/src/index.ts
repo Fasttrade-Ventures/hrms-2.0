@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export * from "./employee";
+export * from "./organization";
 
 export const deploymentModeSchema = z.enum(["standalone", "saas"]);
 
