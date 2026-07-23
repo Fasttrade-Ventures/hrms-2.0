@@ -10,3 +10,4 @@ export * from "./storage/r2";
 export * from "./jobs/ledger";
 export * from "./audit/events";
 export * from "./health/check";
+export * from "./mail/resend";

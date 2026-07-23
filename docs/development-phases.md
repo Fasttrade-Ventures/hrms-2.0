@@ -33,7 +33,7 @@ Each phase has:
 | Bootstrap admin account | ✅ Created |
 | Portal routes (Employee, Manager, HR, etc.) | 🟡 Scaffold + shell |
 | Role-based route guards | ✅ Done |
-| HR Create Employee | ❌ Not started |
+| HR Create Employee | 🟡 In progress |
 | Business modules (leave, payroll, …) | ❌ Schema only |
 
 ---
@@ -155,15 +155,15 @@ Phases 1–3 unlock real users. Phases 4–9 deliver product value. Phases 10–
 
 ### Function
 
-- [ ] `POST` create employee: `employees` + `employee_profiles` + `organization_memberships` (roles)
-- [ ] Optional: create `auth.users` + send activation email (Resend)
-- [ ] Employee number generation; uniqueness per org
-- [ ] List employees with search/filter (Documents-style card)
-- [ ] Employee detail read/update with RLS
-- [ ] Branch / department / manager assignment
-- [ ] Deactivate employee (status → inactive/terminated)
+- [x] `POST` create employee: `employees` + `employee_profiles` + `organization_memberships` (roles)
+- [x] Optional: create `auth.users` + send activation email (Resend)
+- [x] Employee number generation; uniqueness per org
+- [x] List employees with search/filter (Documents-style card)
+- [x] Employee detail read/update with RLS
+- [x] Branch / department / manager assignment
+- [x] Deactivate employee (status → inactive/terminated)
 
-**Exit gate:** HR creates employee → activation email → employee sets password → logs in as Employee portal.
+**Exit gate:** HR creates employee → activation email → employee sets password → logs in as Employee portal. *(Verify end-to-end on production.)*
 
 ---
 
