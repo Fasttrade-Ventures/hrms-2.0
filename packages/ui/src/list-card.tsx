@@ -17,13 +17,16 @@ export function ListCard({
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">{header}</div>
-      <div className="divide-y divide-slate-100">
+    <div className="overflow-hidden border border-[var(--border-primary)] bg-[var(--surface-card)]">
+      <div className="border-b border-[var(--border-primary)] bg-[var(--surface-muted)] px-4 py-3">{header}</div>
+      <div className="divide-y divide-[var(--border-primary)]">
         {rows.map((row) => (
           <div key={row.id} className="flex items-center gap-4 px-4 py-4">
             {columns.map((col) => (
-              <div key={col.key} className={col.className ?? "flex-1 text-sm text-slate-700"}>
+              <div
+                key={col.key}
+                className={col.className ?? "flex-1 text-sm text-[var(--foreground-secondary)]"}
+              >
                 {row.cells[col.key]}
               </div>
             ))}

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
-import { PortalShell } from "@/components/portal-shell";
+import { PortalLayout } from "@/components/portal-layout";
 
 export default function ManagerLayout({ children }: { children: ReactNode }) {
-  return <PortalShell portal="Manager">{children}</PortalShell>;
+  return <PortalLayout portal="Manager">{children}</PortalLayout>;
 }

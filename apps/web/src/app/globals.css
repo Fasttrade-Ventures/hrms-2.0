@@ -1,14 +1,24 @@
 @import "tailwindcss";
 
 :root {
-  --accent-primary: #2563eb;
-  --surface-primary: #f8fafc;
+  --accent-primary: #2d5e3a;
+  --accent-hover: #234a2e;
+  --surface-primary: #f5f3ee;
   --surface-card: #ffffff;
-  --foreground-primary: #0f172a;
-  --foreground-muted: #64748b;
+  --surface-muted: #e8e4db;
+  --surface-accent-soft: #e4ede6;
+  --surface-inverse: #1b3a28;
+  --foreground-primary: #1b3a28;
+  --foreground-secondary: #4a6b52;
+  --foreground-muted: #7a8f7e;
+  --border-primary: #d5d0c4;
+  --border-focus: #2d5e3a;
+  --danger: #b42318;
+  --danger-soft: #fee4e2;
 }
 
-.auth-theme {
+.auth-theme,
+.portal-theme {
   --surface-primary: #f5f3ee;
   --surface-card: #ffffff;
   --surface-inverse: #1b3a28;
@@ -32,4 +42,5 @@
 body {
   background: var(--surface-primary);
   color: var(--foreground-primary);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
 }

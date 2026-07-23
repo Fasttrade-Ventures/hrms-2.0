@@ -1,5 +1,7 @@
 import { Placeholder } from "@hrms/ui";
 
+import { PortalPageHeader } from "@/components/portal/portal-primitives";
+
 export function ScaffoldPage({
   title,
   description,
@@ -8,11 +10,8 @@ export function ScaffoldPage({
   description?: string;
 }) {
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        {description ? <p className="mt-1 text-sm text-slate-600">{description}</p> : null}
-      </div>
+    <div className="space-y-6">
+      <PortalPageHeader description={description} title={title} />
       <Placeholder label={`Scaffold: ${title}`} />
     </div>
   );

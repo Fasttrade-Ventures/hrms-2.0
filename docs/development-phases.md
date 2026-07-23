@@ -28,11 +28,11 @@ Each phase has:
 |------|--------|
 | Monorepo, Supabase schema, CI, domain packages | ✅ Done |
 | Infrastructure (Vercel, Supabase, R2, Resend, DNS) | ✅ Live |
-| Auth: login, session, logout, password reset/activate stubs | 🟡 Partial |
-| Auth UI (Forest Sage split layout) | 🟡 Built locally; deploy pending |
+| Auth: login, session, logout, password reset/activate | ✅ Done |
+| Auth UI (Forest Sage split layout) | ✅ Deployed |
 | Bootstrap admin account | ✅ Created |
-| Portal routes (Employee, Manager, HR, etc.) | 🟡 Scaffold only |
-| Role-based route guards | ❌ Not started |
+| Portal routes (Employee, Manager, HR, etc.) | 🟡 Scaffold + shell |
+| Role-based route guards | ✅ Done |
 | HR Create Employee | ❌ Not started |
 | Business modules (leave, payroll, …) | ❌ Schema only |
 
@@ -66,19 +66,19 @@ Phases 1–3 unlock real users. Phases 4–9 deliver product value. Phases 10–
 
 | Screen | Pencil frame | Status | Notes |
 |--------|--------------|--------|-------|
-| Login (standalone) | Auth / Login (Standalone) | 🟡 | Deploy + pixel review |
-| Login (SaaS) | Auth / Login (SaaS) | 🟡 | Register CTA; hidden in standalone |
-| Login mobile | Auth / Login Mobile (×2) | 🟡 | Responsive shell covers both |
-| Forgot password | Auth / Forgot Password | 🟡 | |
-| Reset link sent | Auth / Reset Link Sent | 🟡 | |
-| Reset password | Auth / Reset Password | 🟡 | |
-| Activate account | Auth / Activate Account | 🟡 | Add invite context (org, email, name) |
-| Register org (SaaS) | Auth / Register Organization | 🟡 | UI only until Phase 10 |
+| Login (standalone) | Auth / Login (Standalone) | ✅ | |
+| Login (SaaS) | Auth / Login (SaaS) | ✅ | Register CTA; hidden in standalone |
+| Login mobile | Auth / Login Mobile (×2) | ✅ | Responsive shell covers both |
+| Forgot password | Auth / Forgot Password | ✅ | |
+| Reset link sent | Auth / Reset Link Sent | ✅ | |
+| Reset password | Auth / Reset Password | ✅ | |
+| Activate account | Auth / Activate Account | ✅ | Invite context from session |
+| Register org (SaaS) | Auth / Register Organization | ✅ | UI only until Phase 10 |
 
 **Tasks**
 
-- [x] Deploy auth UI + `/cgi-sys` redirect to production *(pending git push)*
-- [ ] Set `NEXT_PUBLIC_SITE_URL` + Supabase redirect URLs on production *(Vercel / Supabase dashboard)*
+- [x] Deploy auth UI + `/cgi-sys` redirect to production
+- [x] Set `NEXT_PUBLIC_SITE_URL` + Supabase redirect URLs on production
 - [x] Wire “Remember me” — documented in [auth-session.md](./auth-session.md)
 - [x] Activate page: load invite metadata (org name, role, email) from token/session
 - [x] Profile → Change password — `/auth/change-password` + profile security stubs
@@ -93,11 +93,11 @@ Phases 1–3 unlock real users. Phases 4–9 deliver product value. Phases 10–
 | Email + password login | ✅ | |
 | Session refresh (middleware) | ✅ | |
 | Logout | ✅ | |
-| Forgot / reset password email | 🟡 | Needs Resend + Supabase URL config verified on prod |
+| Forgot / reset password email | 🟡 | Verify on production with Resend |
 | Activate via email link | 🟡 | HR create employee sends link (Phase 3) |
 | Post-login redirect by role | ✅ | |
-| **Role-based route guards** | ❌ | Block `/hr/*` for employees, etc. |
-| **Portal layout per role** | ❌ | Only scaffold `PortalShell` today |
+| **Role-based route guards** | ✅ | |
+| **Portal layout per role** | 🟡 | Forest Sage shell in Phase 2 |
 | SaaS org registration API | ❌ | Phase 10 |
 | 2FA | ❌ | Design exists on Manager Profile — later |
 
@@ -122,19 +122,19 @@ Phases 1–3 unlock real users. Phases 4–9 deliver product value. Phases 10–
 
 | Component set | Pencil source | Use |
 |---------------|---------------|-----|
-| Auth components | Auth Components | ✅ Started in `components/auth/` |
-| Portal shell | Portal Components | Sidebar, topbar, nav active/idle, stat cards, status pills, avatars |
+| Auth components | Auth Components | ✅ `components/auth/` |
+| Portal shell | Portal Components | 🟡 Forest Sage shell in `portal-shell.tsx` |
 | List card pattern | Documents-style lists | HR lists, manager inboxes |
 | Empty states | In-page empties | All list screens |
 | Confirm dialog / toast | Shared | Approvals, destructive actions |
 
 ### Function
 
-- [ ] Forest Sage tokens in `globals.css` (or shared package) for **all** portals
-- [ ] `AppShell` / `PortalShell` matching Pencil: sidebar width, nav icons, user menu, sign out
-- [ ] Topbar: page title, breadcrumbs, primary actions
-- [ ] Mobile: collapsible sidebar or bottom nav (follow Pencil mobile frames where they exist)
-- [ ] Loading / error / empty state components in `@hrms/ui`
+- [x] Forest Sage tokens in `globals.css` for auth + portals
+- [x] `PortalShell` matching Pencil: 248px sidebar, nav icons, user menu, sign out
+- [x] Topbar with portal label + user menu
+- [x] Mobile: collapsible sidebar
+- [x] Loading / error / empty state components in `@hrms/ui` (empty, list card, stat card, status pill, avatar)
 
 **Exit gate:** Employee dashboard renders with real shell (not generic scaffold); HR dashboard same shell pattern.
 
