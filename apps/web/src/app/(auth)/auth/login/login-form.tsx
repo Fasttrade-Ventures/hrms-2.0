@@ -4,11 +4,21 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { useSearchParams } from "next/navigation";
 
+import { AuthDivider, AuthError } from "@/components/auth/auth-icons";
+import {
+  AuthCardFooter,
+  AuthCardHeader,
+  AuthCheckbox,
+  AuthPrimaryButton,
+  AuthTextField,
+} from "@/components/auth/auth-primitives";
+import { AuthLink, AuthPasswordField } from "@/components/auth/auth-password-field";
+
 import { login, type LoginState } from "../actions";
 
 const initialState: LoginState = {};
 
-export function LoginForm() {
+export function LoginForm({ showRegister }: { showRegister: boolean }) {
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "";
   const authError = searchParams.get("error");
@@ -20,62 +30,77 @@ export function LoginForm() {
       ? "Your account is not linked to an organization. Contact your HR administrator."
       : authError === "auth_callback_failed"
         ? "Sign-in link expired or is invalid. Try again."
-        : undefined);
+        : authError === "invalid_link"
+          ? "This link is invalid. Request a new one from your HR administrator."
+          : undefined);
 
   return (
-    <form action={formAction} className="space-y-5">
-      {next ? <input name="next" type="hidden" value={next} /> : null}
+    <>
+      <AuthCardHeader
+        subtitle={
+          showRegister
+            ? "Access your organization workspace."
+            : "Enter your work email to continue to your organization."
+        }
+        title="Sign in"
+      />
 
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-slate-700" htmlFor="email">
-          Email
-        </label>
-        <input
+      <form action={formAction} className="space-y-5">
+        {next ? <input name="next" type="hidden" value={next} /> : null}
+
+        <AuthTextField
           autoComplete="email"
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           id="email"
+          label="Email address"
           name="email"
           placeholder="you@company.com"
           required
           type="email"
         />
-      </div>
 
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-medium text-slate-700" htmlFor="password">
-            Password
-          </label>
-          <Link
-            className="text-sm text-blue-600 hover:text-blue-700"
-            href="/auth/forgot-password"
-          >
-            Forgot password?
-          </Link>
-        </div>
-        <input
+        <AuthPasswordField
+          action={<AuthLink href="/auth/forgot-password">Forgot password?</AuthLink>}
           autoComplete="current-password"
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           id="password"
+          label="Password"
           name="password"
           required
-          type="password"
         />
-      </div>
 
-      {errorMessage ? (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {errorMessage}
-        </p>
-      ) : null}
+        <AuthCheckbox defaultChecked id="remember" label="Keep me signed in on this device" name="remember" />
 
-      <button
-        className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-        disabled={pending}
-        type="submit"
-      >
-        {pending ? "Signing in…" : "Sign in"}
-      </button>
-    </form>
+        {errorMessage ? <AuthError>{errorMessage}</AuthError> : null}
+
+        <AuthPrimaryButton disabled={pending} type="submit">
+          {pending ? "Signing in…" : "Sign in"}
+        </AuthPrimaryButton>
+
+        {showRegister ? (
+          <>
+            <AuthDivider />
+            <Link
+              className="flex h-12 w-full items-center justify-center border border-[var(--border-primary)] bg-[var(--surface-card)] px-5 text-[15px] font-medium text-[var(--foreground-primary)] transition-colors hover:bg-[var(--surface-muted)]"
+              href="/auth/register"
+            >
+              Create an organization
+            </Link>
+            <p className="text-center text-[13px] text-[var(--foreground-secondary)]">
+              New here?{" "}
+              <Link className="font-semibold text-[var(--accent-primary)]" href="/auth/register">
+                Register your company
+              </Link>
+            </p>
+            <p className="text-center text-[13px] text-[var(--foreground-muted)]">
+              Already invited? Use the activation link from your email.
+            </p>
+          </>
+        ) : (
+          <AuthCardFooter>
+            <p>Need an account? Ask your HR administrator for an invitation.</p>
+            <p className="text-xs">Secured with organization-scoped access control.</p>
+          </AuthCardFooter>
+        )}
+      </form>
+    </>
   );
 }

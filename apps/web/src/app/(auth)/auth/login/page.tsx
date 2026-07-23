@@ -1,20 +1,40 @@
 import { Suspense } from "react";
 
+import { AuthShell } from "@/components/auth/auth-shell";
+import { isSaasMode } from "@hrms/platform";
+
 import { LoginForm } from "./login-form";
 
-export default function LoginPage() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Sign in</h1>
-        <p className="mt-2 text-sm text-slate-600">
-          Use the email and password provided by your HR administrator.
-        </p>
-      </div>
+const standaloneBrand = {
+  headline: "People operations,\nbuilt for work.",
+  subhead:
+    "Leave, attendance, payroll, and approvals in one secure workplace system — ready for standalone or multi-company use.",
+  features: [
+    "Role-based access for every team",
+    "Malaysia payroll with statutory compliance",
+    "Mobile-friendly employee self-service",
+  ],
+} as const;
 
-      <Suspense fallback={<p className="text-sm text-slate-500">Loading…</p>}>
-        <LoginForm />
+const saasBrand = {
+  headline: "Run HR for\nevery company.",
+  subhead:
+    "Create your organization, invite your team, and manage leave, attendance, and Malaysia payroll in one place.",
+  features: [
+    "Start free with Core HRMS",
+    "Upgrade to Professional automation anytime",
+    "Invite employees with role-based access",
+  ],
+} as const;
+
+export default function LoginPage() {
+  const showRegister = isSaasMode();
+
+  return (
+    <AuthShell brand={showRegister ? saasBrand : standaloneBrand}>
+      <Suspense fallback={<p className="text-sm text-[var(--foreground-muted)]">Loading…</p>}>
+        <LoginForm showRegister={showRegister} />
       </Suspense>
-    </div>
+    </AuthShell>
   );
 }

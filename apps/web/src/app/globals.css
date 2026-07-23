@@ -8,6 +8,27 @@
   --foreground-muted: #64748b;
 }
 
+.auth-theme {
+  --surface-primary: #f5f3ee;
+  --surface-card: #ffffff;
+  --surface-inverse: #1b3a28;
+  --surface-muted: #e8e4db;
+  --surface-accent-soft: #e4ede6;
+  --surface-invite: #234a2e;
+  --foreground-primary: #1b3a28;
+  --foreground-secondary: #4a6b52;
+  --foreground-inverse: #ffffff;
+  --foreground-muted: #7a8f7e;
+  --foreground-inverse-muted: #c5d4c8;
+  --foreground-inverse-accent: #a8c4ae;
+  --border-primary: #d5d0c4;
+  --border-focus: #2d5e3a;
+  --accent-primary: #2d5e3a;
+  --accent-hover: #234a2e;
+  --danger: #b42318;
+  --danger-soft: #fee4e2;
+}
+
 body {
   background: var(--surface-primary);
   color: var(--foreground-primary);

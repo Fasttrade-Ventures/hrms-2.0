@@ -1,6 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useEffect, useRef } from "react";
+
+import { AuthError, MailIcon } from "@/components/auth/auth-icons";
+import {
+  AuthCardHeader,
+  AuthGhostButton,
+  AuthPrimaryButton,
+  AuthTextField,
+} from "@/components/auth/auth-primitives";
 
 import { requestPasswordReset, type LoginState } from "../actions";
 
@@ -10,6 +19,7 @@ export function ForgotPasswordForm() {
   const [state, formAction, pending] = useActionState(requestPasswordReset, initialState);
   const submittedRef = useRef(false);
   const wasPending = useRef(false);
+  const submittedEmail = useRef("");
 
   useEffect(() => {
     if (wasPending.current && !pending && !state.error) {
@@ -20,42 +30,56 @@ export function ForgotPasswordForm() {
 
   if (submittedRef.current && !state.error) {
     return (
-      <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-        If an account exists for that email, a reset link has been sent. Check your inbox.
+      <div className="space-y-6">
+        <div className="flex h-14 w-14 items-center justify-center bg-[var(--surface-accent-soft)] text-[var(--accent-primary)]">
+          <MailIcon />
+        </div>
+        <AuthCardHeader
+          subtitle={`If an account exists for ${submittedEmail.current || "that email"}, you’ll receive an email with a password reset link shortly.`}
+          title="Reset link sent"
+        />
+        <Link className="block" href="/auth/login">
+          <AuthGhostButton type="button">Return to sign in</AuthGhostButton>
+        </Link>
       </div>
     );
   }
 
   return (
-    <form action={formAction} className="space-y-5">
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-slate-700" htmlFor="email">
-          Email
-        </label>
-        <input
+    <>
+      <AuthCardHeader
+        subtitle="Enter your email and we’ll send reset instructions if an account exists."
+        title="Forgot password"
+      />
+
+      <form
+        action={formAction}
+        className="space-y-5"
+        onSubmit={(event) => {
+          const formData = new FormData(event.currentTarget);
+          submittedEmail.current = String(formData.get("email") ?? "");
+        }}
+      >
+        <AuthTextField
           autoComplete="email"
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           id="email"
+          label="Email address"
           name="email"
           placeholder="you@company.com"
           required
           type="email"
         />
-      </div>
 
-      {state.error ? (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {state.error}
-        </p>
-      ) : null}
+        {state.error ? <AuthError>{state.error}</AuthError> : null}
 
-      <button
-        className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-        disabled={pending}
-        type="submit"
-      >
-        {pending ? "Sending…" : "Send reset link"}
-      </button>
-    </form>
+        <AuthPrimaryButton disabled={pending} type="submit">
+          {pending ? "Sending…" : "Send reset link"}
+        </AuthPrimaryButton>
+
+        <Link className="block" href="/auth/login">
+          <AuthGhostButton type="button">Back to sign in</AuthGhostButton>
+        </Link>
+      </form>
+    </>
   );
 }

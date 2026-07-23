@@ -1,26 +1,88 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
-import { ResetPasswordForm } from "../reset-password/reset-password-form";
+import { AuthShell } from "@/components/auth/auth-shell";
+import { AuthGhostButton, AuthCardHeader } from "@/components/auth/auth-primitives";
+import { dashboardPathForRoles } from "@/lib/auth/redirect";
+import { formatPrimaryRoleLabel } from "@/lib/auth/role-labels";
+import { getSession } from "@/lib/auth/session";
+import { createClient } from "@/lib/supabase/server";
 
-export default function ActivatePage() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-          Activate your account
-        </h1>
-        <p className="mt-2 text-sm text-slate-600">
-          Set your password to finish activating your HRMS account.
-        </p>
-      </div>
+import { ActivateAccountForm } from "./activate-form";
 
-      <ResetPasswordForm />
+async function getActivateContext() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-      <p className="text-center text-sm text-slate-600">
-        <Link className="text-blue-600 hover:text-blue-700" href="/auth/login">
-          Back to sign in
+  if (!user) {
+    return null;
+  }
+
+  const session = await getSession();
+
+  if (!session) {
+    return { user, membership: null, organizationName: "Your organization" };
+  }
+
+  const { data: organization } = await supabase
+    .from("organizations")
+    .select("name")
+    .eq("id", session.membership.organizationId)
+    .maybeSingle();
+
+  return {
+    user: session.user,
+    membership: session.membership,
+    organizationName: organization?.name ?? "Your organization",
+  };
+}
+
+export default async function ActivatePage() {
+  const context = await getActivateContext();
+
+  if (!context?.user) {
+    return (
+      <AuthShell
+        brand={{
+          headline: "Welcome to\nyour workplace.",
+          subhead: "Open the activation link from your HR invitation email to continue.",
+          centered: true,
+        }}
+      >
+        <AuthCardHeader
+          subtitle="If your link expired, ask your HR administrator to resend the invitation."
+          title="Activation link required"
+        />
+        <Link className="block" href="/auth/login">
+          <AuthGhostButton type="button">Back to sign in</AuthGhostButton>
         </Link>
-      </p>
-    </div>
+      </AuthShell>
+    );
+  }
+
+  if (!context.membership) {
+    redirect("/auth/login?error=no_membership");
+  }
+
+  const roleLabel = formatPrimaryRoleLabel(context.membership.roles);
+
+  return (
+    <AuthShell
+      brand={{
+        headline: "Welcome to\nyour workplace.",
+        subhead: `You’ve been invited to ${context.organizationName}. Confirm your details and create a password to activate access.`,
+        inviteMeta: {
+          organizationName: context.organizationName,
+          roleLabel,
+        },
+      }}
+    >
+      <ActivateAccountForm
+        defaultFullName={context.user.fullName ?? ""}
+        email={context.user.email ?? ""}
+      />
+    </AuthShell>
   );
 }

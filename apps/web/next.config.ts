@@ -14,6 +14,15 @@ const nextConfig: NextConfig = {
     "@hrms/validation",
     "@hrms/testkit",
   ],
+  async redirects() {
+    return [
+      {
+        source: "/cgi-sys/:path*",
+        destination: "/auth/login",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

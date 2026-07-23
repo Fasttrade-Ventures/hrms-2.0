@@ -5,31 +5,56 @@ import { useActionState } from "react";
 
 import { AuthError } from "@/components/auth/auth-icons";
 import {
+  AuthCardFooter,
   AuthCardHeader,
   AuthGhostButton,
   AuthPrimaryButton,
+  AuthTextField,
 } from "@/components/auth/auth-primitives";
 import { AuthPasswordField } from "@/components/auth/auth-password-field";
 
-import { updatePassword, type LoginState } from "../actions";
+import { activateAccount, type LoginState } from "../actions";
 
 const initialState: LoginState = {};
 
-export function ResetPasswordForm() {
-  const [state, formAction, pending] = useActionState(updatePassword, initialState);
+export function ActivateAccountForm({
+  email,
+  defaultFullName,
+}: {
+  email: string;
+  defaultFullName: string;
+}) {
+  const [state, formAction, pending] = useActionState(activateAccount, initialState);
 
   return (
     <>
       <AuthCardHeader
-        subtitle="This link expires in 1 hour. After saving, you’ll sign in with the new password."
-        title="Set new password"
+        subtitle="Complete your profile to finish onboarding."
+        title="Activate account"
       />
 
       <form action={formAction} className="space-y-5">
+        <AuthTextField
+          defaultValue={defaultFullName}
+          id="fullName"
+          label="Full name"
+          name="fullName"
+          required
+        />
+
+        <AuthTextField
+          defaultValue={email}
+          id="email"
+          label="Work email"
+          muted
+          readOnly
+          type="email"
+        />
+
         <AuthPasswordField
           autoComplete="new-password"
           id="password"
-          label="New password"
+          label="Create password"
           name="password"
           required
         />
@@ -45,8 +70,12 @@ export function ResetPasswordForm() {
         {state.error ? <AuthError>{state.error}</AuthError> : null}
 
         <AuthPrimaryButton disabled={pending} type="submit">
-          {pending ? "Saving…" : "Save password"}
+          {pending ? "Activating…" : "Activate and continue"}
         </AuthPrimaryButton>
+
+        <AuthCardFooter>
+          <p>By activating, you agree to company HR policies and acceptable use guidelines.</p>
+        </AuthCardFooter>
 
         <Link className="block" href="/auth/login">
           <AuthGhostButton type="button">Back to sign in</AuthGhostButton>

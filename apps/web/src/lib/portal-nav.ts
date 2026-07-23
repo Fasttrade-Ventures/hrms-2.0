@@ -21,6 +21,7 @@ const employeeNav: PortalNavItem[] = [
   { href: "/employee/assets", label: "My assets" },
   { href: "/employee/performance", label: "Performance" },
   { href: "/employee/profile", label: "Profile" },
+  { href: "/employee/profile/security", label: "Security" },
 ];
 
 const managerNav: PortalNavItem[] = [
@@ -32,6 +33,7 @@ const managerNav: PortalNavItem[] = [
   { href: "/manager/team-performance", label: "Team performance" },
   { href: "/manager/notifications", label: "Notifications" },
   { href: "/manager/profile", label: "Profile" },
+  { href: "/manager/profile/security", label: "Security" },
 ];
 
 const hrNav: PortalNavItem[] = [
@@ -47,6 +49,7 @@ const hrNav: PortalNavItem[] = [
   { href: "/hr/assets", label: "Assets" },
   { href: "/hr/audit", label: "Audit" },
   { href: "/hr/profile", label: "Profile" },
+  { href: "/hr/profile/security", label: "Security" },
 ];
 
 const authNav: PortalNavItem[] = [

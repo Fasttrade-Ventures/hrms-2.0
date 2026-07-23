@@ -1,13 +1,13 @@
 import { AuthShell } from "@/components/auth/auth-shell";
 
-import { ResetPasswordForm } from "./reset-password-form";
+import { ChangePasswordForm } from "./change-password-form";
 
-export default function ResetPasswordPage() {
+export default function ChangePasswordPage() {
   return (
     <AuthShell
       brand={{
-        headline: "Choose a\nstrong password.",
-        subhead: "Use at least 8 characters with a mix of letters, numbers, and symbols.",
+        headline: "Keep your\naccount secure.",
+        subhead: "Use a strong password that you do not reuse on other sites.",
         rules: [
           "Minimum 8 characters",
           "At least one number",
@@ -15,7 +15,7 @@ export default function ResetPasswordPage() {
         ],
       }}
     >
-      <ResetPasswordForm />
+      <ChangePasswordForm />
     </AuthShell>
   );
 }
