@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
+import { EmployeeMobileNav } from "@/components/employee/employee-mobile-nav";
 import { CloseIcon, MenuIcon } from "@/components/portal/portal-icons";
 import { PortalBrand, PortalNavItem, PortalUserMenu } from "@/components/portal/portal-primitives";
 import { getPortalLabel, getPortalNav } from "@/lib/portal-nav";
@@ -110,7 +111,12 @@ export function PortalShell({
           <PortalUserMenu email={user?.email} name={user?.fullName} />
         </header>
 
-        <main className="flex-1 px-4 py-6 sm:px-8 sm:py-8">{children}</main>
+        <main
+          className={`flex-1 px-4 py-6 sm:px-8 sm:py-8 ${portal === "Employee" ? "pb-24 lg:pb-8" : ""}`}
+        >
+          {children}
+        </main>
+        {portal === "Employee" ? <EmployeeMobileNav /> : null}
       </div>
     </div>
   );

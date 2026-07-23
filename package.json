@@ -15,6 +15,7 @@
     "legacy-import": "tsx scripts/legacy-import/src/index.ts",
     "bootstrap-admin": "tsx scripts/bootstrap-admin.ts",
     "seed-role-accounts": "tsx scripts/seed-role-accounts.ts",
+    "smoke-test": "tsx scripts/smoke-test.ts",
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\""
   },
   "devDependencies": {

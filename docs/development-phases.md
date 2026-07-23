@@ -31,9 +31,9 @@ Each phase has:
 | Auth: login, session, logout, password reset/activate | ✅ Done |
 | Auth UI (Forest Sage split layout) | ✅ Deployed |
 | Bootstrap admin account | ✅ Created |
-| Portal routes (Employee, Manager, HR, etc.) | 🟡 Scaffold + shell |
+| Portal routes (Employee, Manager, HR, etc.) | 🟡 Shell + employee profile (Phase 4 started) |
 | Role-based route guards | ✅ Done |
-| HR Create Employee | 🟡 In progress |
+| HR Create Employee | ✅ Done |
 | Business modules (leave, payroll, …) | ❌ Schema only |
 
 ---
