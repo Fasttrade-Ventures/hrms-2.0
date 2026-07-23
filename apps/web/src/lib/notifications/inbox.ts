@@ -1,13 +1,10 @@
-import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/auth/session";
+import { createClient } from "@/lib/supabase/server";
 
-export type NotificationRow = {
-  id: string;
-  template: string;
-  payload: Record<string, unknown>;
-  status: string;
-  createdAt: string;
-};
+import type { NotificationRow } from "./types";
+
+export type { NotificationRow } from "./types";
+export { formatNotificationMessage } from "./types";
 
 function getOrganizationId(): string {
   const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
@@ -37,12 +34,4 @@ export async function listUserNotifications(): Promise<NotificationRow[]> {
     status: row.status,
     createdAt: row.created_at,
   }));
-}
-
-export function formatNotificationMessage(row: NotificationRow): string {
-  if (row.template === "approval.pending") return "A team member submitted a request for your approval.";
-  if (row.template === "approval.approve") return "Your request was approved.";
-  if (row.template === "approval.reject") return "Your request was rejected.";
-  if (row.template === "announcement.published") return String(row.payload.title ?? "New announcement");
-  return row.template;
 }

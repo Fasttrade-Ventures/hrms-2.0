@@ -7,7 +7,7 @@ import { logAuthEvent } from "@/lib/audit/log-auth-event";
 export async function POST(request: Request) {
   const cookieStore = await cookies();
   const loginUrl = new URL("/auth/login", request.url);
-  let response = NextResponse.redirect(loginUrl);
+  const response = NextResponse.redirect(loginUrl);
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

@@ -4,8 +4,8 @@ import { EmptyState } from "@hrms/ui";
 
 import { formatDateTime } from "@/components/employee/employee-shared";
 import { PortalIcon } from "@/components/portal/portal-icons";
-import type { NotificationRow } from "@/lib/notifications/inbox";
-import { formatNotificationMessage } from "@/lib/notifications/inbox";
+import type { NotificationRow } from "@/lib/notifications/types";
+import { formatNotificationMessage } from "@/lib/notifications/types";
 
 export function NotificationsList({ notifications }: { notifications: NotificationRow[] }) {
   if (notifications.length === 0) {

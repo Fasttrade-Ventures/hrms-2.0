@@ -1,3 +1,5 @@
+"use server";
+
 import type { ClaimRequestInput, LeaveRequestInput } from "@hrms/validation";
 import { claimRequestSchema, leaveRequestSchema } from "@hrms/validation";
 import { revalidatePath } from "next/cache";
@@ -7,7 +9,6 @@ import { clockIn, clockOut } from "@/lib/employee/attendance";
 import { createLeaveRequest } from "@/lib/employee/leave";
 import { requireEmployeeContext } from "@/lib/employee/leave";
 import { submitEmployeeRequest } from "@/lib/employee/submit-request";
-import { requireModule } from "@/lib/entitlements";
 import { createClient } from "@/lib/supabase/server";
 
 export type EmployeeActionState = {
