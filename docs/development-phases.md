@@ -31,7 +31,7 @@ Each phase has:
 | Auth: login, session, logout, password reset/activate | ✅ Done |
 | Auth UI (Forest Sage split layout) | ✅ Deployed |
 | Bootstrap admin account | ✅ Created |
-| Portal routes (Employee, Manager, HR, etc.) | 🟡 Shell + employee profile (Phase 4 started) |
+| Portal routes (Employee, Manager, HR, etc.) | 🟡 Employee portal functional (Phase 4) |
 | Role-based route guards | ✅ Done |
 | HR Create Employee | ✅ Done |
 | Business modules (leave, payroll, …) | ❌ Schema only |
@@ -185,9 +185,18 @@ Implement in order:
 
 ### Function
 
-Per module: API/server actions + RLS + validation. Start with **read-only** where possible, then **create** flows.
+- [x] Dashboard with real leave balance, attendance status, request counts
+- [x] Mobile bottom navigation (Employee portal)
+- [x] Profile read-only (personal, address, security)
+- [x] Leave apply + list + detail (`pending` status, approval stubbed)
+- [x] Attendance clock in/out + recent history + timesheet
+- [x] Manual attendance + report late request forms
+- [x] Claims, OT, replacement credit submit forms
+- [x] Payslips list + detail (from locked payroll items)
+- [x] Announcements, documents, assets read-only lists
+- [x] Default leave/claim types seed (`pnpm seed-org-catalogs`)
 
-**Exit gate:** Employee applies leave (even if approval is stubbed); sees own profile and payslip list.
+**Exit gate:** Employee applies leave → sees request in list → profile + payslip list available. *(Verify on production.)*
 
 ---
 

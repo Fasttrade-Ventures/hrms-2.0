@@ -1,0 +1,211 @@
+import type { LeaveRequestInput } from "@hrms/validation";
+import { countWorkingDays } from "@hrms/domain";
+
+import { requireAuth } from "@/lib/auth/session";
+import { createClient } from "@/lib/supabase/server";
+
+function getOrganizationId(): string {
+  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
+  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
+  return organizationId;
+}
+
+export type LeaveTypeOption = {
+  id: string;
+  name: string;
+  entitlementDays: number;
+  isUnpaid: boolean;
+};
+
+export type LeaveRequestRow = {
+  id: string;
+  leaveTypeName: string;
+  startDate: string;
+  endDate: string;
+  halfDay: boolean;
+  days: number;
+  reason: string | null;
+  status: string;
+  createdAt: string;
+};
+
+export type LeaveBalanceRow = {
+  leaveTypeId: string;
+  leaveTypeName: string;
+  entitlementDays: number;
+  usedDays: number;
+  pendingDays: number;
+  remainingDays: number;
+};
+
+export async function requireEmployeeContext() {
+  const session = await requireAuth();
+  const employeeId = session.membership.employeeId;
+
+  if (!employeeId) {
+    throw new Error("No employee record linked to this account.");
+  }
+
+  return {
+    session,
+    employeeId,
+    organizationId: getOrganizationId(),
+  };
+}
+
+export async function listLeaveTypes(): Promise<LeaveTypeOption[]> {
+  const { organizationId } = await requireEmployeeContext();
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("leave_types")
+    .select("id, name, entitlement_days, is_unpaid")
+    .eq("organization_id", organizationId)
+    .order("name");
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    name: row.name,
+    entitlementDays: Number(row.entitlement_days),
+    isUnpaid: row.is_unpaid,
+  }));
+}
+
+export async function listLeaveRequests(): Promise<LeaveRequestRow[]> {
+  const { employeeId, organizationId } = await requireEmployeeContext();
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("leave_requests")
+    .select("id, start_date, end_date, half_day, days, reason, status, created_at, leave_types(name)")
+    .eq("organization_id", organizationId)
+    .eq("employee_id", employeeId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    leaveTypeName: (row.leave_types as { name?: string } | null)?.name ?? "Leave",
+    startDate: row.start_date,
+    endDate: row.end_date,
+    halfDay: row.half_day,
+    days: Number(row.days),
+    reason: row.reason,
+    status: row.status,
+    createdAt: row.created_at,
+  }));
+}
+
+export async function getLeaveRequest(requestId: string): Promise<LeaveRequestRow | null> {
+  const { employeeId, organizationId } = await requireEmployeeContext();
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("leave_requests")
+    .select("id, start_date, end_date, half_day, days, reason, status, created_at, leave_types(name)")
+    .eq("organization_id", organizationId)
+    .eq("employee_id", employeeId)
+    .eq("id", requestId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+
+  return {
+    id: data.id,
+    leaveTypeName: (data.leave_types as { name?: string } | null)?.name ?? "Leave",
+    startDate: data.start_date,
+    endDate: data.end_date,
+    halfDay: data.half_day,
+    days: Number(data.days),
+    reason: data.reason,
+    status: data.status,
+    createdAt: data.created_at,
+  };
+}
+
+export async function getLeaveBalances(): Promise<LeaveBalanceRow[]> {
+  const { employeeId, organizationId } = await requireEmployeeContext();
+  const supabase = await createClient();
+
+  const [typesResult, requestsResult] = await Promise.all([
+    supabase
+      .from("leave_types")
+      .select("id, name, entitlement_days")
+      .eq("organization_id", organizationId),
+    supabase
+      .from("leave_requests")
+      .select("leave_type_id, days, status")
+      .eq("organization_id", organizationId)
+      .eq("employee_id", employeeId)
+      .in("status", ["pending", "approved"]),
+  ]);
+
+  if (typesResult.error) throw new Error(typesResult.error.message);
+  if (requestsResult.error) throw new Error(requestsResult.error.message);
+
+  return (typesResult.data ?? []).map((type) => {
+    const matching = (requestsResult.data ?? []).filter((row) => row.leave_type_id === type.id);
+    const usedDays = matching
+      .filter((row) => row.status === "approved")
+      .reduce((sum, row) => sum + Number(row.days), 0);
+    const pendingDays = matching
+      .filter((row) => row.status === "pending")
+      .reduce((sum, row) => sum + Number(row.days), 0);
+    const entitlementDays = Number(type.entitlement_days);
+
+    return {
+      leaveTypeId: type.id,
+      leaveTypeName: type.name,
+      entitlementDays,
+      usedDays,
+      pendingDays,
+      remainingDays: Math.max(0, entitlementDays - usedDays - pendingDays),
+    };
+  });
+}
+
+export function calculateLeaveDays(input: LeaveRequestInput): number {
+  const start = new Date(`${input.startDate}T00:00:00`);
+  const end = new Date(`${input.endDate}T00:00:00`);
+
+  if (end < start) {
+    throw new Error("End date must be on or after start date.");
+  }
+
+  return countWorkingDays(start, end, {
+    weekendMode: "sat_sun",
+    halfDay: input.halfDay,
+  });
+}
+
+export async function createLeaveRequest(input: LeaveRequestInput): Promise<string> {
+  const { employeeId, organizationId } = await requireEmployeeContext();
+  const days = calculateLeaveDays(input);
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("leave_requests")
+    .insert({
+      organization_id: organizationId,
+      employee_id: employeeId,
+      leave_type_id: input.leaveTypeId,
+      start_date: input.startDate,
+      end_date: input.endDate,
+      half_day: input.halfDay,
+      days,
+      reason: input.reason ?? null,
+      status: "pending",
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) {
+    throw new Error(error?.message ?? "Failed to create leave request.");
+  }
+
+  return data.id;
+}
