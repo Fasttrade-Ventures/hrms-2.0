@@ -1,11 +1,12 @@
 /** Tenant resolution, entitlements, Supabase, R2, mail, jobs. */
 
-export * from "./deployment.js";
-export * from "./tenant/resolver.js";
-export * from "./entitlements/types.js";
-export * from "./entitlements/env-provider.js";
-export * from "./entitlements/db-provider.js";
-export * from "./env/validate.js";
-export * from "./storage/r2.js";
-export * from "./jobs/ledger.js";
-export * from "./audit/events.js";
+export * from "./deployment";
+export * from "./tenant/resolver";
+export * from "./entitlements/types";
+export * from "./entitlements/env-provider";
+export * from "./entitlements/db-provider";
+export * from "./env/validate";
+export * from "./storage/r2";
+export * from "./jobs/ledger";
+export * from "./audit/events";
+export * from "./health/check";

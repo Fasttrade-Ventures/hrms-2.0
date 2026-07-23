@@ -11,6 +11,7 @@ const envSchema = z.object({
   R2_SECRET_ACCESS_KEY: z.string().optional(),
   R2_BUCKET: z.string().optional(),
   MAIL_FROM: z.string().email().optional(),
+  RESEND_API_KEY: z.string().min(1).optional(),
   PRODUCT_TIER: z.enum(["core", "professional", "enterprise", "pro", "ent"]).optional(),
 });
 

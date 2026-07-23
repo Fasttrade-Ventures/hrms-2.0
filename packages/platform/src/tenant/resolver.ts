@@ -1,7 +1,7 @@
-import { getDeploymentMode } from "../deployment.js";
-import type { EntitlementProvider } from "../entitlements/types.js";
-import { createEnvEntitlementProvider } from "../entitlements/env-provider.js";
-import { createDbEntitlementProvider } from "../entitlements/db-provider.js";
+import { getDeploymentMode } from "../deployment";
+import type { EntitlementProvider } from "../entitlements/types";
+import { createEnvEntitlementProvider } from "../entitlements/env-provider";
+import { createDbEntitlementProvider } from "../entitlements/db-provider";
 
 export type TenantContext = {
   organizationId: string;

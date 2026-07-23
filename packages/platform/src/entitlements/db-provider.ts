@@ -1,5 +1,5 @@
-import type { EntitlementProvider, ModuleKey, ProductTier } from "./types.js";
-import { CORE_MODULES, ENTERPRISE_MODULES, PROFESSIONAL_MODULES } from "./types.js";
+import type { EntitlementProvider, ModuleKey, ProductTier } from "./types";
+import { CORE_MODULES, ENTERPRISE_MODULES, PROFESSIONAL_MODULES } from "./types";
 
 export function createDbEntitlementProvider(config: {
   tier: ProductTier;
