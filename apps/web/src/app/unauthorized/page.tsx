@@ -37,9 +37,14 @@ export default async function UnauthorizedPage({
         <Link className="block" href={dashboardHref}>
           <AuthGhostButton type="button">Go to my dashboard</AuthGhostButton>
         </Link>
-        <Link className="block text-center text-[13px] text-[var(--accent-primary)]" href="/api/auth/logout">
-          Sign out and use another account
-        </Link>
+        <form action="/api/auth/logout" method="post">
+          <button
+            className="w-full text-center text-[13px] text-[var(--accent-primary)] hover:text-[var(--accent-hover)]"
+            type="submit"
+          >
+            Sign out and use another account
+          </button>
+        </form>
       </div>
     </AuthShell>
   );
