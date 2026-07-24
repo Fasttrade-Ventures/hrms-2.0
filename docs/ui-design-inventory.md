@@ -113,7 +113,7 @@ Status legend: ✅ designed · 🟡 partial / needs polish · ⬜ not designed
 | HR Admin / Employee Detail — Bank | HR-editable statutory/bank |
 | HR Admin / Employee Detail — Security | |
 | HR Admin / Organization | ✅ Hub + Branches / Departments / Shifts / Holidays / Leave types / Form |
-| HR Admin / Apply Behalf | |
+| HR Admin / Apply Behalf | ✅ List (`O5t4X5`) + New form (`mFd4A`, auto-approve leave/late) |
 | HR Admin / Documents | |
 | HR Admin / Announcements | |
 | HR Admin / Calendar | |

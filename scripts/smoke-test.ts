@@ -92,16 +92,22 @@ async function runHttpChecks(baseUrl: string) {
   else fail(phase, "GET /unauthorized loads");
 
   const health = await fetch(`${baseUrl}/api/health`);
-  const healthJson = (await health.json()) as {
-    ok?: boolean;
-    services?: { supabase?: { ok?: boolean } };
-  };
+  let healthJson: { ok?: boolean; services?: { supabase?: { ok?: boolean } } } = {};
+  try {
+    healthJson = (await health.json()) as typeof healthJson;
+  } catch {
+    fail(phase, "GET /api/health — Supabase service ok", `status ${health.status} (non-JSON body)`);
+  }
   if (healthJson.services?.supabase?.ok) {
     pass(phase, "GET /api/health — Supabase service ok");
   } else if (health.ok && healthJson.ok) {
     pass(phase, "GET /api/health ok");
-  } else {
-    fail(phase, "GET /api/health — Supabase service ok", `status ${health.status} supabase=${healthJson.services?.supabase?.ok}`);
+  } else if (!results.some((r) => r.name.startsWith("GET /api/health"))) {
+    fail(
+      phase,
+      "GET /api/health — Supabase service ok",
+      `status ${health.status} supabase=${healthJson.services?.supabase?.ok}`,
+    );
   }
 
   const phase2 = "Phase 2";

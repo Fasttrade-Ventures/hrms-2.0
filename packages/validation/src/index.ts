@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export * from "./employee";
 export * from "./organization";
+export * from "./apply-behalf";
 
 export const deploymentModeSchema = z.enum(["standalone", "saas"]);
 

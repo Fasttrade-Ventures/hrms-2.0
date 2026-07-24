@@ -77,7 +77,7 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Leave request detail + timeline | Core | ✅ | Cancel pending |
 | Leave balances | Core | ✅ | On dashboards / apply |
 | Manager leave approval | Core | ✅ | Detail + confirm |
-| HR apply leave on behalf | Core | 🟡 Apply Behalf | |
+| HR apply leave on behalf | Core | ✅ Apply Behalf | Auto-approved |
 | Leave cancel / revoke | Core | — | |
 | My Calendar (approved leave + holidays) | Core | ✅ | Month / list |
 | Team leave (manager) | Core | ✅ + empty | |
@@ -103,7 +103,7 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Report late | Core | ✅ | Same-day + history |
 | Attendance timesheet (month grid / PDF) | Core | ✅ | Codes: hours, AL, MC, HOL, absent, HD |
 | Shift-based lateness rules | Core | — | |
-| HR apply attendance on behalf | Core | 🟡 Apply Behalf | |
+| HR apply attendance on behalf | Core | ✅ Apply Behalf | Late reports auto-approved |
 | GPS / geofencing | Pro | 🟡 overlays designed | |
 | Rosters / work schedules | Pro | ⬜ | |
 | Overnight shifts | Pro | — | |

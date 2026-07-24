@@ -248,11 +248,13 @@ Implement in order:
 
 | Module | HR | Employee | Manager |
 |--------|----|----------|---------|
-| Leave | Apply on behalf, policies | Apply, balance | Approve, team view |
-| Attendance | — | Clock, manual, late | Team attendance |
+| Leave | Apply on behalf (auto-approve), policies | Apply, balance | Approve, team view |
+| Attendance | Apply late on behalf (auto-approve) | Clock, manual, late | Team attendance |
 | Claims | — | Submit | Approve |
 | OT | — | Submit | Approve |
 | Replacement credit | — | Submit | Approve |
+
+**Apply Behalf v1 (shipped):** `/hr/apply-behalf` list + `/hr/apply-behalf/new` for leave and late only. Requests are inserted as `approved` (no manager approval rows). Audit action `hr.apply_behalf`; requester is the target employee.
 
 **Exit gate:** Legacy import dry-run reconciles leave + attendance counts.
 
