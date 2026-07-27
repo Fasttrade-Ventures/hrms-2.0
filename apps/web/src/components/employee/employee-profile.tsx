@@ -5,11 +5,12 @@ import { PortalPageHeader } from "@/components/portal/portal-primitives";
 export function EmployeeProfileTabs({
   active,
 }: {
-  active: "personal" | "address" | "security";
+  active: "personal" | "address" | "payroll" | "security";
 }) {
   const tabs = [
     { id: "personal" as const, label: "Personal", href: "/employee/profile" },
     { id: "address" as const, label: "Address", href: "/employee/profile/address" },
+    { id: "payroll" as const, label: "Payroll", href: "/employee/profile/payroll" },
     { id: "security" as const, label: "Security", href: "/employee/profile/security" },
   ];
 

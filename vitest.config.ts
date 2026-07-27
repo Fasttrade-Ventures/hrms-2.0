@@ -13,6 +13,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      "@": path.resolve(__dirname, "apps/web/src"),
       "@hrms/domain": path.resolve(__dirname, "packages/domain/src/index.ts"),
       "@hrms/platform": path.resolve(__dirname, "packages/platform/src/index.ts"),
       "@hrms/testkit": path.resolve(__dirname, "packages/testkit/src/index.ts"),

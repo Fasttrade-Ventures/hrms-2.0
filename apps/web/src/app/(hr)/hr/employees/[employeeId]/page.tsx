@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { EmployeeDocumentsSection } from "@/components/hr/documents/employee-documents-section";
 import { EmployeeAssetsPanel } from "@/components/hr/employees/employee-assets-panel";
+import { EmployeePayrollSection } from "@/components/hr/payroll/employee-payroll-section";
 import { DeleteEmployeeButton } from "@/components/hr/employees/delete-employee-button";
 import { EmployeeProfileView } from "@/components/hr/employees/employee-profile-view";
 import { HrLinkButton } from "@/components/hr/hr-ui.client";
@@ -11,6 +12,7 @@ import { getEmployeeDetail, listActiveEmployeesForSelect } from "@/lib/employees
 import { listDocumentFolders } from "@/lib/hr/document-folders";
 import { listEmployeeDocumentsForProfile, listRequiredDocuments } from "@/lib/hr/documents";
 import { listActiveAssignmentsForEmployee } from "@/lib/assets/queries";
+import { getEmployeePayrollSectionData } from "@/lib/payroll/employee-payroll-section-data";
 
 export default async function ViewEmployeePage({
   params,
@@ -33,6 +35,8 @@ export default async function ViewEmployeePage({
     notFound();
   }
 
+  const payroll = await getEmployeePayrollSectionData(employee);
+
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <PortalPageHeader
@@ -53,6 +57,14 @@ export default async function ViewEmployeePage({
       />
 
       <EmployeeProfileView employee={employee} />
+
+      <EmployeePayrollSection
+        allowanceComponents={payroll.allowanceComponents}
+        allowances={payroll.allowances}
+        compensation={payroll.compensation}
+        employeeId={employee.id}
+        taxProfile={payroll.taxProfile}
+      />
 
       <EmployeeAssetsPanel
         assignments={assetAssignments}

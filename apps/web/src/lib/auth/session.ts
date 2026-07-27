@@ -95,6 +95,23 @@ export async function requireRole(...allowedRoles: string[]): Promise<AuthSessio
   return session;
 }
 
+export async function requireRoleOrPermission(
+  allowedRoles: string[],
+  allowedPermissions: string[],
+): Promise<AuthSession> {
+  const session = await requireAuth();
+  const hasRole = allowedRoles.some((role) => session.membership.roles.includes(role));
+  const hasPermission = allowedPermissions.some((permission) =>
+    session.membership.permissions.includes(permission),
+  );
+
+  if (!hasRole && !hasPermission) {
+    redirect("/unauthorized");
+  }
+
+  return session;
+}
+
 export async function requireOrgMembership(): Promise<AuthSession> {
   return requireAuth();
 }

@@ -360,6 +360,42 @@ async function runAnnouncementsDbChecks(
   else fail(phase, "asset_assignments table accessible", assetAssignments.error.message);
 }
 
+async function runPayrollHttpChecks(baseUrl: string) {
+  const phase = "Payroll";
+
+  const routes = ["/hr/payroll", "/hr/payroll/new", "/director/payroll"];
+
+  for (const route of routes) {
+    const response = await fetchStatus(`${baseUrl}${route}`);
+    if (response.status === 307 && response.location?.includes("/auth/login")) {
+      pass(phase, `Unauthenticated ${route} redirects to login`);
+    } else {
+      fail(phase, `Unauthenticated ${route} redirects to login`, `status ${response.status}`);
+    }
+  }
+}
+
+async function runPayrollDbChecks(
+  admin: ReturnType<typeof createClient>,
+  organizationId: string,
+) {
+  const phase = "Payroll";
+
+  const tables = [
+    "employee_compensation",
+    "payroll_ytd_balances",
+    "payroll_exports",
+    "payroll_payruns",
+    "payroll_components",
+  ];
+
+  for (const table of tables) {
+    const { error } = await admin.from(table).select("id").eq("organization_id", organizationId).limit(1);
+    if (!error) pass(phase, `${table} table accessible`);
+    else fail(phase, `${table} table accessible`, error.message);
+  }
+}
+
 async function runOrgHttpChecks(baseUrl: string) {
   const phase = "Organization";
 
@@ -620,12 +656,14 @@ async function main() {
   await runDocumentsHttpChecks(baseUrl.replace(/\/$/, ""));
   await runAnnouncementsHttpChecks(baseUrl.replace(/\/$/, ""));
   await runOrgHttpChecks(baseUrl.replace(/\/$/, ""));
+  await runPayrollHttpChecks(baseUrl.replace(/\/$/, ""));
   const admin = await runDbChecks();
   const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
   if (admin && organizationId) {
     await runOrgCatalogChecks(admin, organizationId);
     await runDocumentsDbChecks(admin, organizationId);
     await runAnnouncementsDbChecks(admin, organizationId);
+    await runPayrollDbChecks(admin, organizationId);
   } else {
     fail("Organization", "Organization catalog CRUD", "Skipped — Supabase env not configured");
     fail("Documents", "Documents DB checks", "Skipped — Supabase env not configured");

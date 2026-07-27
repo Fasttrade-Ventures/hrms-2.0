@@ -1,4 +1,4 @@
-import { sendDocumentComplianceEmail } from "@hrms/platform";
+import { sendDocumentComplianceEmail, sendPayslipAvailableEmail } from "@hrms/platform";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -51,6 +51,18 @@ export async function processNotificationOutbox(limit = 25): Promise<{
         status: String(payload.status ?? "missing"),
         expiresAt: typeof payload.expiresAt === "string" ? payload.expiresAt : null,
         audience: row.template === "document_compliance_hr" ? "hr" : "employee",
+      });
+    } else if (row.template === "payroll.payslip_available") {
+      const periodYear = Number(payload.periodYear ?? 0);
+      const periodMonth = Number(payload.periodMonth ?? 0);
+      const periodLabel =
+        periodYear && periodMonth
+          ? `${periodYear}-${String(periodMonth).padStart(2, "0")}`
+          : "this period";
+      result = await sendPayslipAvailableEmail({
+        to: email,
+        periodLabel,
+        payslipPath: String(payload.href ?? "/employee/payslips"),
       });
     }
 

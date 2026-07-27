@@ -42,11 +42,33 @@ const holidayDateSchema = z
 
 export const weekendModeSchema = z.enum(["sat_sun", "fri_sat", "sun_only"]);
 
+export const epfWageRoundingSchema = z.enum(["none", "ceil_rm50"]);
+
 export const createBranchSchema = z.object({
   name: z.string().min(1).max(200),
   state: optionalMalaysianStateSchema,
   weekendMode: weekendModeSchema.default("sat_sun"),
   payrollCutoffDay: z.coerce.number().int().min(1).max(28).default(6),
+  hrdfEnabled: z.coerce.boolean().default(false),
+  hrdfRegistrationNumber: z
+    .string()
+    .max(50)
+    .optional()
+    .transform((value) => (value?.trim() ? value.trim() : null)),
+  hrdfRatePercent: z.coerce.number().min(0).max(100).default(1),
+  lindungEnabled: z.coerce.boolean().default(false),
+  epfEmployerNumber: z
+    .string()
+    .max(50)
+    .optional()
+    .transform((value) => (value?.trim() ? value.trim() : null)),
+  socsoEmployerCode: z
+    .string()
+    .max(50)
+    .optional()
+    .transform((value) => (value?.trim() ? value.trim() : null)),
+  epfWageRounding: epfWageRoundingSchema.default("none"),
+  lindungEmployerRatePercent: z.coerce.number().min(0).max(100).optional(),
 });
 
 export const updateBranchSchema = createBranchSchema;

@@ -199,6 +199,14 @@ export function EmployeeProfileView({ employee }: { employee: EmployeeDetail }) 
             <ProfileField label="Bank" value={employee.profile.bankName ?? "—"} />
             <ProfileField label="Account no" value={employee.profile.bankAccountNumber ?? "—"} />
             <ProfileField label="EPF no" value={employee.profile.epfNumber ?? "—"} />
+            <ProfileField
+              label="EPF employee rate"
+              value={`${employee.profile.epfEmployeeRate}%`}
+            />
+            <ProfileField
+              label="EPF employer rate"
+              value={`${employee.profile.epfEmployerRate}%`}
+            />
             <ProfileField label="SOCSO no" value={employee.profile.socsoNumber ?? "—"} />
             <ProfileField label="Tax no" value={employee.profile.taxNumber ?? "—"} />
           </div>

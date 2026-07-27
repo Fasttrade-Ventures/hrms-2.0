@@ -16,7 +16,9 @@
     "bootstrap-admin": "tsx scripts/bootstrap-admin.ts",
     "seed-role-accounts": "tsx scripts/seed-role-accounts.ts",
     "seed-org-catalogs": "tsx scripts/seed-org-catalogs.ts",
+    "seed-payroll-rules": "tsx scripts/seed-payroll-rules.ts",
     "smoke-test": "tsx scripts/smoke-test.ts",
+    "payroll:payslip-email": "tsx scripts/run-payslip-email-job.ts",
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\""
   },
   "devDependencies": {

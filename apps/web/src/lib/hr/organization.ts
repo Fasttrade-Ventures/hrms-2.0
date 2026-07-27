@@ -37,6 +37,14 @@ export type BranchRow = {
   state: string | null;
   weekendMode: "sat_sun" | "fri_sat" | "sun_only";
   payrollCutoffDay: number;
+  hrdfEnabled: boolean;
+  hrdfRegistrationNumber: string | null;
+  hrdfRate: number;
+  lindungEnabled: boolean;
+  epfEmployerNumber: string | null;
+  socsoEmployerCode: string | null;
+  epfWageRounding: "none" | "ceil_rm50";
+  lindungEmployerRate: number;
   employeeCount: number;
   createdAt: string;
 };
@@ -243,7 +251,9 @@ export async function listBranches(): Promise<BranchRow[]> {
   const [{ data, error }, { data: employees, error: employeeError }] = await Promise.all([
     supabase
       .from("branches")
-      .select("id, name, state, weekend_mode, payroll_cutoff_day, created_at")
+      .select(
+        "id, name, state, weekend_mode, payroll_cutoff_day, hrdf_enabled, hrdf_registration_number, hrdf_rate, lindung_enabled, epf_employer_number, socso_employer_code, epf_wage_rounding, lindung_employer_rate, created_at",
+      )
       .eq("organization_id", organizationId)
       .order("name"),
     supabase.from("employees").select("branch_id").eq("organization_id", organizationId),
@@ -264,6 +274,14 @@ export async function listBranches(): Promise<BranchRow[]> {
     state: row.state ?? null,
     weekendMode: row.weekend_mode,
     payrollCutoffDay: row.payroll_cutoff_day,
+    hrdfEnabled: row.hrdf_enabled,
+    hrdfRegistrationNumber: row.hrdf_registration_number ?? null,
+    hrdfRate: Number(row.hrdf_rate ?? 0.01),
+    lindungEnabled: row.lindung_enabled,
+    epfEmployerNumber: row.epf_employer_number ?? null,
+    socsoEmployerCode: row.socso_employer_code ?? null,
+    epfWageRounding: row.epf_wage_rounding === "ceil_rm50" ? "ceil_rm50" : "none",
+    lindungEmployerRate: Number(row.lindung_employer_rate ?? 0),
     employeeCount: counts.get(row.id) ?? 0,
     createdAt: row.created_at,
   }));

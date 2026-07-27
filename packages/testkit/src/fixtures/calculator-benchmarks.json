@@ -1,0 +1,112 @@
+{
+  "version": "2026.07.28",
+  "authorityOrder": [
+    "kwsp_perkeso_lhdn_official",
+    "fincrew_salary_calculator",
+    "payroll_my",
+    "malaysiasalarycalculator_com"
+  ],
+  "scenarios": [
+    {
+      "id": "B-4000-SINGLE",
+      "description": "RM4000 monthly, single, Cat1 SOCSO, EPF 11/13, no YTD",
+      "inputs": {
+        "gross": 4000,
+        "epfEmployeeRate": 11,
+        "epfEmployerRate": 13,
+        "dateOfBirth": "1990-01-01",
+        "maritalCategory": "single",
+        "childCount": 0,
+        "spouseWorking": null
+      },
+      "hrmsExpected": {
+        "epfEmployee": 440,
+        "epfEmployer": 520,
+        "socsoEmployee": 19.75,
+        "socsoEmployer": 69.15,
+        "eisEmployee": 7.9,
+        "eisEmployer": 7.9,
+        "pcb": 15.85,
+        "netPay": 3517
+      },
+      "external": {
+        "fincrew": {
+          "pcb": 16.75,
+          "netPay": 3515.6,
+          "note": "Default single profile"
+        },
+        "payrollMy": {
+          "note": "Use married+2 children profile separately (B-4000-MARRIED-2C)"
+        },
+        "malaysiaSalaryCalculator": {
+          "socsoEmployee": 6,
+          "eisEmployee": 8,
+          "pcb": 0,
+          "netPay": 3546,
+          "note": "SOCSO/EIS tables appear outdated — do not use as authority"
+        }
+      }
+    },
+    {
+      "id": "B-4000-MARRIED-2C",
+      "description": "RM4000 monthly, married spouse working, 2 children, Cat1 SOCSO",
+      "inputs": {
+        "gross": 4000,
+        "epfEmployeeRate": 11,
+        "epfEmployerRate": 13,
+        "dateOfBirth": "1990-01-01",
+        "maritalCategory": "married",
+        "childCount": 2,
+        "spouseWorking": true
+      },
+      "hrmsExpected": {
+        "epfEmployee": 440,
+        "epfEmployer": 520,
+        "socsoEmployee": 19.75,
+        "socsoEmployer": 69.15,
+        "eisEmployee": 7.9,
+        "eisEmployer": 7.9,
+        "pcb": 0,
+        "netPay": 3532
+      },
+      "external": {
+        "payrollMy": {
+          "socsoEmployee": 49.4,
+          "pcb": 0,
+          "netPay": 3502.7,
+          "note": "SOCSO EE 49.40 does not match PERKESO Cat1 table — verify site config"
+        },
+        "malaysiaSalaryCalculator": {
+          "pcb": 0,
+          "note": "Married threshold RM3851 after EPF — income RM3560 below threshold"
+        }
+      }
+    },
+    {
+      "id": "B-5000-SINGLE",
+      "description": "RM5000 monthly, single, standard statutory",
+      "inputs": {
+        "gross": 5000,
+        "epfEmployeeRate": 11,
+        "epfEmployerRate": 13,
+        "dateOfBirth": "1990-01-01",
+        "maritalCategory": "single",
+        "childCount": 0,
+        "spouseWorking": null
+      },
+      "hrmsExpected": {
+        "epfEmployee": 550,
+        "socsoEmployee": 24.75,
+        "eisEmployee": 9.9,
+        "pcbTolerance": 2
+      },
+      "external": {
+        "malaysiaSalaryCalculator": {
+          "pcb": 97,
+          "netPay": 4335.5,
+          "note": "Reference from site worked example"
+        }
+      }
+    }
+  ]
+}

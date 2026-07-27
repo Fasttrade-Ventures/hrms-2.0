@@ -12,26 +12,6 @@ import type { ReportFilters } from "@/lib/reports/types";
 
 type Option = { id: string; name: string };
 
-function buildHref(pathname: string, filters: ReportFilters): string {
-  const params = new URLSearchParams();
-  if (filters.preset !== "this_month") params.set("preset", filters.preset);
-  if (filters.preset === "custom") {
-    params.set("from", filters.from);
-    params.set("to", filters.to);
-  }
-  if (filters.asOf) params.set("asOf", filters.asOf);
-  if (filters.branchId) params.set("branch", filters.branchId);
-  if (filters.departmentId) params.set("department", filters.departmentId);
-  if (filters.employmentStatus !== "all") params.set("status", filters.employmentStatus);
-  if (filters.employeeQuery) params.set("q", filters.employeeQuery);
-  if (filters.reviewCycleId) params.set("cycle", filters.reviewCycleId);
-  if (filters.assetStatus) params.set("assetStatus", filters.assetStatus);
-  if (filters.assetCategoryId) params.set("assetCategory", filters.assetCategoryId);
-  if (filters.page > 1) params.set("page", String(filters.page));
-  const qs = params.toString();
-  return qs ? `${pathname}?${qs}` : pathname;
-}
-
 export function ReportFilterBar({
   filters,
   definition,
@@ -157,8 +137,4 @@ export function ReportFilterBar({
       </CardContent>
     </Card>
   );
-}
-
-export function reportFiltersHref(pathname: string, filters: ReportFilters): string {
-  return buildHref(pathname, filters);
 }

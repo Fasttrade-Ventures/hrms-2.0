@@ -156,23 +156,23 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 
 | Feature | Tier | UI | Notes |
 |---------|------|-----|--------|
-| Pay groups / earning periods | Core | 🟡 HR Payroll | |
-| Pay components | Core | — | |
-| Absence adjustments | Core | — | |
-| Payrun generate / edit | Core | 🟡 | Draft |
-| Draft → Locked workflow | Core | ⬜ detail | Locked = immutable |
+| Pay groups / earning periods | Core | ✅ HR Payroll | |
+| Pay components | Core | ✅ | Settings + seeded catalog |
+| Absence adjustments | Core | ✅ | Unpaid leave feed |
+| Payrun generate / edit | Core | ✅ | Draft wizard + line edit |
+| Draft → Locked workflow | Core | ✅ | Submit, approve, lock |
 | Employee payslip list | Core | ✅ | |
-| View payslip | Core | ✅ | |
-| Bank export | Core | — | |
-| Statutory reports | Core | — | |
-| EPF (KWSP Third Schedule, effective-dated) | Core | — | |
-| SOCSO / EIS (PERKESO schedules) | Core | — | |
-| LINDUNG 24 Jam (from Jun 2026) | Core | — | |
-| PCB / MTD (LHDN 2026 computerized) | Core | — | |
-| HRD Corp levy | Core | — | |
-| YTD rules | Core | — | |
-| Exact decimal arithmetic | Core | — | No JS floats |
-| Scheduled payslip delivery | Pro | — | |
+| View payslip | Core | ✅ | Component breakdown |
+| Bank export | Core | ✅ | CSV, Maybank, CIMB per branch |
+| Statutory reports | Core | ✅ | EPF, SOCSO, PCB, HRDF per branch |
+| EPF (KWSP Third Schedule, effective-dated) | Core | ✅ | Golden tests |
+| SOCSO / EIS (PERKESO schedules) | Core | ✅ | Golden tests |
+| LINDUNG 24 Jam (from Jun 2026) | Core | ✅ | Optional ER component |
+| PCB / MTD (LHDN 2026 computerized) | Core | ✅ | Golden tests |
+| HRD Corp levy | Core | ✅ | Per-branch toggle |
+| YTD rules | Core | ✅ | Updated on lock + TP3 opening |
+| Exact decimal arithmetic | Core | ✅ | `decimal.js` in domain |
+| Scheduled payslip delivery | Pro | ✅ | `pnpm payroll:payslip-email` |
 | Payroll anomaly checks | Pro | — | |
 | Segregation of payroll duties | Ent | — | |
 

@@ -99,6 +99,9 @@ export async function createEmployeeRecord(
     epf_number: input.epfNumber ?? null,
     socso_number: input.socsoNumber ?? null,
     tax_number: input.taxNumber ?? null,
+    epf_employee_rate: input.epfEmployeeRate ?? 11,
+    epf_employer_rate: input.epfEmployerRate ?? 13,
+    eis_eligible: input.eisEligible ?? true,
     profile_photo_path: input.profilePhotoPath ?? null,
   });
 

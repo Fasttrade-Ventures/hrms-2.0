@@ -350,6 +350,46 @@ export function CreateEmployeeForm({
                 <HrTextInput id="taxNumber" name="taxNumber" />
               </HrField>
             </div>
+            <p className="text-sm text-muted-foreground">
+              EPF rates apply on the next payrun. Extra EPF is added on top of the statutory employee
+              rate.
+            </p>
+            <div className="grid gap-4 md:grid-cols-3">
+              <HrField id="epfEmployeeRate" label="EPF employee rate (%)">
+                <HrTextInput
+                  defaultValue="11"
+                  id="epfEmployeeRate"
+                  max={100}
+                  min={0}
+                  name="epfEmployeeRate"
+                  step="0.01"
+                  type="number"
+                />
+              </HrField>
+              <HrField id="epfEmployerRate" label="EPF employer rate (%)">
+                <HrTextInput
+                  defaultValue="13"
+                  id="epfEmployerRate"
+                  max={100}
+                  min={0}
+                  name="epfEmployerRate"
+                  step="0.01"
+                  type="number"
+                />
+              </HrField>
+              <HrField id="voluntaryEpfExtraRate" label="Extra EPF on top (%)">
+                <HrTextInput
+                  defaultValue="0"
+                  id="voluntaryEpfExtraRate"
+                  max={100}
+                  min={0}
+                  name="voluntaryEpfExtraRate"
+                  step="0.01"
+                  type="number"
+                />
+              </HrField>
+            </div>
+            <HrCheckbox defaultChecked id="eisEligible" label="Eligible for EIS" name="eisEligible" />
         </EmployeeFormPayrollSection>
       </EmployeeFormTabPanel>
 

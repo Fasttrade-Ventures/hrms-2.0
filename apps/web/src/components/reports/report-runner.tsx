@@ -8,6 +8,10 @@ import { HrPagination } from "@/components/hr/hr-ui.client";
 import { HrBanner, HrTableCard } from "@/components/hr/hr-ui";
 import { ReportPrintLayout } from "@/components/reports/report-print-layout";
 import { Button } from "@/components/ui/button";
+import {
+  buildReportPageHref,
+  buildReportPaginationLinks,
+} from "@/lib/reports/filters";
 import type { ReportFilters, ReportSlug } from "@/lib/reports/types";
 
 const EXPORT_ROW_CAP = 5000;
@@ -43,22 +47,8 @@ export function ReportRunner({
   const [error, setError] = useState<string | null>(null);
 
   const pageCount = Math.max(1, Math.ceil(total / filters.pageSize));
-  const paginationHref = (page: number) => {
-    const params = new URLSearchParams();
-    if (filters.preset !== "this_month") params.set("preset", filters.preset);
-    if (filters.preset === "custom") {
-      params.set("from", filters.from);
-      params.set("to", filters.to);
-    }
-    if (filters.asOf) params.set("asOf", filters.asOf);
-    if (filters.branchId) params.set("branch", filters.branchId);
-    if (filters.departmentId) params.set("department", filters.departmentId);
-    if (filters.employmentStatus !== "all") params.set("status", filters.employmentStatus);
-    if (filters.employeeQuery) params.set("q", filters.employeeQuery);
-    if (page > 1) params.set("page", String(page));
-    const qs = params.toString();
-    return qs ? `${basePath}/${slug}?${qs}` : `${basePath}/${slug}`;
-  };
+  const pageHref = (page: number) => buildReportPageHref(basePath, slug, filters, page);
+  const pageLinks = buildReportPaginationLinks(pageCount, filters.page, pageHref);
 
   function handleExport() {
     startTransition(async () => {
@@ -144,18 +134,15 @@ export function ReportRunner({
                   </tbody>
                 </table>
               </div>
-              {pageCount > 1 ? (
+              {total > 0 ? (
                 <div className="border-t px-4 py-3">
                   <HrPagination
                     from={(filters.page - 1) * filters.pageSize + 1}
                     itemLabel="rows"
-                    nextHref={filters.page < pageCount ? paginationHref(filters.page + 1) : undefined}
+                    nextHref={filters.page < pageCount ? pageHref(filters.page + 1) : undefined}
                     page={filters.page}
-                    pageLinks={Array.from({ length: pageCount }, (_, index) => ({
-                      page: index + 1,
-                      href: paginationHref(index + 1),
-                    }))}
-                    prevHref={filters.page > 1 ? paginationHref(filters.page - 1) : undefined}
+                    pageLinks={pageLinks}
+                    prevHref={filters.page > 1 ? pageHref(filters.page - 1) : undefined}
                     to={Math.min(filters.page * filters.pageSize, total)}
                     total={total}
                   />
@@ -164,9 +151,6 @@ export function ReportRunner({
             </>
           )}
         </HrTableCard>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Showing {rows.length} of {total.toLocaleString()} rows
-        </p>
       </div>
 
       <ReportPrintLayout columns={columns} filterSummary={filterSummary} rows={rows} title={title} />

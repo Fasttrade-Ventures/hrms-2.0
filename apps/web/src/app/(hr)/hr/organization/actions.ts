@@ -71,6 +71,14 @@ export async function createBranch(
     state: String(formData.get("state") ?? "").trim(),
     weekendMode: String(formData.get("weekendMode") ?? "sat_sun").trim(),
     payrollCutoffDay: String(formData.get("payrollCutoffDay") ?? "6").trim(),
+    hrdfEnabled: readCheckbox(formData, "hrdfEnabled"),
+    hrdfRegistrationNumber: String(formData.get("hrdfRegistrationNumber") ?? "").trim(),
+    hrdfRatePercent: String(formData.get("hrdfRatePercent") ?? "1").trim(),
+    lindungEnabled: readCheckbox(formData, "lindungEnabled"),
+    epfEmployerNumber: String(formData.get("epfEmployerNumber") ?? "").trim(),
+    socsoEmployerCode: String(formData.get("socsoEmployerCode") ?? "").trim(),
+    epfWageRounding: String(formData.get("epfWageRounding") ?? "none").trim(),
+    lindungEmployerRatePercent: String(formData.get("lindungEmployerRatePercent") ?? "").trim() || undefined,
   });
 
   if (!parsed.success) {
@@ -84,6 +92,17 @@ export async function createBranch(
     state: parsed.data.state,
     weekend_mode: parsed.data.weekendMode,
     payroll_cutoff_day: parsed.data.payrollCutoffDay,
+    hrdf_enabled: parsed.data.hrdfEnabled,
+    hrdf_registration_number: parsed.data.hrdfRegistrationNumber,
+    hrdf_rate: parsed.data.hrdfRatePercent / 100,
+    lindung_enabled: parsed.data.lindungEnabled,
+    epf_employer_number: parsed.data.epfEmployerNumber,
+    socso_employer_code: parsed.data.socsoEmployerCode,
+    epf_wage_rounding: parsed.data.epfWageRounding,
+    lindung_employer_rate:
+      parsed.data.lindungEmployerRatePercent != null
+        ? parsed.data.lindungEmployerRatePercent / 100
+        : 0,
   });
 
   if (error) return { error: error.message };
@@ -105,6 +124,14 @@ export async function updateBranch(
     state: String(formData.get("state") ?? "").trim(),
     weekendMode: String(formData.get("weekendMode") ?? "sat_sun").trim(),
     payrollCutoffDay: String(formData.get("payrollCutoffDay") ?? "6").trim(),
+    hrdfEnabled: readCheckbox(formData, "hrdfEnabled"),
+    hrdfRegistrationNumber: String(formData.get("hrdfRegistrationNumber") ?? "").trim(),
+    hrdfRatePercent: String(formData.get("hrdfRatePercent") ?? "1").trim(),
+    lindungEnabled: readCheckbox(formData, "lindungEnabled"),
+    epfEmployerNumber: String(formData.get("epfEmployerNumber") ?? "").trim(),
+    socsoEmployerCode: String(formData.get("socsoEmployerCode") ?? "").trim(),
+    epfWageRounding: String(formData.get("epfWageRounding") ?? "none").trim(),
+    lindungEmployerRatePercent: String(formData.get("lindungEmployerRatePercent") ?? "").trim() || undefined,
   });
 
   if (!parsed.success) {
@@ -119,6 +146,17 @@ export async function updateBranch(
       state: parsed.data.state,
       weekend_mode: parsed.data.weekendMode,
       payroll_cutoff_day: parsed.data.payrollCutoffDay,
+      hrdf_enabled: parsed.data.hrdfEnabled,
+      hrdf_registration_number: parsed.data.hrdfRegistrationNumber,
+      hrdf_rate: parsed.data.hrdfRatePercent / 100,
+      lindung_enabled: parsed.data.lindungEnabled,
+      epf_employer_number: parsed.data.epfEmployerNumber,
+      socso_employer_code: parsed.data.socsoEmployerCode,
+      epf_wage_rounding: parsed.data.epfWageRounding,
+      lindung_employer_rate:
+        parsed.data.lindungEmployerRatePercent != null
+          ? parsed.data.lindungEmployerRatePercent / 100
+          : 0,
     })
     .eq("id", branchId)
     .eq("organization_id", organizationId);

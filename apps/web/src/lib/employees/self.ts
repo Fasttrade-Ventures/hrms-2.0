@@ -71,11 +71,15 @@ export async function getCurrentEmployeeDetail(): Promise<EmployeeDetail | null>
         socso_number,
         tax_number,
         basic_salary,
+        epf_employee_rate,
+        epf_employer_rate,
+        eis_eligible,
         profile_photo_path
       ),
       employee_emergency_contacts(id, name, relationship, phone),
       employee_dependents(id, dependent_type, full_name, ic_number, is_working, date_of_birth),
       employee_allowed_leave_types(leave_type_id, leave_types(name)),
+      employee_compensation(voluntary_epf_extra_rate),
       organization_memberships(user_id, roles)
     `,
     )
@@ -106,6 +110,9 @@ export async function getCurrentEmployeeDetail(): Promise<EmployeeDetail | null>
   const profile = Array.isArray(employee.employee_profiles)
     ? employee.employee_profiles[0]
     : employee.employee_profiles;
+  const compensation = Array.isArray(employee.employee_compensation)
+    ? employee.employee_compensation[0]
+    : employee.employee_compensation;
   const membership = Array.isArray(employee.organization_memberships)
     ? employee.organization_memberships[0]
     : employee.organization_memberships;
@@ -163,6 +170,10 @@ export async function getCurrentEmployeeDetail(): Promise<EmployeeDetail | null>
       socsoNumber: profile?.socso_number ?? null,
       taxNumber: profile?.tax_number ?? null,
       basicSalary: Number(profile?.basic_salary ?? 0),
+      epfEmployeeRate: Number(profile?.epf_employee_rate ?? 11),
+      epfEmployerRate: Number(profile?.epf_employer_rate ?? 13),
+      eisEligible: profile?.eis_eligible ?? true,
+      voluntaryEpfExtraRate: Number(compensation?.voluntary_epf_extra_rate ?? 0),
       profilePhotoPath: profile?.profile_photo_path ?? null,
       profilePhotoUrl: getEmployeeProfilePhotoUrl(profile?.profile_photo_path ?? null),
     },

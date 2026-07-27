@@ -59,6 +59,42 @@ export default async function PayslipDetailPage({
           <p className="text-sm">{formatCurrency(payslip.socsoEmployer)}</p>
         </div>
       </section>
+
+      <section className="grid gap-6 border border-[var(--border-primary)] bg-[var(--surface-card)] p-6 md:grid-cols-3">
+        <div>
+          <h2 className="mb-3 text-sm font-semibold">Earnings</h2>
+          <ul className="space-y-2 text-sm">
+            {payslip.components.earnings.map((row) => (
+              <li key={row.code} className="flex justify-between gap-4">
+                <span>{row.name}</span>
+                <span className="tabular-nums">{formatCurrency(row.amount)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <h2 className="mb-3 text-sm font-semibold">Deductions</h2>
+          <ul className="space-y-2 text-sm">
+            {payslip.components.deductions.map((row) => (
+              <li key={row.code} className="flex justify-between gap-4">
+                <span>{row.name}</span>
+                <span className="tabular-nums">{formatCurrency(row.amount)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <h2 className="mb-3 text-sm font-semibold">Employer contributions</h2>
+          <ul className="space-y-2 text-sm">
+            {payslip.components.employer.map((row) => (
+              <li key={row.code} className="flex justify-between gap-4">
+                <span>{row.name}</span>
+                <span className="tabular-nums">{formatCurrency(row.amount)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
     </div>
   );
 }

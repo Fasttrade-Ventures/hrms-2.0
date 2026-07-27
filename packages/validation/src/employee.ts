@@ -68,6 +68,10 @@ export const createEmployeeSchema = z.object({
   epfNumber: optionalText,
   socsoNumber: optionalText,
   taxNumber: optionalText,
+  epfEmployeeRate: z.coerce.number().min(0).max(100).optional(),
+  epfEmployerRate: z.coerce.number().min(0).max(100).optional(),
+  eisEligible: z.boolean().optional(),
+  voluntaryEpfExtraRate: z.coerce.number().min(0).max(100).optional(),
   profilePhotoPath: optionalText,
   removeProfilePhoto: z.boolean().optional(),
 

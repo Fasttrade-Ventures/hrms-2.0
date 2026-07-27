@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
 
 import { EditEmployeeForm } from "@/components/hr/employees/edit-employee-form";
+import { EmployeePayrollSection } from "@/components/hr/payroll/employee-payroll-section";
 import { HrLinkButton } from "@/components/hr/hr-ui.client";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { requireRole } from "@/lib/auth/session";
 import { getEmployeeDetail, getEmployeeOptions } from "@/lib/employees/queries";
+import { getEmployeePayrollSectionData } from "@/lib/payroll/employee-payroll-section-data";
 
 export default async function EditEmployeePage({
   params,
@@ -27,6 +29,8 @@ export default async function EditEmployeePage({
     notFound();
   }
 
+  const payroll = await getEmployeePayrollSectionData(employee);
+
   let banner: string | undefined;
 
   if (query.created === "1") {
@@ -37,7 +41,7 @@ export default async function EditEmployeePage({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-6xl space-y-5">
       <PortalPageHeader
         actions={
           <div className="flex flex-wrap gap-2">
@@ -49,7 +53,7 @@ export default async function EditEmployeePage({
             </HrLinkButton>
           </div>
         }
-        description={`${employee.fullName} · ${employee.employeeNumber} — update employment details, personal info, dependents, and emergency contacts.`}
+        description={`${employee.fullName} · ${employee.employeeNumber} — update profile, payroll, and statutory settings on one page.`}
         title="Edit employee"
       />
       <EditEmployeeForm
@@ -61,6 +65,14 @@ export default async function EditEmployeePage({
         managers={options.managers}
         payGroups={options.payGroups}
         shifts={options.shifts}
+      />
+
+      <EmployeePayrollSection
+        allowanceComponents={payroll.allowanceComponents}
+        allowances={payroll.allowances}
+        compensation={payroll.compensation}
+        employeeId={employee.id}
+        taxProfile={payroll.taxProfile}
       />
     </div>
   );

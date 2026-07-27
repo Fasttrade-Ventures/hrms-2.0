@@ -39,5 +39,11 @@ export function formatNotificationMessage(row: NotificationRow): string {
     const status = String(row.payload.status ?? "missing");
     return `${employeeName}'s ${documentType} is ${status}.`;
   }
+  if (row.template === "payroll.payslip_available") {
+    const year = Number(row.payload.periodYear ?? 0);
+    const month = Number(row.payload.periodMonth ?? 0);
+    if (year && month) return `Your ${year}-${String(month).padStart(2, "0")} payslip is ready.`;
+    return "Your payslip is ready.";
+  }
   return row.template;
 }

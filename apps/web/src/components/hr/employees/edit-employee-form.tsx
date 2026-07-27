@@ -515,6 +515,11 @@ export function EditEmployeeForm({
                   />
                 </HrField>
               </div>
+              <p className="text-sm text-muted-foreground">
+                For EPF rates, allowances, and tax (TP1/TP3), use{" "}
+                <span className="font-medium text-foreground">Payroll configuration</span> below — each
+                section saves separately.
+              </p>
             </EmployeeFormPayrollSection>
         </EmployeeFormTabPanel>
 

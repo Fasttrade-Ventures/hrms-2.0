@@ -31,6 +31,7 @@ export const CORE_MODULES: ModuleKey[] = [
   "documents",
   "assets",
   "performance",
+  "payroll",
 ];
 
 export const PROFESSIONAL_MODULES: ModuleKey[] = [
@@ -42,7 +43,6 @@ export const PROFESSIONAL_MODULES: ModuleKey[] = [
 ];
 
 export const ENTERPRISE_MODULES: ModuleKey[] = [
-  "payroll",
   "payouts",
   "audit",
   "api",

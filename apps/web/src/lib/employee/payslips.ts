@@ -20,6 +20,11 @@ export type PayslipDetail = PayslipRow & {
   eisEmployee: number;
   eisEmployer: number;
   pcb: number;
+  components: {
+    earnings: Array<{ code: string; name: string; amount: number }>;
+    deductions: Array<{ code: string; name: string; amount: number }>;
+    employer: Array<{ code: string; name: string; amount: number }>;
+  };
 };
 
 function periodLabel(year: number, month: number): string {
@@ -111,6 +116,30 @@ export async function getPayslip(itemId: string): Promise<PayslipDetail | null> 
     return null;
   }
 
+  const { data: componentRows, error: componentsError } = await supabase
+    .from("payroll_item_components")
+    .select("amount, payroll_components(code, name, component_type)")
+    .eq("payrun_item_id", itemId)
+    .eq("organization_id", organizationId)
+    .order("created_at");
+
+  if (componentsError) throw new Error(componentsError.message);
+
+  const components = (componentRows ?? []).flatMap((row) => {
+    const component = Array.isArray(row.payroll_components)
+      ? row.payroll_components[0]
+      : row.payroll_components;
+    if (!component) return [];
+    return [
+      {
+        code: component.code,
+        name: component.name,
+        componentType: component.component_type as string,
+        amount: Number(row.amount),
+      },
+    ];
+  });
+
   return {
     id: data.id,
     periodYear: payrun.period_year ?? 0,
@@ -127,5 +156,10 @@ export async function getPayslip(itemId: string): Promise<PayslipDetail | null> 
     eisEmployee: Number(data.eis_employee),
     eisEmployer: Number(data.eis_employer),
     pcb: Number(data.pcb),
+    components: {
+      earnings: components.filter((row) => row.componentType === "earning"),
+      deductions: components.filter((row) => row.componentType === "deduction"),
+      employer: components.filter((row) => row.componentType === "employer"),
+    },
   };
 }

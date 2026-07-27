@@ -1,6 +1,5 @@
 "use server";
 
-import type { ClaimRequestInput, LeaveRequestInput } from "@hrms/validation";
 import { claimRequestSchema, leaveRequestSchema } from "@hrms/validation";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -309,4 +308,23 @@ export async function employeeClockOut(): Promise<EmployeeActionState> {
   }
 }
 
-export type { LeaveRequestInput, ClaimRequestInput };
+export async function updateEmployeePayrollDeclarationsAction(
+  _prev: EmployeeActionState,
+  formData: FormData,
+): Promise<EmployeeActionState> {
+  try {
+    const { upsertEmployeePayrollDeclarations } = await import("@/lib/employee/payroll-declarations");
+    await upsertEmployeePayrollDeclarations({
+      zakatAnnual: Number(formData.get("zakatAnnual") ?? 0),
+      zakatMonthly: Number(formData.get("zakatMonthly") ?? 0),
+      otherReliefs: Number(formData.get("otherReliefs") ?? 0),
+      voluntaryEpfExtraRate: Number(formData.get("voluntaryEpfExtraRate") ?? 0),
+    });
+    revalidatePath("/employee/profile/payroll");
+    return { success: "Payroll declarations saved." };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Failed to save payroll declarations.",
+    };
+  }
+}

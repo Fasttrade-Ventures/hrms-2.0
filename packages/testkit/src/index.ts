@@ -3,6 +3,7 @@
 import employeesFixture from "./fixtures/sanitized/employees.json" with { type: "json" };
 import organizationFixture from "./fixtures/sanitized/organization.json" with { type: "json" };
 import payrollGoldenCases from "./fixtures/payroll-golden-cases.json" with { type: "json" };
+import calculatorBenchmarks from "./fixtures/calculator-benchmarks.json" with { type: "json" };
 
 export const TEST_ORGANIZATION_ID = organizationFixture.organization.id;
 
@@ -18,4 +19,8 @@ export function getPayrollGoldenCases() {
   return payrollGoldenCases;
 }
 
-export { employeesFixture, organizationFixture, payrollGoldenCases };
+export function getCalculatorBenchmarks() {
+  return calculatorBenchmarks;
+}
+
+export { employeesFixture, organizationFixture, payrollGoldenCases, calculatorBenchmarks };

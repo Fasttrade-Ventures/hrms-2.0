@@ -1,5 +1,6 @@
 import { buildEmployeeActivationEmail } from "./employee-activation";
 import { buildDocumentComplianceEmail } from "./document-compliance";
+import { buildPayslipAvailableEmail } from "./payslip-available";
 
 type SendResult =
   | { sent: true; id?: string }
@@ -80,6 +81,22 @@ export async function sendEmployeeActivationEmail(input: {
     fullName: input.fullName,
     organizationName: input.organizationName,
     activationLink: input.activationLink,
+  });
+
+  return sendResendEmail({ to: input.to, subject, html, text });
+}
+
+export async function sendPayslipAvailableEmail(input: {
+  to: string;
+  periodLabel: string;
+  payslipPath: string;
+  appOrigin?: string;
+}): Promise<SendResult> {
+  const origin = (input.appOrigin ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
+  const payslipUrl = origin ? `${origin}${input.payslipPath}` : input.payslipPath;
+  const { subject, html, text } = buildPayslipAvailableEmail({
+    periodLabel: input.periodLabel,
+    payslipUrl,
   });
 
   return sendResendEmail({ to: input.to, subject, html, text });

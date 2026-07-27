@@ -101,6 +101,9 @@ const hrNav: PortalNavSection[] = [
           { href: "/hr/organization/shifts", label: "Shifts", icon: "attendance" },
           { href: "/hr/organization/holidays", label: "Holidays", icon: "calendar" },
           { href: "/hr/organization/leave-types", label: "Leave types", icon: "leave" },
+          { href: "/hr/organization/pay-groups", label: "Pay groups", icon: "payroll" },
+          { href: "/hr/organization/payroll-components", label: "Payroll components", icon: "payroll" },
+          { href: "/hr/organization/statutory-rules", label: "Statutory rules", icon: "reports" },
         ],
       },
       { href: "/hr/apply-behalf", label: "Apply behalf", icon: "apply-behalf" },
@@ -123,7 +126,11 @@ const hrNav: PortalNavSection[] = [
         href: "/hr/payroll",
         label: "Payroll",
         icon: "payroll",
-        children: [{ href: "/hr/payroll", label: "Pay runs", icon: "payroll" }],
+        children: [
+          { href: "/hr/payroll", label: "Pay runs", icon: "payroll" },
+          { href: "/hr/payroll/new", label: "New payrun", icon: "payroll" },
+          { href: "/hr/payroll/year-end", label: "Year-end", icon: "reports" },
+        ],
       },
       { href: "/hr/audit", label: "Audit", icon: "audit" },
     ],
@@ -164,6 +171,7 @@ export function getPortalNavSections(portal: string): PortalNavSection[] {
           items: [
             { href: "/director/dashboard", label: "Dashboard", icon: "dashboard" },
             { href: "/director/reports", label: "Reports", icon: "reports" },
+            { href: "/director/payroll", label: "Payroll", icon: "payroll" },
           ],
         },
       ];

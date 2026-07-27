@@ -70,3 +70,51 @@ export function parseReportFilters(
     pageSize,
   };
 }
+
+export function buildReportSearchParams(filters: ReportFilters, page = filters.page): URLSearchParams {
+  const params = new URLSearchParams();
+  if (filters.preset !== "this_month") params.set("preset", filters.preset);
+  if (filters.preset === "custom") {
+    params.set("from", filters.from);
+    params.set("to", filters.to);
+  }
+  if (filters.asOf) params.set("asOf", filters.asOf);
+  if (filters.branchId) params.set("branch", filters.branchId);
+  if (filters.departmentId) params.set("department", filters.departmentId);
+  if (filters.employmentStatus !== "all") params.set("status", filters.employmentStatus);
+  if (filters.employeeQuery) params.set("q", filters.employeeQuery);
+  if (filters.reviewCycleId) params.set("cycle", filters.reviewCycleId);
+  if (filters.assetStatus) params.set("assetStatus", filters.assetStatus);
+  if (filters.assetCategoryId) params.set("assetCategory", filters.assetCategoryId);
+  if (filters.pageSize !== 50) params.set("pageSize", String(filters.pageSize));
+  if (page > 1) params.set("page", String(page));
+  return params;
+}
+
+export function buildReportPageHref(
+  basePath: string,
+  slug: string,
+  filters: ReportFilters,
+  page = filters.page,
+): string {
+  const params = buildReportSearchParams(filters, page);
+  const qs = params.toString();
+  return qs ? `${basePath}/${slug}?${qs}` : `${basePath}/${slug}`;
+}
+
+export function buildReportPaginationLinks(
+  pageCount: number,
+  currentPage: number,
+  hrefForPage: (page: number) => string,
+): Array<{ page: number; href: string }> {
+  if (pageCount <= 0) return [];
+
+  const visibleCount = Math.min(pageCount, 5);
+  const start =
+    pageCount <= 5 ? 1 : Math.min(Math.max(1, currentPage - 2), pageCount - visibleCount + 1);
+
+  return Array.from({ length: visibleCount }, (_, index) => {
+    const page = start + index;
+    return { page, href: hrefForPage(page) };
+  });
+}

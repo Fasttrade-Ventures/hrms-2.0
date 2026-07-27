@@ -5,6 +5,7 @@
  *   set -a && source apps/web/.env.local && set +a
  *   pnpm seed-org-catalogs
  */
+import { PAYROLL_SEED_COMPONENTS } from "@hrms/domain";
 import { createClient } from "@supabase/supabase-js";
 
 const LEAVE_TYPES = [
@@ -58,6 +59,39 @@ async function main() {
   }
 
   console.log("Default leave and claim types seeded for org", organizationId);
+
+  const { data: existingComponents } = await admin
+    .from("payroll_components")
+    .select("code")
+    .eq("organization_id", organizationId);
+  const existingCodes = new Set((existingComponents ?? []).map((row) => row.code));
+  const missingComponents = PAYROLL_SEED_COMPONENTS.filter((component) => !existingCodes.has(component.code));
+
+  if (missingComponents.length > 0) {
+    const { error: payrollError } = await admin.from("payroll_components").insert(
+      missingComponents.map((component) => ({
+        organization_id: organizationId,
+        code: component.code,
+        name: component.name,
+        component_type: component.componentType,
+        is_epf: component.isEpf,
+        is_socso: component.isSocso,
+        is_eis: component.isEis,
+        is_pcb: component.isPcb,
+        is_hrdf: component.isHrdf,
+        is_system: component.isSystem,
+        is_active: true,
+        sort_order: component.sortOrder,
+      })),
+    );
+
+    if (payrollError) {
+      console.error("payroll_components:", payrollError.message);
+      process.exit(1);
+    }
+  }
+
+  console.log("Payroll component catalog seeded for org", organizationId);
 }
 
 main().catch((error) => {

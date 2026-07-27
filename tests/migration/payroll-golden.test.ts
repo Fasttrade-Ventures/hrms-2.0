@@ -7,8 +7,9 @@ import {
   epfEmployer,
   eisEmployee,
   eisEmployer,
-  pcbMtdComputerised,
+  lookupSocsoContribution,
   money,
+  pcbMtdComputerised,
 } from "@hrms/domain";
 
 describe("payroll golden cases", () => {
@@ -35,6 +36,14 @@ describe("payroll golden cases", () => {
       expect(eisEmployer(money(inputs.statutoryWageBase as number), inputs.eisEligible as boolean).toNumber()).toBe(
         expected.eisEmployer,
       );
+    }
+
+    if (testCase.id === "socso-ceiling-6000") {
+      const category = (inputs.socsoCategory as string) === "cat2" ? "cat2" : "cat1";
+      const result = lookupSocsoContribution(money(inputs.statutoryWageBase as number), category);
+      expect(result.wageBand).toBe(expected.wageBand);
+      expect(result.employee.toNumber()).toBe(expected.socsoEmployee);
+      expect(result.employer.toNumber()).toBe(expected.socsoEmployer);
     }
 
     if (testCase.id.startsWith("pcb-")) {

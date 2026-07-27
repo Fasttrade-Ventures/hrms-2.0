@@ -72,11 +72,12 @@
       "description": "SOCSO Cat 1 ceiling RM6000 effective Oct 2024",
       "inputs": {
         "statutoryWageBase": 7500,
-        "socsoCategory": 1
+        "socsoCategory": "cat1"
       },
       "expected": {
-        "wageForSocso": 6000,
-        "note": "Band lookup from malaysia-payroll-official-2026 tables at implementation"
+        "wageBand": 6000,
+        "socsoEmployee": 29.75,
+        "socsoEmployer": 104.15
       }
     }
   ]

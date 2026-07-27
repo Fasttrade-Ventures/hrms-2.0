@@ -68,6 +68,9 @@ export async function updateEmployeeFullProfile(
       epf_number: input.epfNumber ?? null,
       socso_number: input.socsoNumber ?? null,
       tax_number: input.taxNumber ?? null,
+      epf_employee_rate: input.epfEmployeeRate ?? 11,
+      epf_employer_rate: input.epfEmployerRate ?? 13,
+      eis_eligible: input.eisEligible ?? true,
       profile_photo_path: input.profilePhotoPath ?? null,
     })
     .eq("employee_id", employeeId)
@@ -76,6 +79,18 @@ export async function updateEmployeeFullProfile(
   if (profileError) {
     throw new Error(profileError.message);
   }
+
+  await admin.from("employee_compensation").upsert(
+    {
+      employee_id: employeeId,
+      organization_id: organizationId,
+      pay_basis: input.payBasis ?? "monthly",
+      basic_salary: input.basicSalary ?? 0,
+      voluntary_epf_extra_rate: input.voluntaryEpfExtraRate ?? 0,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "employee_id" },
+  );
 
   await admin.from("employee_dependents").delete().eq("employee_id", employeeId);
   if (input.dependents?.length) {
