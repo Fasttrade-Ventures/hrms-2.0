@@ -63,6 +63,22 @@ export function canAccessPortal(
   return requiredRoles.some((role) => userRoles.includes(role));
 }
 
+export function isReportsPath(pathname: string): boolean {
+  return pathname === "/hr/reports" || pathname.startsWith("/hr/reports/");
+}
+
+export function canAccessPath(
+  pathname: string,
+  roles: readonly string[],
+  permissions: readonly string[] = [],
+): boolean {
+  if (isReportsPath(pathname) && permissions.includes("auditor")) {
+    return true;
+  }
+
+  return canAccessPortal(pathname, roles);
+}
+
 export function isSafeInternalPath(path: string): boolean {
   return path.startsWith("/") && !path.startsWith("//") && !path.includes("\\");
 }

@@ -7,6 +7,7 @@ export type UserMembership = {
   organizationId: string;
   employeeId: string | null;
   roles: string[];
+  permissions: string[];
 };
 
 export type AuthSession = {
@@ -24,7 +25,7 @@ async function loadMembership(userId: string): Promise<UserMembership | null> {
 
   let query = supabase
     .from("organization_memberships")
-    .select("organization_id, employee_id, roles")
+    .select("organization_id, employee_id, roles, permissions")
     .eq("user_id", userId);
 
   if (defaultOrgId) {
@@ -41,6 +42,7 @@ async function loadMembership(userId: string): Promise<UserMembership | null> {
     organizationId: data.organization_id,
     employeeId: data.employee_id,
     roles: data.roles ?? [],
+    permissions: data.permissions ?? [],
   };
 }
 

@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { dashboardPathForRoles } from "@/lib/auth/redirect";
 import {
-  canAccessPortal,
+  canAccessPath,
   isAuthEntryPath,
   isPublicAuthPath,
 } from "@/lib/auth/routes";
@@ -17,20 +17,26 @@ function isPublicPath(pathname: string): boolean {
   return false;
 }
 
-async function getMembershipRoles(
+async function getMembership(
   supabase: ReturnType<typeof createServerClient>,
   userId: string,
-): Promise<string[]> {
+): Promise<{ roles: string[]; permissions: string[] }> {
   const defaultOrgId = process.env.DEFAULT_ORGANIZATION_ID;
 
-  let query = supabase.from("organization_memberships").select("roles").eq("user_id", userId);
+  let query = supabase
+    .from("organization_memberships")
+    .select("roles, permissions")
+    .eq("user_id", userId);
 
   if (defaultOrgId) {
     query = query.eq("organization_id", defaultOrgId);
   }
 
   const { data } = await query.maybeSingle();
-  return data?.roles ?? [];
+  return {
+    roles: data?.roles ?? [],
+    permissions: data?.permissions ?? [],
+  };
 }
 
 export async function updateSession(request: NextRequest) {
@@ -87,7 +93,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && !isPublicPath(pathname) && !pathname.startsWith("/api/")) {
-    const roles = await getMembershipRoles(supabase, user.id);
+    const { roles, permissions } = await getMembership(supabase, user.id);
 
     if (roles.length === 0 && !isAuthEntryPath(pathname)) {
       const url = request.nextUrl.clone();
@@ -96,7 +102,7 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    if (!canAccessPortal(pathname, roles)) {
+    if (!canAccessPath(pathname, roles, permissions)) {
       const url = request.nextUrl.clone();
       url.pathname = "/unauthorized";
       url.searchParams.set("from", pathname);
@@ -105,7 +111,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && pathname === "/") {
-    const roles = await getMembershipRoles(supabase, user.id);
+    const { roles } = await getMembership(supabase, user.id);
     const url = request.nextUrl.clone();
     url.pathname = dashboardPathForRoles(roles);
     url.search = "";
