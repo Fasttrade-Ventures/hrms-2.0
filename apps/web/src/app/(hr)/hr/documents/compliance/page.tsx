@@ -1,4 +1,5 @@
 import { ComplianceMatrix } from "@/components/hr/documents/compliance-matrix";
+import { ExportComplianceButton } from "@/components/hr/documents/export-compliance-button";
 import { HrLinkButton, HrPagination } from "@/components/hr/hr-ui.client";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { requireRole } from "@/lib/auth/session";
@@ -40,7 +41,14 @@ export default async function DocumentCompliancePage({
   return (
     <div className="space-y-6">
       <PortalPageHeader
-        actions={<HrLinkButton href="/hr/documents" variant="outline">Back to hub</HrLinkButton>}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <HrLinkButton href="/hr/documents" variant="outline">
+              Back to hub
+            </HrLinkButton>
+            <ExportComplianceButton />
+          </div>
+        }
         description="Track missing, expiring, and valid required documents per employee."
         title="Compliance matrix"
       />

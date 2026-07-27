@@ -9,8 +9,18 @@ export function canAccessReports(session: AuthSession): boolean {
   );
 }
 
+export function canRunOrgReports(session: AuthSession): boolean {
+  return canAccessReports(session) || session.membership.roles.includes("director");
+}
+
 export async function requireReportsAccess(): Promise<AuthSession> {
   const session = await requireAuth();
   if (!canAccessReports(session)) redirect("/unauthorized");
+  return session;
+}
+
+export async function requireReportRunnerAccess(): Promise<AuthSession> {
+  const session = await requireAuth();
+  if (!canRunOrgReports(session)) redirect("/unauthorized");
   return session;
 }

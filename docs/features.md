@@ -246,7 +246,7 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 |---------|------|-----|--------|
 | Employee personal calendar | Core | ✅ | `/employee/calendar` |
 | HR / org calendar & holiday admin | Core | ✅ | `/hr/calendar` + holidays at `/hr/organization/holidays` |
-| HR reports hub | Core | 🟡 | CSV/print |
+| HR reports hub | Core | ✅ | `/hr/reports` — 9 reports, CSV/print, auditor access |
 | Scheduled reports | Pro | — | |
 | HQ / branch analytics | Ent | — | |
 
@@ -260,7 +260,7 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Manager | Core | ✅ | Team + approvals |
 | HR Administrator | Core | 🟡 | People, org, payroll ops, assets, audit, news |
 | Branch Admin | Core | ⬜ | Branch-scoped ops |
-| Director | Core | ⬜ | Org read + approve |
+| Director | Core | 🟡 | Org read + approve; Reports at `/director/reports` |
 | Organization Owner | Core | ⬜ | Full org, modules, settings |
 | Platform Admin | SaaS | ⬜ | Tenant operations only |
 

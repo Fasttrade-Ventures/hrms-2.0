@@ -159,7 +159,14 @@ export function getPortalNavSections(portal: string): PortalNavSection[] {
     case "Branch Admin":
       return singleDashboard("/branch-admin", "Dashboard");
     case "Director":
-      return singleDashboard("/director", "Dashboard");
+      return [
+        {
+          items: [
+            { href: "/director/dashboard", label: "Dashboard", icon: "dashboard" },
+            { href: "/director/reports", label: "Reports", icon: "reports" },
+          ],
+        },
+      ];
     case "Organization Owner":
       return singleDashboard("/owner", "Dashboard");
     case "Platform Admin":

@@ -59,6 +59,100 @@ function employeeNumberForAccount(account: SeedAccount, domain: string): string 
   return `${account.employeeNumber}-${slug}`;
 }
 
+async function seedAuditorAccount(
+  admin: ReturnType<typeof createClient>,
+  organizationId: string,
+  domain: string,
+  password: string,
+  joinDate: string,
+) {
+  const email = `auditor@${domain}`;
+  const label = "Auditor Demo";
+  const employeeNumber = domain === "demo.hrms.local" ? "DEMO-AUD" : `DEMO-AUD-${domain.split(".")[0]?.toUpperCase().slice(0, 6) ?? "ORG"}`;
+
+  const { data: authList } = await admin.auth.admin.listUsers();
+  const existingAuthUser = authList.users.find(
+    (user) => user.email?.toLowerCase() === email.toLowerCase(),
+  );
+
+  let userId = existingAuthUser?.id ?? null;
+  if (!userId) {
+    const { data: created, error } = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name: label },
+    });
+    if (error || !created.user) {
+      console.warn(`Auditor seed skipped: ${error?.message ?? "auth create failed"}`);
+      return;
+    }
+    userId = created.user.id;
+  } else {
+    await admin.auth.admin.updateUserById(userId, {
+      password,
+      email_confirm: true,
+      user_metadata: { full_name: label },
+    });
+  }
+
+  const { data: existingEmployee } = await admin
+    .from("employees")
+    .select("id")
+    .eq("organization_id", organizationId)
+    .eq("email", email)
+    .maybeSingle();
+
+  let employeeId = existingEmployee?.id ?? null;
+  if (!employeeId) {
+    const { data: employee, error } = await admin
+      .from("employees")
+      .insert({
+        organization_id: organizationId,
+        employee_number: employeeNumber,
+        full_name: label,
+        email,
+        status: "active",
+        join_date: joinDate,
+      })
+      .select("id")
+      .single();
+    if (error || !employee) {
+      console.warn(`Auditor seed skipped: ${error?.message ?? "employee create failed"}`);
+      return;
+    }
+    employeeId = employee.id;
+    await admin.from("employee_profiles").insert({
+      employee_id: employeeId,
+      organization_id: organizationId,
+    });
+  }
+
+  const { data: membership } = await admin
+    .from("organization_memberships")
+    .select("id")
+    .eq("organization_id", organizationId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (membership) {
+    await admin
+      .from("organization_memberships")
+      .update({ employee_id: employeeId, roles: ["employee"], permissions: ["auditor"] })
+      .eq("id", membership.id);
+  } else {
+    await admin.from("organization_memberships").insert({
+      organization_id: organizationId,
+      user_id: userId,
+      employee_id: employeeId,
+      roles: ["employee"],
+      permissions: ["auditor"],
+    });
+  }
+
+  console.log(`\nAuditor account: ${email} (permissions: auditor)`);
+}
+
 async function main() {
   const password = getArg("--password");
   const domain = getArg("--domain") ?? "demo.hrms.local";
@@ -252,6 +346,10 @@ async function main() {
   console.log("|------|-------|--------|");
   for (const row of results) {
     console.log(`| ${row.role} | ${row.email} | ${row.status} |`);
+  }
+
+  if (!dryRun) {
+    await seedAuditorAccount(admin, organizationId, domain, password, joinDate);
   }
 
   if (!dryRun) {

@@ -87,6 +87,24 @@ async function runHttpChecks(baseUrl: string) {
     fail(phase, "Unauthenticated /employee/dashboard redirects to login", `status ${employeeGuard.status}`);
   }
 
+  const reportsGuard = await fetchStatus(`${baseUrl}/hr/reports`);
+  if (reportsGuard.status === 307 && reportsGuard.location?.includes("/auth/login")) {
+    pass(phase, "Unauthenticated /hr/reports redirects to login");
+  } else {
+    fail(phase, "Unauthenticated /hr/reports redirects to login", `status ${reportsGuard.status}`);
+  }
+
+  const directorReportsGuard = await fetchStatus(`${baseUrl}/director/reports`);
+  if (directorReportsGuard.status === 307 && directorReportsGuard.location?.includes("/auth/login")) {
+    pass(phase, "Unauthenticated /director/reports redirects to login");
+  } else {
+    fail(
+      phase,
+      "Unauthenticated /director/reports redirects to login",
+      `status ${directorReportsGuard.status}`,
+    );
+  }
+
   const unauthorized = await fetchOk(`${baseUrl}/unauthorized`);
   if (unauthorized) pass(phase, "GET /unauthorized loads");
   else fail(phase, "GET /unauthorized loads");

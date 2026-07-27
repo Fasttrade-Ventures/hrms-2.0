@@ -281,3 +281,19 @@ export async function createAssetRequestAction(
     return { error: error instanceof Error ? error.message : "Failed to submit request." };
   }
 }
+
+export async function exportAssetRegisterCsv() {
+  requireModule("assets");
+  await requireRole("hr_administrator");
+
+  const { listAssets } = await import("@/lib/assets/queries");
+  const { assetsToCsv } = await import("@/lib/assets/export");
+  const { logReportExport } = await import("@/lib/reports/audit");
+  const { parseReportFilters } = await import("@/lib/reports/filters");
+
+  const assets = await listAssets();
+  const filters = parseReportFilters({});
+  await logReportExport({ slug: "asset-register", format: "csv", filters });
+  const date = new Date().toISOString().slice(0, 10);
+  return { csv: assetsToCsv(assets), filename: `asset-register-${date}.csv` };
+}

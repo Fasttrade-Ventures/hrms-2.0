@@ -5,6 +5,7 @@ import { EmptyState, ListCard } from "@hrms/ui";
 import { formatDate } from "@/components/employee/employee-shared";
 import { AssetRegisterFilters, AssetStatusBadge } from "@/components/hr/assets/asset-register-filters";
 import { CreateAssetForm } from "@/components/hr/assets/create-asset-form";
+import { ExportAssetsButton } from "@/components/hr/assets/export-assets-button";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { listAssetCategories } from "@/lib/assets/categories";
 import { parseAssetRegisterFilters } from "@/lib/assets/parse-filters";
@@ -34,7 +35,11 @@ export default async function Page({
 
   return (
     <div className="space-y-8">
-      <PortalPageHeader description="Track company assets and assignments." title="Assets" />
+      <PortalPageHeader
+        actions={<ExportAssetsButton />}
+        description="Track company assets and assignments."
+        title="Assets"
+      />
 
       <AssetRegisterFilters
         branches={branches.map((branch) => ({ id: branch.id, name: branch.name }))}
