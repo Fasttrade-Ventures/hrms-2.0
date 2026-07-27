@@ -1,5 +1,7 @@
+"use client";
+
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 
 import type { PortalIconName } from "./portal-icons";
 import { PortalIcon } from "./portal-icons";
@@ -44,16 +46,47 @@ export function PortalNavItem({
   );
 }
 
-export function PortalAvatar({ name, email }: { name?: string; email?: string }) {
+export function PortalAvatar({
+  name,
+  email,
+  photoUrl,
+  size = "md",
+}: {
+  name?: string;
+  email?: string;
+  photoUrl?: string | null;
+  size?: "md" | "lg";
+}) {
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [photoUrl]);
+
   const label = name?.trim() || email?.trim() || "User";
   const initials = label
     .split(/\s+/)
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("");
+  const sizeClass = size === "lg" ? "h-16 w-16 text-lg" : "h-9 w-9 text-[13px]";
+
+  if (photoUrl && !imageFailed) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        alt={label}
+        className={`${sizeClass} shrink-0 rounded-full object-cover`}
+        onError={() => setImageFailed(true)}
+        src={photoUrl}
+      />
+    );
+  }
 
   return (
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--accent-primary)] text-[13px] font-semibold text-white">
+    <div
+      className={`flex shrink-0 items-center justify-center rounded-full bg-[var(--accent-primary)] font-semibold text-white ${sizeClass}`}
+    >
       {initials || "U"}
     </div>
   );
@@ -113,14 +146,23 @@ export function PortalSidebarUserBlock({
   );
 }
 
-export function PortalBellButton({ href }: { href: string }) {
+export function PortalBellButton({ href, unreadCount = 0 }: { href: string; unreadCount?: number }) {
+  const badgeLabel = unreadCount > 99 ? "99+" : String(unreadCount);
+  const ariaLabel =
+    unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications";
+
   return (
     <Link
-      aria-label="Notifications"
+      aria-label={ariaLabel}
       className="relative flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] text-[var(--foreground-secondary)] transition-colors hover:bg-[var(--surface-muted)]"
       href={href}
     >
       <PortalIcon name="notifications" />
+      {unreadCount > 0 ? (
+        <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent-primary)] px-1 text-[10px] font-semibold leading-none text-white">
+          {badgeLabel}
+        </span>
+      ) : null}
     </Link>
   );
 }
@@ -144,7 +186,7 @@ export function PortalPageHeader({
           <p className="text-sm text-[var(--foreground-secondary)]">{description}</p>
         ) : null}
       </div>
-      {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+      {actions ? <div className="flex flex-wrap items-center justify-end gap-2">{actions}</div> : null}
     </div>
   );
 }

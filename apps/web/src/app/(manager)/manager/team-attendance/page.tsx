@@ -1,6 +1,7 @@
 import { EmptyState, ListCard } from "@hrms/ui";
 
 import { formatDateTime } from "@/components/employee/employee-shared";
+import { TeamDocumentsLink } from "@/components/manager/team-documents-link";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { listTeamAttendance } from "@/lib/manager/team";
 import { requireRole } from "@/lib/auth/session";
@@ -11,7 +12,11 @@ export default async function Page() {
 
   return (
     <div className="space-y-6">
-      <PortalPageHeader description="Recent attendance for your direct reports." title="Team attendance" />
+      <PortalPageHeader
+        actions={<TeamDocumentsLink />}
+        description="Recent attendance for your direct reports."
+        title="Team attendance"
+      />
 
       <ListCard
         columns={[

@@ -16,9 +16,13 @@ import {
   OrgFormActions,
   OrgFormCard,
   OrgStatCards,
+  OrgTableCell,
+  OrgTableEditLink,
+  OrgTableRow,
   OrgTableShell,
-  StatusPill,
+  OrgTableStatus,
 } from "@/components/hr/organization/org-ui";
+import { HrLinkButton } from "@/components/hr/hr-ui.client";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import type { ShiftRow } from "@/lib/hr/organization";
 
@@ -32,18 +36,10 @@ export function ShiftsList({ shifts }: { shifts: ShiftRow[] }) {
       <PortalPageHeader
         actions={
           <div className="flex gap-2">
-            <Link
-              className="inline-flex h-10 items-center rounded-[var(--radius-sm)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-4 text-sm font-medium hover:bg-[var(--surface-muted)]"
-              href="/hr/organization"
-            >
+            <HrLinkButton href="/hr/organization" variant="outline">
               Back to hub
-            </Link>
-            <Link
-              className="inline-flex h-10 items-center rounded-[var(--radius-md)] bg-[var(--accent-primary)] px-4 text-sm font-semibold text-white hover:bg-[var(--accent-hover)]"
-              href="/hr/organization/shifts/create"
-            >
-              Add shift
-            </Link>
+            </HrLinkButton>
+            <HrLinkButton href="/hr/organization/shifts/create">Add shift</HrLinkButton>
           </div>
         }
         description="Attendance patterns assigned on employee profiles."
@@ -69,23 +65,16 @@ export function ShiftsList({ shifts }: { shifts: ShiftRow[] }) {
         isEmpty={shifts.length === 0}
       >
         {shifts.map((shift) => (
-          <div className="grid items-center gap-3 px-3.5 py-3 md:grid-cols-6" key={shift.id}>
-            <p className="text-sm font-semibold text-[var(--foreground-primary)]">{shift.name}</p>
-            <p className="text-sm text-[var(--foreground-secondary)]">
+          <OrgTableRow key={shift.id}>
+            <OrgTableCell variant="name">{shift.name}</OrgTableCell>
+            <OrgTableCell>
               {shift.startTime} – {shift.endTime}
-            </p>
-            <p className="text-sm text-[var(--foreground-muted)]">{shift.graceMinutes} min</p>
-            <p className="text-sm text-[var(--foreground-muted)]">{shift.employeeCount}</p>
-            <StatusPill label="Active" tone="success" />
-            <div>
-              <Link
-                className="inline-flex h-9 items-center rounded-[var(--radius-sm)] border border-[var(--border-primary)] px-3 text-sm font-medium hover:bg-[var(--surface-muted)]"
-                href={`/hr/organization/shifts/${shift.id}/edit`}
-              >
-                Edit
-              </Link>
-            </div>
-          </div>
+            </OrgTableCell>
+            <OrgTableCell variant="muted">{shift.graceMinutes} min</OrgTableCell>
+            <OrgTableCell variant="muted">{shift.employeeCount}</OrgTableCell>
+            <OrgTableStatus />
+            <OrgTableEditLink href={`/hr/organization/shifts/${shift.id}/edit`} />
+          </OrgTableRow>
         ))}
       </OrgTableShell>
     </div>
@@ -103,12 +92,9 @@ export function ShiftForm({ shift }: { shift?: ShiftRow }) {
     <div className="space-y-6">
       <PortalPageHeader
         actions={
-          <Link
-            className="inline-flex h-10 items-center rounded-[var(--radius-sm)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-4 text-sm font-medium hover:bg-[var(--surface-muted)]"
-            href="/hr/organization/shifts"
-          >
+          <HrLinkButton href="/hr/organization/shifts" variant="outline">
             Back to list
-          </Link>
+          </HrLinkButton>
         }
         description="Start and end times use 24-hour clock."
         title={shift ? "Edit shift" : "Create shift"}

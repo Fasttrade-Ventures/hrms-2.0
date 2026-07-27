@@ -1,4 +1,5 @@
 import { requireAuth } from "@/lib/auth/session";
+import { getEmployeeProfilePhotoUrl } from "@/lib/employees/profile-photo";
 import { createClient } from "@/lib/supabase/server";
 
 import type { EmployeeDetail } from "./queries";
@@ -46,6 +47,8 @@ export async function getCurrentEmployeeDetail(): Promise<EmployeeDetail | null>
       annual_leave_carry_forward,
       branches(name),
       departments(name),
+      shifts(name),
+      pay_groups(name),
       employee_profiles(
         phone,
         ic_number,
@@ -54,7 +57,6 @@ export async function getCurrentEmployeeDetail(): Promise<EmployeeDetail | null>
         race,
         religion,
         marital_status,
-        residential_address,
         address_line1,
         address_line2,
         city,
@@ -68,11 +70,12 @@ export async function getCurrentEmployeeDetail(): Promise<EmployeeDetail | null>
         epf_number,
         socso_number,
         tax_number,
-        basic_salary
+        basic_salary,
+        profile_photo_path
       ),
       employee_emergency_contacts(id, name, relationship, phone),
       employee_dependents(id, dependent_type, full_name, ic_number, is_working, date_of_birth),
-      employee_allowed_leave_types(leave_type_id),
+      employee_allowed_leave_types(leave_type_id, leave_types(name)),
       organization_memberships(user_id, roles)
     `,
     )
@@ -130,6 +133,14 @@ export async function getCurrentEmployeeDetail(): Promise<EmployeeDetail | null>
     branchName: (employee.branches as { name?: string } | null)?.name ?? null,
     departmentName: (employee.departments as { name?: string } | null)?.name ?? null,
     managerName,
+    shiftName: (employee.shifts as { name?: string } | null)?.name ?? null,
+    payGroupName: (employee.pay_groups as { name?: string } | null)?.name ?? null,
+    allowedLeaveTypeNames: (employee.employee_allowed_leave_types ?? [])
+      .map((row: { leave_types?: { name?: string } | { name?: string }[] | null }) => {
+        const leaveType = Array.isArray(row.leave_types) ? row.leave_types[0] : row.leave_types;
+        return leaveType?.name ?? null;
+      })
+      .filter((name): name is string => Boolean(name)),
     profile: {
       phone: profile?.phone ?? null,
       icNumber: profile?.ic_number ?? null,
@@ -138,7 +149,6 @@ export async function getCurrentEmployeeDetail(): Promise<EmployeeDetail | null>
       race: profile?.race ?? null,
       religion: profile?.religion ?? null,
       maritalStatus: profile?.marital_status ?? null,
-      residentialAddress: profile?.residential_address ?? null,
       addressLine1: profile?.address_line1 ?? null,
       addressLine2: profile?.address_line2 ?? null,
       city: profile?.city ?? null,
@@ -153,6 +163,8 @@ export async function getCurrentEmployeeDetail(): Promise<EmployeeDetail | null>
       socsoNumber: profile?.socso_number ?? null,
       taxNumber: profile?.tax_number ?? null,
       basicSalary: Number(profile?.basic_salary ?? 0),
+      profilePhotoPath: profile?.profile_photo_path ?? null,
+      profilePhotoUrl: getEmployeeProfilePhotoUrl(profile?.profile_photo_path ?? null),
     },
     dependents: (employee.employee_dependents ?? []).map(
       (dependent: {

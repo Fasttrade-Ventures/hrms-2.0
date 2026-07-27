@@ -1,9 +1,50 @@
 import { z } from "zod";
 
+export const HOLIDAY_YEAR_WINDOW = 2;
+
+export const MALAYSIAN_STATE_VALUES = [
+  "Johor",
+  "Kedah",
+  "Kelantan",
+  "Melaka",
+  "Negeri Sembilan",
+  "Pahang",
+  "Perak",
+  "Perlis",
+  "Pulau Pinang",
+  "Sabah",
+  "Sarawak",
+  "Selangor",
+  "Terengganu",
+  "Wilayah Persekutuan Kuala Lumpur",
+  "Wilayah Persekutuan Labuan",
+  "Wilayah Persekutuan Putrajaya",
+] as const;
+
+const malaysianStateSchema = z.enum(MALAYSIAN_STATE_VALUES);
+
+const optionalMalaysianStateSchema = z
+  .union([malaysianStateSchema, z.literal("")])
+  .optional()
+  .transform((value) => (value ? value : null));
+
+function isHolidayYearAllowed(year: number) {
+  const currentYear = new Date().getFullYear();
+  return year >= currentYear - HOLIDAY_YEAR_WINDOW && year <= currentYear + HOLIDAY_YEAR_WINDOW;
+}
+
+const holidayDateSchema = z
+  .string()
+  .date()
+  .refine((date) => isHolidayYearAllowed(Number(date.slice(0, 4))), {
+    message: `Holiday date must be within the current year ±${HOLIDAY_YEAR_WINDOW} years.`,
+  });
+
 export const weekendModeSchema = z.enum(["sat_sun", "fri_sat", "sun_only"]);
 
 export const createBranchSchema = z.object({
   name: z.string().min(1).max(200),
+  state: optionalMalaysianStateSchema,
   weekendMode: weekendModeSchema.default("sat_sun"),
   payrollCutoffDay: z.coerce.number().int().min(1).max(28).default(6),
 });
@@ -28,11 +69,30 @@ export const updateShiftSchema = createShiftSchema;
 
 export const createHolidaySchema = z.object({
   name: z.string().min(1).max(200),
-  holidayDate: z.string().date(),
+  holidayDate: holidayDateSchema,
   branchId: z.string().uuid().optional().nullable(),
 });
 
 export const updateHolidaySchema = createHolidaySchema;
+
+export const importHolidaysSchema = z.object({
+  branchId: z.string().uuid(),
+  year: z.coerce
+    .number()
+    .int()
+    .refine(isHolidayYearAllowed, {
+      message: `Import year must be within the current year ±${HOLIDAY_YEAR_WINDOW} years.`,
+    }),
+});
+
+export const listHolidaysSchema = z.object({
+  year: z.coerce.number().int(),
+  branchId: z.string().default("all"),
+  sort: z.enum(["date", "name", "scope", "created"]).default("date"),
+  order: z.enum(["asc", "desc"]).default("asc"),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(5).max(50).default(15),
+});
 
 export const createLeaveTypeSchema = z.object({
   name: z.string().min(1).max(200),
@@ -53,3 +113,5 @@ export type CreateHolidayInput = z.infer<typeof createHolidaySchema>;
 export type UpdateHolidayInput = z.infer<typeof updateHolidaySchema>;
 export type CreateLeaveTypeInput = z.infer<typeof createLeaveTypeSchema>;
 export type UpdateLeaveTypeInput = z.infer<typeof updateLeaveTypeSchema>;
+export type ImportHolidaysInput = z.infer<typeof importHolidaysSchema>;
+export type ListHolidaysInput = z.infer<typeof listHolidaysSchema>;

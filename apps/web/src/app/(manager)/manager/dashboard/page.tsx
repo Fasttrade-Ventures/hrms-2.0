@@ -2,24 +2,42 @@ import Link from "next/link";
 
 import { EmptyState, ListCard, StatusPill, StatCard } from "@hrms/ui";
 
+import { AnnouncementDashboardWidget } from "@/components/announcements/announcement-dashboard-widget";
 import { PortalHeroBanner } from "@/components/portal/portal-section";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { PortalIcon } from "@/components/portal/portal-icons";
 import { countPendingApprovals, listManagerApprovals } from "@/lib/manager/approvals";
+import { requireManagerContext } from "@/lib/manager/context";
 import { countDirectReports } from "@/lib/manager/team";
-import { requireRole } from "@/lib/auth/session";
+import {
+  getAnnouncementViewer,
+  listDashboardAnnouncementItems,
+} from "@/lib/announcements/queries";
+import { requireModule } from "@/lib/entitlements";
 import { firstNameFromFullName, getCurrentEmployeeDetail, greetingForHour } from "@/lib/employees/self";
 
 export default async function Page() {
-  await requireRole("manager");
+  requireModule("announcements");
+  const managerContext = await requireManagerContext();
   const hour = new Date().getHours();
   const employee = await getCurrentEmployeeDetail();
   const firstName = firstNameFromFullName(employee?.fullName, employee?.email);
 
-  const [pending, teamSize, queue] = await Promise.all([
+  const viewer = await getAnnouncementViewer({
+    organizationId: managerContext.organizationId,
+    employeeId: managerContext.employeeId,
+    roles: managerContext.session.membership.roles,
+  });
+
+  const [pending, teamSize, queue, announcementFeed] = await Promise.all([
     countPendingApprovals().catch(() => 0),
     countDirectReports().catch(() => 0),
     listManagerApprovals().catch(() => []),
+    listDashboardAnnouncementItems({
+      organizationId: managerContext.organizationId,
+      viewer,
+      userId: managerContext.session.user.id,
+    }).catch(() => ({ pinned: [], latest: [] })),
   ]);
 
   return (
@@ -105,6 +123,12 @@ export default async function Page() {
         }))}
       />
 
+      <AnnouncementDashboardWidget
+        basePath="/manager/announcements"
+        items={announcementFeed.latest}
+        pinnedItems={announcementFeed.pinned}
+      />
+
       <div className="flex flex-wrap gap-3">
         <Link
           className="rounded-[var(--radius-md)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-4 py-2.5 text-sm font-medium hover:bg-[var(--surface-muted)]"
@@ -117,6 +141,12 @@ export default async function Page() {
           href="/manager/team-attendance"
         >
           Team attendance
+        </Link>
+        <Link
+          className="rounded-[var(--radius-md)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-4 py-2.5 text-sm font-medium hover:bg-[var(--surface-muted)]"
+          href="/manager/team-documents"
+        >
+          Team documents
         </Link>
         <Link
           className="rounded-[var(--radius-md)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-4 py-2.5 text-sm font-medium hover:bg-[var(--surface-muted)]"

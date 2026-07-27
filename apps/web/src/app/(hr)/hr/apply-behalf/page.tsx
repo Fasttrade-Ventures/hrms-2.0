@@ -7,13 +7,22 @@ import { listBehalfApplications } from "@/lib/hr/apply-behalf";
 export default async function ApplyBehalfPage({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string; range?: string; created?: string }>;
+  searchParams: Promise<{
+    type?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    page?: string;
+    created?: string;
+  }>;
 }) {
   await requireRole("hr_administrator");
   const params = await searchParams;
   const filters = applyBehalfListFilterSchema.parse({
     type: params.type ?? "all",
-    range: params.range ?? "all",
+    dateFrom: params.dateFrom ?? "",
+    dateTo: params.dateTo ?? "",
+    page: params.page ?? 1,
+    pageSize: 15,
   });
 
   const data = await listBehalfApplications(filters);
@@ -26,7 +35,11 @@ export default async function ApplyBehalfPage({
     <ApplyBehalfList
       banner={banner}
       data={data}
-      range={filters.range}
+      dateFrom={filters.dateFrom}
+      dateTo={filters.dateTo}
+      page={data.page}
+      pageSize={data.pageSize}
+      total={data.total}
       type={filters.type}
     />
   );

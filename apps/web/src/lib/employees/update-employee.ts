@@ -54,7 +54,6 @@ export async function updateEmployeeFullProfile(
       race: input.race ?? null,
       religion: input.religion ?? null,
       marital_status: input.maritalStatus ?? null,
-      residential_address: input.residentialAddress ?? null,
       address_line1: input.addressLine1 ?? null,
       address_line2: input.addressLine2 ?? null,
       city: input.city ?? null,
@@ -69,6 +68,7 @@ export async function updateEmployeeFullProfile(
       epf_number: input.epfNumber ?? null,
       socso_number: input.socsoNumber ?? null,
       tax_number: input.taxNumber ?? null,
+      profile_photo_path: input.profilePhotoPath ?? null,
     })
     .eq("employee_id", employeeId)
     .eq("organization_id", organizationId);

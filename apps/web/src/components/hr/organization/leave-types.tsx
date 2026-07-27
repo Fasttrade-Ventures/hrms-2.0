@@ -17,9 +17,13 @@ import {
   OrgFormActions,
   OrgFormCard,
   OrgStatCards,
+  OrgTableCell,
+  OrgTableEditLink,
+  OrgTableRow,
   OrgTableShell,
-  StatusPill,
+  OrgTableStatus,
 } from "@/components/hr/organization/org-ui";
+import { HrLinkButton } from "@/components/hr/hr-ui.client";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import type { LeaveTypeRow } from "@/lib/hr/organization";
 
@@ -34,18 +38,10 @@ export function LeaveTypesList({ leaveTypes }: { leaveTypes: LeaveTypeRow[] }) {
       <PortalPageHeader
         actions={
           <div className="flex gap-2">
-            <Link
-              className="inline-flex h-10 items-center rounded-[var(--radius-sm)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-4 text-sm font-medium hover:bg-[var(--surface-muted)]"
-              href="/hr/organization"
-            >
+            <HrLinkButton href="/hr/organization" variant="outline">
               Back to hub
-            </Link>
-            <Link
-              className="inline-flex h-10 items-center rounded-[var(--radius-md)] bg-[var(--accent-primary)] px-4 text-sm font-semibold text-white hover:bg-[var(--accent-hover)]"
-              href="/hr/organization/leave-types/create"
-            >
-              Add leave type
-            </Link>
+            </HrLinkButton>
+            <HrLinkButton href="/hr/organization/leave-types/create">Add leave type</HrLinkButton>
           </div>
         }
         description="Policies used for apply leave and employee entitlements."
@@ -67,28 +63,21 @@ export function LeaveTypesList({ leaveTypes }: { leaveTypes: LeaveTypeRow[] }) {
         isEmpty={leaveTypes.length === 0}
       >
         {leaveTypes.map((leaveType) => (
-          <div className="grid items-center gap-3 px-3.5 py-3 md:grid-cols-6" key={leaveType.id}>
-            <p className="text-sm font-semibold text-[var(--foreground-primary)]">{leaveType.name}</p>
-            <p className="text-sm text-[var(--foreground-secondary)]">{leaveType.entitlementDays} days</p>
-            <p className="text-sm text-[var(--foreground-muted)]">
+          <OrgTableRow key={leaveType.id}>
+            <OrgTableCell variant="name">{leaveType.name}</OrgTableCell>
+            <OrgTableCell>{leaveType.entitlementDays} days</OrgTableCell>
+            <OrgTableCell variant="muted">
               {[
                 leaveType.isUnpaid ? "Unpaid" : "Paid",
                 leaveType.requiresAttachment ? "Attachment" : null,
               ]
                 .filter(Boolean)
                 .join(" · ")}
-            </p>
-            <p className="text-sm text-[var(--foreground-muted)]">{leaveType.requestCount}</p>
-            <StatusPill label="Active" tone="success" />
-            <div>
-              <Link
-                className="inline-flex h-9 items-center rounded-[var(--radius-sm)] border border-[var(--border-primary)] px-3 text-sm font-medium hover:bg-[var(--surface-muted)]"
-                href={`/hr/organization/leave-types/${leaveType.id}/edit`}
-              >
-                Edit
-              </Link>
-            </div>
-          </div>
+            </OrgTableCell>
+            <OrgTableCell variant="muted">{leaveType.requestCount}</OrgTableCell>
+            <OrgTableStatus />
+            <OrgTableEditLink href={`/hr/organization/leave-types/${leaveType.id}/edit`} />
+          </OrgTableRow>
         ))}
       </OrgTableShell>
     </div>
@@ -106,12 +95,9 @@ export function LeaveTypeForm({ leaveType }: { leaveType?: LeaveTypeRow }) {
     <div className="space-y-6">
       <PortalPageHeader
         actions={
-          <Link
-            className="inline-flex h-10 items-center rounded-[var(--radius-sm)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-4 text-sm font-medium hover:bg-[var(--surface-muted)]"
-            href="/hr/organization/leave-types"
-          >
+          <HrLinkButton href="/hr/organization/leave-types" variant="outline">
             Back to list
-          </Link>
+          </HrLinkButton>
         }
         description="Names must be unique within the organization."
         title={leaveType ? "Edit leave type" : "Create leave type"}

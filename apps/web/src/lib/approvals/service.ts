@@ -1,6 +1,7 @@
 import { transition, type ApprovalEvent } from "@hrms/domain";
 
 import { logAuditEvent } from "@/lib/audit/log-event";
+import { employeeRequestDetailHref } from "@/lib/notifications/links";
 import { queueNotification } from "@/lib/notifications/queue";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -86,13 +87,17 @@ export async function submitForApproval(input: SubmitApprovalInput): Promise<str
     throw new Error(requestError?.message ?? "Failed to create approval request.");
   }
 
-  const { error: stepError } = await supabase.from("approval_steps").insert({
-    approval_request_id: request.id,
-    organization_id: input.organizationId,
-    step_order: 1,
-    approver_employee_id: approverEmployeeId,
-    status: "pending",
-  });
+  const { data: step, error: stepError } = await supabase
+    .from("approval_steps")
+    .insert({
+      approval_request_id: request.id,
+      organization_id: input.organizationId,
+      step_order: 1,
+      approver_employee_id: approverEmployeeId,
+      status: "pending",
+    })
+    .select("id")
+    .single();
 
   if (stepError) throw new Error(stepError.message);
 
@@ -104,7 +109,7 @@ export async function submitForApproval(input: SubmitApprovalInput): Promise<str
 
   if (linkError) throw new Error(linkError.message);
 
-  if (approverEmployeeId) {
+  if (approverEmployeeId && step) {
     const managerUserId = await resolveUserIdForEmployee(input.organizationId, approverEmployeeId);
     await queueNotification({
       organizationId: input.organizationId,
@@ -115,6 +120,9 @@ export async function submitForApproval(input: SubmitApprovalInput): Promise<str
         requestId: request.id,
         requestType: input.requestType,
         requesterEmployeeId: input.requesterEmployeeId,
+        sourceId: input.sourceId,
+        stepId: step.id,
+        href: `/manager/approvals/${step.id}`,
       },
       idempotencyKey: `approval-pending-${request.id}`,
     });
@@ -204,6 +212,11 @@ export async function actOnApproval(input: ActOnApprovalInput): Promise<void> {
     request.requester_employee_id,
   );
 
+  const detailHref =
+    sourceId && request.request_type
+      ? employeeRequestDetailHref(request.request_type, sourceId)
+      : null;
+
   await queueNotification({
     organizationId: input.organizationId,
     recipientUserId: requesterUserId,
@@ -213,6 +226,8 @@ export async function actOnApproval(input: ActOnApprovalInput): Promise<void> {
       requestId: request.id,
       requestType: request.request_type,
       status: nextStatus,
+      sourceId: sourceId ?? null,
+      href: detailHref,
     },
     idempotencyKey: `approval-${input.event}-${request.id}`,
   });

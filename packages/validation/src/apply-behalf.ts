@@ -18,7 +18,16 @@ export const applyBehalfLateSchema = z.object({
 
 export const applyBehalfListFilterSchema = z.object({
   type: z.enum(["all", "leave", "late"]).default("all"),
-  range: z.enum(["all", "week", "history"]).default("all"),
+  dateFrom: z
+    .union([z.string().date(), z.literal("")])
+    .optional()
+    .transform((value) => (value ? value : undefined)),
+  dateTo: z
+    .union([z.string().date(), z.literal("")])
+    .optional()
+    .transform((value) => (value ? value : undefined)),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(5).max(50).default(15),
 });
 
 export type ApplyBehalfLeaveInput = z.infer<typeof applyBehalfLeaveSchema>;

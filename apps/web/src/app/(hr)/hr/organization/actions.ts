@@ -9,6 +9,7 @@ import {
   createHolidaySchema,
   createLeaveTypeSchema,
   createShiftSchema,
+  importHolidaysSchema,
   updateBranchSchema,
   updateDepartmentSchema,
   updateHolidaySchema,
@@ -17,10 +18,19 @@ import {
 } from "@hrms/validation";
 
 import { requireRole } from "@/lib/auth/session";
+import { fetchMalaysiaHolidaysForState, mergeHolidayNames } from "@/lib/hr/malaysia-holidays-api";
 import { getOrganizationId } from "@/lib/hr/organization";
 import { createClient } from "@/lib/supabase/server";
 
 export type OrgActionState = {
+  error?: string;
+  success?: string;
+};
+
+export type ImportHolidaysResult = {
+  imported: number;
+  updated: number;
+  skipped: number;
   error?: string;
   success?: string;
 };
@@ -55,6 +65,7 @@ export async function createBranch(
 
   const parsed = createBranchSchema.safeParse({
     name: String(formData.get("name") ?? "").trim(),
+    state: String(formData.get("state") ?? "").trim(),
     weekendMode: String(formData.get("weekendMode") ?? "sat_sun").trim(),
     payrollCutoffDay: String(formData.get("payrollCutoffDay") ?? "6").trim(),
   });
@@ -67,6 +78,7 @@ export async function createBranch(
   const { error } = await supabase.from("branches").insert({
     organization_id: organizationId,
     name: parsed.data.name,
+    state: parsed.data.state,
     weekend_mode: parsed.data.weekendMode,
     payroll_cutoff_day: parsed.data.payrollCutoffDay,
   });
@@ -87,6 +99,7 @@ export async function updateBranch(
 
   const parsed = updateBranchSchema.safeParse({
     name: String(formData.get("name") ?? "").trim(),
+    state: String(formData.get("state") ?? "").trim(),
     weekendMode: String(formData.get("weekendMode") ?? "sat_sun").trim(),
     payrollCutoffDay: String(formData.get("payrollCutoffDay") ?? "6").trim(),
   });
@@ -100,6 +113,7 @@ export async function updateBranch(
     .from("branches")
     .update({
       name: parsed.data.name,
+      state: parsed.data.state,
       weekend_mode: parsed.data.weekendMode,
       payroll_cutoff_day: parsed.data.payrollCutoffDay,
     })
@@ -412,6 +426,175 @@ export async function deleteHoliday(holidayId: string): Promise<OrgActionState> 
 
   revalidateOrg(["/hr/organization/holidays"]);
   return { success: "Holiday deleted." };
+}
+
+export async function importHolidays(input: {
+  branchId: string;
+  year: number;
+}): Promise<ImportHolidaysResult> {
+  await requireRole("hr_administrator");
+  const organizationId = getOrganizationId();
+
+  const parsed = importHolidaysSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      imported: 0,
+      updated: 0,
+      skipped: 0,
+      error: parsed.error.issues[0]?.message ?? "Invalid import request.",
+    };
+  }
+
+  const supabase = await createClient();
+  const { data: branch, error: branchError } = await supabase
+    .from("branches")
+    .select("id, name, state")
+    .eq("organization_id", organizationId)
+    .eq("id", parsed.data.branchId)
+    .maybeSingle();
+
+  if (branchError) {
+    return { imported: 0, updated: 0, skipped: 0, error: branchError.message };
+  }
+  if (!branch) {
+    return { imported: 0, updated: 0, skipped: 0, error: "Branch not found." };
+  }
+  if (!branch.state?.trim()) {
+    return {
+      imported: 0,
+      updated: 0,
+      skipped: 0,
+      error: "Set the branch state before importing public holidays.",
+    };
+  }
+
+  let fetched;
+  try {
+    fetched = await fetchMalaysiaHolidaysForState(branch.state, parsed.data.year);
+  } catch (error) {
+    return {
+      imported: 0,
+      updated: 0,
+      skipped: 0,
+      error: error instanceof Error ? error.message : "Could not fetch holidays.",
+    };
+  }
+
+  if (fetched.length === 0) {
+    return {
+      imported: 0,
+      updated: 0,
+      skipped: 0,
+      error: "No confirmed public holidays found for this state and year.",
+    };
+  }
+
+  const { data: existing, error: existingError } = await supabase
+    .from("holidays")
+    .select("id, holiday_date, name")
+    .eq("organization_id", organizationId)
+    .eq("branch_id", parsed.data.branchId)
+    .gte("holiday_date", `${parsed.data.year}-01-01`)
+    .lte("holiday_date", `${parsed.data.year}-12-31`);
+
+  if (existingError) {
+    return { imported: 0, updated: 0, skipped: 0, error: existingError.message };
+  }
+
+  const existingByDate = new Map(
+    (existing ?? []).map((row) => [row.holiday_date, { id: row.id, name: row.name }]),
+  );
+
+  const toInsert: Array<{
+    organization_id: string;
+    branch_id: string;
+    name: string;
+    holiday_date: string;
+  }> = [];
+  const toUpdate: Array<{ id: string; name: string }> = [];
+  let skipped = 0;
+
+  for (const holiday of fetched) {
+    const current = existingByDate.get(holiday.holidayDate);
+    if (!current) {
+      toInsert.push({
+        organization_id: organizationId,
+        branch_id: parsed.data.branchId,
+        name: holiday.name,
+        holiday_date: holiday.holidayDate,
+      });
+      continue;
+    }
+
+    if (current.name === holiday.name) {
+      skipped += 1;
+      continue;
+    }
+
+    toUpdate.push({ id: current.id, name: mergeHolidayNames(current.name, holiday.name) });
+  }
+
+  if (toInsert.length === 0 && toUpdate.length === 0) {
+    revalidateOrg(["/hr/organization/holidays"]);
+    return {
+      imported: 0,
+      updated: 0,
+      skipped,
+      success: "Public holidays for this branch and year are already imported.",
+    };
+  }
+
+  if (toInsert.length > 0) {
+    const { error: insertError } = await supabase.from("holidays").insert(toInsert);
+    if (insertError) {
+      return { imported: 0, updated: 0, skipped, error: insertError.message };
+    }
+  }
+
+  if (toUpdate.length > 0) {
+    const updateResults = await Promise.all(
+      toUpdate.map((holiday) =>
+        supabase
+          .from("holidays")
+          .update({ name: holiday.name })
+          .eq("id", holiday.id)
+          .eq("organization_id", organizationId),
+      ),
+    );
+    const updateError = updateResults.find((result) => result.error)?.error;
+    if (updateError) {
+      return {
+        imported: toInsert.length,
+        updated: 0,
+        skipped,
+        error: updateError.message,
+      };
+    }
+  }
+
+  revalidateOrg(["/hr/organization/holidays"]);
+
+  const parts: string[] = [];
+  if (toInsert.length > 0) {
+    parts.push(
+      `imported ${toInsert.length} new holiday${toInsert.length === 1 ? "" : "s"}`,
+    );
+  }
+  if (toUpdate.length > 0) {
+    parts.push(
+      `updated ${toUpdate.length} holiday name${toUpdate.length === 1 ? "" : "s"}`,
+    );
+  }
+  if (skipped > 0) {
+    parts.push(`${skipped} unchanged`);
+  }
+
+  return {
+    imported: toInsert.length,
+    updated: toUpdate.length,
+    skipped,
+    success: `${parts[0]![0]!.toUpperCase()}${parts[0]!.slice(1)}${parts.length > 1 ? `; ${parts.slice(1).join("; ")}` : ""}.`,
+  };
 }
 
 export async function createLeaveType(

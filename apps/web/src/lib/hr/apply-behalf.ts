@@ -10,6 +10,22 @@ import { requireRole } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
+export type {
+  BehalfApplicationDetail,
+  BehalfApplicationRow,
+  BehalfLateDetail,
+  BehalfLeaveDetail,
+  BehalfListData,
+} from "@/lib/hr/apply-behalf-shared";
+export { getBehalfApplicationPath } from "@/lib/hr/apply-behalf-shared";
+
+import type {
+  BehalfApplicationRow,
+  BehalfLateDetail,
+  BehalfLeaveDetail,
+  BehalfListData,
+} from "@/lib/hr/apply-behalf-shared";
+
 function getOrganizationId(): string {
   const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
   if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
@@ -20,36 +36,6 @@ function normalizeTime(value: string): string {
   const trimmed = value.trim();
   return trimmed.length === 5 ? `${trimmed}:00` : trimmed;
 }
-
-function startOfWeekIso(): string {
-  const now = new Date();
-  const day = now.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  const monday = new Date(now);
-  monday.setDate(now.getDate() + diff);
-  return monday.toISOString().slice(0, 10);
-}
-
-export type BehalfApplicationRow = {
-  id: string;
-  type: "leave" | "late";
-  employeeId: string;
-  employeeName: string;
-  employeeNumber: string;
-  details: string;
-  status: string;
-  appliedAt: string;
-  appliedOnBehalfBy: string | null;
-};
-
-export type BehalfListData = {
-  rows: BehalfApplicationRow[];
-  stats: {
-    total: number;
-    leaveCount: number;
-    lateCount: number;
-  };
-};
 
 export async function listActiveEmployeesForBehalf(): Promise<
   Array<{ id: string; full_name: string; employee_number: string }>
@@ -90,7 +76,6 @@ export async function listBehalfApplications(
   await requireRole("hr_administrator");
   const supabase = await createClient();
   const organizationId = getOrganizationId();
-  const weekStart = startOfWeekIso();
 
   const [leaveResult, lateResult] = await Promise.all([
     filters.type === "late"
@@ -157,14 +142,24 @@ export async function listBehalfApplications(
     (a, b) => new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime(),
   );
 
-  if (filters.range === "week") {
-    rows = rows.filter((row) => row.appliedAt.slice(0, 10) >= weekStart);
-  } else if (filters.range === "history") {
-    rows = rows.filter((row) => row.appliedAt.slice(0, 10) < weekStart);
+  if (filters.dateFrom) {
+    rows = rows.filter((row) => row.appliedAt.slice(0, 10) >= filters.dateFrom!);
+  }
+  if (filters.dateTo) {
+    rows = rows.filter((row) => row.appliedAt.slice(0, 10) <= filters.dateTo!);
   }
 
+  const total = rows.length;
+  const pageSize = filters.pageSize;
+  const page = filters.page;
+  const from = (page - 1) * pageSize;
+  const pagedRows = rows.slice(from, from + pageSize);
+
   return {
-    rows,
+    rows: pagedRows,
+    total,
+    page,
+    pageSize,
     stats: {
       total: leaveRows.length + lateRows.length,
       leaveCount: leaveRows.length,
@@ -267,4 +262,109 @@ export async function createBehalfLate(
   });
 
   return data.id;
+}
+
+async function resolveSubmitterName(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  organizationId: string,
+  userId: string | null,
+): Promise<string | null> {
+  if (!userId) return null;
+
+  const { data, error } = await supabase
+    .from("organization_memberships")
+    .select("employees(full_name)")
+    .eq("organization_id", organizationId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  const employee = data?.employees as { full_name?: string } | null;
+  return employee?.full_name ?? null;
+}
+
+export async function getBehalfLeaveDetail(requestId: string): Promise<BehalfLeaveDetail | null> {
+  await requireRole("hr_administrator");
+  const supabase = await createClient();
+  const organizationId = getOrganizationId();
+
+  const { data, error } = await supabase
+    .from("leave_requests")
+    .select(
+      "id, employee_id, start_date, end_date, half_day, days, reason, status, created_at, applied_on_behalf_by, leave_types(name), employees(full_name, employee_number)",
+    )
+    .eq("organization_id", organizationId)
+    .eq("id", requestId)
+    .not("applied_on_behalf_by", "is", null)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+
+  const employee = data.employees as { full_name?: string; employee_number?: string } | null;
+  const leaveType = data.leave_types as { name?: string } | null;
+  const submittedByName = await resolveSubmitterName(
+    supabase,
+    organizationId,
+    data.applied_on_behalf_by,
+  );
+
+  return {
+    type: "leave",
+    id: data.id,
+    employeeId: data.employee_id,
+    employeeName: employee?.full_name ?? "Employee",
+    employeeNumber: employee?.employee_number ?? "",
+    leaveTypeName: leaveType?.name ?? "Leave",
+    startDate: data.start_date,
+    endDate: data.end_date,
+    halfDay: data.half_day,
+    days: Number(data.days),
+    reason: data.reason,
+    status: data.status,
+    appliedAt: data.created_at,
+    appliedOnBehalfBy: data.applied_on_behalf_by,
+    submittedByName,
+  };
+}
+
+export async function getBehalfLateDetail(requestId: string): Promise<BehalfLateDetail | null> {
+  await requireRole("hr_administrator");
+  const supabase = await createClient();
+  const organizationId = getOrganizationId();
+
+  const { data, error } = await supabase
+    .from("late_requests")
+    .select(
+      "id, employee_id, request_date, actual_arrival_time, reason, status, created_at, applied_on_behalf_by, employees(full_name, employee_number)",
+    )
+    .eq("organization_id", organizationId)
+    .eq("id", requestId)
+    .not("applied_on_behalf_by", "is", null)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+
+  const employee = data.employees as { full_name?: string; employee_number?: string } | null;
+  const submittedByName = await resolveSubmitterName(
+    supabase,
+    organizationId,
+    data.applied_on_behalf_by,
+  );
+
+  return {
+    type: "late",
+    id: data.id,
+    employeeId: data.employee_id,
+    employeeName: employee?.full_name ?? "Employee",
+    employeeNumber: employee?.employee_number ?? "",
+    requestDate: data.request_date,
+    actualArrivalTime: String(data.actual_arrival_time).slice(0, 5),
+    reason: data.reason,
+    status: data.status,
+    appliedAt: data.created_at,
+    appliedOnBehalfBy: data.applied_on_behalf_by,
+    submittedByName,
+  };
 }

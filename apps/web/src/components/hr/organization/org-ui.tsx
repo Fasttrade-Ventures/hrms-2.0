@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition, type ReactNode } from "react";
 
-import { ConfirmDialog, EmptyState, StatusPill } from "@hrms/ui";
+import { ConfirmDialog, EmptyState } from "@hrms/ui";
 
 import type { OrgActionState } from "@/app/(hr)/hr/organization/actions";
+import { HrStatCards, HrTableCard } from "@/components/hr/hr-ui";
+import { HrLinkButton } from "@/components/hr/hr-ui.client";
 import {
   HrCheckbox,
   HrField,
@@ -16,28 +18,62 @@ import {
   HrSelect,
   HrTextInput,
 } from "@/components/hr/employees/form-fields";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+
+const ORG_TABLE_GRID =
+  "md:grid md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,0.85fr)_minmax(0,0.75fr)_5rem_4.5rem] md:items-center md:gap-x-3";
+
+const ORG_TABLE_ROW = `px-3.5 py-2.5 ${ORG_TABLE_GRID}`;
+
+export function OrgTableRow({ children }: { children: ReactNode }) {
+  return <div className={ORG_TABLE_ROW}>{children}</div>;
+}
+
+export function OrgTableCell({
+  children,
+  variant = "secondary",
+}: {
+  children: ReactNode;
+  variant?: "name" | "secondary" | "muted";
+}) {
+  const variantClass = {
+    name: "font-semibold text-foreground",
+    secondary: "text-muted-foreground",
+    muted: "text-muted-foreground",
+  }[variant];
+
+  return <p className={cn("min-w-0 truncate text-sm", variantClass)}>{children}</p>;
+}
+
+export function OrgTableStatus({ label = "Active" }: { label?: string }) {
+  return (
+    <div className="flex w-fit items-center justify-self-start">
+      <Badge variant="secondary">{label}</Badge>
+    </div>
+  );
+}
+
+export function OrgTableEditLink({ href }: { href: string }) {
+  return (
+    <div className="flex items-center justify-self-start">
+      <HrLinkButton href={href} size="sm" variant="outline">
+        Edit
+      </HrLinkButton>
+    </div>
+  );
+}
 
 export function OrgStatCards({
   items,
+  columns,
 }: {
-  items: Array<{ label: string; value: string | number; hint: string }>;
+  items: Array<{ label: string; value: string | number; hint?: string }>;
+  columns?: 3 | 5;
 }) {
-  return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {items.map((item) => (
-        <div
-          className="rounded-[14px] border border-[var(--border-primary)] bg-[var(--surface-card)] p-3.5 shadow-[var(--shadow-card)]"
-          key={item.label}
-        >
-          <p className="text-xs font-medium text-[var(--foreground-muted)]">{item.label}</p>
-          <p className="mt-1 text-2xl font-semibold tracking-tight text-[var(--foreground-primary)]">
-            {item.value}
-          </p>
-          <p className="mt-0.5 text-[11px] text-[var(--foreground-muted)]">{item.hint}</p>
-        </div>
-      ))}
-    </div>
-  );
+  return <HrStatCards columns={columns} items={items} />;
 }
 
 export function OrgTableShell({
@@ -46,28 +82,65 @@ export function OrgTableShell({
   emptyTitle,
   emptyDescription,
   isEmpty,
+  sort,
+  getSortHref,
 }: {
-  headers: string[];
+  headers: Array<string | { label: string; sortKey: string }>;
   children: ReactNode;
   emptyTitle: string;
   emptyDescription: string;
   isEmpty: boolean;
+  sort?: { key: string; order: "asc" | "desc" };
+  getSortHref?: (key: string, order: "asc" | "desc") => string;
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-card)] shadow-[var(--shadow-card)]">
-      <div className="hidden grid-cols-6 gap-3 border-b border-[var(--border-primary)] bg-[var(--surface-muted)] px-3.5 py-3 text-[11px] font-semibold uppercase tracking-wide text-[var(--foreground-muted)] md:grid">
-        {headers.map((header) => (
-          <span key={header}>{header}</span>
-        ))}
+    <HrTableCard>
+      <div
+        className={cn(
+          "hidden border-b bg-muted/50 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground",
+          ORG_TABLE_ROW,
+        )}
+      >
+        {headers.map((header) => {
+          const { label, sortKey } =
+            typeof header === "string" ? { label: header, sortKey: undefined } : header;
+
+          if (!sortKey || !getSortHref) {
+            return (
+              <span className="truncate" key={label}>
+                {label}
+              </span>
+            );
+          }
+
+          const isActive = sort?.key === sortKey;
+          const nextOrder = isActive && sort.order === "asc" ? "desc" : "asc";
+
+          return (
+            <Link
+              className={cn(
+                "inline-flex min-w-0 items-center gap-1 truncate hover:text-foreground",
+                isActive && "text-foreground",
+              )}
+              href={getSortHref(sortKey, nextOrder)}
+              key={sortKey}
+            >
+              <span className="truncate">{label}</span>
+              <span aria-hidden className="text-[10px] normal-case">
+                {isActive ? (sort.order === "asc" ? "↑" : "↓") : "↕"}
+              </span>
+            </Link>
+          );
+        })}
       </div>
       {isEmpty ? (
         <div className="p-8">
           <EmptyState description={emptyDescription} title={emptyTitle} />
         </div>
       ) : (
-        <div className="divide-y divide-[var(--border-primary)]">{children}</div>
+        <div className="divide-y divide-border">{children}</div>
       )}
-    </div>
+    </HrTableCard>
   );
 }
 
@@ -83,18 +156,24 @@ export function OrgFormCard({
   children: ReactNode;
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-card)] shadow-[var(--shadow-card)]">
-      <div className="flex items-center justify-between bg-[var(--accent-primary)] px-5 py-4">
-        <div>
-          <h2 className="text-base font-semibold text-white">{title}</h2>
-          <p className="text-xs text-white/80">{description}</p>
+    <Card className="overflow-hidden py-0">
+      <CardHeader className="flex flex-row items-center justify-between border-b bg-primary px-5 py-4 text-primary-foreground">
+        <div className="space-y-0.5">
+          <CardTitle className="text-base text-primary-foreground">{title}</CardTitle>
+          <p className="text-xs text-primary-foreground/80">{description}</p>
         </div>
-        <Link aria-label="Close" className="text-white/90 hover:text-white" href={backHref}>
+        <Button
+          aria-label="Close"
+          className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+          render={<Link href={backHref} />}
+          size="icon-sm"
+          variant="ghost"
+        >
           ✕
-        </Link>
-      </div>
-      <div className="space-y-5 p-5">{children}</div>
-    </div>
+        </Button>
+      </CardHeader>
+      <CardContent className="space-y-5 py-5">{children}</CardContent>
+    </Card>
   );
 }
 
@@ -118,9 +197,9 @@ export function OrgDeleteButton({
 
   return (
     <>
-      <HrGhostButton className="text-[var(--danger)]" onClick={() => setOpen(true)} type="button">
+      <Button onClick={() => setOpen(true)} type="button" variant="outline">
         {label}
-      </HrGhostButton>
+      </Button>
       <ConfirmDialog
         confirmLabel={pending ? "Deleting…" : "Delete"}
         message={error ? `${confirmDescription}\n\n${error}` : confirmDescription}
@@ -146,7 +225,7 @@ export function OrgDeleteButton({
         title={confirmTitle}
         tone="danger"
       />
-      {error && !open ? <p className="text-sm text-[var(--danger)]">{error}</p> : null}
+      {error && !open ? <p className="text-sm text-destructive">{error}</p> : null}
     </>
   );
 }
@@ -167,14 +246,14 @@ export function OrgFormActions({
   extra?: ReactNode;
 }) {
   return (
-    <div className="space-y-4 border-t border-[var(--border-primary)] pt-4">
+    <div className="space-y-4 border-t pt-4">
       <HrFormMessage error={error} success={success} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>{extra}</div>
         <div className="flex gap-2">
-          <Link href={cancelHref}>
-            <HrGhostButton type="button">Cancel</HrGhostButton>
-          </Link>
+          <HrLinkButton href={cancelHref} variant="outline">
+            Cancel
+          </HrLinkButton>
           <HrPrimaryButton disabled={pending} type="submit">
             {pending ? "Saving…" : submitLabel}
           </HrPrimaryButton>
@@ -191,5 +270,4 @@ export {
   HrGhostButton,
   HrSelect,
   HrTextInput,
-  StatusPill,
 };

@@ -14,18 +14,18 @@ export function HrWorkforcePulse({
   ];
 
   return (
-    <section className="rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-card)] p-[18px] shadow-[var(--shadow-card)]">
-      <h2 className="mb-3 text-[15px] font-semibold text-[var(--foreground-primary)]">Workforce today</h2>
-      <div className="space-y-4">
+    <section className="shrink-0 rounded-xl border border-[var(--border-primary)] bg-[var(--surface-card)] p-3 shadow-[var(--shadow-card)]">
+      <h2 className="mb-2 text-sm font-semibold text-[var(--foreground-primary)]">Workforce today</h2>
+      <div className="space-y-1.5">
         {bars.map((bar) => (
-          <div className="space-y-1.5" key={bar.label}>
-            <div className="flex items-center justify-between text-xs">
+          <div className="space-y-1" key={bar.label}>
+            <div className="flex items-center justify-between text-[11px]">
               <span className="font-medium text-[var(--foreground-secondary)]">{bar.label}</span>
               <span className="font-semibold text-[var(--foreground-primary)]">{bar.pct}%</span>
             </div>
-            <div className="h-2 rounded-full bg-[var(--surface-muted)]">
+            <div className="h-1.5 rounded-full bg-[var(--surface-muted)]">
               <div
-                className={`h-2 rounded-full ${bar.color}`}
+                className={`h-1.5 rounded-full ${bar.color}`}
                 style={{ width: `${Math.max(bar.pct, 4)}%` }}
               />
             </div>

@@ -1,6 +1,7 @@
 import { requireRole } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { firstNameFromFullName, getCurrentEmployeeDetail, greetingForHour } from "@/lib/employees/self";
+import { getComplianceWatchRows } from "@/lib/hr/documents";
 
 function getOrganizationId(): string {
   const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
@@ -55,11 +56,6 @@ function formatRelativeTime(iso: string): string {
   return `${days}d ago`;
 }
 
-function formatDateLabel(iso: string): string {
-  const date = new Date(iso);
-  return date.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-}
-
 function requestTypeTone(type: string): HrActionQueueRow["typeTone"] {
   if (type === "leave") return "leave";
   if (type === "claim") return "claim";
@@ -80,64 +76,63 @@ function requestTypeLabel(type: string): string {
   return labels[type] ?? type;
 }
 
+/** Review opens the employee record (or type-specific list when no employee). */
+function actionReviewHref(requestType: string, employeeId?: string | null): string {
+  if (employeeId) {
+    return `/hr/employees/${employeeId}`;
+  }
+  if (requestType === "leave") return "/hr/apply-behalf?type=leave";
+  if (requestType === "late" || requestType === "attendance") return "/hr/apply-behalf?type=late";
+  if (requestType === "claim" || requestType === "overtime") return "/hr/employees";
+  return "/hr/employees";
+}
+
 /** Pencil HIH98 placeholder content — used when live data is empty. */
 const PLACEHOLDER_QUEUE: HrActionQueueRow[] = [
   {
-    id: "ph-leave",
+    id: "ph-leave-1",
     type: "Leave",
     typeTone: "leave",
     employeeName: "Aisha Rahman",
     details: "Annual leave · manager pending",
     timeLabel: "2h ago",
-    href: "/hr/apply-behalf",
+    href: "/hr/apply-behalf?type=leave",
   },
   {
-    id: "ph-claim",
+    id: "ph-claim-1",
     type: "Claim",
     typeTone: "claim",
     employeeName: "Kevin Tan",
-    details: "New joiner · invite pending",
-    timeLabel: "5h ago",
+    details: "Travel claim · RM 240",
+    timeLabel: "3h ago",
     href: "/hr/employees",
   },
   {
-    id: "ph-ot",
+    id: "ph-ot-1",
     type: "OT",
     typeTone: "ot",
     employeeName: "Mei Ling",
-    details: "Passport expiring 31 Jul",
-    timeLabel: "Yesterday",
-    href: "/hr/documents",
+    details: "Weekday OT · 3.5 hrs",
+    timeLabel: "1h ago",
+    href: "/hr/employees",
   },
   {
-    id: "ph-late",
+    id: "ph-late-1",
     type: "Late",
     typeTone: "late",
-    employeeName: "System",
-    details: "Bulk import · 12 rows failed",
+    employeeName: "Amira Zain",
+    details: "Late 09:12 · traffic",
+    timeLabel: "45m ago",
+    href: "/hr/apply-behalf?type=late",
+  },
+  {
+    id: "ph-leave-2",
+    type: "Leave",
+    typeTone: "leave",
+    employeeName: "Hafiz Ali",
+    details: "Medical leave · 2 days",
     timeLabel: "Yesterday",
-    href: "/hr/audit",
-  },
-];
-
-const PLACEHOLDER_COMPLIANCE: HrComplianceRow[] = [
-  {
-    id: "ph-ic",
-    dateLabel: "28 Jul",
-    title: "IC expiry",
-    subtitle: "Aisha Rahman · Documents",
-  },
-  {
-    id: "ph-contract",
-    dateLabel: "31 Jul",
-    title: "Contract end",
-    subtitle: "Hafiz Ali · Employment",
-  },
-  {
-    id: "ph-permit",
-    dateLabel: "05 Aug",
-    title: "Work permit",
-    subtitle: "Nurul Izza · Documents",
+    href: "/hr/apply-behalf?type=leave",
   },
 ];
 
@@ -150,20 +145,16 @@ export async function getHrDashboardData(): Promise<HrDashboardData> {
   const hour = new Date().getHours();
 
   const today = new Date().toISOString().slice(0, 10);
-  const horizon = new Date();
-  horizon.setDate(horizon.getDate() + 30);
-  const horizonDate = horizon.toISOString().slice(0, 10);
 
   const [
     employeesRes,
     branchesRes,
     pendingRes,
-    docsRes,
     salariesRes,
     queueRes,
     attendanceRes,
     leaveTodayRes,
-    complianceRes,
+    complianceWatch,
   ] = await Promise.all([
     supabase
       .from("employees")
@@ -177,13 +168,6 @@ export async function getHrDashboardData(): Promise<HrDashboardData> {
       .eq("organization_id", organizationId)
       .eq("status", "pending"),
     supabase
-      .from("employee_documents")
-      .select("id", { count: "exact", head: true })
-      .eq("organization_id", organizationId)
-      .not("expires_at", "is", null)
-      .gte("expires_at", today)
-      .lte("expires_at", horizonDate),
-    supabase
       .from("employees")
       .select("employee_profiles(basic_salary)")
       .eq("organization_id", organizationId)
@@ -191,7 +175,7 @@ export async function getHrDashboardData(): Promise<HrDashboardData> {
     supabase
       .from("approval_requests")
       .select(
-        "id, request_type, submitted_at, created_at, payload, employees!approval_requests_requester_employee_id_fkey(full_name, email)",
+        "id, request_type, requester_employee_id, submitted_at, created_at, payload, employees!approval_requests_requester_employee_id_fkey(full_name, email)",
       )
       .eq("organization_id", organizationId)
       .eq("status", "pending")
@@ -210,27 +194,19 @@ export async function getHrDashboardData(): Promise<HrDashboardData> {
       .eq("status", "approved")
       .lte("start_date", today)
       .gte("end_date", today),
-    supabase
-      .from("employee_documents")
-      .select("id, expires_at, document_type, employees(full_name, email)")
-      .eq("organization_id", organizationId)
-      .not("expires_at", "is", null)
-      .gte("expires_at", today)
-      .lte("expires_at", horizonDate)
-      .order("expires_at")
-      .limit(3),
+    getComplianceWatchRows(),
   ]);
 
   const liveEmployees = employeesRes.count ?? 0;
   const liveBranches = branchesRes.count ?? 0;
   const livePending = pendingRes.count ?? 0;
-  const liveDocs = docsRes.count ?? 0;
+  const liveComplianceIssues = complianceWatch.issuesCount;
 
   // Pencil HIH98 placeholders when org has no meaningful live metrics yet.
   const activeEmployees = liveEmployees > 0 ? liveEmployees : 148;
   const branchCount = liveBranches > 0 ? liveBranches : 3;
   const pendingRequests = livePending > 0 ? livePending : 14;
-  const docsExpiring = liveDocs > 0 ? liveDocs : 5;
+  const docsExpiring = liveComplianceIssues > 0 ? liveComplianceIssues : 5;
 
   let payoutTotal = 0;
   for (const row of salariesRes.data ?? []) {
@@ -268,6 +244,8 @@ export async function getHrDashboardData(): Promise<HrDashboardData> {
       "Employee";
     const payload = (row.payload ?? {}) as Record<string, unknown>;
     const submittedAt = String(row.submitted_at ?? row.created_at ?? new Date().toISOString());
+    const employeeId =
+      typeof row.requester_employee_id === "string" ? row.requester_employee_id : null;
 
     return {
       id: row.id,
@@ -276,31 +254,16 @@ export async function getHrDashboardData(): Promise<HrDashboardData> {
       employeeName,
       details: summarizeQueueDetails(row.request_type, payload),
       timeLabel: formatRelativeTime(submittedAt),
-      href: "/hr/apply-behalf",
-    };
-  });
-
-  const liveCompliance: HrComplianceRow[] = (complianceRes.data ?? []).map((row) => {
-    const emp = Array.isArray(row.employees) ? row.employees[0] : row.employees;
-    const employeeName =
-      (emp as { full_name?: string; email?: string } | null)?.full_name ??
-      (emp as { email?: string } | null)?.email ??
-      "Employee";
-
-    return {
-      id: row.id,
-      dateLabel: formatDateLabel(String(row.expires_at)),
-      title: row.document_type,
-      subtitle: `${employeeName} · Documents`,
+      href: actionReviewHref(row.request_type, employeeId),
     };
   });
 
   const actionQueue = liveQueue.length > 0 ? liveQueue : PLACEHOLDER_QUEUE;
-  const compliance = liveCompliance.length > 0 ? liveCompliance : PLACEHOLDER_COMPLIANCE;
+  const compliance = complianceWatch.rows;
 
   const heroDescription =
-    livePending > 0 || liveDocs > 0
-      ? `${pendingRequests} pending org requests, ${docsExpiring} docs expiring, and payroll ready to review.`
+    livePending > 0 || liveComplianceIssues > 0
+      ? `${pendingRequests} pending org requests, ${docsExpiring} document compliance issues, and payroll ready to review.`
       : "14 pending org requests, 5 docs expiring, and July payroll ready to generate.";
 
   return {

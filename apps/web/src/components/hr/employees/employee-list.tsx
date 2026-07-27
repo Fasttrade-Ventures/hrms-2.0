@@ -1,25 +1,39 @@
 import Link from "next/link";
 
-import { EmptyState, StatusPill } from "@hrms/ui";
+import { EmptyState } from "@hrms/ui";
 
 import { DeleteEmployeeButton } from "@/components/hr/employees/delete-employee-button";
+import { EmployeeDirectoryFilters } from "@/components/hr/employees/employee-directory-filters";
+import {
+  HrLinkButton,
+  HrPagination,
+} from "@/components/hr/hr-ui.client";
+import {
+  HrStatCards,
+  HrTableCard,
+} from "@/components/hr/hr-ui";
 import { PortalAvatar } from "@/components/portal/portal-primitives";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import type {
   EmployeeBranchFilter,
   EmployeeDirectoryStats,
   EmployeeListItem,
 } from "@/lib/employees/queries";
 
-function statusTone(status: EmployeeListItem["displayStatus"]) {
+const DIRECTORY_GRID =
+  "md:grid md:grid-cols-[72px_minmax(160px,1.2fr)_minmax(100px,0.9fr)_minmax(120px,1fr)_88px_88px_88px_140px] md:items-center md:gap-3";
+
+function statusVariant(status: EmployeeListItem["displayStatus"]) {
   switch (status) {
     case "active":
-      return "success" as const;
+      return "secondary" as const;
     case "on_leave":
-      return "warning" as const;
+      return "outline" as const;
     case "inactive":
-      return "pending" as const;
+      return "outline" as const;
     case "terminated":
-      return "danger" as const;
+      return "destructive" as const;
   }
 }
 
@@ -36,21 +50,15 @@ function statusLabel(status: EmployeeListItem["displayStatus"]) {
   }
 }
 
-function roleTone(role: EmployeeListItem["roleLabel"]) {
+function roleVariant(role: EmployeeListItem["roleLabel"]) {
   switch (role) {
     case "Manager":
-      return {
-        className: "bg-[var(--success-soft)] text-[var(--success)]",
-      };
+      return "secondary" as const;
     case "Admin":
     case "Owner":
-      return {
-        className: "bg-[var(--danger-soft)] text-[var(--danger)]",
-      };
+      return "destructive" as const;
     default:
-      return {
-        className: "bg-[var(--surface-accent-soft)] text-[var(--accent-primary)]",
-      };
+      return "default" as const;
   }
 }
 
@@ -77,52 +85,6 @@ function buildHref(params: {
   if (params.page && params.page > 1) query.set("page", String(params.page));
   const qs = query.toString();
   return qs ? `/hr/employees?${qs}` : "/hr/employees";
-}
-
-function MetricCard({
-  label,
-  value,
-  hint,
-}: {
-  label: string;
-  value: string | number;
-  hint: string;
-}) {
-  return (
-    <div className="flex flex-col gap-0.5 rounded-[14px] border border-[var(--border-primary)] bg-[var(--surface-card)] px-3.5 py-3 shadow-[var(--shadow-card)]">
-      <p className="text-xs font-medium text-[var(--foreground-muted)]">{label}</p>
-      <p
-        className="text-2xl font-semibold leading-none tracking-tight text-[var(--foreground-primary)]"
-        style={{ fontFamily: "var(--font-geist-mono), ui-monospace, monospace" }}
-      >
-        {value}
-      </p>
-      <p className="text-[11px] text-[var(--foreground-muted)]">{hint}</p>
-    </div>
-  );
-}
-
-function FilterChip({
-  href,
-  label,
-  active,
-}: {
-  href: string;
-  label: string;
-  active: boolean;
-}) {
-  return (
-    <Link
-      className={`rounded-[8px] px-3 py-2 text-xs transition-colors ${
-        active
-          ? "bg-[var(--accent-primary)] font-semibold text-white"
-          : "bg-[var(--surface-muted)] font-medium text-[var(--foreground-secondary)] hover:bg-[var(--surface-accent-soft)]"
-      }`}
-      href={href}
-    >
-      {label}
-    </Link>
-  );
 }
 
 export function EmployeeList({
@@ -162,85 +124,49 @@ export function EmployeeList({
     <div className="space-y-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <h2 className="text-base font-semibold text-[var(--foreground-primary)]">Employee directory</h2>
-          <p className="max-w-[520px] text-[13px] text-[var(--foreground-muted)]">
+          <h2 className="text-base font-semibold text-foreground">Employee directory</h2>
+          <p className="max-w-[520px] text-[13px] text-muted-foreground">
             Create employees, edit roles, and manage employment status for the whole organization.
           </p>
         </div>
-        <Link
-          className="inline-flex h-10 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--accent-primary)] px-5 text-[15px] font-semibold text-white hover:bg-[var(--accent-hover)]"
-          href="/hr/employees/create"
+        <HrLinkButton href="/hr/employees/create">Create employee</HrLinkButton>
+      </div>
+
+      <HrStatCards
+        items={[
+          { hint: "employees", label: "Active", value: stats.active },
+          { hint: "today", label: "On leave", value: stats.onLeave },
+          { hint: "pending", label: "Invites open", value: stats.invitesOpen },
+        ]}
+      />
+
+      <EmployeeDirectoryFilters
+        activeTotal={activeTotal}
+        branchId={branchId}
+        branches={branches}
+        inactiveCount={inactiveCount}
+        search={search}
+        status={status}
+      />
+
+      <HrTableCard>
+        <div
+          className={`hidden border-b bg-muted/50 px-3.5 py-3 text-[11px] font-semibold text-muted-foreground ${DIRECTORY_GRID}`}
         >
-          Create employee
-        </Link>
-      </div>
-
-      <div className="grid gap-2.5 sm:grid-cols-3">
-        <MetricCard hint="employees" label="Active" value={stats.active} />
-        <MetricCard hint="today" label="On leave" value={stats.onLeave} />
-        <MetricCard hint="pending" label="Invites open" value={stats.invitesOpen} />
-      </div>
-
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap gap-1.5">
-          <FilterChip
-            active={status === "active" && branchId === "all"}
-            href={buildHref({ search, status: "active", branchId: "all" })}
-            label={`All (${activeTotal})`}
-          />
-          {branches.map((branch) => (
-            <FilterChip
-              active={status === "active" && branchId === branch.id}
-              href={buildHref({ search, status: "active", branchId: branch.id })}
-              key={branch.id}
-              label={`${branch.name} (${branch.count})`}
-            />
-          ))}
-          <FilterChip
-            active={status === "inactive"}
-            href={buildHref({ search, status: "inactive", branchId: "all" })}
-            label={inactiveCount > 0 ? `Inactive (${inactiveCount})` : "Inactive"}
-          />
-        </div>
-
-        <form className="flex h-9 w-full items-center gap-2 rounded-[8px] border border-[var(--border-primary)] bg-[var(--surface-muted)] px-3 lg:w-[240px]" method="get">
-          {status !== "active" ? <input name="status" type="hidden" value={status} /> : null}
-          {branchId !== "all" ? <input name="branchId" type="hidden" value={branchId} /> : null}
-          <svg aria-hidden className="shrink-0 text-[var(--foreground-muted)]" fill="none" height="16" viewBox="0 0 24 24" width="16">
-            <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.75" />
-            <path d="m20 20-3.5-3.5" stroke="currentColor" strokeLinecap="round" strokeWidth="1.75" />
-          </svg>
-          <input
-            className="h-full w-full bg-transparent text-[13px] text-[var(--foreground-primary)] outline-none placeholder:text-[var(--foreground-muted)]"
-            defaultValue={search ?? ""}
-            name="search"
-            placeholder="Search name, email, or ID…"
-            type="search"
-          />
-        </form>
-      </div>
-
-      <div className="overflow-hidden rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-card)] shadow-[var(--shadow-card)]">
-        <div className="hidden items-center gap-3 border-b border-[var(--border-primary)] bg-[var(--surface-muted)] px-3.5 py-3 text-[11px] font-semibold text-[var(--foreground-muted)] md:flex">
-          <span className="w-[88px] shrink-0">Role</span>
-          <span className="w-[196px] shrink-0">Employee</span>
-          <span className="min-w-0 flex-1">Branch / Dept</span>
-          <span className="w-[100px] shrink-0">Joined</span>
-          <span className="w-[96px] shrink-0">Status</span>
-          <span className="w-[156px] shrink-0 text-right">Action</span>
+          <span>Role</span>
+          <span>Employee</span>
+          <span>Job title</span>
+          <span>Branch / Dept</span>
+          <span>Joined</span>
+          <span>Login</span>
+          <span>Status</span>
+          <span className="text-right">Action</span>
         </div>
 
         {employees.length === 0 ? (
           <div className="p-6">
             <EmptyState
-              action={
-                <Link
-                  className="inline-flex h-10 items-center rounded-[var(--radius-sm)] bg-[var(--accent-primary)] px-5 text-sm font-semibold text-white hover:bg-[var(--accent-hover)]"
-                  href="/hr/employees/create"
-                >
-                  Create employee
-                </Link>
-              }
+              action={<HrLinkButton href="/hr/employees/create">Create employee</HrLinkButton>}
               description={
                 search
                   ? "Try a different search term or clear filters."
@@ -250,48 +176,62 @@ export function EmployeeList({
             />
           </div>
         ) : (
-          <div className="divide-y divide-[var(--border-primary)]">
+          <div className="divide-y divide-border">
             {employees.map((employee) => {
-              const role = roleTone(employee.roleLabel);
-              const assignment = [employee.branchName, employee.departmentName].filter(Boolean).join(" · ") || "Unassigned";
+              const assignment =
+                [employee.branchName, employee.departmentName].filter(Boolean).join(" · ") ||
+                "Unassigned";
 
               return (
-                <div
-                  className="flex flex-col gap-3 px-3.5 py-3 md:flex-row md:items-center md:gap-3"
-                  key={employee.id}
-                >
-                  <div className="w-full md:w-[88px] md:shrink-0">
-                    <span className={`inline-flex rounded-full px-2 py-1 text-[11px] font-semibold ${role.className}`}>
-                      {employee.roleLabel}
-                    </span>
+                <div className={`flex flex-col gap-3 px-3.5 py-3 ${DIRECTORY_GRID}`} key={employee.id}>
+                  <div>
+                    <Badge variant={roleVariant(employee.roleLabel)}>{employee.roleLabel}</Badge>
                   </div>
 
-                  <div className="flex min-w-0 w-full items-center gap-2 md:w-[196px] md:shrink-0">
-                    <PortalAvatar email={employee.email} name={employee.fullName} />
+                  <div className="flex min-w-0 items-center gap-2">
+                    <PortalAvatar
+                      email={employee.email}
+                      name={employee.fullName}
+                      photoUrl={employee.profilePhotoUrl}
+                    />
                     <div className="min-w-0">
                       <Link
-                        className="truncate text-[13px] font-semibold text-[var(--foreground-primary)] hover:text-[var(--accent-primary)]"
+                        className="block truncate text-[13px] font-semibold text-foreground hover:text-primary"
                         href={`/hr/employees/${employee.id}`}
                       >
                         {employee.fullName}
                       </Link>
-                      <p className="truncate text-[11px] text-[var(--foreground-muted)]">{employee.employeeNumber}</p>
+                      <p className="truncate text-[11px] text-muted-foreground">
+                        {employee.employeeNumber}
+                      </p>
+                      <p className="truncate text-[11px] text-muted-foreground">{employee.email}</p>
                     </div>
                   </div>
 
-                  <p className="min-w-0 flex-1 text-[13px] font-medium text-[var(--foreground-secondary)]">{assignment}</p>
-                  <p className="w-full text-xs text-[var(--foreground-muted)] md:w-[100px] md:shrink-0">
-                    {formatJoined(employee.joinDate)}
+                  <p className="min-w-0 truncate text-[13px] font-medium text-muted-foreground">
+                    {employee.jobTitle || "—"}
                   </p>
-                  <div className="w-full md:w-[96px] md:shrink-0">
-                    <StatusPill label={statusLabel(employee.displayStatus)} tone={statusTone(employee.displayStatus)} />
+                  <p className="min-w-0 truncate text-[13px] font-medium text-muted-foreground">
+                    {assignment}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{formatJoined(employee.joinDate)}</p>
+                  <div>
+                    <Badge variant={employee.hasLogin ? "secondary" : "outline"}>
+                      {employee.hasLogin ? "Has login" : "Invite pending"}
+                    </Badge>
                   </div>
-                  <div className="flex w-full items-center justify-start gap-2 md:w-[156px] md:shrink-0 md:justify-end">
-                    <Link
+                  <div>
+                    <Badge variant={statusVariant(employee.displayStatus)}>
+                      {statusLabel(employee.displayStatus)}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-start gap-2 md:justify-end">
+                    <Button
                       aria-label={`View employee dossier for ${employee.fullName}`}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-[8px] border border-[var(--border-primary)] bg-[var(--surface-muted)] text-[var(--danger)] hover:bg-[var(--danger-soft)]"
-                      href={`/hr/employees/${employee.id}/dossier`}
+                      render={<Link href={`/hr/employees/${employee.id}/dossier`} />}
+                      size="icon-sm"
                       title="Employee dossier PDF"
+                      variant="outline"
                     >
                       <svg aria-hidden fill="none" height="16" viewBox="0 0 24 24" width="16">
                         <path
@@ -309,68 +249,38 @@ export function EmployeeList({
                           strokeWidth="1.75"
                         />
                       </svg>
-                    </Link>
+                    </Button>
                     <DeleteEmployeeButton
                       employeeId={employee.id}
                       employeeName={employee.fullName}
                       variant="icon"
                     />
-                    <Link
-                      className="inline-flex h-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-3 text-xs font-medium text-[var(--foreground-primary)] hover:bg-[var(--surface-muted)]"
-                      href={`/hr/employees/${employee.id}/edit`}
-                    >
+                    <HrLinkButton href={`/hr/employees/${employee.id}/edit`} size="sm" variant="outline">
                       Edit
-                    </Link>
+                    </HrLinkButton>
                   </div>
                 </div>
               );
             })}
           </div>
         )}
-      </div>
+      </HrTableCard>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-[13px] text-[var(--foreground-muted)]">
-          Showing {from}–{to} of {total} employees
-        </p>
-        <div className="flex items-center gap-1">
-          <Link
-            aria-disabled={page <= 1}
-            className={`inline-flex h-8 w-8 items-center justify-center rounded-[8px] border border-[var(--border-primary)] text-sm ${
-              page <= 1
-                ? "pointer-events-none text-[var(--foreground-muted)] opacity-40"
-                : "text-[var(--foreground-secondary)] hover:bg-[var(--surface-muted)]"
-            }`}
-            href={buildHref({ search, status, branchId, page: page - 1 })}
-          >
-            ‹
-          </Link>
-          {pages.map((pageNumber) => (
-            <Link
-              className={`inline-flex h-8 min-w-8 items-center justify-center rounded-[8px] px-2 text-sm font-medium ${
-                pageNumber === page
-                  ? "bg-[var(--accent-primary)] text-white"
-                  : "border border-[var(--border-primary)] text-[var(--foreground-secondary)] hover:bg-[var(--surface-muted)]"
-              }`}
-              href={buildHref({ search, status, branchId, page: pageNumber })}
-              key={pageNumber}
-            >
-              {pageNumber}
-            </Link>
-          ))}
-          <Link
-            aria-disabled={page >= pageCount}
-            className={`inline-flex h-8 w-8 items-center justify-center rounded-[8px] border border-[var(--border-primary)] text-sm ${
-              page >= pageCount
-                ? "pointer-events-none text-[var(--foreground-muted)] opacity-40"
-                : "text-[var(--foreground-secondary)] hover:bg-[var(--surface-muted)]"
-            }`}
-            href={buildHref({ search, status, branchId, page: page + 1 })}
-          >
-            ›
-          </Link>
-        </div>
-      </div>
+      <HrPagination
+        from={from}
+        itemLabel="employees"
+        nextHref={
+          page < pageCount ? buildHref({ search, status, branchId, page: page + 1 }) : undefined
+        }
+        page={page}
+        pageLinks={pages.map((pageNumber) => ({
+          page: pageNumber,
+          href: buildHref({ search, status, branchId, page: pageNumber }),
+        }))}
+        prevHref={page > 1 ? buildHref({ search, status, branchId, page: page - 1 }) : undefined}
+        to={to}
+        total={total}
+      />
     </div>
   );
 }

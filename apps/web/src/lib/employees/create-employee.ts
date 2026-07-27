@@ -85,7 +85,6 @@ export async function createEmployeeRecord(
     race: input.race ?? null,
     religion: input.religion ?? null,
     marital_status: input.maritalStatus ?? null,
-    residential_address: input.residentialAddress ?? null,
     address_line1: input.addressLine1 ?? null,
     address_line2: input.addressLine2 ?? null,
     city: input.city ?? null,

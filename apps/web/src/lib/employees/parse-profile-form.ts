@@ -85,8 +85,8 @@ export function parseEmployeeProfileFormData(formData: FormData): {
     race: emptyToNull(formData.get("race")),
     religion: emptyToNull(formData.get("religion")),
     maritalStatus: emptyToNull(formData.get("maritalStatus")),
-    residentialAddress: emptyToNull(formData.get("residentialAddress")),
     addressLine1: emptyToNull(formData.get("addressLine1")),
+    addressLine2: emptyToNull(formData.get("addressLine2")),
     city: emptyToNull(formData.get("city")),
     state: emptyToNull(formData.get("state")),
     postcode: emptyToNull(formData.get("postcode")),
@@ -99,6 +99,8 @@ export function parseEmployeeProfileFormData(formData: FormData): {
     epfNumber: emptyToNull(formData.get("epfNumber")),
     socsoNumber: emptyToNull(formData.get("socsoNumber")),
     taxNumber: emptyToNull(formData.get("taxNumber")),
+    profilePhotoPath: emptyToNull(formData.get("profilePhotoPath")),
+    removeProfilePhoto: readCheckbox(formData, "removeProfilePhoto"),
     dependents,
     emergencyContacts,
   });

@@ -35,3 +35,34 @@ export async function listUserNotifications(): Promise<NotificationRow[]> {
     createdAt: row.created_at,
   }));
 }
+
+export async function getUnreadNotificationCount(): Promise<number> {
+  const session = await requireAuth();
+  const supabase = await createClient();
+
+  const { count, error } = await supabase
+    .from("notification_outbox")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", getOrganizationId())
+    .eq("recipient_user_id", session.user.id)
+    .eq("channel", "in_app")
+    .eq("status", "pending");
+
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
+export async function markInAppNotificationsRead(): Promise<void> {
+  const session = await requireAuth();
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("notification_outbox")
+    .update({ status: "sent", sent_at: new Date().toISOString() })
+    .eq("organization_id", getOrganizationId())
+    .eq("recipient_user_id", session.user.id)
+    .eq("channel", "in_app")
+    .eq("status", "pending");
+
+  if (error) throw new Error(error.message);
+}

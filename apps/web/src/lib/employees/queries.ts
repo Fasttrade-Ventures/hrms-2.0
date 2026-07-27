@@ -1,5 +1,6 @@
 import type { ListEmployeesInput } from "@hrms/validation";
 
+import { getEmployeeProfilePhotoUrl } from "@/lib/employees/profile-photo";
 import { createClient } from "@/lib/supabase/server";
 
 export type EmployeeListItem = {
@@ -13,8 +14,10 @@ export type EmployeeListItem = {
   branchId: string | null;
   branchName: string | null;
   departmentName: string | null;
+  jobTitle: string | null;
   roleLabel: "Staff" | "Manager" | "Admin" | "Owner";
   hasLogin: boolean;
+  profilePhotoUrl: string | null;
 };
 
 export type EmployeeDirectoryStats = {
@@ -60,6 +63,9 @@ export type EmployeeDetail = {
   branchName: string | null;
   departmentName: string | null;
   managerName: string | null;
+  shiftName: string | null;
+  payGroupName: string | null;
+  allowedLeaveTypeNames: string[];
   profile: {
     phone: string | null;
     icNumber: string | null;
@@ -68,7 +74,6 @@ export type EmployeeDetail = {
     race: string | null;
     religion: string | null;
     maritalStatus: "single" | "married" | "divorced" | "widowed" | null;
-    residentialAddress: string | null;
     addressLine1: string | null;
     addressLine2: string | null;
     city: string | null;
@@ -83,6 +88,8 @@ export type EmployeeDetail = {
     socsoNumber: string | null;
     taxNumber: string | null;
     basicSalary: number;
+    profilePhotoPath: string | null;
+    profilePhotoUrl: string | null;
   };
   dependents: Array<{
     id: string;
@@ -134,12 +141,17 @@ type EmployeeRow = {
   status: "active" | "inactive" | "terminated";
   join_date: string;
   branch_id: string | null;
+  job_title: string | null;
   branches: { name?: string } | null;
   departments: { name?: string } | null;
   organization_memberships: { user_id: string; roles: string[] | null } | Array<{
     user_id: string;
     roles: string[] | null;
   }> | null;
+  employee_profiles:
+    | { profile_photo_path: string | null }
+    | Array<{ profile_photo_path: string | null }>
+    | null;
 };
 
 function mapEmployeeRow(row: EmployeeRow, onLeaveIds: Set<string>): EmployeeListItem {
@@ -148,6 +160,10 @@ function mapEmployeeRow(row: EmployeeRow, onLeaveIds: Set<string>): EmployeeList
     : row.organization_memberships;
   const status = row.status;
   const onLeave = status === "active" && onLeaveIds.has(row.id);
+  const profile = Array.isArray(row.employee_profiles)
+    ? row.employee_profiles[0]
+    : row.employee_profiles;
+  const profilePhotoPath = profile?.profile_photo_path ?? null;
 
   return {
     id: row.id,
@@ -160,8 +176,10 @@ function mapEmployeeRow(row: EmployeeRow, onLeaveIds: Set<string>): EmployeeList
     branchId: row.branch_id,
     branchName: row.branches?.name ?? null,
     departmentName: row.departments?.name ?? null,
+    jobTitle: row.job_title?.trim() || null,
     roleLabel: roleLabelFromRoles(membership?.roles),
     hasLogin: Boolean(membership?.user_id),
+    profilePhotoUrl: getEmployeeProfilePhotoUrl(profilePhotoPath),
   };
 }
 
@@ -226,7 +244,7 @@ export async function getEmployeeDirectory(filters: ListEmployeesInput): Promise
   let query = supabase
     .from("employees")
     .select(
-      "id, employee_number, full_name, email, status, join_date, branch_id, branches(name), departments(name), organization_memberships(user_id, roles)",
+      "id, employee_number, full_name, email, status, join_date, branch_id, job_title, branches(name), departments(name), organization_memberships(user_id, roles), employee_profiles(profile_photo_path)",
       { count: "exact" },
     )
     .eq("organization_id", organizationId)
@@ -248,8 +266,11 @@ export async function getEmployeeDirectory(filters: ListEmployeesInput): Promise
   }
 
   if (filters.search?.trim()) {
-    const term = `%${filters.search.trim()}%`;
-    query = query.or(`full_name.ilike.${term},email.ilike.${term},employee_number.ilike.${term}`);
+    const raw = filters.search.trim().replace(/[%_,."]/g, "");
+    const term = `%${raw}%`;
+    query = query.or(
+      `full_name.ilike."${term}",email.ilike."${term}",employee_number.ilike."${term}"`,
+    );
   }
 
   const { data, error, count } = await query;
@@ -299,6 +320,8 @@ export async function getEmployeeDetail(employeeId: string): Promise<EmployeeDet
       annual_leave_carry_forward,
       branches(name),
       departments(name),
+      shifts(name),
+      pay_groups(name),
       employee_profiles(
         phone,
         ic_number,
@@ -307,7 +330,6 @@ export async function getEmployeeDetail(employeeId: string): Promise<EmployeeDet
         race,
         religion,
         marital_status,
-        residential_address,
         address_line1,
         address_line2,
         city,
@@ -321,11 +343,12 @@ export async function getEmployeeDetail(employeeId: string): Promise<EmployeeDet
         epf_number,
         socso_number,
         tax_number,
-        basic_salary
+        basic_salary,
+        profile_photo_path
       ),
       employee_emergency_contacts(id, name, relationship, phone),
       employee_dependents(id, dependent_type, full_name, ic_number, is_working, date_of_birth),
-      employee_allowed_leave_types(leave_type_id),
+      employee_allowed_leave_types(leave_type_id, leave_types(name)),
       organization_memberships(user_id, roles)
     `,
     )
@@ -383,6 +406,14 @@ export async function getEmployeeDetail(employeeId: string): Promise<EmployeeDet
     branchName: (employee.branches as { name?: string } | null)?.name ?? null,
     departmentName: (employee.departments as { name?: string } | null)?.name ?? null,
     managerName,
+    shiftName: (employee.shifts as { name?: string } | null)?.name ?? null,
+    payGroupName: (employee.pay_groups as { name?: string } | null)?.name ?? null,
+    allowedLeaveTypeNames: (employee.employee_allowed_leave_types ?? [])
+      .map((row: { leave_types?: { name?: string } | { name?: string }[] | null }) => {
+        const leaveType = Array.isArray(row.leave_types) ? row.leave_types[0] : row.leave_types;
+        return leaveType?.name ?? null;
+      })
+      .filter((name): name is string => Boolean(name)),
     profile: {
       phone: profile?.phone ?? null,
       icNumber: profile?.ic_number ?? null,
@@ -391,7 +422,6 @@ export async function getEmployeeDetail(employeeId: string): Promise<EmployeeDet
       race: profile?.race ?? null,
       religion: profile?.religion ?? null,
       maritalStatus: profile?.marital_status ?? null,
-      residentialAddress: profile?.residential_address ?? null,
       addressLine1: profile?.address_line1 ?? null,
       addressLine2: profile?.address_line2 ?? null,
       city: profile?.city ?? null,
@@ -406,6 +436,8 @@ export async function getEmployeeDetail(employeeId: string): Promise<EmployeeDet
       socsoNumber: profile?.socso_number ?? null,
       taxNumber: profile?.tax_number ?? null,
       basicSalary: Number(profile?.basic_salary ?? 0),
+      profilePhotoPath: profile?.profile_photo_path ?? null,
+      profilePhotoUrl: getEmployeeProfilePhotoUrl(profile?.profile_photo_path ?? null),
     },
     dependents: (employee.employee_dependents ?? []).map(
       (dependent: {

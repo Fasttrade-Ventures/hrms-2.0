@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useMemo } from "react";
+import { useActionState, useMemo, useState } from "react";
 
 import {
   createHoliday,
@@ -9,6 +9,7 @@ import {
   updateHoliday,
   type OrgActionState,
 } from "@/app/(hr)/hr/organization/actions";
+import { ImportHolidaysDialog } from "@/components/hr/organization/import-holidays-dialog";
 import {
   HrField,
   HrSelect,
@@ -17,13 +18,28 @@ import {
   OrgFormActions,
   OrgFormCard,
   OrgStatCards,
+  OrgTableCell,
+  OrgTableEditLink,
+  OrgTableRow,
   OrgTableShell,
-  StatusPill,
+  OrgTableStatus,
 } from "@/components/hr/organization/org-ui";
+import { HrFilterButton, HrLinkButton, HrPagination } from "@/components/hr/hr-ui.client";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
-import type { HolidayRow } from "@/lib/hr/organization";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { getHolidayYearOptions, getHolidayYearRange } from "@/lib/hr/holiday-window";
+import type {
+  BranchImportOption,
+  HolidayBranchFilter,
+  HolidayRow,
+} from "@/lib/hr/organization";
 
 const initialState: OrgActionState = {};
+
+type HolidaySort = "date" | "name" | "scope" | "created";
+type HolidayOrder = "asc" | "desc";
 
 function formatDate(value: string) {
   return new Date(`${value}T00:00:00`).toLocaleDateString("en-GB", {
@@ -33,98 +49,218 @@ function formatDate(value: string) {
   });
 }
 
+function buildHolidayHref({
+  year,
+  branchId = "all",
+  sort = "date",
+  order = "asc",
+  page = 1,
+}: {
+  year: number;
+  branchId?: string;
+  sort?: HolidaySort;
+  order?: HolidayOrder;
+  page?: number;
+}) {
+  const params = new URLSearchParams();
+  params.set("year", String(year));
+  if (branchId !== "all") params.set("branchId", branchId);
+  if (sort !== "date") params.set("sort", sort);
+  if (order !== "asc") params.set("order", order);
+  if (page > 1) params.set("page", String(page));
+  const query = params.toString();
+  return `/hr/organization/holidays${query ? `?${query}` : ""}`;
+}
+
 export function HolidaysList({
   holidays,
+  branches,
+  branchFilters,
   year,
+  branchId,
+  sort,
+  order,
+  page,
+  pageSize,
+  total,
+  yearTotal,
+  orgWideCount,
 }: {
   holidays: HolidayRow[];
+  branches: BranchImportOption[];
+  branchFilters: HolidayBranchFilter[];
   year: number;
+  branchId: string;
+  sort: HolidaySort;
+  order: HolidayOrder;
+  page: number;
+  pageSize: number;
+  total: number;
+  yearTotal: number;
+  orgWideCount: number;
 }) {
-  const orgWide = holidays.filter((row) => !row.branchId).length;
-  const years = [year - 1, year, year + 1];
+  const [importOpen, setImportOpen] = useState(false);
+  const years = getHolidayYearOptions();
+  const { minYear, maxYear } = getHolidayYearRange();
+  const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, total);
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  const pages = Array.from({ length: Math.min(pageCount, 5) }, (_, index) => {
+    if (pageCount <= 5) return index + 1;
+    const start = Math.min(Math.max(1, page - 2), pageCount - 4);
+    return start + index;
+  });
+
+  const listParams = { year, branchId, sort, order };
 
   return (
     <div className="space-y-6">
       <PortalPageHeader
         actions={
           <div className="flex flex-wrap gap-2">
-            <Link
-              className="inline-flex h-10 items-center rounded-[var(--radius-sm)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-4 text-sm font-medium hover:bg-[var(--surface-muted)]"
-              href="/hr/organization"
-            >
+            <HrLinkButton href="/hr/organization" variant="outline">
               Back to hub
-            </Link>
-            <Link
-              className="inline-flex h-10 items-center rounded-[var(--radius-md)] bg-[var(--accent-primary)] px-4 text-sm font-semibold text-white hover:bg-[var(--accent-hover)]"
-              href="/hr/organization/holidays/create"
+            </HrLinkButton>
+            <Button
+              disabled={branches.length === 0}
+              onClick={() => setImportOpen(true)}
+              type="button"
+              variant="outline"
             >
-              Add holiday
-            </Link>
+              Import holidays
+            </Button>
+            <HrLinkButton href="/hr/organization/holidays/create">Add holiday</HrLinkButton>
           </div>
         }
-        description="Public and company holidays used in working-day calculation."
+        description={`Public and company holidays used in working-day calculation. Storage window: ${minYear}–${maxYear}.`}
         title="Holidays"
       />
 
-      <div className="flex flex-wrap gap-2">
-        {years.map((item) => (
-          <Link
-            className={`inline-flex h-9 items-center rounded-[var(--radius-sm)] border px-3 text-sm font-medium ${
-              item === year
-                ? "border-[var(--accent-primary)] bg-[var(--surface-accent-soft)] text-[var(--accent-primary)]"
-                : "border-[var(--border-primary)] bg-[var(--surface-card)] hover:bg-[var(--surface-muted)]"
-            }`}
-            href={`/hr/organization/holidays?year=${item}`}
-            key={item}
-          >
-            {item}
-          </Link>
-        ))}
-      </div>
+      <ImportHolidaysDialog
+        branches={branches}
+        defaultYear={year}
+        onClose={() => setImportOpen(false)}
+        open={importOpen}
+      />
+
+      <Card className="py-0">
+        <CardContent className="flex flex-col gap-3 py-4">
+          <Label className="text-xs text-muted-foreground">Year</Label>
+          <div className="flex flex-wrap gap-1.5">
+            {years.map((item) => (
+              <HrFilterButton
+                active={item === year}
+                href={buildHolidayHref({ year: item, branchId, sort, order })}
+                key={item}
+              >
+                {item}
+              </HrFilterButton>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       <OrgStatCards
         items={[
-          { label: "Holidays", value: holidays.length, hint: `${year} gazette` },
-          { label: "Org-wide", value: orgWide, hint: "all branches" },
+          { label: "Holidays", value: yearTotal, hint: `${year} gazette` },
+          { label: "Org-wide", value: orgWideCount, hint: "all branches" },
           {
             label: "Branch-specific",
-            value: holidays.length - orgWide,
+            value: yearTotal - orgWideCount,
             hint: "site only",
           },
         ]}
       />
 
+      <Card className="py-0">
+        <CardContent className="flex flex-col gap-3 py-4">
+          <Label className="text-xs text-muted-foreground">Branch scope</Label>
+          <div className="flex flex-wrap gap-1.5">
+            <HrFilterButton
+              active={branchId === "all"}
+              href={buildHolidayHref({ ...listParams, branchId: "all", page: 1 })}
+            >
+              All ({yearTotal})
+            </HrFilterButton>
+            <HrFilterButton
+              active={branchId === "org-wide"}
+              href={buildHolidayHref({ ...listParams, branchId: "org-wide", page: 1 })}
+            >
+              Org-wide ({orgWideCount})
+            </HrFilterButton>
+            {branchFilters.map((branch) => (
+              <HrFilterButton
+                active={branchId === branch.id}
+                href={buildHolidayHref({ ...listParams, branchId: branch.id, page: 1 })}
+                key={branch.id}
+              >
+                {branch.name} ({branch.count})
+              </HrFilterButton>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       <OrgTableShell
-        emptyDescription="Add public or company holidays for this year."
-        emptyTitle="No holidays yet"
-        headers={["Name", "Date", "Scope", "Created", "Status", "Action"]}
+        emptyDescription={
+          yearTotal > 0 && branchId !== "all"
+            ? "Try another branch filter or switch back to All."
+            : "Add public or company holidays for this year, or import by branch."
+        }
+        emptyTitle={
+          yearTotal > 0 && branchId !== "all" ? "No holidays in this filter" : "No holidays yet"
+        }
+        getSortHref={(key, nextOrder) =>
+          buildHolidayHref({
+            ...listParams,
+            sort: key as HolidaySort,
+            order: nextOrder,
+            page: 1,
+          })
+        }
+        headers={[
+          { label: "Name", sortKey: "name" },
+          { label: "Date", sortKey: "date" },
+          { label: "Scope", sortKey: "scope" },
+          { label: "Created", sortKey: "created" },
+          "Status",
+          "Action",
+        ]}
         isEmpty={holidays.length === 0}
+        sort={{ key: sort, order }}
       >
         {holidays.map((holiday) => (
-          <div className="grid items-center gap-3 px-3.5 py-3 md:grid-cols-6" key={holiday.id}>
-            <p className="text-sm font-semibold text-[var(--foreground-primary)]">{holiday.name}</p>
-            <p className="text-sm text-[var(--foreground-secondary)]">{formatDate(holiday.holidayDate)}</p>
-            <p className="text-sm text-[var(--foreground-muted)]">
-              {holiday.branchName ?? "Org-wide"}
-            </p>
-            <p className="text-sm text-[var(--foreground-muted)]">
+          <OrgTableRow key={holiday.id}>
+            <OrgTableCell variant="name">{holiday.name}</OrgTableCell>
+            <OrgTableCell>{formatDate(holiday.holidayDate)}</OrgTableCell>
+            <OrgTableCell variant="muted">{holiday.branchName ?? "Org-wide"}</OrgTableCell>
+            <OrgTableCell variant="muted">
               {new Date(holiday.createdAt).toLocaleDateString("en-GB", {
                 day: "2-digit",
                 month: "short",
               })}
-            </p>
-            <StatusPill label="Active" tone="success" />
-            <div>
-              <Link
-                className="inline-flex h-9 items-center rounded-[var(--radius-sm)] border border-[var(--border-primary)] px-3 text-sm font-medium hover:bg-[var(--surface-muted)]"
-                href={`/hr/organization/holidays/${holiday.id}/edit`}
-              >
-                Edit
-              </Link>
-            </div>
-          </div>
+            </OrgTableCell>
+            <OrgTableStatus />
+            <OrgTableEditLink href={`/hr/organization/holidays/${holiday.id}/edit`} />
+          </OrgTableRow>
         ))}
       </OrgTableShell>
+
+      <HrPagination
+        from={from}
+        itemLabel={branchId !== "all" ? "holidays in this filter" : "holidays"}
+        nextHref={
+          page < pageCount ? buildHolidayHref({ ...listParams, page: page + 1 }) : undefined
+        }
+        page={page}
+        pageLinks={pages.map((pageNumber) => ({
+          page: pageNumber,
+          href: buildHolidayHref({ ...listParams, page: pageNumber }),
+        }))}
+        prevHref={page > 1 ? buildHolidayHref({ ...listParams, page: page - 1 }) : undefined}
+        to={to}
+        total={total}
+      />
     </div>
   );
 }
@@ -141,17 +277,15 @@ export function HolidayForm({
     [holiday],
   );
   const [state, formAction, pending] = useActionState(boundUpdate, initialState);
+  const { minYear, maxYear } = getHolidayYearRange();
 
   return (
     <div className="space-y-6">
       <PortalPageHeader
         actions={
-          <Link
-            className="inline-flex h-10 items-center rounded-[var(--radius-sm)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-4 text-sm font-medium hover:bg-[var(--surface-muted)]"
-            href="/hr/organization/holidays"
-          >
+          <HrLinkButton href="/hr/organization/holidays" variant="outline">
             Back to list
-          </Link>
+          </HrLinkButton>
         }
         description="Leave branch empty for an organization-wide holiday."
         title={holiday ? "Edit holiday" : "Create holiday"}
@@ -171,6 +305,8 @@ export function HolidayForm({
               <HrTextInput
                 defaultValue={holiday?.holidayDate ?? ""}
                 id="holidayDate"
+                max={`${maxYear}-12-31`}
+                min={`${minYear}-01-01`}
                 name="holidayDate"
                 required
                 type="date"

@@ -2,31 +2,53 @@ import Link from "next/link";
 
 import { StatCard, StatusPill } from "@hrms/ui";
 
+import { AnnouncementDashboardWidget } from "@/components/announcements/announcement-dashboard-widget";
+import { formatDateTime } from "@/components/employee/employee-shared";
 import { PortalSectionCard } from "@/components/portal/portal-section";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { PortalIcon } from "@/components/portal/portal-icons";
-import { formatDateTime } from "@/components/employee/employee-shared";
+import {
+  getAnnouncementViewer,
+  listDashboardAnnouncementItems,
+} from "@/lib/announcements/queries";
 import { getTodayAttendance } from "@/lib/employee/attendance";
-import { listAnnouncements } from "@/lib/employee/catalog";
+import { getLeaveBalances, listLeaveRequests, requireEmployeeContext } from "@/lib/employee/leave";
 import {
   firstNameFromFullName,
   getCurrentEmployeeDetail,
   greetingForHour,
 } from "@/lib/employees/self";
-import { getLeaveBalances, listLeaveRequests } from "@/lib/employee/leave";
 
 export default async function Page() {
   const hour = new Date().getHours();
   const employee = await getCurrentEmployeeDetail();
   const firstName = firstNameFromFullName(employee?.fullName, employee?.email);
 
-  const [balances, requests, todayAttendance, announcements] = await Promise.all([
+  const employeeContext = employee ? await requireEmployeeContext().catch(() => null) : null;
+
+  const [balances, requests, todayAttendance, announcementFeed] = await Promise.all([
     getLeaveBalances().catch(() => []),
     listLeaveRequests().catch(() => []),
     getTodayAttendance().catch(() => null),
-    listAnnouncements().catch(() => []),
+    employeeContext
+      ? getAnnouncementViewer({
+          organizationId: employeeContext.organizationId,
+          employeeId: employeeContext.employeeId,
+          roles: employeeContext.session.membership.roles,
+        })
+          .then((viewer) =>
+            listDashboardAnnouncementItems({
+              organizationId: employeeContext.organizationId,
+              viewer,
+              userId: employeeContext.session.user.id,
+            }),
+          )
+          .catch(() => ({ pinned: [], latest: [] }))
+      : Promise.resolve({ pinned: [], latest: [] }),
   ]);
 
+  const announcementPinned = announcementFeed.pinned;
+  const announcementItems = announcementFeed.latest;
   const annual = balances.find((row) => row.leaveTypeName === "Annual Leave");
   const pendingRequests = requests.filter((row) => row.status === "pending").length;
   const attendanceLabel = todayAttendance?.clockInAt
@@ -46,7 +68,7 @@ export default async function Page() {
         title={`${greetingForHour(hour)}, ${firstName}`}
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <StatCard
           hint={`${annual?.usedDays ?? 0} used · ${annual?.pendingDays ?? 0} pending`}
           icon={<PortalIcon name="leave" />}
@@ -65,15 +87,15 @@ export default async function Page() {
           label="Open requests"
           value={String(pendingRequests)}
         />
-        <StatCard
-          hint="Latest company updates"
-          icon={<PortalIcon name="announcements" />}
-          label="Announcements"
-          value={String(announcements.length)}
-        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
+        <AnnouncementDashboardWidget
+          basePath="/employee/announcements"
+          items={announcementItems}
+          pinnedItems={announcementPinned}
+        />
+
         <PortalSectionCard
           action={
             <StatusPill
@@ -92,24 +114,24 @@ export default async function Page() {
             View leave
           </Link>
         </PortalSectionCard>
-
-        <PortalSectionCard description="Common tasks from your dashboard." title="Quick actions">
-          <div className="flex flex-wrap gap-3">
-            <Link
-              className="inline-flex h-10 items-center rounded-[var(--radius-md)] bg-[var(--accent-primary)] px-4 text-sm font-semibold text-white hover:bg-[var(--accent-hover)]"
-              href="/employee/attendance"
-            >
-              Clock in
-            </Link>
-            <Link
-              className="inline-flex h-10 items-center rounded-[var(--radius-md)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-4 text-sm font-medium hover:bg-[var(--surface-muted)]"
-              href="/employee/leave"
-            >
-              Apply leave
-            </Link>
-          </div>
-        </PortalSectionCard>
       </div>
+
+      <PortalSectionCard description="Common tasks from your dashboard." title="Quick actions">
+        <div className="flex flex-wrap gap-3">
+          <Link
+            className="inline-flex h-10 items-center rounded-[var(--radius-md)] bg-[var(--accent-primary)] px-4 text-sm font-semibold text-white hover:bg-[var(--accent-hover)]"
+            href="/employee/attendance"
+          >
+            Clock in
+          </Link>
+          <Link
+            className="inline-flex h-10 items-center rounded-[var(--radius-md)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-4 text-sm font-medium hover:bg-[var(--surface-muted)]"
+            href="/employee/leave"
+          >
+            Apply leave
+          </Link>
+        </div>
+      </PortalSectionCard>
     </div>
   );
 }

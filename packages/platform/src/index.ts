@@ -7,6 +7,7 @@ export * from "./entitlements/env-provider";
 export * from "./entitlements/db-provider";
 export * from "./env/validate";
 export * from "./storage/r2";
+export * from "./storage/s3-r2";
 export * from "./jobs/ledger";
 export * from "./audit/events";
 export * from "./health/check";

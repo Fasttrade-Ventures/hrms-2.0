@@ -130,7 +130,7 @@ async function runHttpChecks(baseUrl: string) {
   }
 }
 
-async function runDbChecks() {
+async function runDbChecks(): Promise<ReturnType<typeof createClient> | null> {
   const phase = "Phase 3";
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -138,7 +138,7 @@ async function runDbChecks() {
 
   if (!supabaseUrl || !serviceRoleKey || !organizationId) {
     fail(phase, "Supabase env configured", "Missing URL, service role, or org id");
-    return;
+    return null;
   }
 
   pass(phase, "Supabase env configured");
@@ -219,6 +219,363 @@ async function runDbChecks() {
 
   if (!auditError) pass(phase, "Audit events table accessible");
   else fail(phase, "Audit events table accessible", auditError.message);
+
+  return admin;
+}
+
+async function runDocumentsHttpChecks(baseUrl: string) {
+  const phase = "Documents";
+
+  const routes = [
+    "/hr/documents",
+    "/hr/documents/library",
+    "/hr/documents/folders",
+    "/hr/documents/required",
+    "/hr/documents/compliance",
+    "/hr/notifications",
+    "/employee/documents",
+    "/manager/team-documents",
+  ];
+
+  for (const route of routes) {
+    const response = await fetchStatus(`${baseUrl}${route}`);
+    if (response.status === 307 && response.location?.includes("/auth/login")) {
+      pass(phase, `Unauthenticated ${route} redirects to login`);
+    } else {
+      fail(phase, `Unauthenticated ${route} redirects to login`, `status ${response.status}`);
+    }
+  }
+
+  const download = await fetchStatus(`${baseUrl}/api/files/00000000-0000-0000-0000-000000000001/download`);
+  if (
+    download.status === 401 ||
+    (download.status === 307 && download.location?.includes("/auth/login"))
+  ) {
+    pass(phase, "Unauthenticated file download is blocked");
+  } else {
+    fail(phase, "Unauthenticated file download is blocked", `status ${download.status}`);
+  }
+}
+
+async function runDocumentsDbChecks(
+  admin: ReturnType<typeof createClient>,
+  organizationId: string,
+) {
+  const phase = "Documents";
+
+  const { error: requiredError } = await admin
+    .from("required_documents")
+    .select("id")
+    .eq("organization_id", organizationId)
+    .limit(1);
+
+  if (!requiredError) pass(phase, "required_documents table accessible");
+  else fail(phase, "required_documents table accessible", requiredError.message);
+
+  const { count: folderCount, error: folderError } = await admin
+    .from("document_folders")
+    .select("*", { count: "exact", head: true })
+    .eq("organization_id", organizationId);
+
+  if (!folderError) pass(phase, "document_folders table accessible", `${folderCount ?? 0} folder(s)`);
+  else fail(phase, "document_folders table accessible", folderError.message);
+
+  const { count: documentCount, error: documentError } = await admin
+    .from("employee_documents")
+    .select("*", { count: "exact", head: true })
+    .eq("organization_id", organizationId);
+
+  if (!documentError) {
+    pass(phase, "employee_documents table accessible", `${documentCount ?? 0} document(s)`);
+  } else {
+    fail(phase, "employee_documents table accessible", documentError.message);
+  }
+}
+
+async function runAnnouncementsHttpChecks(baseUrl: string) {
+  const phase = "Announcements";
+
+  const routes = [
+    "/hr/announcements",
+    "/employee/announcements",
+    "/manager/announcements",
+  ];
+
+  for (const route of routes) {
+    const response = await fetchStatus(`${baseUrl}${route}`);
+    if (response.status === 307 && response.location?.includes("/auth/login")) {
+      pass(phase, `Unauthenticated ${route} redirects to login`);
+    } else {
+      fail(phase, `Unauthenticated ${route} redirects to login`, `status ${response.status}`);
+    }
+  }
+}
+
+async function runAnnouncementsDbChecks(
+  admin: ReturnType<typeof createClient>,
+  organizationId: string,
+) {
+  const phase = "Announcements";
+
+  const { error } = await admin
+    .from("announcements")
+    .select("id, status, target_department_ids")
+    .eq("organization_id", organizationId)
+    .limit(1);
+
+  if (!error) pass(phase, "announcements workflow columns accessible");
+  else fail(phase, "announcements workflow columns accessible", error.message);
+}
+
+async function runOrgHttpChecks(baseUrl: string) {
+  const phase = "Organization";
+
+  const routes = [
+    "/hr/organization",
+    "/hr/organization/branches",
+    "/hr/organization/branches/create",
+    "/hr/organization/departments",
+    "/hr/organization/departments/create",
+    "/hr/organization/shifts",
+    "/hr/organization/shifts/create",
+    "/hr/organization/holidays",
+    "/hr/organization/holidays/create",
+    "/hr/organization/leave-types",
+    "/hr/organization/leave-types/create",
+  ];
+
+  for (const route of routes) {
+    const response = await fetchStatus(`${baseUrl}${route}`);
+    if (response.status === 307 && response.location?.includes("/auth/login")) {
+      pass(phase, `Unauthenticated ${route} redirects to login`);
+    } else {
+      fail(phase, `Unauthenticated ${route} redirects to login`, `status ${response.status}`);
+    }
+  }
+}
+
+async function runOrgCatalogChecks(
+  admin: ReturnType<typeof createClient>,
+  organizationId: string,
+) {
+  const phase = "Organization";
+  const stamp = Date.now();
+  const tag = `smoke-${stamp}`;
+
+  let branchId: string | null = null;
+  let departmentId: string | null = null;
+  let shiftId: string | null = null;
+  let holidayId: string | null = null;
+  let leaveTypeId: string | null = null;
+
+  try {
+    const { data: branch, error: branchError } = await admin
+      .from("branches")
+      .insert({
+        organization_id: organizationId,
+        name: `Smoke Branch ${tag}`,
+        weekend_mode: "sat_sun",
+        payroll_cutoff_day: 6,
+      })
+      .select("id, name")
+      .single();
+
+    if (branchError || !branch) fail(phase, "Create branch", branchError?.message);
+    else {
+      branchId = branch.id;
+      pass(phase, "Create branch", branch.name);
+    }
+
+    const { data: department, error: departmentError } = await admin
+      .from("departments")
+      .insert({
+        organization_id: organizationId,
+        branch_id: branchId,
+        name: `Smoke Department ${tag}`,
+      })
+      .select("id, name")
+      .single();
+
+    if (departmentError || !department) fail(phase, "Create department", departmentError?.message);
+    else {
+      departmentId = department.id;
+      pass(phase, "Create department", department.name);
+    }
+
+    const { data: shift, error: shiftError } = await admin
+      .from("shifts")
+      .insert({
+        organization_id: organizationId,
+        name: `Smoke Shift ${tag}`,
+        start_time: "09:00:00",
+        end_time: "18:00:00",
+        grace_minutes: 10,
+      })
+      .select("id, name")
+      .single();
+
+    if (shiftError || !shift) fail(phase, "Create shift", shiftError?.message);
+    else {
+      shiftId = shift.id;
+      pass(phase, "Create shift", shift.name);
+    }
+
+    const holidayDate = "2099-12-25";
+    const { data: holiday, error: holidayError } = await admin
+      .from("holidays")
+      .insert({
+        organization_id: organizationId,
+        branch_id: branchId,
+        name: `Smoke Holiday ${tag}`,
+        holiday_date: holidayDate,
+      })
+      .select("id, name")
+      .single();
+
+    if (holidayError || !holiday) fail(phase, "Create holiday", holidayError?.message);
+    else {
+      holidayId = holiday.id;
+      pass(phase, "Create holiday", holiday.name);
+    }
+
+    const { data: leaveType, error: leaveTypeError } = await admin
+      .from("leave_types")
+      .insert({
+        organization_id: organizationId,
+        name: `Smoke Leave ${tag}`,
+        entitlement_days: 2,
+        requires_attachment: false,
+        is_unpaid: false,
+      })
+      .select("id, name")
+      .single();
+
+    if (leaveTypeError || !leaveType) fail(phase, "Create leave type", leaveTypeError?.message);
+    else {
+      leaveTypeId = leaveType.id;
+      pass(phase, "Create leave type", leaveType.name);
+    }
+
+    const { error: updateBranchError } = await admin
+      .from("branches")
+      .update({ name: `Smoke Branch Updated ${tag}`, payroll_cutoff_day: 7 })
+      .eq("id", branchId!)
+      .eq("organization_id", organizationId);
+    if (updateBranchError) fail(phase, "Update branch", updateBranchError.message);
+    else pass(phase, "Update branch");
+
+    const { error: updateDepartmentError } = await admin
+      .from("departments")
+      .update({ name: `Smoke Department Updated ${tag}` })
+      .eq("id", departmentId!)
+      .eq("organization_id", organizationId);
+    if (updateDepartmentError) fail(phase, "Update department", updateDepartmentError.message);
+    else pass(phase, "Update department");
+
+    const { error: updateShiftError } = await admin
+      .from("shifts")
+      .update({ grace_minutes: 15, end_time: "17:30:00" })
+      .eq("id", shiftId!)
+      .eq("organization_id", organizationId);
+    if (updateShiftError) fail(phase, "Update shift", updateShiftError.message);
+    else pass(phase, "Update shift");
+
+    const { error: updateHolidayError } = await admin
+      .from("holidays")
+      .update({ name: `Smoke Holiday Updated ${tag}` })
+      .eq("id", holidayId!)
+      .eq("organization_id", organizationId);
+    if (updateHolidayError) fail(phase, "Update holiday", updateHolidayError.message);
+    else pass(phase, "Update holiday");
+
+    const { error: updateLeaveTypeError } = await admin
+      .from("leave_types")
+      .update({ entitlement_days: 3, requires_attachment: true })
+      .eq("id", leaveTypeId!)
+      .eq("organization_id", organizationId);
+    if (updateLeaveTypeError) fail(phase, "Update leave type", updateLeaveTypeError.message);
+    else pass(phase, "Update leave type");
+
+    const { data: listedBranch, error: readBranchError } = await admin
+      .from("branches")
+      .select("id, name, payroll_cutoff_day")
+      .eq("id", branchId!)
+      .maybeSingle();
+    if (readBranchError || !listedBranch || listedBranch.payroll_cutoff_day !== 7) {
+      fail(phase, "Read branch", readBranchError?.message ?? "record mismatch");
+    } else pass(phase, "Read branch");
+
+    const { count: departmentCount, error: listDepartmentError } = await admin
+      .from("departments")
+      .select("*", { count: "exact", head: true })
+      .eq("organization_id", organizationId)
+      .eq("branch_id", branchId!);
+    if (listDepartmentError || (departmentCount ?? 0) < 1) {
+      fail(phase, "List departments for branch", listDepartmentError?.message);
+    } else pass(phase, "List departments for branch", `${departmentCount} record(s)`);
+
+    const { count: shiftCount, error: listShiftError } = await admin
+      .from("shifts")
+      .select("*", { count: "exact", head: true })
+      .eq("organization_id", organizationId)
+      .ilike("name", `%${tag}%`);
+    if (listShiftError || (shiftCount ?? 0) < 1) {
+      fail(phase, "List shifts", listShiftError?.message);
+    } else pass(phase, "List shifts", `${shiftCount} record(s)`);
+
+    const { count: holidayCount, error: listHolidayError } = await admin
+      .from("holidays")
+      .select("*", { count: "exact", head: true })
+      .eq("organization_id", organizationId)
+      .eq("holiday_date", holidayDate);
+    if (listHolidayError || (holidayCount ?? 0) < 1) {
+      fail(phase, "List holidays", listHolidayError?.message);
+    } else pass(phase, "List holidays", `${holidayCount} record(s)`);
+
+    const { data: listedLeaveType, error: readLeaveTypeError } = await admin
+      .from("leave_types")
+      .select("id, entitlement_days, requires_attachment")
+      .eq("id", leaveTypeId!)
+      .maybeSingle();
+    if (
+      readLeaveTypeError ||
+      !listedLeaveType ||
+      Number(listedLeaveType.entitlement_days) !== 3 ||
+      listedLeaveType.requires_attachment !== true
+    ) {
+      fail(phase, "Read leave type", readLeaveTypeError?.message ?? "record mismatch");
+    } else pass(phase, "Read leave type");
+  } finally {
+    if (leaveTypeId) {
+      const { error } = await admin.from("leave_types").delete().eq("id", leaveTypeId);
+      if (error) fail(phase, "Delete leave type", error.message);
+      else pass(phase, "Delete leave type");
+    }
+
+    if (holidayId) {
+      const { error } = await admin.from("holidays").delete().eq("id", holidayId);
+      if (error) fail(phase, "Delete holiday", error.message);
+      else pass(phase, "Delete holiday");
+    }
+
+    if (shiftId) {
+      const { error } = await admin.from("shifts").delete().eq("id", shiftId);
+      if (error) fail(phase, "Delete shift", error.message);
+      else pass(phase, "Delete shift");
+    }
+
+    if (departmentId) {
+      const { error } = await admin.from("departments").delete().eq("id", departmentId);
+      if (error) fail(phase, "Delete department", error.message);
+      else pass(phase, "Delete department");
+    }
+
+    if (branchId) {
+      const { error } = await admin.from("branches").delete().eq("id", branchId);
+      if (error) fail(phase, "Delete branch", error.message);
+      else pass(phase, "Delete branch");
+    }
+  }
 }
 
 async function main() {
@@ -227,7 +584,19 @@ async function main() {
   console.log(`Smoke test target: ${baseUrl}\n`);
 
   await runHttpChecks(baseUrl.replace(/\/$/, ""));
-  await runDbChecks();
+  await runDocumentsHttpChecks(baseUrl.replace(/\/$/, ""));
+  await runAnnouncementsHttpChecks(baseUrl.replace(/\/$/, ""));
+  await runOrgHttpChecks(baseUrl.replace(/\/$/, ""));
+  const admin = await runDbChecks();
+  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
+  if (admin && organizationId) {
+    await runOrgCatalogChecks(admin, organizationId);
+    await runDocumentsDbChecks(admin, organizationId);
+    await runAnnouncementsDbChecks(admin, organizationId);
+  } else {
+    fail("Organization", "Organization catalog CRUD", "Skipped — Supabase env not configured");
+    fail("Documents", "Documents DB checks", "Skipped — Supabase env not configured");
+  }
 
   const failed = results.filter((result) => !result.ok);
   const byPhase = new Map<string, CheckResult[]>();

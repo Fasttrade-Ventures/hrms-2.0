@@ -4,10 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { requireRole } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
-import { uploadOrganizationFile } from "@/lib/files/storage";
-import { publishAnnouncement } from "@/lib/hr/announcements";
 import { createAsset } from "@/lib/hr/assets";
-import { attachEmployeeDocument } from "@/lib/hr/documents";
 import { createDraftPayrun, lockPayrun } from "@/lib/hr/payroll";
 
 export type HrActionState = {
@@ -19,71 +16,6 @@ function getOrganizationId(): string {
   const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
   if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
   return organizationId;
-}
-
-export async function publishAnnouncementAction(
-  _prev: HrActionState,
-  formData: FormData,
-): Promise<HrActionState> {
-  const title = String(formData.get("title") ?? "").trim();
-  const body = String(formData.get("body") ?? "").trim();
-
-  if (!title || !body) return { error: "Title and body are required." };
-
-  try {
-    requireModule("announcements");
-    const session = await requireRole("hr_administrator");
-    await publishAnnouncement({
-      title,
-      body,
-      actorUserId: session.user.id,
-    });
-    revalidatePath("/hr/announcements");
-    revalidatePath("/employee/announcements");
-    return { success: "Announcement published." };
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : "Failed to publish announcement." };
-  }
-}
-
-export async function uploadEmployeeDocumentAction(
-  _prev: HrActionState,
-  formData: FormData,
-): Promise<HrActionState> {
-  const employeeId = String(formData.get("employeeId") ?? "");
-  const documentType = String(formData.get("documentType") ?? "").trim();
-  const expiresAt = String(formData.get("expiresAt") ?? "").trim() || undefined;
-  const file = formData.get("file");
-
-  if (!employeeId || !documentType) return { error: "Employee and document type are required." };
-  if (!(file instanceof File) || file.size === 0) return { error: "Choose a file to upload." };
-
-  try {
-    requireModule("documents");
-    const session = await requireRole("hr_administrator");
-    const body = new Uint8Array(await file.arrayBuffer());
-    const fileId = await uploadOrganizationFile({
-      organizationId: getOrganizationId(),
-      category: "employee-documents",
-      fileName: file.name,
-      contentType: file.type || "application/octet-stream",
-      body,
-      uploadedByUserId: session.user.id,
-    });
-
-    await attachEmployeeDocument({
-      employeeId,
-      documentType,
-      fileId,
-      expiresAt,
-    });
-
-    revalidatePath("/hr/documents");
-    revalidatePath("/employee/documents");
-    return { success: "Document uploaded." };
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : "Failed to upload document." };
-  }
 }
 
 export async function createAssetAction(

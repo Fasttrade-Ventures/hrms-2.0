@@ -1,8 +1,67 @@
 import { buildEmployeeActivationEmail } from "./employee-activation";
+import { buildDocumentComplianceEmail } from "./document-compliance";
 
 type SendResult =
   | { sent: true; id?: string }
   | { sent: false; reason: "not_configured" | "request_failed"; detail?: string };
+
+async function sendResendEmail(input: {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+}): Promise<SendResult> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.MAIL_FROM;
+
+  if (!apiKey || !from) {
+    return { sent: false, reason: "not_configured" };
+  }
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to: [input.to],
+      subject: input.subject,
+      html: input.html,
+      text: input.text,
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    return { sent: false, reason: "request_failed", detail };
+  }
+
+  const payload = (await response.json()) as { id?: string };
+  return { sent: true, id: payload.id };
+}
+
+export async function sendDocumentComplianceEmail(input: {
+  to: string;
+  recipientName: string;
+  employeeName: string;
+  documentType: string;
+  status: string;
+  expiresAt?: string | null;
+  audience: "employee" | "hr";
+}): Promise<SendResult> {
+  const { subject, html, text } = buildDocumentComplianceEmail({
+    recipientName: input.recipientName,
+    employeeName: input.employeeName,
+    documentType: input.documentType,
+    status: input.status,
+    expiresAt: input.expiresAt,
+    audience: input.audience,
+  });
+
+  return sendResendEmail({ to: input.to, subject, html, text });
+}
 
 export async function sendEmployeeActivationEmail(input: {
   to: string;
@@ -23,26 +82,5 @@ export async function sendEmployeeActivationEmail(input: {
     activationLink: input.activationLink,
   });
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to: [input.to],
-      subject,
-      html,
-      text,
-    }),
-  });
-
-  if (!response.ok) {
-    const detail = await response.text();
-    return { sent: false, reason: "request_failed", detail };
-  }
-
-  const payload = (await response.json()) as { id?: string };
-  return { sent: true, id: payload.id };
+  return sendResendEmail({ to: input.to, subject, html, text });
 }

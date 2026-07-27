@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { ConfirmDialog } from "@hrms/ui";
 
 import { deactivateEmployee } from "@/app/(hr)/hr/employees/actions";
+import { Button } from "@/components/ui/button";
 
 export function DeleteEmployeeButton({
   employeeId,
@@ -41,15 +42,16 @@ export function DeleteEmployeeButton({
   return (
     <>
       {variant === "icon" ? (
-        <button
+        <Button
           aria-label={`Remove ${employeeName}`}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-[8px] border border-[var(--border-primary)] bg-[var(--surface-card)] text-[var(--danger)] hover:bg-[var(--danger-soft)]"
           onClick={() => {
             setError(undefined);
             setOpen(true);
           }}
+          size="icon-sm"
           title="Remove employee"
           type="button"
+          variant="destructive"
         >
           <svg aria-hidden fill="none" height="16" viewBox="0 0 24 24" width="16">
             <path
@@ -60,18 +62,18 @@ export function DeleteEmployeeButton({
               strokeWidth="1.75"
             />
           </svg>
-        </button>
+        </Button>
       ) : (
-        <button
-          className="inline-flex h-10 items-center rounded-[var(--radius-sm)] border border-[var(--danger)] px-4 text-sm font-medium text-[var(--danger)] hover:bg-[var(--danger-soft)]"
+        <Button
           onClick={() => {
             setError(undefined);
             setOpen(true);
           }}
           type="button"
+          variant="outline"
         >
           Remove employee
-        </button>
+        </Button>
       )}
 
       <ConfirmDialog

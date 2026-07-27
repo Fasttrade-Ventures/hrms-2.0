@@ -1,30 +1,35 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState, useState } from "react";
 
+import { createEmployee, type EmployeeActionState } from "@/app/(hr)/hr/employees/actions";
+import {
+  EmployeeFormFooterNav,
+  EmployeeFormPayrollSection,
+  EmployeeFormRepeaterRow,
+  EmployeeFormSectionHeader,
+  EmployeeFormShell,
+  EmployeeFormSubsection,
+  EmployeeFormTabPanel,
+  type EmployeeFormTabId,
+} from "@/components/hr/employees/employee-form-shell";
+import { EmployeeProfilePhotoField } from "@/components/hr/employees/employee-profile-photo-field";
 import {
   HrCheckbox,
   HrField,
   HrFormMessage,
-  HrGhostButton,
-  HrPrimaryButton,
   HrSelect,
   HrTextInput,
-  HrTextarea,
 } from "@/components/hr/employees/form-fields";
-import { createEmployee, type EmployeeActionState } from "@/app/(hr)/hr/employees/actions";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  MALAYSIAN_RACE_OPTIONS,
+  MALAYSIAN_RELIGION_OPTIONS,
+  MALAYSIAN_STATE_OPTIONS,
+} from "@/lib/employees/malaysia-demographics";
 
 const initialState: EmployeeActionState = {};
-
-const tabs = [
-  { id: "employment", label: "1. Employment" },
-  { id: "personal", label: "2. Personal & bank" },
-  { id: "family", label: "3. Family" },
-  { id: "emergency", label: "4. Emergency" },
-] as const;
-
-type TabId = (typeof tabs)[number]["id"];
 type Option = { id: string; name: string; branch_id?: string | null };
 
 export function CreateEmployeeForm({
@@ -47,41 +52,27 @@ export function CreateEmployeeForm({
   leaveTypes: Option[];
 }) {
   const [state, formAction, pending] = useActionState(createEmployee, initialState);
-  const [tab, setTab] = useState<TabId>("employment");
+  const [tab, setTab] = useState<EmployeeFormTabId>("employment");
   const [childCount, setChildCount] = useState(0);
   const [emergencyCount, setEmergencyCount] = useState(1);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
 
   return (
-    <form action={formAction} className="overflow-hidden rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-card)] shadow-[var(--shadow-card)]">
-      <div className="flex items-center justify-between bg-[var(--accent-primary)] px-5 py-4">
-        <div>
-          <h2 className="text-base font-semibold text-white">Create employee</h2>
-          <p className="text-xs text-white/80">Complete each tab, then save the full profile.</p>
-        </div>
-        <Link className="text-white/90 hover:text-white" href="/hr/employees" aria-label="Close">
-          ✕
-        </Link>
-      </div>
-
-      <div className="flex flex-wrap gap-1 border-b border-[var(--border-primary)] bg-[var(--surface-muted)] p-2">
-        {tabs.map((item) => (
-          <button
-            className={`rounded-[8px] px-3 py-2 text-xs font-semibold uppercase tracking-wide ${
-              tab === item.id
-                ? "bg-[var(--accent-primary)] text-white"
-                : "text-[var(--foreground-secondary)] hover:bg-[var(--surface-card)]"
-            }`}
-            key={item.id}
-            onClick={() => setTab(item.id)}
-            type="button"
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="space-y-5 p-5">
-        <div className={tab === "employment" ? "space-y-5" : "hidden"}>
+    <EmployeeFormShell
+      footer={
+        <EmployeeFormFooterNav
+          cancelHref="/hr/employees"
+          onTabChange={setTab}
+          pending={pending}
+          tab={tab}
+        />
+      }
+      formProps={{ action: formAction, encType: "multipart/form-data" }}
+      onTabChange={setTab}
+      tab={tab}
+    >
+      <EmployeeFormTabPanel activeTab={tab} tab="employment">
           <div className="grid gap-4 md:grid-cols-3">
             <HrField hint="Leave blank to auto-generate" id="employeeNumber" label="Staff ID">
               <HrTextInput defaultValue={suggestedEmployeeNumber} id="employeeNumber" name="employeeNumber" />
@@ -183,7 +174,7 @@ export function CreateEmployeeForm({
           </HrField>
 
           <div className="space-y-3">
-            <p className="text-[13px] font-medium text-[var(--foreground-primary)]">Allowed leave types</p>
+            <Label className="text-sm font-medium">Allowed leave types</Label>
             <div className="grid gap-2 sm:grid-cols-2">
               {leaveTypes.map((leaveType) => (
                 <HrCheckbox
@@ -196,7 +187,7 @@ export function CreateEmployeeForm({
                 />
               ))}
               {leaveTypes.length === 0 ? (
-                <p className="text-sm text-[var(--foreground-muted)]">No leave types configured yet.</p>
+                <p className="text-sm text-muted-foreground">No leave types configured yet.</p>
               ) : null}
             </div>
           </div>
@@ -207,9 +198,11 @@ export function CreateEmployeeForm({
             label="Send activation email so the employee can set a password and sign in"
             name="sendActivationEmail"
           />
-        </div>
+      </EmployeeFormTabPanel>
 
-        <div className={tab === "personal" ? "space-y-5" : "hidden"}>
+      <EmployeeFormTabPanel activeTab={tab} tab="personal">
+          <EmployeeProfilePhotoField email={email} name={fullName} />
+
           <div className="grid gap-4 md:grid-cols-2">
             <HrField id="confirmationStatus" label="Status">
               <HrSelect defaultValue="confirmed" id="confirmationStatus" name="confirmationStatus">
@@ -219,13 +212,25 @@ export function CreateEmployeeForm({
               </HrSelect>
             </HrField>
             <HrField id="fullName" label="Full name">
-              <HrTextInput id="fullName" name="fullName" required />
+              <HrTextInput
+                id="fullName"
+                name="fullName"
+                onChange={(event) => setFullName(event.target.value)}
+                required
+              />
             </HrField>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <HrField id="email" label="Email">
-              <HrTextInput autoComplete="email" id="email" name="email" required type="email" />
+              <HrTextInput
+                autoComplete="email"
+                id="email"
+                name="email"
+                onChange={(event) => setEmail(event.target.value)}
+                required
+                type="email"
+              />
             </HrField>
             <HrField id="icNumber" label="NRIC no">
               <HrTextInput id="icNumber" name="icNumber" />
@@ -258,23 +263,62 @@ export function CreateEmployeeForm({
 
           <div className="grid gap-4 md:grid-cols-3">
             <HrField id="race" label="Race">
-              <HrTextInput id="race" name="race" />
+              <HrSelect defaultValue="" id="race" name="race">
+                <option value="">-- Select --</option>
+                {MALAYSIAN_RACE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </HrSelect>
             </HrField>
             <HrField id="religion" label="Religion">
-              <HrTextInput id="religion" name="religion" />
+              <HrSelect defaultValue="" id="religion" name="religion">
+                <option value="">-- Select --</option>
+                {MALAYSIAN_RELIGION_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </HrSelect>
             </HrField>
             <HrField id="phone" label="Mobile no">
               <HrTextInput id="phone" name="phone" />
             </HrField>
           </div>
 
-          <HrField id="residentialAddress" label="Residential address">
-            <HrTextarea id="residentialAddress" name="residentialAddress" />
-          </HrField>
+          <div className="grid gap-4 md:grid-cols-2">
+            <HrField id="addressLine1" label="Address line 1">
+              <HrTextInput id="addressLine1" name="addressLine1" />
+            </HrField>
+            <HrField id="addressLine2" label="Address line 2">
+              <HrTextInput id="addressLine2" name="addressLine2" />
+            </HrField>
+            <HrField id="city" label="City">
+              <HrTextInput id="city" name="city" />
+            </HrField>
+            <HrField id="state" label="State">
+              <HrSelect defaultValue="" id="state" name="state">
+                <option value="">-- Select --</option>
+                {MALAYSIAN_STATE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </HrSelect>
+            </HrField>
+            <HrField id="postcode" label="Postcode">
+              <HrTextInput id="postcode" name="postcode" />
+            </HrField>
+            <HrField id="country" label="Country">
+              <HrSelect defaultValue="MY" id="country" name="country">
+                <option value="MY">Malaysia</option>
+              </HrSelect>
+            </HrField>
+          </div>
 
-          <div className="border-t border-[var(--border-primary)] pt-4">
-            <p className="mb-4 text-sm font-semibold text-[var(--accent-primary)]">Payroll & statutory</p>
-            <div className="grid gap-4 md:grid-cols-3">
+        <EmployeeFormPayrollSection>
+          <div className="grid gap-4 md:grid-cols-3">
               <HrField id="payBasis" label="Pay basis">
                 <HrSelect defaultValue="monthly" id="payBasis" name="payBasis">
                   <option value="monthly">Monthly</option>
@@ -289,7 +333,7 @@ export function CreateEmployeeForm({
                 <HrTextInput id="basicSalary" name="basicSalary" placeholder="0.00" />
               </HrField>
             </div>
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2">
               <HrField id="bankName" label="Bank name">
                 <HrTextInput id="bankName" name="bankName" />
               </HrField>
@@ -306,135 +350,101 @@ export function CreateEmployeeForm({
                 <HrTextInput id="taxNumber" name="taxNumber" />
               </HrField>
             </div>
-          </div>
-        </div>
+        </EmployeeFormPayrollSection>
+      </EmployeeFormTabPanel>
 
-        <div className={tab === "family" ? "space-y-5" : "hidden"}>
-          <div className="rounded-[12px] border border-[var(--border-primary)] p-4">
-            <p className="mb-4 text-sm font-semibold uppercase tracking-wide text-[var(--foreground-muted)]">
-              Spouse information
-            </p>
-            <div className="grid gap-4 md:grid-cols-3">
-              <HrField id="spouseName" label="Name">
-                <HrTextInput id="spouseName" name="spouseName" />
-              </HrField>
-              <HrField id="spouseIc" label="IC no">
-                <HrTextInput id="spouseIc" name="spouseIc" />
-              </HrField>
-              <HrField id="spouseWorking" label="Working?">
-                <HrSelect defaultValue="no" id="spouseWorking" name="spouseWorking">
-                  <option value="no">No</option>
-                  <option value="yes">Yes</option>
-                </HrSelect>
-              </HrField>
-            </div>
+      <EmployeeFormTabPanel activeTab={tab} tab="family">
+        <EmployeeFormSubsection title="Spouse information">
+          <div className="grid gap-4 md:grid-cols-3">
+            <HrField id="spouseName" label="Name">
+              <HrTextInput id="spouseName" name="spouseName" />
+            </HrField>
+            <HrField id="spouseIc" label="IC no">
+              <HrTextInput id="spouseIc" name="spouseIc" />
+            </HrField>
+            <HrField id="spouseWorking" label="Working?">
+              <HrSelect defaultValue="no" id="spouseWorking" name="spouseWorking">
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+              </HrSelect>
+            </HrField>
           </div>
+        </EmployeeFormSubsection>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold uppercase tracking-wide text-[var(--foreground-muted)]">
-                Children details
-              </p>
-              <button
-                className="text-sm font-medium text-[var(--accent-primary)] hover:text-[var(--accent-hover)]"
+        <div className="space-y-3">
+          <EmployeeFormSectionHeader
+            action={
+              <Button
                 onClick={() => setChildCount((count) => Math.min(count + 1, 5))}
+                size="sm"
                 type="button"
+                variant="outline"
               >
                 + Add child
-              </button>
-            </div>
-            {Array.from({ length: childCount }).map((_, index) => (
-              <div className="grid gap-4 rounded-[12px] border border-[var(--border-primary)] p-4 md:grid-cols-3" key={`child_${index}`}>
-                <HrField id={`childName_${index}`} label="Name">
-                  <HrTextInput id={`childName_${index}`} name={`childName_${index}`} />
-                </HrField>
-                <HrField id={`childIc_${index}`} label="IC no">
-                  <HrTextInput id={`childIc_${index}`} name={`childIc_${index}`} />
-                </HrField>
-                <HrField id={`childDob_${index}`} label="DOB">
-                  <HrTextInput id={`childDob_${index}`} name={`childDob_${index}`} type="date" />
-                </HrField>
-              </div>
-            ))}
-            {childCount === 0 ? (
-              <p className="text-sm text-[var(--foreground-muted)]">No children added yet.</p>
-            ) : null}
-          </div>
+              </Button>
+            }
+            title="Children details"
+          />
+          {Array.from({ length: childCount }).map((_, index) => (
+            <EmployeeFormRepeaterRow
+              key={`child_${index}`}
+              onRemove={() => setChildCount((count) => Math.max(0, count - 1))}
+              removeLabel="Remove child"
+            >
+              <HrField id={`childName_${index}`} label="Name">
+                <HrTextInput id={`childName_${index}`} name={`childName_${index}`} />
+              </HrField>
+              <HrField id={`childIc_${index}`} label="IC no">
+                <HrTextInput id={`childIc_${index}`} name={`childIc_${index}`} />
+              </HrField>
+              <HrField id={`childDob_${index}`} label="DOB">
+                <HrTextInput id={`childDob_${index}`} name={`childDob_${index}`} type="date" />
+              </HrField>
+            </EmployeeFormRepeaterRow>
+          ))}
+          {childCount === 0 ? (
+            <p className="text-sm text-muted-foreground">No children added yet.</p>
+          ) : null}
         </div>
+      </EmployeeFormTabPanel>
 
-        <div className={tab === "emergency" ? "space-y-5" : "hidden"}>
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold uppercase tracking-wide text-[var(--foreground-muted)]">
-              Emergency contacts
-            </p>
-            <button
-              className="text-sm font-medium text-[var(--accent-primary)] hover:text-[var(--accent-hover)]"
+      <EmployeeFormTabPanel activeTab={tab} tab="emergency">
+        <EmployeeFormSectionHeader
+          action={
+            <Button
               onClick={() => setEmergencyCount((count) => Math.min(count + 1, 5))}
+              size="sm"
               type="button"
+              variant="outline"
             >
               + Add contact
-            </button>
-          </div>
-          {Array.from({ length: emergencyCount }).map((_, index) => (
-            <div className="grid gap-4 rounded-[12px] border border-[var(--border-primary)] p-4 md:grid-cols-[1fr_1fr_1fr_auto]" key={`emergency_${index}`}>
-              <HrField id={`emergencyName_${index}`} label="Name">
-                <HrTextInput id={`emergencyName_${index}`} name={`emergencyName_${index}`} />
-              </HrField>
-              <HrField id={`emergencyRelationship_${index}`} label="Relationship">
-                <HrTextInput id={`emergencyRelationship_${index}`} name={`emergencyRelationship_${index}`} />
-              </HrField>
-              <HrField id={`emergencyPhone_${index}`} label="Phone">
-                <HrTextInput id={`emergencyPhone_${index}`} name={`emergencyPhone_${index}`} />
-              </HrField>
-              <div className="flex items-end pb-1">
-                <button
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-[8px] text-[var(--danger)] hover:bg-[var(--danger-soft)]"
-                  onClick={() => setEmergencyCount((count) => Math.max(1, count - 1))}
-                  type="button"
-                  aria-label="Remove contact"
-                >
-                  ⌫
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            </Button>
+          }
+          title="Emergency contacts"
+        />
+        {Array.from({ length: emergencyCount }).map((_, index) => (
+          <EmployeeFormRepeaterRow
+            key={`emergency_${index}`}
+            onRemove={() => setEmergencyCount((count) => Math.max(1, count - 1))}
+            removeLabel="Remove contact"
+          >
+            <HrField id={`emergencyName_${index}`} label="Name">
+              <HrTextInput id={`emergencyName_${index}`} name={`emergencyName_${index}`} />
+            </HrField>
+            <HrField id={`emergencyRelationship_${index}`} label="Relationship">
+              <HrTextInput
+                id={`emergencyRelationship_${index}`}
+                name={`emergencyRelationship_${index}`}
+              />
+            </HrField>
+            <HrField id={`emergencyPhone_${index}`} label="Phone">
+              <HrTextInput id={`emergencyPhone_${index}`} name={`emergencyPhone_${index}`} />
+            </HrField>
+          </EmployeeFormRepeaterRow>
+        ))}
+      </EmployeeFormTabPanel>
 
-        <HrFormMessage error={state.error} success={state.success} />
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border-primary)] bg-[var(--surface-muted)] px-5 py-4">
-        <div className="flex gap-2">
-          {tab !== "employment" ? (
-            <HrGhostButton
-              onClick={() =>
-                setTab(tabs[Math.max(0, tabs.findIndex((item) => item.id === tab) - 1)]?.id ?? "employment")
-              }
-              type="button"
-            >
-              Previous
-            </HrGhostButton>
-          ) : null}
-          {tab !== "emergency" ? (
-            <HrGhostButton
-              onClick={() =>
-                setTab(tabs[Math.min(tabs.length - 1, tabs.findIndex((item) => item.id === tab) + 1)]?.id ?? "emergency")
-              }
-              type="button"
-            >
-              Next
-            </HrGhostButton>
-          ) : null}
-        </div>
-        <div className="flex gap-2">
-          <Link href="/hr/employees">
-            <HrGhostButton type="button">Cancel</HrGhostButton>
-          </Link>
-          <HrPrimaryButton disabled={pending} type="submit">
-            {pending ? "Saving…" : "Save full profile"}
-          </HrPrimaryButton>
-        </div>
-      </div>
-    </form>
+      <HrFormMessage error={state.error} success={state.success} />
+    </EmployeeFormShell>
   );
 }

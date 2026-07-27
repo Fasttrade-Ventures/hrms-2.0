@@ -1,9 +1,11 @@
 export function StatusPill({
   label,
   tone = "neutral",
+  className,
 }: {
   label: string;
   tone?: "neutral" | "success" | "warning" | "danger" | "pending";
+  className?: string;
 }) {
   const toneClass = {
     neutral: "bg-[var(--surface-muted)] text-[var(--foreground-secondary)]",
@@ -15,7 +17,7 @@ export function StatusPill({
 
   return (
     <span
-      className={`inline-flex h-6 items-center rounded-full px-2.5 text-xs font-semibold ${toneClass}`}
+      className={`inline-flex w-fit items-center rounded-full px-2.5 text-xs font-semibold ${toneClass} ${className ?? "h-6"}`}
     >
       {label}
     </span>

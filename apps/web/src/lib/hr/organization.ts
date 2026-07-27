@@ -1,5 +1,6 @@
 import { requireRole } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
+import type { ListHolidaysInput } from "@hrms/validation";
 
 function getOrganizationId(): string {
   const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
@@ -32,10 +33,17 @@ export type OrgHubData = {
 export type BranchRow = {
   id: string;
   name: string;
+  state: string | null;
   weekendMode: "sat_sun" | "fri_sat" | "sun_only";
   payrollCutoffDay: number;
   employeeCount: number;
   createdAt: string;
+};
+
+export type BranchImportOption = {
+  id: string;
+  name: string;
+  state: string | null;
 };
 
 export type DepartmentRow = {
@@ -57,13 +65,20 @@ export type ShiftRow = {
   createdAt: string;
 };
 
-export type HolidayRow = {
+export type HolidayBranchFilter = {
   id: string;
   name: string;
-  holidayDate: string;
-  branchId: string | null;
-  branchName: string | null;
-  createdAt: string;
+  count: number;
+};
+
+export type HolidayDirectory = {
+  holidays: HolidayRow[];
+  total: number;
+  yearTotal: number;
+  page: number;
+  pageSize: number;
+  orgWideCount: number;
+  branchFilters: HolidayBranchFilter[];
 };
 
 export type LeaveTypeRow = {
@@ -208,7 +223,7 @@ export async function listBranches(): Promise<BranchRow[]> {
   const [{ data, error }, { data: employees, error: employeeError }] = await Promise.all([
     supabase
       .from("branches")
-      .select("id, name, weekend_mode, payroll_cutoff_day, created_at")
+      .select("id, name, state, weekend_mode, payroll_cutoff_day, created_at")
       .eq("organization_id", organizationId)
       .order("name"),
     supabase.from("employees").select("branch_id").eq("organization_id", organizationId),
@@ -226,6 +241,7 @@ export async function listBranches(): Promise<BranchRow[]> {
   return (data ?? []).map((row) => ({
     id: row.id,
     name: row.name,
+    state: row.state ?? null,
     weekendMode: row.weekend_mode,
     payrollCutoffDay: row.payroll_cutoff_day,
     employeeCount: counts.get(row.id) ?? 0,
@@ -315,19 +331,49 @@ export async function getShift(shiftId: string): Promise<ShiftRow | null> {
   return shifts.find((row) => row.id === shiftId) ?? null;
 }
 
-export async function listHolidays(year?: number): Promise<HolidayRow[]> {
-  await requireRole("hr_administrator");
+export type HolidayRow = {
+  id: string;
+  name: string;
+  holidayDate: string;
+  branchId: string | null;
+  branchName: string | null;
+  createdAt: string;
+};
+
+function compareHolidayRows(
+  a: HolidayRow,
+  b: HolidayRow,
+  sort: ListHolidaysInput["sort"],
+  order: ListHolidaysInput["order"],
+) {
+  const direction = order === "asc" ? 1 : -1;
+
+  switch (sort) {
+    case "name":
+      return a.name.localeCompare(b.name) * direction;
+    case "scope": {
+      const aScope = a.branchName ?? "Org-wide";
+      const bScope = b.branchName ?? "Org-wide";
+      return aScope.localeCompare(bScope) * direction;
+    }
+    case "created":
+      return (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) * direction;
+    case "date":
+    default:
+      return a.holidayDate.localeCompare(b.holidayDate) * direction;
+  }
+}
+
+async function fetchHolidaysForYear(year: number): Promise<HolidayRow[]> {
   const supabase = await createClient();
   const organizationId = getOrganizationId();
-  const selectedYear = year ?? new Date().getFullYear();
 
   const { data, error } = await supabase
     .from("holidays")
     .select("id, name, holiday_date, branch_id, created_at, branches(name)")
     .eq("organization_id", organizationId)
-    .gte("holiday_date", `${selectedYear}-01-01`)
-    .lte("holiday_date", `${selectedYear}-12-31`)
-    .order("holiday_date");
+    .gte("holiday_date", `${year}-01-01`)
+    .lte("holiday_date", `${year}-12-31`);
 
   if (error) throw new Error(error.message);
 
@@ -339,6 +385,64 @@ export async function listHolidays(year?: number): Promise<HolidayRow[]> {
     branchName: (row.branches as { name?: string } | null)?.name ?? null,
     createdAt: row.created_at,
   }));
+}
+
+export async function getHolidayDirectory(
+  filters: ListHolidaysInput,
+): Promise<HolidayDirectory> {
+  await requireRole("hr_administrator");
+
+  const allHolidays = await fetchHolidaysForYear(filters.year);
+  const orgWideCount = allHolidays.filter((row) => !row.branchId).length;
+
+  const branchCounts = new Map<string, { id: string; name: string; count: number }>();
+  for (const holiday of allHolidays) {
+    if (!holiday.branchId || !holiday.branchName) continue;
+    const current = branchCounts.get(holiday.branchId);
+    if (current) {
+      current.count += 1;
+    } else {
+      branchCounts.set(holiday.branchId, {
+        id: holiday.branchId,
+        name: holiday.branchName,
+        count: 1,
+      });
+    }
+  }
+
+  let filtered = allHolidays;
+  if (filters.branchId === "org-wide") {
+    filtered = allHolidays.filter((row) => !row.branchId);
+  } else if (filters.branchId !== "all") {
+    filtered = allHolidays.filter((row) => row.branchId === filters.branchId);
+  }
+
+  const sorted = [...filtered].sort((a, b) =>
+    compareHolidayRows(a, b, filters.sort, filters.order),
+  );
+
+  const total = sorted.length;
+  const pageSize = filters.pageSize;
+  const page = filters.page;
+  const from = (page - 1) * pageSize;
+  const holidays = sorted.slice(from, from + pageSize);
+
+  return {
+    holidays,
+    total,
+    yearTotal: allHolidays.length,
+    page,
+    pageSize,
+    orgWideCount,
+    branchFilters: [...branchCounts.values()].sort((a, b) => a.name.localeCompare(b.name)),
+  };
+}
+
+export async function listHolidays(year?: number): Promise<HolidayRow[]> {
+  await requireRole("hr_administrator");
+  const selectedYear = year ?? new Date().getFullYear();
+  const rows = await fetchHolidaysForYear(selectedYear);
+  return rows.sort((a, b) => a.holidayDate.localeCompare(b.holidayDate));
 }
 
 export async function getHoliday(holidayId: string): Promise<HolidayRow | null> {
@@ -405,18 +509,27 @@ export async function getLeaveType(leaveTypeId: string): Promise<LeaveTypeRow | 
 }
 
 export async function listBranchOptions(): Promise<Array<{ id: string; name: string }>> {
+  const branches = await listBranchesForImport();
+  return branches.map(({ id, name }) => ({ id, name }));
+}
+
+export async function listBranchesForImport(): Promise<BranchImportOption[]> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
   const organizationId = getOrganizationId();
 
   const { data, error } = await supabase
     .from("branches")
-    .select("id, name")
+    .select("id, name, state")
     .eq("organization_id", organizationId)
     .order("name");
 
   if (error) throw new Error(error.message);
-  return data ?? [];
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    name: row.name,
+    state: row.state ?? null,
+  }));
 }
 
 export { weekendLabel, formatTime, getOrganizationId };

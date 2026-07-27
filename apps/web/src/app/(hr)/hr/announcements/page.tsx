@@ -1,49 +1,62 @@
 import { EmptyState } from "@hrms/ui";
 
-import { formatDateTime } from "@/components/employee/employee-shared";
-import { PublishAnnouncementForm } from "@/components/hr/publish-announcement-form";
-import { PortalSectionCard } from "@/components/portal/portal-section";
+import { AnnouncementComposeForm } from "@/components/hr/announcements/announcement-compose-form";
+import { AnnouncementTable } from "@/components/hr/announcements/announcement-table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
-import { listAnnouncements } from "@/lib/hr/announcements";
+import { requireModule } from "@/lib/entitlements";
+import { listHrAnnouncements } from "@/lib/hr/announcements";
+import { listBranchOptions, listDepartments } from "@/lib/hr/organization";
 import { requireRole } from "@/lib/auth/session";
 
-export default async function Page() {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
   await requireRole("hr_administrator");
-  const announcements = await listAnnouncements().catch(() => []);
+  requireModule("announcements");
+
+  const { view } = await searchParams;
+
+  const [announcements, branches, departments] = await Promise.all([
+    listHrAnnouncements().catch(() => []),
+    listBranchOptions().catch(() => []),
+    listDepartments().catch(() => []),
+  ]);
+
+  const departmentOptions = departments.map((row) => ({ id: row.id, name: row.name }));
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <PortalPageHeader
-        description="Publish company-wide announcements visible to employees."
+        description="Draft, schedule, or publish announcements with optional attachments and audience targeting."
         title="Announcements"
       />
 
-      <PortalSectionCard description="Visible to all employees in the organization." title="Publish announcement">
-        <PublishAnnouncementForm />
-      </PortalSectionCard>
+      <Card size="sm">
+        <CardHeader>
+          <CardTitle>Create announcement</CardTitle>
+          <CardDescription>
+            Target by branch, role, and/or department. Leave filters empty to reach everyone.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AnnouncementComposeForm branches={branches} departments={departmentOptions} />
+        </CardContent>
+      </Card>
 
-      <div className="overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-card)] shadow-[var(--shadow-card)]">
-        <div className="border-b border-[var(--border-primary)] bg-[var(--surface-muted)] px-4 py-3 text-sm font-medium">
-          Published ({announcements.length})
-        </div>
+      <div className="space-y-3">
+        <h2 className="text-sm font-medium text-foreground">All announcements ({announcements.length})</h2>
         {announcements.length === 0 ? (
-          <div className="p-6">
-            <EmptyState description="Published announcements will appear here." title="No announcements" />
-          </div>
+          <EmptyState description="Published and draft announcements will appear here." title="No announcements" />
         ) : (
-          <div className="divide-y divide-[var(--border-primary)]">
-            {announcements.map((item) => (
-              <article className="px-5 py-4" key={item.id}>
-                <h2 className="font-medium text-[var(--foreground-primary)]">{item.title}</h2>
-                <p className="mt-1 text-xs text-[var(--foreground-muted)]">
-                  {formatDateTime(item.postedAt)}
-                </p>
-                <p className="mt-2 whitespace-pre-wrap text-sm text-[var(--foreground-secondary)]">
-                  {item.body}
-                </p>
-              </article>
-            ))}
-          </div>
+          <AnnouncementTable
+            announcements={announcements}
+            branches={branches}
+            departments={departmentOptions}
+            initialViewId={view}
+          />
         )}
       </div>
     </div>

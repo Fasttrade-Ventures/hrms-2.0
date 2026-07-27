@@ -41,7 +41,6 @@ const employeeNav: PortalNavSection[] = [
       { href: "/employee/documents", label: "Documents", icon: "documents" },
       { href: "/employee/calendar", label: "Calendar", icon: "calendar" },
       { href: "/employee/announcements", label: "Announcements", icon: "announcements" },
-      { href: "/employee/notifications", label: "Notifications", icon: "notifications" },
       { href: "/employee/assets", label: "My assets", icon: "assets" },
       { href: "/employee/performance", label: "Performance", icon: "performance" },
     ],
@@ -57,17 +56,20 @@ const managerNav: PortalNavSection[] = [
     items: [{ href: "/manager/approvals", label: "Approvals", icon: "approvals" }],
   },
   {
+    label: "Workplace",
+    items: [
+      { href: "/manager/announcements", label: "Announcements", icon: "announcements" },
+    ],
+  },
+  {
     label: "My team",
     items: [
       { href: "/manager/team-leave", label: "Team leave", icon: "team-leave" },
       { href: "/manager/team-attendance", label: "Team attendance", icon: "team-attendance" },
+      { href: "/manager/team-documents", label: "Team documents", icon: "documents" },
       { href: "/manager/team-calendar", label: "Team calendar", icon: "team-calendar" },
       { href: "/manager/team-performance", label: "Team performance", icon: "team-performance" },
     ],
-  },
-  {
-    label: "Inbox",
-    items: [{ href: "/manager/notifications", label: "Notifications", icon: "notifications" }],
   },
 ];
 

@@ -17,9 +17,13 @@ import {
   OrgFormActions,
   OrgFormCard,
   OrgStatCards,
+  OrgTableCell,
+  OrgTableEditLink,
+  OrgTableRow,
   OrgTableShell,
-  StatusPill,
+  OrgTableStatus,
 } from "@/components/hr/organization/org-ui";
+import { HrLinkButton } from "@/components/hr/hr-ui.client";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import type { DepartmentRow } from "@/lib/hr/organization";
 
@@ -33,18 +37,10 @@ export function DepartmentsList({ departments }: { departments: DepartmentRow[] 
       <PortalPageHeader
         actions={
           <div className="flex gap-2">
-            <Link
-              className="inline-flex h-10 items-center rounded-[var(--radius-sm)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-4 text-sm font-medium hover:bg-[var(--surface-muted)]"
-              href="/hr/organization"
-            >
+            <HrLinkButton href="/hr/organization" variant="outline">
               Back to hub
-            </Link>
-            <Link
-              className="inline-flex h-10 items-center rounded-[var(--radius-md)] bg-[var(--accent-primary)] px-4 text-sm font-semibold text-white hover:bg-[var(--accent-hover)]"
-              href="/hr/organization/departments/create"
-            >
-              Add department
-            </Link>
+            </HrLinkButton>
+            <HrLinkButton href="/hr/organization/departments/create">Add department</HrLinkButton>
           </div>
         }
         description="Teams optionally scoped to a branch."
@@ -70,29 +66,20 @@ export function DepartmentsList({ departments }: { departments: DepartmentRow[] 
         isEmpty={departments.length === 0}
       >
         {departments.map((department) => (
-          <div className="grid items-center gap-3 px-3.5 py-3 md:grid-cols-6" key={department.id}>
-            <p className="text-sm font-semibold text-[var(--foreground-primary)]">{department.name}</p>
-            <p className="text-sm text-[var(--foreground-secondary)]">
-              {department.branchName ?? "Org-wide"}
-            </p>
-            <p className="text-sm text-[var(--foreground-muted)]">{department.employeeCount}</p>
-            <p className="text-sm text-[var(--foreground-muted)]">
+          <OrgTableRow key={department.id}>
+            <OrgTableCell variant="name">{department.name}</OrgTableCell>
+            <OrgTableCell>{department.branchName ?? "Org-wide"}</OrgTableCell>
+            <OrgTableCell variant="muted">{department.employeeCount}</OrgTableCell>
+            <OrgTableCell variant="muted">
               {new Date(department.createdAt).toLocaleDateString("en-GB", {
                 day: "2-digit",
                 month: "short",
                 year: "numeric",
               })}
-            </p>
-            <StatusPill label="Active" tone="success" />
-            <div>
-              <Link
-                className="inline-flex h-9 items-center rounded-[var(--radius-sm)] border border-[var(--border-primary)] px-3 text-sm font-medium hover:bg-[var(--surface-muted)]"
-                href={`/hr/organization/departments/${department.id}/edit`}
-              >
-                Edit
-              </Link>
-            </div>
-          </div>
+            </OrgTableCell>
+            <OrgTableStatus />
+            <OrgTableEditLink href={`/hr/organization/departments/${department.id}/edit`} />
+          </OrgTableRow>
         ))}
       </OrgTableShell>
     </div>
@@ -116,12 +103,9 @@ export function DepartmentForm({
     <div className="space-y-6">
       <PortalPageHeader
         actions={
-          <Link
-            className="inline-flex h-10 items-center rounded-[var(--radius-sm)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-4 text-sm font-medium hover:bg-[var(--surface-muted)]"
-            href="/hr/organization/departments"
-          >
+          <HrLinkButton href="/hr/organization/departments" variant="outline">
             Back to list
-          </Link>
+          </HrLinkButton>
         }
         description="Leave branch empty for an org-wide department."
         title={department ? "Edit department" : "Create department"}

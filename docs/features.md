@@ -182,10 +182,11 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 
 | Feature | Tier | UI | Notes |
 |---------|------|-----|--------|
-| Employee document vault | Core | ✅ + empty | |
-| Required documents | Core | — | |
-| HR document administration | Core | 🟡 | |
-| Document expiry automation | Pro | — | |
+| Employee document vault | Core | ✅ | Upload missing/expired required types; download own files |
+| Required document types | Core | ✅ HR | CRUD at `/hr/documents/required`; seeded defaults |
+| HR document library | Core | ✅ HR | Hub, library, folders, compliance matrix at `/hr/documents/*` |
+| Manager team documents (view-only) | Core | ✅ Mgr | `/manager/team-documents`; download direct reports |
+| Document expiry notifications | Pro | — | Daily cron + outbox email to HR and employee |
 | Generated documents | Pro | — | |
 
 ---

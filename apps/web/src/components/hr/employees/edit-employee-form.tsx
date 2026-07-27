@@ -1,36 +1,44 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState, useMemo, useState, useTransition } from "react";
 
-import {
-  HrCheckbox,
-  HrField,
-  HrFormMessage,
-  HrGhostButton,
-  HrPrimaryButton,
-  HrSelect,
-  HrTextInput,
-  HrTextarea,
-} from "@/components/hr/employees/form-fields";
-import { DeleteEmployeeButton } from "@/components/hr/employees/delete-employee-button";
 import {
   resendActivation,
   updateEmployeeFull,
   type EmployeeActionState,
 } from "@/app/(hr)/hr/employees/actions";
+import { DeleteEmployeeButton } from "@/components/hr/employees/delete-employee-button";
+import {
+  EmployeeFormBanner,
+  EmployeeFormFooterNav,
+  EmployeeFormPayrollSection,
+  EmployeeFormRepeaterRow,
+  EmployeeFormSectionHeader,
+  EmployeeFormShell,
+  EmployeeFormSubsection,
+  EmployeeFormTabPanel,
+  type EmployeeFormTabId,
+} from "@/components/hr/employees/employee-form-shell";
+import { EmployeeProfilePhotoField } from "@/components/hr/employees/employee-profile-photo-field";
+import {
+  HrCheckbox,
+  HrField,
+  HrFormMessage,
+  HrGhostButton,
+  HrSelect,
+  HrTextInput,
+} from "@/components/hr/employees/form-fields";
+import { Label } from "@/components/ui/label";
 import type { EmployeeDetail } from "@/lib/employees/queries";
+import {
+  MALAYSIAN_RACE_OPTIONS,
+  MALAYSIAN_RELIGION_OPTIONS,
+  MALAYSIAN_STATE_OPTIONS,
+  withCurrentDemographicsOption,
+} from "@/lib/employees/malaysia-demographics";
+import { Button } from "@/components/ui/button";
 
 const initialState: EmployeeActionState = {};
-
-const tabs = [
-  { id: "employment", label: "1. Employment" },
-  { id: "personal", label: "2. Personal & bank" },
-  { id: "family", label: "3. Family" },
-  { id: "emergency", label: "4. Emergency" },
-] as const;
-
-type TabId = (typeof tabs)[number]["id"];
 type Option = { id: string; name: string; branch_id?: string | null };
 
 export function EditEmployeeForm({
@@ -54,7 +62,7 @@ export function EditEmployeeForm({
 }) {
   const boundAction = useMemo(() => updateEmployeeFull.bind(null, employee.id), [employee.id]);
   const [state, formAction, pending] = useActionState(boundAction, initialState);
-  const [tab, setTab] = useState<TabId>("employment");
+  const [tab, setTab] = useState<EmployeeFormTabId>("employment");
   const [resendState, setResendState] = useState<EmployeeActionState>({});
   const [resendPending, startResend] = useTransition();
 
@@ -72,47 +80,22 @@ export function EditEmployeeForm({
 
   return (
     <div className="space-y-4">
-      {banner ? (
-        <div className="rounded-[12px] border border-[var(--accent-primary)]/30 bg-[var(--accent-soft)] px-4 py-3 text-sm text-[var(--foreground-primary)]">
-          {banner}
-        </div>
-      ) : null}
+      {banner ? <EmployeeFormBanner>{banner}</EmployeeFormBanner> : null}
 
-      <form
-        action={formAction}
-        className="overflow-hidden rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-card)] shadow-[var(--shadow-card)]"
+      <EmployeeFormShell
+        footer={
+          <EmployeeFormFooterNav
+            cancelHref="/hr/employees"
+            onTabChange={setTab}
+            pending={pending}
+            tab={tab}
+          />
+        }
+        formProps={{ action: formAction, encType: "multipart/form-data" }}
+        onTabChange={setTab}
+        tab={tab}
       >
-        <div className="flex items-center justify-between bg-[var(--accent-primary)] px-5 py-4">
-          <div>
-            <h2 className="text-base font-semibold text-white">Edit employee</h2>
-            <p className="text-xs text-white/80">
-              {employee.fullName} · {employee.employeeNumber}
-            </p>
-          </div>
-          <Link className="text-white/90 hover:text-white" href="/hr/employees" aria-label="Close">
-            ✕
-          </Link>
-        </div>
-
-        <div className="flex flex-wrap gap-1 border-b border-[var(--border-primary)] bg-[var(--surface-muted)] p-2">
-          {tabs.map((item) => (
-            <button
-              className={`rounded-[8px] px-3 py-2 text-xs font-semibold uppercase tracking-wide ${
-                tab === item.id
-                  ? "bg-[var(--accent-primary)] text-white"
-                  : "text-[var(--foreground-secondary)] hover:bg-[var(--surface-card)]"
-              }`}
-              key={item.id}
-              onClick={() => setTab(item.id)}
-              type="button"
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="space-y-5 p-5">
-          <div className={tab === "employment" ? "space-y-5" : "hidden"}>
+        <EmployeeFormTabPanel activeTab={tab} tab="employment">
             <div className="grid gap-4 md:grid-cols-3">
               <HrField hint="Staff identifier" id="employeeNumber" label="Staff ID">
                 <HrTextInput
@@ -248,7 +231,7 @@ export function EditEmployeeForm({
             </HrField>
 
             <div className="space-y-3">
-              <p className="text-[13px] font-medium text-[var(--foreground-primary)]">Allowed leave types</p>
+              <Label className="text-sm font-medium">Allowed leave types</Label>
               <div className="grid gap-2 sm:grid-cols-2">
                 {leaveTypes.map((leaveType) => (
                   <HrCheckbox
@@ -263,19 +246,18 @@ export function EditEmployeeForm({
                   />
                 ))}
                 {leaveTypes.length === 0 ? (
-                  <p className="text-sm text-[var(--foreground-muted)]">No leave types configured yet.</p>
+                  <p className="text-sm text-muted-foreground">No leave types configured yet.</p>
                 ) : null}
               </div>
             </div>
 
-            <div className="rounded-[12px] border border-[var(--border-primary)] bg-[var(--surface-muted)] p-4">
-              <p className="text-sm font-semibold text-[var(--foreground-primary)]">Login access</p>
-              <p className="mt-1 text-sm text-[var(--foreground-secondary)]">
+            <EmployeeFormSubsection title="Login access">
+              <p className="text-sm text-muted-foreground">
                 {employee.membership
                   ? `Linked account · roles: ${employee.membership.roles.join(", ") || "employee"}`
                   : "No login account linked yet."}
               </p>
-              <div className="mt-3 flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <HrGhostButton
                   disabled={resendPending}
                   onClick={() =>
@@ -291,10 +273,22 @@ export function EditEmployeeForm({
                 <DeleteEmployeeButton employeeId={employee.id} employeeName={employee.fullName} />
               </div>
               <HrFormMessage error={resendState.error} success={resendState.success} />
-            </div>
-          </div>
+            </EmployeeFormSubsection>
+        </EmployeeFormTabPanel>
 
-          <div className={tab === "personal" ? "space-y-5" : "hidden"}>
+        <EmployeeFormTabPanel activeTab={tab} tab="personal">
+            <EmployeeProfilePhotoField
+              email={employee.email}
+              hasStoredPhoto={Boolean(employee.profile.profilePhotoPath)}
+              name={employee.fullName}
+              photoUrl={employee.profile.profilePhotoUrl}
+            />
+            <input
+              name="profilePhotoPath"
+              type="hidden"
+              value={employee.profile.profilePhotoPath ?? ""}
+            />
+
             <div className="grid gap-4 md:grid-cols-2">
               <HrField id="confirmationStatus" label="Status">
                 <HrSelect
@@ -372,30 +366,87 @@ export function EditEmployeeForm({
 
             <div className="grid gap-4 md:grid-cols-3">
               <HrField id="race" label="Race">
-                <HrTextInput defaultValue={employee.profile.race ?? ""} id="race" name="race" />
+                <HrSelect defaultValue={employee.profile.race ?? ""} id="race" name="race">
+                  <option value="">-- Select --</option>
+                  {withCurrentDemographicsOption(MALAYSIAN_RACE_OPTIONS, employee.profile.race).map(
+                    (option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ),
+                  )}
+                </HrSelect>
               </HrField>
               <HrField id="religion" label="Religion">
-                <HrTextInput
-                  defaultValue={employee.profile.religion ?? ""}
-                  id="religion"
-                  name="religion"
-                />
+                <HrSelect defaultValue={employee.profile.religion ?? ""} id="religion" name="religion">
+                  <option value="">-- Select --</option>
+                  {withCurrentDemographicsOption(
+                    MALAYSIAN_RELIGION_OPTIONS,
+                    employee.profile.religion,
+                  ).map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </HrSelect>
               </HrField>
               <HrField id="phone" label="Mobile no">
                 <HrTextInput defaultValue={employee.profile.phone ?? ""} id="phone" name="phone" />
               </HrField>
             </div>
 
-            <HrField id="residentialAddress" label="Residential address">
-              <HrTextarea
-                defaultValue={employee.profile.residentialAddress ?? ""}
-                id="residentialAddress"
-                name="residentialAddress"
-              />
-            </HrField>
+            <div className="grid gap-4 md:grid-cols-2">
+              <HrField id="addressLine1" label="Address line 1">
+                <HrTextInput
+                  defaultValue={employee.profile.addressLine1 ?? ""}
+                  id="addressLine1"
+                  name="addressLine1"
+                />
+              </HrField>
+              <HrField id="addressLine2" label="Address line 2">
+                <HrTextInput
+                  defaultValue={employee.profile.addressLine2 ?? ""}
+                  id="addressLine2"
+                  name="addressLine2"
+                />
+              </HrField>
+              <HrField id="city" label="City">
+                <HrTextInput defaultValue={employee.profile.city ?? ""} id="city" name="city" />
+              </HrField>
+              <HrField id="state" label="State">
+                <HrSelect defaultValue={employee.profile.state ?? ""} id="state" name="state">
+                  <option value="">-- Select --</option>
+                  {withCurrentDemographicsOption(MALAYSIAN_STATE_OPTIONS, employee.profile.state).map(
+                    (option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ),
+                  )}
+                </HrSelect>
+              </HrField>
+              <HrField id="postcode" label="Postcode">
+                <HrTextInput
+                  defaultValue={employee.profile.postcode ?? ""}
+                  id="postcode"
+                  name="postcode"
+                />
+              </HrField>
+              <HrField id="country" label="Country">
+                <HrSelect
+                  defaultValue={employee.profile.country ?? "MY"}
+                  id="country"
+                  name="country"
+                >
+                  <option value="MY">Malaysia</option>
+                  {employee.profile.country && employee.profile.country !== "MY" ? (
+                    <option value={employee.profile.country}>{employee.profile.country}</option>
+                  ) : null}
+                </HrSelect>
+              </HrField>
+            </div>
 
-            <div className="border-t border-[var(--border-primary)] pt-4">
-              <p className="mb-4 text-sm font-semibold text-[var(--accent-primary)]">Payroll & statutory</p>
+            <EmployeeFormPayrollSection>
               <div className="grid gap-4 md:grid-cols-3">
                 <HrField id="payBasis" label="Pay basis">
                   <HrSelect
@@ -427,7 +478,7 @@ export function EditEmployeeForm({
                   />
                 </HrField>
               </div>
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-2">
                 <HrField id="bankName" label="Bank name">
                   <HrTextInput
                     defaultValue={employee.profile.bankName ?? ""}
@@ -464,15 +515,12 @@ export function EditEmployeeForm({
                   />
                 </HrField>
               </div>
-            </div>
-          </div>
+            </EmployeeFormPayrollSection>
+        </EmployeeFormTabPanel>
 
-          <div className={tab === "family" ? "space-y-5" : "hidden"}>
-            <div className="rounded-[12px] border border-[var(--border-primary)] p-4">
-              <p className="mb-4 text-sm font-semibold uppercase tracking-wide text-[var(--foreground-muted)]">
-                Spouse information
-              </p>
-              <div className="grid gap-4 md:grid-cols-3">
+        <EmployeeFormTabPanel activeTab={tab} tab="family">
+          <EmployeeFormSubsection title="Spouse information">
+            <div className="grid gap-4 md:grid-cols-3">
                 <HrField id="spouseName" label="Name">
                   <HrTextInput
                     defaultValue={spouse?.fullName ?? ""}
@@ -498,28 +546,30 @@ export function EditEmployeeForm({
                   </HrSelect>
                 </HrField>
               </div>
-            </div>
+          </EmployeeFormSubsection>
 
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold uppercase tracking-wide text-[var(--foreground-muted)]">
-                  Children details
-                </p>
-                <button
-                  className="text-sm font-medium text-[var(--accent-primary)] hover:text-[var(--accent-hover)]"
+          <div className="space-y-3">
+            <EmployeeFormSectionHeader
+              action={
+                <Button
                   onClick={() => setChildCount((count) => Math.min(count + 1, 5))}
+                  size="sm"
                   type="button"
+                  variant="outline"
                 >
                   + Add child
-                </button>
-              </div>
-              {Array.from({ length: childCount }).map((_, index) => {
-                const child = children[index];
-                return (
-                  <div
-                    className="grid gap-4 rounded-[12px] border border-[var(--border-primary)] p-4 md:grid-cols-3"
-                    key={`child_${index}`}
-                  >
+                </Button>
+              }
+              title="Children details"
+            />
+            {Array.from({ length: childCount }).map((_, index) => {
+              const child = children[index];
+              return (
+                <EmployeeFormRepeaterRow
+                  key={`child_${index}`}
+                  onRemove={() => setChildCount((count) => Math.max(0, count - 1))}
+                  removeLabel="Remove child"
+                >
                     <HrField id={`childName_${index}`} label="Name">
                       <HrTextInput
                         defaultValue={child?.fullName ?? ""}
@@ -542,35 +592,37 @@ export function EditEmployeeForm({
                         type="date"
                       />
                     </HrField>
-                  </div>
-                );
-              })}
-              {childCount === 0 ? (
-                <p className="text-sm text-[var(--foreground-muted)]">No children added yet.</p>
-              ) : null}
-            </div>
+                </EmployeeFormRepeaterRow>
+              );
+            })}
+            {childCount === 0 ? (
+              <p className="text-sm text-muted-foreground">No children added yet.</p>
+            ) : null}
           </div>
+        </EmployeeFormTabPanel>
 
-          <div className={tab === "emergency" ? "space-y-5" : "hidden"}>
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold uppercase tracking-wide text-[var(--foreground-muted)]">
-                Emergency contacts
-              </p>
-              <button
-                className="text-sm font-medium text-[var(--accent-primary)] hover:text-[var(--accent-hover)]"
+        <EmployeeFormTabPanel activeTab={tab} tab="emergency">
+          <EmployeeFormSectionHeader
+            action={
+              <Button
                 onClick={() => setEmergencyCount((count) => Math.min(count + 1, 5))}
+                size="sm"
                 type="button"
+                variant="outline"
               >
                 + Add contact
-              </button>
-            </div>
-            {Array.from({ length: emergencyCount }).map((_, index) => {
-              const contact = employee.emergencyContacts[index];
-              return (
-                <div
-                  className="grid gap-4 rounded-[12px] border border-[var(--border-primary)] p-4 md:grid-cols-[1fr_1fr_1fr_auto]"
-                  key={`emergency_${index}`}
-                >
+              </Button>
+            }
+            title="Emergency contacts"
+          />
+          {Array.from({ length: emergencyCount }).map((_, index) => {
+            const contact = employee.emergencyContacts[index];
+            return (
+              <EmployeeFormRepeaterRow
+                key={`emergency_${index}`}
+                onRemove={() => setEmergencyCount((count) => Math.max(1, count - 1))}
+                removeLabel="Remove contact"
+              >
                   <HrField id={`emergencyName_${index}`} label="Name">
                     <HrTextInput
                       defaultValue={contact?.name ?? ""}
@@ -592,66 +644,13 @@ export function EditEmployeeForm({
                       name={`emergencyPhone_${index}`}
                     />
                   </HrField>
-                  <div className="flex items-end pb-1">
-                    <button
-                      aria-label="Remove contact"
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-[8px] text-[var(--danger)] hover:bg-[var(--danger-soft)]"
-                      onClick={() => setEmergencyCount((count) => Math.max(1, count - 1))}
-                      type="button"
-                    >
-                      ⌫
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+              </EmployeeFormRepeaterRow>
+            );
+          })}
+        </EmployeeFormTabPanel>
 
-          <HrFormMessage error={state.error} success={state.success} />
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border-primary)] bg-[var(--surface-muted)] px-5 py-4">
-          <div className="flex gap-2">
-            {tab !== "employment" ? (
-              <HrGhostButton
-                onClick={() =>
-                  setTab(
-                    tabs[Math.max(0, tabs.findIndex((item) => item.id === tab) - 1)]?.id ??
-                      "employment",
-                  )
-                }
-                type="button"
-              >
-                Previous
-              </HrGhostButton>
-            ) : null}
-            {tab !== "emergency" ? (
-              <HrGhostButton
-                onClick={() =>
-                  setTab(
-                    tabs[Math.min(tabs.length - 1, tabs.findIndex((item) => item.id === tab) + 1)]
-                      ?.id ?? "emergency",
-                  )
-                }
-                type="button"
-              >
-                Next
-              </HrGhostButton>
-            ) : null}
-          </div>
-          <div className="flex gap-2">
-            <Link href={`/hr/employees/${employee.id}`}>
-              <HrGhostButton type="button">View profile</HrGhostButton>
-            </Link>
-            <Link href="/hr/employees">
-              <HrGhostButton type="button">Cancel</HrGhostButton>
-            </Link>
-            <HrPrimaryButton disabled={pending} type="submit">
-              {pending ? "Saving…" : "Save full profile"}
-            </HrPrimaryButton>
-          </div>
-        </div>
-      </form>
+        <HrFormMessage error={state.error} success={state.success} />
+      </EmployeeFormShell>
     </div>
   );
 }

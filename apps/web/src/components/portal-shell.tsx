@@ -23,7 +23,7 @@ import {
 
 function notificationsHref(portal: string): string {
   if (portal === "Manager") return "/manager/notifications";
-  if (portal === "HR Administrator") return "/hr/announcements";
+  if (portal === "HR Administrator") return "/hr/notifications";
   return "/employee/notifications";
 }
 
@@ -38,6 +38,7 @@ export function PortalShell({
   portal,
   user,
   pageSubtitle,
+  unreadNotificationCount = 0,
   children,
 }: {
   portal: string;
@@ -46,6 +47,7 @@ export function PortalShell({
     email?: string;
   };
   pageSubtitle?: string;
+  unreadNotificationCount?: number;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -63,7 +65,7 @@ export function PortalShell({
   });
 
   return (
-    <div className="portal-theme flex min-h-screen bg-[var(--surface-primary)]">
+    <div className="portal-theme flex h-dvh overflow-hidden bg-[var(--surface-primary)]">
       {mobileOpen ? (
         <button
           aria-label="Close navigation"
@@ -74,11 +76,11 @@ export function PortalShell({
       ) : null}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-[248px] flex-col border-r border-[var(--border-primary)] bg-[var(--surface-card)] px-4 py-6 transition-transform lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex h-dvh w-[248px] shrink-0 flex-col border-r border-[var(--border-primary)] bg-[var(--surface-card)] px-4 py-6 transition-transform lg:static lg:h-full lg:translate-x-0 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="mb-5 flex items-center justify-between px-2">
+        <div className="mb-5 flex shrink-0 items-center justify-between px-2">
           <PortalBrand />
           <button
             aria-label="Close navigation"
@@ -90,11 +92,11 @@ export function PortalShell({
           </button>
         </div>
 
-        <nav className="flex-1 space-y-5 overflow-y-auto pb-4">
+        <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto pb-4">
           {sections.map((section) => (
-            <div className="space-y-1" key={section.label ?? section.items[0]?.href}>
+            <div className="space-y-0.5" key={section.label ?? section.items[0]?.href}>
               {section.label ? (
-                <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--foreground-muted)]">
+                <p className="px-3 pb-0.5 pt-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--foreground-muted)]">
                   {section.label}
                 </p>
               ) : null}
@@ -110,7 +112,7 @@ export function PortalShell({
           ))}
         </nav>
 
-        <div className="pt-2">
+        <div className="shrink-0 border-t border-[var(--border-primary)] pt-3">
           <PortalSidebarUserBlock
             email={user?.email}
             muted={sidebarUserMuted}
@@ -120,8 +122,8 @@ export function PortalShell({
         </div>
       </aside>
 
-      <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between border-b border-[var(--border-primary)] bg-[var(--surface-card)] px-4 sm:px-8">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <header className="flex h-16 shrink-0 items-center justify-between border-b border-[var(--border-primary)] bg-[var(--surface-card)] px-4 sm:px-8">
           <div className="flex items-center gap-3">
             <button
               aria-label="Open navigation"
@@ -140,7 +142,7 @@ export function PortalShell({
           </div>
           <div className="flex items-center gap-3 sm:gap-4">
             <p className="hidden text-[13px] text-[var(--foreground-muted)] md:block">{todayLabel}</p>
-            <PortalBellButton href={notificationsHref(portal)} />
+            <PortalBellButton href={notificationsHref(portal)} unreadCount={unreadNotificationCount} />
             <PortalAccountMenu
               email={user?.email}
               name={user?.fullName}
@@ -151,7 +153,7 @@ export function PortalShell({
         </header>
 
         <main
-          className={`flex-1 ${showMobileNav ? "pb-24 lg:pb-6" : ""}`}
+          className={`min-h-0 flex-1 overflow-y-auto ${showMobileNav ? "pb-24 lg:pb-6" : ""}`}
           style={{ padding: portal === "HR Administrator" ? 24 : undefined }}
         >
           <div className={portal === "HR Administrator" ? "" : "px-4 py-6 sm:px-6 sm:py-6 lg:px-8"}>

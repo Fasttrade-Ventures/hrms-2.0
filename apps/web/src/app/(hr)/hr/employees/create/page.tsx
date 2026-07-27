@@ -1,6 +1,5 @@
-import Link from "next/link";
-
 import { CreateEmployeeForm } from "@/components/hr/employees/create-employee-form";
+import { HrLinkButton } from "@/components/hr/hr-ui.client";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { requireRole } from "@/lib/auth/session";
 import { getEmployeeOptions, getSuggestedEmployeeNumber } from "@/lib/employees/queries";
@@ -19,14 +18,11 @@ export default async function CreateEmployeePage() {
     <div className="space-y-6">
       <PortalPageHeader
         actions={
-          <Link
-            className="inline-flex h-10 items-center rounded-[var(--radius-sm)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-4 text-sm font-medium hover:bg-[var(--surface-muted)]"
-            href="/hr/employees"
-          >
+          <HrLinkButton href="/hr/employees" variant="outline">
             Back to list
-          </Link>
+          </HrLinkButton>
         }
-        description="Tabbed profile create — employment, personal & bank, family, and emergency."
+        description="Add employment details, personal info, dependents, and emergency contacts."
         title="Create employee"
       />
       <CreateEmployeeForm

@@ -3,6 +3,8 @@ import { z } from "zod";
 export * from "./employee";
 export * from "./organization";
 export * from "./apply-behalf";
+export * from "./documents";
+export * from "./announcements";
 
 export const deploymentModeSchema = z.enum(["standalone", "saas"]);
 

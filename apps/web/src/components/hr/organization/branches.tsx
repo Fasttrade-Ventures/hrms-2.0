@@ -17,10 +17,15 @@ import {
   OrgFormActions,
   OrgFormCard,
   OrgStatCards,
+  OrgTableCell,
+  OrgTableEditLink,
+  OrgTableRow,
   OrgTableShell,
-  StatusPill,
+  OrgTableStatus,
 } from "@/components/hr/organization/org-ui";
+import { HrLinkButton } from "@/components/hr/hr-ui.client";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
+import { MALAYSIAN_STATE_OPTIONS } from "@/lib/employees/malaysia-demographics";
 import type { BranchRow } from "@/lib/hr/organization";
 
 const initialState: OrgActionState = {};
@@ -44,18 +49,10 @@ export function BranchesList({ branches }: { branches: BranchRow[] }) {
       <PortalPageHeader
         actions={
           <div className="flex gap-2">
-            <Link
-              className="inline-flex h-10 items-center rounded-[var(--radius-sm)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-4 text-sm font-medium hover:bg-[var(--surface-muted)]"
-              href="/hr/organization"
-            >
+            <HrLinkButton href="/hr/organization" variant="outline">
               Back to hub
-            </Link>
-            <Link
-              className="inline-flex h-10 items-center rounded-[var(--radius-md)] bg-[var(--accent-primary)] px-4 text-sm font-semibold text-white hover:bg-[var(--accent-hover)]"
-              href="/hr/organization/branches/create"
-            >
-              Add branch
-            </Link>
+            </HrLinkButton>
+            <HrLinkButton href="/hr/organization/branches/create">Add branch</HrLinkButton>
           </div>
         }
         description="Sites with weekend mode and payroll cutoff settings."
@@ -81,21 +78,21 @@ export function BranchesList({ branches }: { branches: BranchRow[] }) {
         isEmpty={branches.length === 0}
       >
         {branches.map((branch) => (
-          <div className="grid items-center gap-3 px-3.5 py-3 md:grid-cols-6" key={branch.id}>
-            <p className="text-sm font-semibold text-[var(--foreground-primary)]">{branch.name}</p>
-            <p className="text-sm text-[var(--foreground-secondary)]">{weekendLabel(branch.weekendMode)}</p>
-            <p className="text-sm text-[var(--foreground-secondary)]">{branch.payrollCutoffDay}</p>
-            <p className="text-sm text-[var(--foreground-muted)]">{branch.employeeCount}</p>
-            <StatusPill label="Active" tone="success" />
-            <div>
-              <Link
-                className="inline-flex h-9 items-center rounded-[var(--radius-sm)] border border-[var(--border-primary)] px-3 text-sm font-medium hover:bg-[var(--surface-muted)]"
-                href={`/hr/organization/branches/${branch.id}/edit`}
-              >
-                Edit
-              </Link>
-            </div>
-          </div>
+          <OrgTableRow key={branch.id}>
+            <OrgTableCell variant="name">
+              <span>{branch.name}</span>
+              {branch.state ? (
+                <span className="mt-0.5 block text-xs font-normal text-[var(--foreground-muted)]">
+                  {branch.state}
+                </span>
+              ) : null}
+            </OrgTableCell>
+            <OrgTableCell>{weekendLabel(branch.weekendMode)}</OrgTableCell>
+            <OrgTableCell>{branch.payrollCutoffDay}</OrgTableCell>
+            <OrgTableCell variant="muted">{branch.employeeCount}</OrgTableCell>
+            <OrgTableStatus />
+            <OrgTableEditLink href={`/hr/organization/branches/${branch.id}/edit`} />
+          </OrgTableRow>
         ))}
       </OrgTableShell>
     </div>
@@ -113,12 +110,9 @@ export function BranchForm({ branch }: { branch?: BranchRow }) {
     <div className="space-y-6">
       <PortalPageHeader
         actions={
-          <Link
-            className="inline-flex h-10 items-center rounded-[var(--radius-sm)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-4 text-sm font-medium hover:bg-[var(--surface-muted)]"
-            href="/hr/organization/branches"
-          >
+          <HrLinkButton href="/hr/organization/branches" variant="outline">
             Back to list
-          </Link>
+          </HrLinkButton>
         }
         description="Weekend mode drives working-day calculations; cutoff day scopes payroll."
         title={branch ? "Edit branch" : "Create branch"}
@@ -132,6 +126,20 @@ export function BranchForm({ branch }: { branch?: BranchRow }) {
         <form action={formAction} className="space-y-5">
           <HrField id="name" label="Branch name">
             <HrTextInput defaultValue={branch?.name ?? ""} id="name" name="name" required />
+          </HrField>
+          <HrField
+            hint="Used to import Malaysia public holidays for this branch."
+            id="state"
+            label="State / territory"
+          >
+            <HrSelect defaultValue={branch?.state ?? ""} id="state" name="state">
+              <option value="">Not set</option>
+              {MALAYSIAN_STATE_OPTIONS.map((state) => (
+                <option key={state} value={state}>
+                  {state}
+                </option>
+              ))}
+            </HrSelect>
           </HrField>
           <div className="grid gap-4 md:grid-cols-2">
             <HrField id="weekendMode" label="Weekend mode">

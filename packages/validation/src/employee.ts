@@ -54,7 +54,6 @@ export const createEmployeeSchema = z.object({
   race: optionalText,
   religion: optionalText,
   maritalStatus: maritalStatusSchema.optional().nullable(),
-  residentialAddress: z.string().max(1000).optional().nullable(),
   addressLine1: optionalText,
   addressLine2: optionalText,
   city: optionalText,
@@ -70,6 +69,7 @@ export const createEmployeeSchema = z.object({
   socsoNumber: optionalText,
   taxNumber: optionalText,
   profilePhotoPath: optionalText,
+  removeProfilePhoto: z.boolean().optional(),
 
   // Family
   dependents: z.array(dependentSchema).optional(),
@@ -111,7 +111,6 @@ export const updateEmployeePersonalSchema = z.object({
   race: optionalText,
   religion: optionalText,
   maritalStatus: maritalStatusSchema.nullable().optional(),
-  residentialAddress: z.string().max(1000).nullable().optional(),
 });
 
 export const updateEmployeeAddressSchema = z.object({

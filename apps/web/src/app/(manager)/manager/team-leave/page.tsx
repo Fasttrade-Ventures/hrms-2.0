@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { EmptyState, ListCard, StatusPill } from "@hrms/ui";
 
+import { TeamDocumentsLink } from "@/components/manager/team-documents-link";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { listTeamLeave } from "@/lib/manager/team";
 import { requireRole } from "@/lib/auth/session";
@@ -12,7 +13,11 @@ export default async function Page() {
 
   return (
     <div className="space-y-6">
-      <PortalPageHeader description="Leave requests from your direct reports." title="Team leave" />
+      <PortalPageHeader
+        actions={<TeamDocumentsLink />}
+        description="Leave requests from your direct reports."
+        title="Team leave"
+      />
 
       <ListCard
         columns={[

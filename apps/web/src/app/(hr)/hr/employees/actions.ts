@@ -14,6 +14,11 @@ import {
 import { logEmployeeEvent } from "@/lib/audit/log-employee-event";
 import { createEmployeeRecord, resendEmployeeActivationEmail } from "@/lib/employees/create-employee";
 import { parseEmployeeProfileFormData } from "@/lib/employees/parse-profile-form";
+import {
+  resolveEmployeeProfilePhoto,
+  setEmployeeProfilePhotoPath,
+  uploadEmployeeProfilePhoto,
+} from "@/lib/employees/profile-photo";
 import { updateEmployeeFullProfile } from "@/lib/employees/update-employee";
 import { requireRole } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
@@ -56,6 +61,11 @@ export async function createEmployee(
 
   try {
     const result = await createEmployeeRecord(parsed.data, session.user.id);
+    const file = formData.get("profilePhoto");
+    if (file instanceof File && file.size > 0) {
+      const photoPath = await uploadEmployeeProfilePhoto(result.employeeId, file);
+      await setEmployeeProfilePhotoPath(result.employeeId, photoPath);
+    }
 
     revalidatePath("/hr/employees");
 
@@ -84,7 +94,18 @@ export async function updateEmployeeFull(
   }
 
   try {
-    await updateEmployeeFullProfile(employeeId, parsed.data, session.user.id);
+    const profilePhotoPath = await resolveEmployeeProfilePhoto(
+      employeeId,
+      formData,
+      parsed.data.profilePhotoPath ?? null,
+      parsed.data.removeProfilePhoto ?? false,
+    );
+
+    await updateEmployeeFullProfile(
+      employeeId,
+      { ...parsed.data, profilePhotoPath },
+      session.user.id,
+    );
     revalidatePath("/hr/employees");
     revalidatePath(`/hr/employees/${employeeId}`);
     revalidatePath(`/hr/employees/${employeeId}/edit`);

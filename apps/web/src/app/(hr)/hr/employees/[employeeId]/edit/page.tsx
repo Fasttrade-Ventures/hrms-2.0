@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { EditEmployeeForm } from "@/components/hr/employees/edit-employee-form";
+import { HrLinkButton } from "@/components/hr/hr-ui.client";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { requireRole } from "@/lib/auth/session";
 import { getEmployeeDetail, getEmployeeOptions } from "@/lib/employees/queries";
@@ -41,21 +41,15 @@ export default async function EditEmployeePage({
       <PortalPageHeader
         actions={
           <div className="flex flex-wrap gap-2">
-            <Link
-              className="inline-flex h-10 items-center rounded-[var(--radius-sm)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-4 text-sm font-medium hover:bg-[var(--surface-muted)]"
-              href={`/hr/employees/${employee.id}`}
-            >
+            <HrLinkButton href={`/hr/employees/${employee.id}`} variant="outline">
               View profile
-            </Link>
-            <Link
-              className="inline-flex h-10 items-center rounded-[var(--radius-sm)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-4 text-sm font-medium hover:bg-[var(--surface-muted)]"
-              href="/hr/employees"
-            >
+            </HrLinkButton>
+            <HrLinkButton href="/hr/employees" variant="outline">
               Back to list
-            </Link>
+            </HrLinkButton>
           </div>
         }
-        description="Tabbed profile edit — employment, personal & bank, family, and emergency."
+        description={`${employee.fullName} · ${employee.employeeNumber} — update employment details, personal info, dependents, and emergency contacts.`}
         title="Edit employee"
       />
       <EditEmployeeForm

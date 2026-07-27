@@ -1,5 +1,11 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+
 export function HrField({
   id,
   label,
@@ -12,31 +18,34 @@ export function HrField({
   hint?: string;
 }) {
   return (
-    <div className="space-y-2">
-      <label className="text-[13px] font-medium text-[var(--foreground-primary)]" htmlFor={id}>
+    <div className="flex flex-col gap-2">
+      <Label className="text-[13px] text-foreground" htmlFor={id}>
         {label}
-      </label>
+      </Label>
       {children}
-      {hint ? <p className="text-xs text-[var(--foreground-muted)]">{hint}</p> : null}
+      {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
     </div>
   );
 }
 
-const fieldClassName =
-  "h-10 w-full rounded-[var(--radius-md)] border border-[var(--border-primary)] bg-[var(--surface-muted)] px-3.5 text-[15px] text-[var(--foreground-primary)] outline-none placeholder:text-[var(--foreground-muted)] focus:border-[var(--border-focus)] focus:bg-[var(--surface-card)]";
+const selectClassName =
+  "h-10 w-full rounded-lg border border-input bg-muted/40 px-3.5 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
 
-export function HrTextInput(props: InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={fieldClassName} {...props} />;
+export function HrTextInput({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
+  return <Input className={cn("h-10 bg-muted/40", className)} {...props} />;
 }
 
 export function HrSelect(props: SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select className={fieldClassName} {...props} />;
+  return <select className={selectClassName} {...props} />;
 }
 
-export function HrTextarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+export function HrTextarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <textarea
-      className="min-h-[88px] w-full rounded-[var(--radius-md)] border border-[var(--border-primary)] bg-[var(--surface-muted)] px-3.5 py-2.5 text-[15px] text-[var(--foreground-primary)] outline-none placeholder:text-[var(--foreground-muted)] focus:border-[var(--border-focus)] focus:bg-[var(--surface-card)]"
+      className={cn(
+        "min-h-[88px] w-full rounded-lg border border-input bg-muted/40 px-3.5 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+        className,
+      )}
       {...props}
     />
   );
@@ -56,9 +65,9 @@ export function HrCheckbox({
   value?: string;
 }) {
   return (
-    <label className="flex items-center gap-2.5 text-sm text-[var(--foreground-secondary)]" htmlFor={id}>
+    <label className="flex items-center gap-2.5 text-sm text-muted-foreground" htmlFor={id}>
       <input
-        className="h-[18px] w-[18px] accent-[var(--accent-primary)]"
+        className="size-4 accent-primary"
         defaultChecked={defaultChecked}
         id={id}
         name={name}
@@ -72,31 +81,25 @@ export function HrCheckbox({
 
 export function HrPrimaryButton({
   children,
-  className = "",
+  className,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button
-      className={`inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--accent-primary)] px-5 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-hover)] disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
-      {...props}
-    >
+    <Button className={className} type="button" {...props}>
       {children}
-    </button>
+    </Button>
   );
 }
 
 export function HrGhostButton({
   children,
-  className = "",
+  className,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button
-      className={`inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-5 text-sm font-medium text-[var(--foreground-primary)] transition-colors hover:bg-[var(--surface-muted)] disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
-      {...props}
-    >
+    <Button className={className} type="button" variant="outline" {...props}>
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -106,14 +109,14 @@ export function HrFormMessage({ error, success }: { error?: string; success?: st
   }
 
   return (
-    <div
-      className={`border px-4 py-3 text-sm ${
-        error
-          ? "border-[var(--danger)] bg-[var(--danger-soft)] text-[var(--danger)]"
-          : "border-[var(--accent-primary)] bg-[var(--surface-accent-soft)] text-[var(--accent-primary)]"
-      }`}
+    <Card
+      className={cn(
+        "py-3",
+        error ? "border-destructive/40 bg-destructive/10" : "border-primary/30 bg-accent",
+      )}
+      size="sm"
     >
-      {error ?? success}
-    </div>
+      <CardContent className="py-0 text-sm text-foreground">{error ?? success}</CardContent>
+    </Card>
   );
 }
