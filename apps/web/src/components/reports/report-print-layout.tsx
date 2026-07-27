@@ -16,7 +16,9 @@ export function ReportPrintLayout({
       <div className="mb-4 space-y-1">
         <h1 className="text-xl font-semibold">{title}</h1>
         <p className="text-sm text-muted-foreground">{filterSummary}</p>
-        <p className="text-xs text-muted-foreground">Generated {generatedAt}</p>
+        <p className="text-xs text-muted-foreground" suppressHydrationWarning>
+          Generated {generatedAt}
+        </p>
       </div>
       <table className="w-full border-collapse text-xs">
         <thead>
