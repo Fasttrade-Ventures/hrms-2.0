@@ -30,17 +30,6 @@ export async function listAnnouncements() {
 }
 
 export async function listMyAssets() {
-  const { employeeId, organizationId } = await requireEmployeeContext();
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("assets")
-    .select("id, name, category, serial_number, issued_at")
-    .eq("organization_id", organizationId)
-    .eq("assigned_employee_id", employeeId)
-    .is("returned_at", null)
-    .order("issued_at", { ascending: false });
-
-  if (error) throw new Error(error.message);
-  return data ?? [];
+  const { listMyAssets: listAssets } = await import("@/lib/assets/queries");
+  return listAssets();
 }

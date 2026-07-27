@@ -1,10 +1,14 @@
+import Link from "next/link";
+
 import { EmptyState, ListCard } from "@hrms/ui";
 
 import { formatDate } from "@/components/employee/employee-shared";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
-import { listMyAssets } from "@/lib/employee/catalog";
+import { listMyAssets } from "@/lib/assets/queries";
+import { requireModule } from "@/lib/entitlements";
 
 export default async function Page() {
+  requireModule("assets");
   const assets = await listMyAssets();
 
   return (
@@ -23,13 +27,17 @@ export default async function Page() {
           id: asset.id,
           cells: {
             name: (
-              <div>
+              <Link className="block underline" href={`/employee/assets/${asset.id}`}>
                 <p className="font-medium">{asset.name}</p>
-                <p className="text-sm text-[var(--foreground-muted)]">{asset.category ?? "—"}</p>
-              </div>
+                <p className="text-sm text-[var(--foreground-muted)]">
+                  {asset.categoryName}
+                  {!asset.acknowledgedAt ? " · Acknowledgement pending" : ""}
+                  {asset.hasOpenRequest ? " · Request pending" : ""}
+                </p>
+              </Link>
             ),
-            serial: asset.serial_number ?? "—",
-            issued: asset.issued_at ? formatDate(asset.issued_at) : "—",
+            serial: asset.serialNumber ?? "—",
+            issued: formatDate(asset.assignedAt),
           },
         }))}
       />

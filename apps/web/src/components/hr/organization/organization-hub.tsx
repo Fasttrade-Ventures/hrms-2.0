@@ -39,6 +39,12 @@ const areaMeta: Record<
     cta: "Manage leave types",
     createHref: "/hr/organization/leave-types/create",
   },
+  "asset-categories": {
+    icon: "assets",
+    blurb: "Asset types and custom fields for the register.",
+    cta: "Manage asset categories",
+    createHref: "/hr/organization/asset-categories/create",
+  },
 };
 
 export function OrganizationHub({ data }: { data: OrgHubData }) {

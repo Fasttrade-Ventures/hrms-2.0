@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { EmployeeDocumentsSection } from "@/components/hr/documents/employee-documents-section";
+import { EmployeeAssetsPanel } from "@/components/hr/employees/employee-assets-panel";
 import { DeleteEmployeeButton } from "@/components/hr/employees/delete-employee-button";
 import { EmployeeProfileView } from "@/components/hr/employees/employee-profile-view";
 import { HrLinkButton } from "@/components/hr/hr-ui.client";
@@ -9,6 +10,7 @@ import { requireRole } from "@/lib/auth/session";
 import { getEmployeeDetail, listActiveEmployeesForSelect } from "@/lib/employees/queries";
 import { listDocumentFolders } from "@/lib/hr/document-folders";
 import { listEmployeeDocumentsForProfile, listRequiredDocuments } from "@/lib/hr/documents";
+import { listActiveAssignmentsForEmployee } from "@/lib/assets/queries";
 
 export default async function ViewEmployeePage({
   params,
@@ -18,12 +20,13 @@ export default async function ViewEmployeePage({
   await requireRole("hr_administrator");
 
   const { employeeId } = await params;
-  const [employee, documents, employees, requiredTypes, folders] = await Promise.all([
+  const [employee, documents, employees, requiredTypes, folders, assetAssignments] = await Promise.all([
     getEmployeeDetail(employeeId),
     listEmployeeDocumentsForProfile(employeeId).catch(() => []),
     listActiveEmployeesForSelect().catch(() => []),
     listRequiredDocuments(true).catch(() => []),
     listDocumentFolders().catch(() => []),
+    listActiveAssignmentsForEmployee(employeeId).catch(() => []),
   ]);
 
   if (!employee) {
@@ -50,6 +53,12 @@ export default async function ViewEmployeePage({
       />
 
       <EmployeeProfileView employee={employee} />
+
+      <EmployeeAssetsPanel
+        assignments={assetAssignments}
+        employeeId={employee.id}
+        employeeStatus={employee.status}
+      />
 
       <EmployeeDocumentsSection
         documents={documents}

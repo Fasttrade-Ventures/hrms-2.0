@@ -27,6 +27,7 @@ export type OrgHubData = {
   shiftCount: number;
   holidayCount: number;
   leaveTypeCount: number;
+  assetCategoryCount: number;
   modules: OrgHubModule[];
 };
 
@@ -112,7 +113,7 @@ export async function getOrgHubData(): Promise<OrgHubData> {
   const organizationId = getOrganizationId();
   const year = new Date().getFullYear();
 
-  const [branches, departments, shifts, holidays, leaveTypes] = await Promise.all([
+  const [branches, departments, shifts, holidays, leaveTypes, assetCategories] = await Promise.all([
     supabase
       .from("branches")
       .select("id, name", { count: "exact" })
@@ -135,6 +136,10 @@ export async function getOrgHubData(): Promise<OrgHubData> {
       .from("leave_types")
       .select("id, name", { count: "exact" })
       .eq("organization_id", organizationId),
+    supabase
+      .from("asset_categories")
+      .select("id, name", { count: "exact" })
+      .eq("organization_id", organizationId),
   ]);
 
   if (branches.error) throw new Error(branches.error.message);
@@ -142,17 +147,21 @@ export async function getOrgHubData(): Promise<OrgHubData> {
   if (shifts.error) throw new Error(shifts.error.message);
   if (holidays.error) throw new Error(holidays.error.message);
   if (leaveTypes.error) throw new Error(leaveTypes.error.message);
+  if (assetCategories.error) throw new Error(assetCategories.error.message);
 
   const branchCount = branches.count ?? branches.data?.length ?? 0;
   const departmentCount = departments.count ?? departments.data?.length ?? 0;
   const shiftCount = shifts.count ?? shifts.data?.length ?? 0;
   const holidayCount = holidays.count ?? holidays.data?.length ?? 0;
   const leaveTypeCount = leaveTypes.count ?? leaveTypes.data?.length ?? 0;
+  const assetCategoryCount = assetCategories.count ?? assetCategories.data?.length ?? 0;
 
   const branchNames = (branches.data ?? []).map((row) => row.name).slice(0, 3).join(" · ") || "No branches yet";
   const deptNames = (departments.data ?? []).map((row) => row.name).slice(0, 4).join(" · ") || "No departments yet";
   const shiftNames = (shifts.data ?? []).map((row) => row.name).slice(0, 2).join(" · ") || "No shifts yet";
   const leaveNames = (leaveTypes.data ?? []).map((row) => row.name).slice(0, 3).join(" · ") || "No leave types yet";
+  const assetCategoryNames =
+    (assetCategories.data ?? []).map((row) => row.name).slice(0, 3).join(" · ") || "No categories yet";
 
   return {
     branchCount,
@@ -160,6 +169,7 @@ export async function getOrgHubData(): Promise<OrgHubData> {
     shiftCount,
     holidayCount,
     leaveTypeCount,
+    assetCategoryCount,
     modules: [
       {
         id: "branches",
@@ -210,6 +220,16 @@ export async function getOrgHubData(): Promise<OrgHubData> {
         details: leaveNames,
         href: "/hr/organization/leave-types",
         count: leaveTypeCount,
+      },
+      {
+        id: "asset-categories",
+        typeLabel: "Assets",
+        typeTone: "accent",
+        title: "Asset categories",
+        subtitle: `${assetCategoryCount} categor${assetCategoryCount === 1 ? "y" : "ies"}`,
+        details: assetCategoryNames,
+        href: "/hr/organization/asset-categories",
+        count: assetCategoryCount,
       },
     ],
   };

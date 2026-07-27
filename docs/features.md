@@ -206,9 +206,10 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 
 | Feature | Tier | UI | Notes |
 |---------|------|-----|--------|
-| My Assets (assigned to me) | Core | ✅ | Empty when none |
-| HR asset register | Core | 🟡 | |
-| Assign / return asset | Core | ⬜ | |
+| My Assets (assigned to me) | Core | ✅ | Detail, acknowledge, requests |
+| HR asset register | Core | ✅ | Filters, detail, lifecycle |
+| Assign / return asset | Core | ✅ | Assignment history + snapshots |
+| Asset categories | Core | ✅ | Organization catalog + custom fields |
 
 ---
 

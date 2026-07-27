@@ -9,6 +9,8 @@ import {
   createHolidaySchema,
   createLeaveTypeSchema,
   createShiftSchema,
+  createAssetCategorySchema,
+  updateAssetCategorySchema,
   importHolidaysSchema,
   updateBranchSchema,
   updateDepartmentSchema,
@@ -21,6 +23,7 @@ import { requireRole } from "@/lib/auth/session";
 import { fetchMalaysiaHolidaysForState, mergeHolidayNames } from "@/lib/hr/malaysia-holidays-api";
 import { getOrganizationId } from "@/lib/hr/organization";
 import { createClient } from "@/lib/supabase/server";
+import { createAssetCategory, updateAssetCategory } from "@/lib/assets/categories";
 
 export type OrgActionState = {
   error?: string;
@@ -706,4 +709,73 @@ export async function deleteLeaveType(leaveTypeId: string): Promise<OrgActionSta
 
   revalidateOrg(["/hr/organization/leave-types"]);
   return { success: "Leave type deleted." };
+}
+
+function parseFieldSchemaJson(raw: string) {
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function createAssetCategoryAction(
+  _prevState: OrgActionState,
+  formData: FormData,
+): Promise<OrgActionState> {
+  await requireRole("hr_administrator");
+
+  const parsed = createAssetCategorySchema.safeParse({
+    name: String(formData.get("name") ?? "").trim(),
+    description: String(formData.get("description") ?? "").trim() || null,
+    sortOrder: String(formData.get("sortOrder") ?? "0").trim(),
+    isActive: readCheckbox(formData, "isActive"),
+    fieldSchema: parseFieldSchemaJson(String(formData.get("fieldSchemaJson") ?? "[]")),
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid category details." };
+  }
+
+  try {
+    await createAssetCategory(parsed.data);
+    revalidateOrg(["/hr/organization/asset-categories", "/hr/organization"]);
+    redirect("/hr/organization/asset-categories");
+  } catch (error) {
+    if (error instanceof Error && error.message === "NEXT_REDIRECT") throw error;
+    return { error: error instanceof Error ? error.message : "Failed to create category." };
+  }
+}
+
+export async function updateAssetCategoryAction(
+  categoryId: string,
+  _prevState: OrgActionState,
+  formData: FormData,
+): Promise<OrgActionState> {
+  await requireRole("hr_administrator");
+
+  const parsed = updateAssetCategorySchema.safeParse({
+    name: String(formData.get("name") ?? "").trim(),
+    description: String(formData.get("description") ?? "").trim() || null,
+    sortOrder: String(formData.get("sortOrder") ?? "0").trim(),
+    isActive: readCheckbox(formData, "isActive"),
+    fieldSchema: parseFieldSchemaJson(String(formData.get("fieldSchemaJson") ?? "[]")),
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid category details." };
+  }
+
+  try {
+    await updateAssetCategory(categoryId, parsed.data);
+    revalidateOrg([
+      "/hr/organization/asset-categories",
+      `/hr/organization/asset-categories/${categoryId}/edit`,
+      "/hr/organization",
+    ]);
+    return { success: "Category saved." };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Failed to update category." };
+  }
 }

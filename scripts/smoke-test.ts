@@ -332,6 +332,14 @@ async function runAnnouncementsDbChecks(
   const companyEvents = await admin.from("company_events").select("id").limit(1);
   if (!companyEvents.error) pass(phase, "company_events table accessible");
   else fail(phase, "company_events table accessible", companyEvents.error.message);
+
+  const assetCategories = await admin.from("asset_categories").select("id").limit(1);
+  if (!assetCategories.error) pass(phase, "asset_categories table accessible");
+  else fail(phase, "asset_categories table accessible", assetCategories.error.message);
+
+  const assetAssignments = await admin.from("asset_assignments").select("id").limit(1);
+  if (!assetAssignments.error) pass(phase, "asset_assignments table accessible");
+  else fail(phase, "asset_assignments table accessible", assetAssignments.error.message);
 }
 
 async function runOrgHttpChecks(baseUrl: string) {

@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 
 import { requireRole } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
-import { createAsset } from "@/lib/hr/assets";
 import { createDraftPayrun, lockPayrun } from "@/lib/hr/payroll";
 
 export type HrActionState = {
@@ -16,29 +15,6 @@ function getOrganizationId(): string {
   const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
   if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
   return organizationId;
-}
-
-export async function createAssetAction(
-  _prev: HrActionState,
-  formData: FormData,
-): Promise<HrActionState> {
-  const name = String(formData.get("name") ?? "").trim();
-  const category = String(formData.get("category") ?? "").trim() || undefined;
-  const serialNumber = String(formData.get("serialNumber") ?? "").trim() || undefined;
-  const assignedEmployeeId = String(formData.get("assignedEmployeeId") ?? "").trim() || undefined;
-  const issuedAt = String(formData.get("issuedAt") ?? "").trim() || undefined;
-
-  if (!name) return { error: "Asset name is required." };
-
-  try {
-    requireModule("assets");
-    await requireRole("hr_administrator");
-    await createAsset({ name, category, serialNumber, assignedEmployeeId, issuedAt });
-    revalidatePath("/hr/assets");
-    return { success: "Asset created." };
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : "Failed to create asset." };
-  }
 }
 
 export async function createPayrunAction(

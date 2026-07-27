@@ -88,6 +88,20 @@ export function resolveNotificationHref(
     return "/hr/documents/compliance";
   }
 
+  if (row.template === "asset.assigned" || row.template === "asset.returned") {
+    if (portal !== "employee") return null;
+    const assetId = row.payload.assetId;
+    if (typeof assetId === "string") return `/employee/assets/${assetId}`;
+    return "/employee/assets";
+  }
+
+  if (row.template === "asset.request") {
+    if (portal !== "hr") return null;
+    const assetId = row.payload.assetId;
+    if (typeof assetId === "string") return `/hr/assets/${assetId}`;
+    return "/hr/assets";
+  }
+
   const payloadHref = row.payload.href;
   if (typeof payloadHref === "string" && payloadHref.startsWith("/")) {
     return payloadHref;
