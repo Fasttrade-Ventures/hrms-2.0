@@ -79,9 +79,9 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Manager leave approval | Core | ✅ | Detail + confirm |
 | HR apply leave on behalf | Core | ✅ Apply Behalf | Auto-approved |
 | Leave cancel / revoke | Core | — | |
-| My Calendar (approved leave + holidays) | Core | ✅ | Month / list |
+| My Calendar (approved leave + holidays) | Core | ✅ | Month / list at `/employee/calendar` |
 | Team leave (manager) | Core | ✅ + empty | |
-| Team calendar (manager) | Core | ✅ + empty | |
+| Team calendar (manager) | Core | ✅ | Month / list at `/manager/team-calendar` |
 | Long-leave escalation | Core | — | |
 | Replacement-credit balance on leave | Core | — | Linked to §6 |
 | Prorating / carry-forward / expiry | Pro | — | |
@@ -243,8 +243,8 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 
 | Feature | Tier | UI | Notes |
 |---------|------|-----|--------|
-| Employee personal calendar | Core | ✅ | Leave-focused |
-| HR / org calendar & holiday admin | Core | 🟡 | |
+| Employee personal calendar | Core | ✅ | `/employee/calendar` |
+| HR / org calendar & holiday admin | Core | ✅ | `/hr/calendar` + holidays at `/hr/organization/holidays` |
 | HR reports hub | Core | 🟡 | CSV/print |
 | Scheduled reports | Pro | — | |
 | HQ / branch analytics | Ent | — | |

@@ -5,6 +5,7 @@ export * from "./organization";
 export * from "./apply-behalf";
 export * from "./documents";
 export * from "./announcements";
+export * from "./calendar";
 
 export const deploymentModeSchema = z.enum(["standalone", "saas"]);
 

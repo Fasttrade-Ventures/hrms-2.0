@@ -19,9 +19,11 @@ const initialState: EmployeeActionState = {};
 export function LeaveApplyForm({
   leaveTypes,
   defaultStartDate,
+  defaultEndDate,
 }: {
   leaveTypes: LeaveTypeOption[];
   defaultStartDate: string;
+  defaultEndDate: string;
 }) {
   const [state, formAction, pending] = useActionState(applyLeave, initialState);
 
@@ -56,7 +58,7 @@ export function LeaveApplyForm({
         </HrField>
 
         <HrField id="endDate" label="End date">
-          <HrTextInput defaultValue={defaultStartDate} id="endDate" name="endDate" required type="date" />
+          <HrTextInput defaultValue={defaultEndDate} id="endDate" name="endDate" required type="date" />
         </HrField>
       </div>
 

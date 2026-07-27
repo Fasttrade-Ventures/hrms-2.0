@@ -1,16 +1,41 @@
+import { CalendarShell } from "@/components/calendar/calendar-shell";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
+import { listEmployeeCalendarDays } from "@/lib/calendar/queries";
+import { parseYearMonth } from "@/lib/calendar/parse-filters";
+import { requireEmployeeContext } from "@/lib/employee/leave";
+import { requireModule } from "@/lib/entitlements";
 
-export default function Page() {
-  const today = new Date().toLocaleDateString("en-MY", { month: "long", year: "numeric" });
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  requireModule("calendar");
+  const query = await searchParams;
+  const { year, month } = parseYearMonth(query);
+  const { organizationId, employeeId } = await requireEmployeeContext();
+  const { events, branchContext } = await listEmployeeCalendarDays({
+    organizationId,
+    employeeId,
+    year,
+    month,
+  });
 
   return (
     <div className="space-y-6">
-      <PortalPageHeader description="Leave, holidays, and team events." title="Calendar" />
-      <section className="border border-[var(--border-primary)] bg-[var(--surface-card)] p-6">
-        <p className="text-sm text-[var(--foreground-secondary)]">
-          Calendar view for {today} will connect to leave and holiday data in a later iteration.
-        </p>
-      </section>
+      <PortalPageHeader
+        description="Your approved and pending leave, plus branch public holidays."
+        title="Calendar"
+      />
+      <CalendarShell
+        basePath="/employee/calendar"
+        events={events}
+        mode="employee"
+        month={month}
+        printTitle="My Calendar"
+        weekendMode={branchContext.weekendMode}
+        year={year}
+      />
     </div>
   );
 }

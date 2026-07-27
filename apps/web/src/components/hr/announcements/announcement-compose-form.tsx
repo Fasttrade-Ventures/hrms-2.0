@@ -58,6 +58,7 @@ export function AnnouncementComposeForm({
     <form action={formAction} className="space-y-4" encType="multipart/form-data">
       {announcement ? <input name="announcementId" type="hidden" value={announcement.id} /> : null}
       <input name="isPinned" type="hidden" value={String(isPinned)} />
+      <input name="publishMode" type="hidden" value={publishMode} />
 
       <div className="grid gap-3">
         <AnnouncementFormField id="title" label="Title">

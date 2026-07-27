@@ -11,8 +11,15 @@ import {
   listLeaveTypes,
 } from "@/lib/employee/leave";
 
-export default async function Page() {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ startDate?: string; endDate?: string }>;
+}) {
+  const query = await searchParams;
   const today = new Date().toISOString().slice(0, 10);
+  const defaultStartDate = query.startDate ?? today;
+  const defaultEndDate = query.endDate ?? query.startDate ?? today;
   const [leaveTypes, requests, balances] = await Promise.all([
     listLeaveTypes(),
     listLeaveRequests(),
@@ -42,7 +49,11 @@ export default async function Page() {
         ) : null}
       </div>
 
-      <LeaveApplyForm defaultStartDate={today} leaveTypes={leaveTypes} />
+      <LeaveApplyForm
+        defaultEndDate={defaultEndDate}
+        defaultStartDate={defaultStartDate}
+        leaveTypes={leaveTypes}
+      />
 
       <ListCard
         columns={[

@@ -28,16 +28,16 @@ export function AnnouncementList({
       <div className="divide-y divide-border">
         {items.map((item) => (
           <Link
-            className="block px-4 py-4 transition-colors hover:bg-muted/30"
+            className={`block px-4 py-4 transition-colors hover:bg-muted/30 ${
+              item.isRead ? "opacity-90" : ""
+            }`}
             href={`${basePath}/${item.id}`}
             key={item.id}
           >
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  {!item.isRead ? (
-                    <span className="size-2 rounded-full bg-primary" title="Unread" />
-                  ) : null}
+                  {!item.isRead ? <Badge variant="default">Unread</Badge> : null}
                   <h2 className="font-medium text-foreground">{item.title}</h2>
                   {item.isPinned ? <Badge variant="outline">Pinned</Badge> : null}
                 </div>

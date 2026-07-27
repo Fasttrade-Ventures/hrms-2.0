@@ -1,41 +1,40 @@
-import { EmptyState, ListCard, StatusPill } from "@hrms/ui";
-
+import { CalendarShell } from "@/components/calendar/calendar-shell";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
-import { listTeamCalendarEvents } from "@/lib/manager/calendar";
-import { requireRole } from "@/lib/auth/session";
+import { listManagerCalendarDays } from "@/lib/calendar/queries";
+import { parseYearMonth } from "@/lib/calendar/parse-filters";
+import { requireModule } from "@/lib/entitlements";
+import { requireManagerContext } from "@/lib/manager/context";
 
-export default async function Page() {
-  await requireRole("manager");
-  const events = await listTeamCalendarEvents().catch(() => []);
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  requireModule("calendar");
+  const query = await searchParams;
+  const { year, month } = parseYearMonth(query);
+  const { organizationId, employeeId } = await requireManagerContext();
+  const { events, branchContext } = await listManagerCalendarDays({
+    organizationId,
+    managerEmployeeId: employeeId,
+    year,
+    month,
+  });
 
   return (
     <div className="space-y-6">
       <PortalPageHeader
-        description="Upcoming leave for your direct reports (next 60 days)."
+        description="Direct reports and your own leave, plus branch holidays. Approve pending leave from event details."
         title="Team calendar"
       />
-
-      <ListCard
-        columns={[
-          { key: "employee", label: "Employee" },
-          { key: "leave", label: "Leave" },
-          { key: "status", label: "Status", className: "w-28" },
-        ]}
-        empty={<EmptyState description="No upcoming leave on the calendar." title="Clear schedule" />}
-        header={<p className="text-sm font-medium">Leave schedule ({events.length})</p>}
-        rows={events.map((event) => ({
-          id: event.id,
-          cells: {
-            employee: event.employeeName,
-            leave: `${event.title} · ${event.startDate} → ${event.endDate}`,
-            status: (
-              <StatusPill
-                label={event.status}
-                tone={event.status === "approved" ? "success" : "warning"}
-              />
-            ),
-          },
-        }))}
+      <CalendarShell
+        basePath="/manager/team-calendar"
+        events={events}
+        mode="manager"
+        month={month}
+        printTitle="Team Calendar"
+        weekendMode={branchContext.weekendMode}
+        year={year}
       />
     </div>
   );

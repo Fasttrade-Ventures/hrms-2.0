@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { AnnouncementDetail } from "@/components/announcements/announcement-detail";
-import { markAnnouncementRead } from "@/lib/announcements/reads";
+import { markAnnouncementReadAction } from "@/lib/announcements/actions";
 import {
   getAnnouncementViewer,
   getVisibleAnnouncement,
@@ -26,7 +26,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
   if (!announcement) notFound();
 
-  await markAnnouncementRead({ announcementId: id, userId: session.user.id });
+  await markAnnouncementReadAction(id);
 
   return <AnnouncementDetail announcement={announcement} backHref="/employee/announcements" />;
 }

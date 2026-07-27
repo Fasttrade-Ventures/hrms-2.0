@@ -11,7 +11,6 @@ import {
   deleteAnnouncement,
   updateAnnouncement,
 } from "@/lib/hr/announcements";
-import { markAnnouncementRead } from "@/lib/announcements/reads";
 
 export type AnnouncementActionState = {
   error?: string;

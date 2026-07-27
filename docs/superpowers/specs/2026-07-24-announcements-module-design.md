@@ -54,7 +54,7 @@ Complete the HRMS **Announcements** module so HR can draft, schedule, or immedia
 
 ## 3.1 v2 additions (27 Jul 2026)
 
-- Read receipts — mark as read on detail view; unread dot in list
+- Read receipts — mark as read when opening detail; unread badge in list. Read announcements **stay visible** (not hidden or archived).
 - Multiple attachments per announcement
 - Pin to dashboards — pinned announcements on employee, manager, and HR home
 

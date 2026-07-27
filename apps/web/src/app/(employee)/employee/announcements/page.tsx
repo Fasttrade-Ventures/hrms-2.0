@@ -28,6 +28,9 @@ export default async function Page() {
   return (
     <div className="space-y-6">
       <PortalPageHeader description="Company announcements and updates." title="Announcements" />
+      <p className="text-sm text-muted-foreground">
+        All announcements stay here after you read them. Open one to mark it as read.
+      </p>
 
       {items.length === 0 ? (
         <EmptyState description="Announcements from HR will appear here." title="No announcements" />

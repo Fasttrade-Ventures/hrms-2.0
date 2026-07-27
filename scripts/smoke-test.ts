@@ -299,6 +299,9 @@ async function runAnnouncementsHttpChecks(baseUrl: string) {
     "/hr/announcements",
     "/employee/announcements",
     "/manager/announcements",
+    "/hr/calendar",
+    "/employee/calendar",
+    "/manager/team-calendar",
   ];
 
   for (const route of routes) {
@@ -325,6 +328,10 @@ async function runAnnouncementsDbChecks(
 
   if (!error) pass(phase, "announcements workflow columns accessible");
   else fail(phase, "announcements workflow columns accessible", error.message);
+
+  const companyEvents = await admin.from("company_events").select("id").limit(1);
+  if (!companyEvents.error) pass(phase, "company_events table accessible");
+  else fail(phase, "company_events table accessible", companyEvents.error.message);
 }
 
 async function runOrgHttpChecks(baseUrl: string) {

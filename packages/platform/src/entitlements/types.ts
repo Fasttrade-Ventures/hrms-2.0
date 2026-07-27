@@ -9,6 +9,7 @@ export type ModuleKey =
   | "assets"
   | "documents"
   | "announcements"
+  | "calendar"
   | "payouts"
   | "audit"
   | "import"
@@ -26,6 +27,7 @@ export type EntitlementProvider = {
 
 export const CORE_MODULES: ModuleKey[] = [
   "announcements",
+  "calendar",
   "documents",
   "assets",
   "performance",

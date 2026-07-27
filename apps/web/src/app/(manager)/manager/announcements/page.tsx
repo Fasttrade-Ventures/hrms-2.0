@@ -7,7 +7,7 @@ import {
   listVisibleAnnouncements,
   toAnnouncementListItem,
 } from "@/lib/announcements/queries";
-import { getReadAnnouncementIds, markAnnouncementRead } from "@/lib/announcements/reads";
+import { getReadAnnouncementIds } from "@/lib/announcements/reads";
 import { requireModule } from "@/lib/entitlements";
 import { requireManagerContext } from "@/lib/manager/context";
 
@@ -31,6 +31,9 @@ export default async function Page() {
         description="Company announcements targeted to managers."
         title="Announcements"
       />
+      <p className="text-sm text-muted-foreground">
+        All announcements stay here after you read them. Open one to mark it as read.
+      </p>
 
       {items.length === 0 ? (
         <EmptyState description="Announcements for managers will appear here." title="No announcements" />
