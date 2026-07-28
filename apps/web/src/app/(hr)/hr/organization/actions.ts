@@ -858,10 +858,61 @@ export async function upsertRosterEntryAction(
 
   const weekStart = String(formData.get("weekStart") ?? "");
   const branchId = String(formData.get("branchId") ?? "");
-  revalidateOrg([
-    "/hr/organization/rosters",
-    `/hr/organization/rosters?weekStart=${weekStart}${branchId ? `&branchId=${branchId}` : ""}`,
-    "/employee/schedule",
-  ]);
+  revalidateOrg(["/hr/organization/rosters", `/hr/organization/rosters?weekStart=${weekStart}${branchId ? `&branchId=${branchId}` : ""}`, "/employee/schedule"]);
   return { success: "Roster assignment saved." };
+}
+
+export async function createLeaveBlackout(
+  _prevState: OrgActionState,
+  formData: FormData,
+): Promise<OrgActionState> {
+  await requireRole("hr_administrator");
+  const { requireProfessionalTier } = await import("@/lib/entitlements");
+  await requireProfessionalTier();
+
+  const organizationId = getOrganizationId();
+  const name = String(formData.get("name") ?? "").trim();
+  const startDate = String(formData.get("startDate") ?? "").trim();
+  const endDate = String(formData.get("endDate") ?? "").trim();
+  const leaveTypeIds = formData.getAll("leaveTypeIds").map((value) => String(value));
+
+  if (!name || !startDate || !endDate) {
+    return { error: "Name, start date, and end date are required." };
+  }
+  if (endDate < startDate) {
+    return { error: "End date must be on or after start date." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("leave_blackout_periods").insert({
+    organization_id: organizationId,
+    name,
+    start_date: startDate,
+    end_date: endDate,
+    leave_type_ids: leaveTypeIds.length ? leaveTypeIds : null,
+  });
+
+  if (error) return { error: error.message };
+
+  revalidateOrg(["/hr/organization/leave-blackouts", "/hr/leave"]);
+  return { success: "Blackout period added." };
+}
+
+export async function deleteLeaveBlackout(blackoutId: string): Promise<OrgActionState> {
+  await requireRole("hr_administrator");
+  const { requireProfessionalTier } = await import("@/lib/entitlements");
+  await requireProfessionalTier();
+
+  const organizationId = getOrganizationId();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("leave_blackout_periods")
+    .delete()
+    .eq("id", blackoutId)
+    .eq("organization_id", organizationId);
+
+  if (error) return { error: error.message };
+
+  revalidateOrg(["/hr/organization/leave-blackouts", "/hr/leave"]);
+  return { success: "Blackout period deleted." };
 }

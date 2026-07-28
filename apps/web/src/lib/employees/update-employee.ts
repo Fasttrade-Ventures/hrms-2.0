@@ -149,4 +149,12 @@ export async function updateEmployeeFullProfile(
     employeeId,
     metadata: { section: "full_profile" },
   });
+
+  const { emitEmployeeWebhook } = await import("@/lib/integrations/webhooks/emit");
+  await emitEmployeeWebhook(
+    organizationId,
+    "employee.updated",
+    { employeeId },
+    `employee-updated:${employeeId}:${Date.now()}`,
+  );
 }

@@ -1,5 +1,24 @@
 import type { StatutoryExportRow } from "./store";
 
+function padRight(value: string, length: number): string {
+  return value.length >= length ? value.slice(0, length) : value.padEnd(length, " ");
+}
+
+function padLeft(value: string, length: number, char = "0"): string {
+  return value.length >= length ? value.slice(-length) : value.padStart(length, char);
+}
+
+function toPerkesoMonth(month: string): string {
+  if (/^\d{6}$/.test(month)) return month;
+  const [year, mon] = month.split("-");
+  if (!year || !mon) return month;
+  return `${mon}${year}`;
+}
+
+function cents(value: number, length: number): string {
+  return padLeft(String(Math.round(value * 100)), length);
+}
+
 export function mapStatutoryRows(
   items: Awaited<ReturnType<typeof import("./store").loadPayrunBranchItems>>,
 ): StatutoryExportRow[] {
@@ -38,8 +57,8 @@ export function buildEpfFile(rows: StatutoryExportRow[], employerEpfNumber: stri
       (row) =>
         [
           employerEpfNumber,
-          row.epfNumber || row.icNumber,
-          row.icNumber,
+          row.epfNumber || row.icNumber.replace(/-/g, ""),
+          row.icNumber.replace(/-/g, ""),
           row.employeeName,
           row.epfWageBase.toFixed(2),
           row.epfEmployee.toFixed(2),
@@ -49,34 +68,32 @@ export function buildEpfFile(rows: StatutoryExportRow[], employerEpfNumber: stri
     .join("\n");
 }
 
-/** PERKESO ASSIST combined SOCSO+EIS text format (simplified). */
+/** PERKESO ASSIST 2.0 combined SOCSO+EIS fixed-width record (278 chars). */
 export function buildSocsoFile(rows: StatutoryExportRow[], employerCode: string, month: string): string {
+  const monthField = toPerkesoMonth(month);
   return rows
-    .map((row) =>
-      [
-        employerCode.padEnd(12),
-        row.icNumber.padEnd(12),
-        row.employeeName.slice(0, 40).padEnd(40),
-        month.replace("-", ""),
-        Math.round(row.socsoWageBase * 100)
-          .toString()
-          .padStart(14, "0"),
-        Math.round(row.socsoEmployer * 100)
-          .toString()
-          .padStart(6, "0"),
-        Math.round(row.socsoEmployee * 100)
-          .toString()
-          .padStart(6, "0"),
-        Math.round(row.eisEmployer * 100)
-          .toString()
-          .padStart(6, "0"),
-        Math.round(row.eisEmployee * 100)
-          .toString()
-          .padStart(6, "0"),
-      ].join(""),
-    )
+    .map((row) => {
+      const ic = row.icNumber.replace(/-/g, "").slice(0, 12);
+      return [
+        padRight(employerCode, 12),
+        padRight("", 20),
+        padRight(ic, 12),
+        padRight(row.employeeName.slice(0, 150), 150),
+        padRight(monthField, 6),
+        cents(row.socsoWageBase, 14),
+        cents(row.socsoEmployer, 6),
+        cents(row.socsoEmployee, 6),
+        cents(row.eisEmployer, 6),
+        cents(row.eisEmployee, 6),
+        cents(0, 6),
+        " ".repeat(14),
+        " ".repeat(20),
+      ].join("");
+    })
     .join("\n");
 }
+
+export const PERKESO_ASSIST_RECORD_LENGTH = 278;
 
 /** LHDN PCB CP39 monthly deduction per employee. */
 export function buildPcbFile(rows: StatutoryExportRow[], month: string): string {

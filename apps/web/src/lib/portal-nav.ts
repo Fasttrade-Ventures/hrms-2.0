@@ -1,4 +1,5 @@
 import type { PortalIconName } from "@/components/portal/portal-icons";
+import type { ModuleKey, ProductTier } from "@hrms/platform";
 
 export type PortalNavItem = {
   href: string;
@@ -11,6 +12,101 @@ export type PortalNavSection = {
   label?: string;
   items: PortalNavItem[];
 };
+
+/** Longest-prefix wins. Unlisted routes are always visible. */
+const NAV_MODULE_RULES = [
+  { prefix: "/hr/organization/payroll-components", module: "payroll" },
+  { prefix: "/hr/organization/statutory-rules", module: "payroll" },
+  { prefix: "/hr/organization/pay-groups", module: "payroll" },
+  { prefix: "/hr/integrations/bukucloud", module: "payroll" },
+  { prefix: "/hr/employees/import", module: "import" },
+  { prefix: "/employee/replacement-credit", module: "replacement" },
+  { prefix: "/employee/overtime", module: "ot" },
+  { prefix: "/employee/claims", module: "claims" },
+  { prefix: "/employee/payslips", module: "payroll" },
+  { prefix: "/employee/performance", module: "performance" },
+  { prefix: "/employee/assets", module: "assets" },
+  { prefix: "/manager/team-performance", module: "performance" },
+  { prefix: "/hr/performance", module: "performance" },
+  { prefix: "/hr/assets", module: "assets" },
+  { prefix: "/hr/analytics", module: "analytics" },
+  { prefix: "/hr/recruitment", module: "recruitment" },
+  { prefix: "/hr/integrations", module: "integrations" },
+  { prefix: "/hr/audit", module: "audit" },
+  { prefix: "/hr/payroll", module: "payroll" },
+  { prefix: "/director/analytics", module: "analytics" },
+  { prefix: "/director/payroll", module: "payroll" },
+] as const satisfies ReadonlyArray<{ prefix: string; module: ModuleKey }>;
+
+const PRO_ONLY_NAV_PREFIXES = ["/hr/organization/leave-blackouts"];
+
+export function moduleForNavHref(href: string): ModuleKey | null {
+  const sorted = [...NAV_MODULE_RULES].sort((a, b) => b.prefix.length - a.prefix.length);
+  const rule = sorted.find(
+    (entry) => href === entry.prefix || href.startsWith(`${entry.prefix}/`),
+  );
+  return rule?.module ?? null;
+}
+
+function isNavHrefVisible(
+  href: string,
+  hasModule: (module: ModuleKey) => boolean,
+  tier: ProductTier,
+): boolean {
+  if (PRO_ONLY_NAV_PREFIXES.some((prefix) => href === prefix || href.startsWith(`${prefix}/`))) {
+    return tier !== "core";
+  }
+  const module = moduleForNavHref(href);
+  if (!module) return true;
+  return hasModule(module);
+}
+
+function filterNavItem(
+  item: PortalNavItem,
+  hasModule: (module: ModuleKey) => boolean,
+  tier: ProductTier,
+): PortalNavItem | null {
+  const children = item.children
+    ?.map((child) => filterNavItem(child, hasModule, tier))
+    .filter((child): child is PortalNavItem => child !== null);
+
+  const childList = children?.length ? children : item.children ? [] : undefined;
+  const selfVisible = isNavHrefVisible(item.href, hasModule, tier);
+
+  if (!selfVisible && !childList?.length) return null;
+
+  return {
+    ...item,
+    children: childList,
+  };
+}
+
+export function filterPortalNavSections(
+  sections: PortalNavSection[],
+  options: {
+    hasModule: (module: ModuleKey) => boolean;
+    tier: ProductTier;
+  },
+): PortalNavSection[] {
+  return sections
+    .map((section) => ({
+      ...section,
+      items: section.items
+        .map((item) => filterNavItem(item, options.hasModule, options.tier))
+        .filter((item): item is PortalNavItem => item !== null),
+    }))
+    .filter((section) => section.items.length > 0);
+}
+
+export function getPortalNavSectionsForEntitlements(
+  portal: string,
+  options: {
+    hasModule: (module: ModuleKey) => boolean;
+    tier: ProductTier;
+  },
+): PortalNavSection[] {
+  return filterPortalNavSections(getPortalNavSections(portal), options);
+}
 
 const employeeNav: PortalNavSection[] = [
   {
@@ -82,6 +178,7 @@ const hrNav: PortalNavSection[] = [
   {
     label: "People",
     items: [
+      { href: "/hr/operations", label: "Operations", icon: "approvals" },
       {
         href: "/hr/employees",
         label: "Employees",
@@ -89,6 +186,7 @@ const hrNav: PortalNavSection[] = [
         children: [
           { href: "/hr/employees", label: "Directory", icon: "employees" },
           { href: "/hr/employees/create", label: "Create employee", icon: "apply-behalf" },
+          { href: "/hr/employees/import", label: "Bulk import", icon: "reports" },
         ],
       },
       {
@@ -103,6 +201,7 @@ const hrNav: PortalNavSection[] = [
           { href: "/hr/organization/rosters", label: "Rosters", icon: "timesheet" },
           { href: "/hr/organization/holidays", label: "Holidays", icon: "calendar" },
           { href: "/hr/organization/leave-types", label: "Leave types", icon: "leave" },
+          { href: "/hr/organization/leave-blackouts", label: "Leave blackouts", icon: "calendar" },
           { href: "/hr/organization/pay-groups", label: "Pay groups", icon: "payroll" },
           { href: "/hr/organization/payroll-components", label: "Payroll components", icon: "payroll" },
           { href: "/hr/organization/statutory-rules", label: "Statutory rules", icon: "reports" },
@@ -112,14 +211,24 @@ const hrNav: PortalNavSection[] = [
     ],
   },
   {
+    label: "Time & leave",
+    items: [
+      { href: "/hr/leave", label: "Leave", icon: "leave" },
+      { href: "/hr/attendance", label: "Attendance", icon: "attendance" },
+    ],
+  },
+  {
     label: "Workplace",
     items: [
       { href: "/hr/documents", label: "Documents", icon: "documents" },
       { href: "/hr/announcements", label: "Announcements", icon: "announcements" },
       { href: "/hr/calendar", label: "Calendar", icon: "calendar" },
-          { href: "/hr/assets", label: "Assets", icon: "assets" },
-          { href: "/hr/performance", label: "Performance", icon: "performance" },
-        ],
+      { href: "/hr/assets", label: "Assets", icon: "assets" },
+      { href: "/hr/performance", label: "Performance", icon: "performance" },
+      { href: "/hr/analytics", label: "Analytics", icon: "reports" },
+      { href: "/hr/recruitment", label: "Recruitment", icon: "employees" },
+      { href: "/hr/integrations", label: "Integrations", icon: "organization" },
+    ],
   },
   {
     label: "Finance & compliance",
@@ -179,6 +288,7 @@ export function getPortalNavSections(portal: string): PortalNavSection[] {
         {
           items: [
             { href: "/director/dashboard", label: "Dashboard", icon: "dashboard" },
+            { href: "/director/analytics", label: "Analytics", icon: "reports" },
             { href: "/director/reports", label: "Reports", icon: "reports" },
             { href: "/director/payroll", label: "Payroll", icon: "payroll" },
           ],
@@ -189,6 +299,7 @@ export function getPortalNavSections(portal: string): PortalNavSection[] {
         {
           items: [
             { href: "/owner/dashboard", label: "Dashboard", icon: "dashboard" },
+            { href: "/hr/analytics", label: "Analytics", icon: "reports" },
             { href: "/owner/settings", label: "Module settings", icon: "organization" },
             { href: "/hr/payroll", label: "Payroll", icon: "payroll" },
             { href: "/hr/reports", label: "Reports", icon: "reports" },
@@ -232,8 +343,16 @@ export function getPortalNav(portal: string): PortalNavItem[] {
 }
 
 /** Prefer the most specific (longest) matching href for page titles. */
-export function resolvePortalNavLabel(portal: string, pathname: string): string | undefined {
-  const matches = getPortalNav(portal)
+export function resolvePortalNavLabel(
+  portal: string,
+  pathname: string,
+  sections?: PortalNavSection[],
+): string | undefined {
+  const navItems = sections
+    ? sections.flatMap((section) => flattenNavItems(section.items))
+    : getPortalNav(portal);
+
+  const matches = navItems
     .filter((item) => {
       if (pathname === item.href) return true;
       if (item.href.endsWith("/dashboard")) return pathname === item.href;

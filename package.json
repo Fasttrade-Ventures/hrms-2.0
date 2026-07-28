@@ -12,6 +12,7 @@
     "typecheck": "turbo run typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:payroll-integration": "PAYROLL_INTEGRATION=1 vitest run tests/integration/payroll-lifecycle.test.ts",
     "legacy-import": "tsx scripts/legacy-import/src/index.ts",
     "bootstrap-admin": "tsx scripts/bootstrap-admin.ts",
     "seed-role-accounts": "tsx scripts/seed-role-accounts.ts",
@@ -24,6 +25,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\""
   },
   "devDependencies": {
+    "@supabase/supabase-js": "^2.49.1",
     "prettier": "^3.4.2",
     "tsx": "^4.19.2",
     "turbo": "^2.3.3",

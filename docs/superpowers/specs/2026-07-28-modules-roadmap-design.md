@@ -127,26 +127,50 @@ Standalone deployments default to **Enterprise** tier via `PRODUCT_TIER=enterpri
 
 ---
 
-## Phase 6 — Enterprise tier
+## Phase 6 — Enterprise tier ✅
 
-| Module | Deliverable |
-|--------|-------------|
-| Recruitment | Requisitions, pipeline, offer letters |
-| Integrations | Webhook registry + HMAC signing |
-| Analytics | HQ dashboard (headcount, leave liability, payroll cost) |
-| API | REST keys + OpenAPI for employees/leave/payroll read |
-| Payouts | Bank file reconciliation + payment status |
+**Spec:** [2026-07-28-phase6-enterprise-design.md](./2026-07-28-phase6-enterprise-design.md)  
+**Plan:** [2026-07-28-phase6-enterprise.md](../plans/2026-07-28-phase6-enterprise.md)
+
+| Module | Deliverable | Status |
+|--------|-------------|--------|
+| Integrations | Webhook registry + HMAC signing (HR lifecycle events) | ✅ |
+| Analytics | HQ dashboard — headcount, leave liability, payroll cost | ✅ |
+| API | REST keys + OpenAPI (employees/leave/payroll read) | ✅ |
+| Payouts | Bank file reconciliation + payment status | ✅ |
+| Recruitment | Requisitions, pipeline, offer letters, draft hire handoff | ✅ |
+
+### Locked decisions
+
+- Recruitment: extended pipeline; offer → draft employee; HR activates manually
+- Offer letters: template PDF + signed upload
+- Webhooks: audit + employee + leave + payrun locked + offer accepted
+- Analytics: Director + Owner + HR Admin
+- API keys: Owner + HR Admin
+- Payouts: manual status + Maybank/CIMB response upload
 
 ---
 
-## Phase 7 — Payroll engineering hardening
+## Phase 7 — Payroll engineering hardening ✅
 
-| Item | Status | Next step |
-|------|--------|-----------|
-| Live DB integration tests | 🟡 | Supabase local stack + `tests/integration/payroll-lifecycle.test.ts` |
-| Runtime rule-pack wiring | 🟡 | Load SOCSO/EPF bands from `statutory_rule_versions` in pipeline |
-| Export spec validation | 🟡 | KWSP/PERKESO sample file fixtures in CI |
-| Golden tests on `pcbMtdFull` | 🟡 | Migrate `payroll-golden-cases.json` |
+| Item | Status | Notes |
+|------|--------|-------|
+| Live DB integration tests | ✅ | `tests/integration/payroll-lifecycle.test.ts` (`PAYROLL_INTEGRATION=1`) |
+| Runtime rule-pack wiring | ✅ | `statutory_rule_versions.payload` → `StatutoryRuleContext` in pipeline |
+| Export spec validation | ✅ | KWSP/PERKESO fixtures + PERKESO ASSIST v2 278-char layout |
+| Golden tests on `pcbMtdFull` | ✅ | `payroll-golden.test.ts` uses production PCB path |
+
+Run integration tests locally:
+
+```bash
+supabase start
+eval "$(supabase status -o env)"
+export PAYROLL_INTEGRATION=1
+export NEXT_PUBLIC_SUPABASE_URL="$API_URL"
+export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
+export DEFAULT_ORGANIZATION_ID=00000000-0000-4000-8000-000000000001
+pnpm test:payroll-integration
+```
 
 ---
 
@@ -155,8 +179,8 @@ Standalone deployments default to **Enterprise** tier via `PRODUCT_TIER=enterpri
 1. Phase 0 ✅
 2. Phase 1b ✅
 3. Phase 2–5 ✅
-4. **Phase 6** — Enterprise (next)
-5. **Phase 7** — Payroll engineering hardening (after Phase 6)
+4. **Phase 6** — Enterprise ✅
+5. **Phase 7** — Payroll engineering hardening ✅
 
 ---
 

@@ -5,6 +5,7 @@ import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { requireRole } from "@/lib/auth/session";
 import { getEntitlements, requireModule } from "@/lib/entitlements";
 import { getBukucloudSyncStatus } from "@/lib/integrations/bukucloud/sync";
+import { getPayoutBatchForPayrun } from "@/lib/payouts/batches";
 import { getPayrunDetail, listPayrunBranches } from "@/lib/payroll/queries";
 
 export default async function PayrunDetailPage({
@@ -15,11 +16,12 @@ export default async function PayrunDetailPage({
   await requireModule("payroll");
   await requireRole("hr_administrator");
   const { payrunId } = await params;
-  const [payrun, branches, entitlements, bukucloudSyncStatus] = await Promise.all([
+  const [payrun, branches, entitlements, bukucloudSyncStatus, payoutBatch] = await Promise.all([
     getPayrunDetail(payrunId),
     listPayrunBranches(payrunId).catch(() => []),
     getEntitlements(),
     getBukucloudSyncStatus(payrunId),
+    getPayoutBatchForPayrun(payrunId).catch(() => null),
   ]);
 
   if (!payrun) notFound();
@@ -34,6 +36,8 @@ export default async function PayrunDetailPage({
         branches={branches}
         bukucloudSyncStatus={bukucloudSyncStatus}
         integrationsEnabled={entitlements.hasModule("integrations")}
+        payoutBatch={payoutBatch}
+        payoutsEnabled={entitlements.hasModule("payouts")}
         payrun={payrun}
       />
     </div>

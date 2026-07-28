@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import type { ModuleKey } from "@hrms/platform";
+
 import { PortalIcon, type PortalIconName } from "@/components/portal/portal-icons";
+import { moduleForNavHref } from "@/lib/portal-nav";
 
 const items: Array<{ href: string; label: string; icon: PortalIconName }> = [
   { href: "/employee/dashboard", label: "Home", icon: "dashboard" },
@@ -21,13 +24,21 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function EmployeeMobileNav() {
+export function EmployeeMobileNav({ enabledModules }: { enabledModules?: ModuleKey[] }) {
   const pathname = usePathname();
+  const enabled = new Set(enabledModules ?? []);
+  const visibleItems = enabledModules
+    ? items.filter((item) => {
+        const module = moduleForNavHref(item.href);
+        return module ? enabled.has(module) : true;
+      })
+    : items;
+  const gridCols = visibleItems.length <= 4 ? "grid-cols-4" : "grid-cols-5";
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--border-primary)] bg-[var(--surface-card)] px-2 pb-[env(safe-area-inset-bottom)] pt-2 lg:hidden">
-      <ul className="grid grid-cols-5 gap-1">
-        {items.map((item) => {
+      <ul className={`grid ${gridCols} gap-1`}>
+        {visibleItems.map((item) => {
           const active = isActive(pathname, item.href);
 
           return (

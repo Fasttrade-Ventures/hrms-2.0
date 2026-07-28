@@ -226,6 +226,14 @@ export async function createEmployeeRecord(
     },
   });
 
+  const { emitEmployeeWebhook } = await import("@/lib/integrations/webhooks/emit");
+  await emitEmployeeWebhook(
+    organizationId,
+    "employee.created",
+    { employeeId: employee.id, employeeNumber, email: input.email.trim().toLowerCase() },
+    `employee-created:${employee.id}`,
+  );
+
   return {
     employeeId: employee.id,
     employeeNumber,

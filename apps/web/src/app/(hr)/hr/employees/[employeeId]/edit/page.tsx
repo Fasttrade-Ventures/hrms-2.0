@@ -33,6 +33,12 @@ export default async function EditEmployeePage({
 
   let banner: string | undefined;
 
+  if (employee.status === "inactive") {
+    banner = "This employee is inactive. Reactivate from the Employment tab before they can access the portal.";
+  } else if (employee.status === "terminated") {
+    banner = "This employee is terminated. Profile is read-only except for HR notes and compliance records.";
+  }
+
   if (query.created === "1") {
     banner =
       query.emailWarning === "1"

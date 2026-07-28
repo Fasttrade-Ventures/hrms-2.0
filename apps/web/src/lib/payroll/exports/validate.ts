@@ -1,4 +1,5 @@
 import type { StatutoryExportRow } from "@/lib/payroll/exports/store";
+import { PERKESO_ASSIST_RECORD_LENGTH } from "@/lib/payroll/exports/statutory";
 
 const IC_PATTERN = /^\d{6}-\d{2}-\d{4}$|^\d{12}$/;
 
@@ -35,6 +36,24 @@ export function validateSocsoFileContent(content: string, employerCode: string):
   if (!employerCode.trim() || employerCode === "PERKESO") {
     errors.push("Employer SOCSO code is required.");
   }
-  if (!content.trim()) errors.push("SOCSO file is empty.");
+  const lines = content.split("\n").filter((line) => line.length > 0);
+  if (lines.length === 0) errors.push("SOCSO file is empty.");
+  for (const line of lines) {
+    if (line.length !== PERKESO_ASSIST_RECORD_LENGTH) {
+      errors.push(`PERKESO record must be ${PERKESO_ASSIST_RECORD_LENGTH} chars (got ${line.length}).`);
+    }
+    if (!line.startsWith(employerCode.padEnd(12).slice(0, 12))) {
+      errors.push("PERKESO employer code mismatch at record start.");
+    }
+  }
+  return errors;
+}
+
+export function validateKwspLineLayout(line: string, expectedFieldCount = 7): string[] {
+  const errors: string[] = [];
+  const parts = line.split("|");
+  if (parts.length !== expectedFieldCount) {
+    errors.push(`KWSP line must have ${expectedFieldCount} pipe fields (got ${parts.length}).`);
+  }
   return errors;
 }

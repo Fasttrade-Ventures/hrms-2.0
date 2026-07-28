@@ -188,6 +188,9 @@ export async function createBehalfLeave(
   if (employeeError) throw new Error(employeeError.message);
   if (!employee) throw new Error("Employee not found or inactive.");
 
+  const { assertLeaveDatesAllowed } = await import("@/lib/leave/blackout");
+  await assertLeaveDatesAllowed(organizationId, input.leaveTypeId, input.startDate, input.endDate);
+
   const { data, error } = await admin
     .from("leave_requests")
     .insert({

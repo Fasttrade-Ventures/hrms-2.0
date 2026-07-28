@@ -9,8 +9,11 @@ import {
   eisEmployer,
   lookupSocsoContribution,
   money,
-  pcbMtdComputerised,
+  pcbMtdFull,
 } from "@hrms/domain";
+
+const zeroTp1 = { spouse: money(0), children: money(0), other: money(0), zakatAnnual: money(0) };
+const zeroYtd = { gross: money(0), epf: money(0), pcb: money(0) };
 
 describe("payroll golden cases", () => {
   const { cases } = getPayrollGoldenCases();
@@ -47,15 +50,17 @@ describe("payroll golden cases", () => {
     }
 
     if (testCase.id.startsWith("pcb-")) {
-      const pcb = pcbMtdComputerised(
-        money(inputs.monthlyGross as number),
-        money(inputs.monthlyEpf as number),
-        money(0),
-        money(inputs.ytdGross as number),
-        money(inputs.ytdEpf as number),
-        money(inputs.ytdPcb as number),
-        inputs.month as number,
-      );
+      const month = inputs.month as number;
+      const asOf = `2026-${String(month).padStart(2, "0")}-15`;
+      const pcb = pcbMtdFull({
+        frequency: "monthly",
+        periodGross: money(inputs.monthlyGross as number),
+        periodEpf: money(inputs.monthlyEpf as number),
+        tp1: zeroTp1,
+        ytd: zeroYtd,
+        asOf,
+        ceil5Sen: false,
+      });
       const tolerance = (expected.tolerance as number | undefined) ?? 0.02;
       expect(pcb.toNumber()).toBeCloseTo(expected.pcb as number, tolerance > 0.1 ? 0 : 1);
     }

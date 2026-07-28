@@ -1,9 +1,14 @@
 import { money, type Money } from "../money";
-import { SOCSO_CAT1_BANDS, SOCSO_CAT2_BANDS } from "./socso-bands";
+import type { StatutoryRuleContext } from "./statutory-context";
+import { DEFAULT_STATUTORY_RULES } from "./statutory-context";
 
 export type SocsoCategory = "cat1" | "cat2";
 
-const WAGE_CEILING = 6000;
+function findBand(wage: number, category: SocsoCategory, rules: StatutoryRuleContext) {
+  const capped = Math.min(Math.max(wage, 0), rules.wageCeiling);
+  const bands = category === "cat2" ? rules.socsoCat2Bands : rules.socsoCat1Bands;
+  return bands.find((band) => capped <= band.max) ?? bands[bands.length - 1]!;
+}
 
 export function detectSocsoCategory(dateOfBirth: string, asOf: string): SocsoCategory {
   const dob = new Date(dateOfBirth);
@@ -14,17 +19,12 @@ export function detectSocsoCategory(dateOfBirth: string, asOf: string): SocsoCat
   return age >= 60 ? "cat2" : "cat1";
 }
 
-function findBand(wage: number, category: SocsoCategory) {
-  const capped = Math.min(Math.max(wage, 0), WAGE_CEILING);
-  const bands = category === "cat2" ? SOCSO_CAT2_BANDS : SOCSO_CAT1_BANDS;
-  return bands.find((band) => capped <= band.max) ?? bands[bands.length - 1]!;
-}
-
 export function lookupSocsoContribution(
   wage: Money,
   category: SocsoCategory,
+  rules: StatutoryRuleContext = DEFAULT_STATUTORY_RULES,
 ): { employee: Money; employer: Money; wageBand: number } {
-  const band = findBand(wage.toNumber(), category);
+  const band = findBand(wage.toNumber(), category, rules);
   return {
     wageBand: band.max,
     employee: money(band.ee),
@@ -32,6 +32,6 @@ export function lookupSocsoContribution(
   };
 }
 
-export function capSocsoWage(wage: Money): Money {
-  return money(Math.min(wage.toNumber(), WAGE_CEILING));
+export function capSocsoWage(wage: Money, rules: StatutoryRuleContext = DEFAULT_STATUTORY_RULES): Money {
+  return money(Math.min(wage.toNumber(), rules.wageCeiling));
 }

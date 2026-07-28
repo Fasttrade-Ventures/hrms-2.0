@@ -30,3 +30,33 @@ jobs:
       - run: pnpm test
 
       - run: pnpm build
+
+  payroll-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase and run payroll integration tests
+        run: |
+          supabase start -x gotrue,realtime,storage-api,imgproxy,studio,edge-runtime,logflare,vector,supavisor
+          eval "$(supabase status -o env)"
+          export PAYROLL_INTEGRATION=1
+          export NEXT_PUBLIC_SUPABASE_URL="$API_URL"
+          export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
+          export DEFAULT_ORGANIZATION_ID=00000000-0000-4000-8000-000000000001
+          pnpm test:payroll-integration

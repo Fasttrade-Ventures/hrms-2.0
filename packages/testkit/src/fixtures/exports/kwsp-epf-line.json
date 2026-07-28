@@ -1,0 +1,14 @@
+{
+  "format": "kwsp-iakaun-pipe",
+  "employerEpfNumber": "EPF123456",
+  "row": {
+    "employeeName": "Ali Ahmad",
+    "icNumber": "900101011234",
+    "epfNumber": "12345678",
+    "epfWageBase": 4000,
+    "epfEmployee": 440,
+    "epfEmployer": 520
+  },
+  "expectedLine": "EPF123456|12345678|900101011234|Ali Ahmad|4000.00|440.00|520.00",
+  "fieldCount": 7
+}

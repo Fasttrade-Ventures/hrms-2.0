@@ -4,6 +4,7 @@ import { StatusPill } from "@hrms/ui";
 
 import { PayrunBukucloudPanel } from "@/components/hr/payroll/payrun-bukucloud-panel";
 import { PayrunExportPanel } from "@/components/hr/payroll/payrun-export-panel";
+import { PayrunPayoutPanel } from "@/components/hr/payroll/payrun-payout-panel";
 import { PayrunWorkflowActions } from "@/components/hr/payroll/payrun-workflow-actions";
 import { PayrunLinesTable } from "@/components/hr/payroll/payrun-lines-table";
 import { PayrunTotalsSummary } from "@/components/hr/payroll/payrun-totals-summary";
@@ -19,6 +20,8 @@ export function PayrunDetailView({
   backHref = "/hr/payroll",
   bukucloudSyncStatus,
   integrationsEnabled = false,
+  payoutsEnabled = false,
+  payoutBatch = null,
 }: {
   payrun: PayrunDetail;
   branches?: Array<{ id: string; name: string }>;
@@ -26,6 +29,28 @@ export function PayrunDetailView({
   backHref?: string;
   bukucloudSyncStatus?: BukucloudSyncStatus;
   integrationsEnabled?: boolean;
+  payoutsEnabled?: boolean;
+  payoutBatch?: {
+    batch: {
+      id: string;
+      status: string;
+      bank_format: string;
+      submitted_at: string | null;
+      reconciled_at: string | null;
+    };
+    items: Array<{
+      id: string;
+      reference: string;
+      amount: number;
+      status: string;
+      failure_reason: string | null;
+      paid_at: string | null;
+      employees:
+        | { full_name: string; employee_number: string }
+        | { full_name: string; employee_number: string }[]
+        | null;
+    }>;
+  } | null;
 }) {
   const periodLabel = `${payrun.periodYear}-${String(payrun.periodMonth).padStart(2, "0")}`;
 
@@ -84,6 +109,15 @@ export function PayrunDetailView({
           payrunId={payrun.id}
           status={payrun.status}
           syncStatus={bukucloudSyncStatus}
+        />
+      )}
+
+      {readOnly || payrun.status !== "locked" ? null : (
+        <PayrunPayoutPanel
+          batch={payoutBatch?.batch ?? null}
+          items={payoutBatch?.items ?? []}
+          payoutsEnabled={payoutsEnabled}
+          payrunId={payrun.id}
         />
       )}
 

@@ -76,15 +76,9 @@ function requestTypeLabel(type: string): string {
   return labels[type] ?? type;
 }
 
-/** Review opens the employee record (or type-specific list when no employee). */
-function actionReviewHref(requestType: string, employeeId?: string | null): string {
-  if (employeeId) {
-    return `/hr/employees/${employeeId}`;
-  }
-  if (requestType === "leave") return "/hr/apply-behalf?type=leave";
-  if (requestType === "late" || requestType === "attendance") return "/hr/apply-behalf?type=late";
-  if (requestType === "claim" || requestType === "overtime") return "/hr/employees";
-  return "/hr/employees";
+/** Review opens the HR operations detail for the pending approval step. */
+function actionReviewHref(stepId: string): string {
+  return `/hr/operations/${stepId}`;
 }
 
 export async function getHrDashboardData(): Promise<HrDashboardData> {
@@ -124,13 +118,16 @@ export async function getHrDashboardData(): Promise<HrDashboardData> {
       .eq("organization_id", organizationId)
       .eq("status", "active"),
     supabase
-      .from("approval_requests")
+      .from("approval_steps")
       .select(
-        "id, request_type, requester_employee_id, submitted_at, created_at, payload, employees!approval_requests_requester_employee_id_fkey(full_name, email)",
+        `id, approval_requests!inner(
+          id, request_type, requester_employee_id, submitted_at, created_at, payload, status,
+          employees!approval_requests_requester_employee_id_fkey(full_name, email)
+        )`,
       )
       .eq("organization_id", organizationId)
       .eq("status", "pending")
-      .order("submitted_at", { ascending: false })
+      .order("created_at", { ascending: false })
       .limit(5),
     supabase
       .from("attendance_records")
@@ -180,25 +177,38 @@ export async function getHrDashboardData(): Promise<HrDashboardData> {
   const onLeavePct = hasWorkforceSignal ? Math.min(100, Math.round((onLeaveCount / denom) * 100)) : 0;
   const absentPct = hasWorkforceSignal ? Math.max(0, 100 - presentPct - onLeavePct) : 0;
 
-  const liveQueue: HrActionQueueRow[] = (queueRes.data ?? []).map((row) => {
-    const emp = Array.isArray(row.employees) ? row.employees[0] : row.employees;
+  const liveQueue: HrActionQueueRow[] = (queueRes.data ?? [])
+    .filter((row) => {
+      const record = row as unknown as { approval_requests: Record<string, unknown> | Record<string, unknown>[] };
+      const request = Array.isArray(record.approval_requests)
+        ? record.approval_requests[0]
+        : record.approval_requests;
+      return request?.status === "pending";
+    })
+    .map((row) => {
+    const record = row as unknown as {
+      id: string;
+      approval_requests: Record<string, unknown>;
+    };
+    const request = record.approval_requests;
+    const requestData = (Array.isArray(request) ? request[0] : request) as Record<string, unknown>;
+    const emp = Array.isArray(requestData.employees) ? requestData.employees[0] : requestData.employees;
     const employeeName =
       (emp as { full_name?: string; email?: string } | null)?.full_name ??
       (emp as { email?: string } | null)?.email ??
       "Employee";
-    const payload = (row.payload ?? {}) as Record<string, unknown>;
-    const submittedAt = String(row.submitted_at ?? row.created_at ?? new Date().toISOString());
-    const employeeId =
-      typeof row.requester_employee_id === "string" ? row.requester_employee_id : null;
+    const payload = (requestData.payload ?? {}) as Record<string, unknown>;
+    const submittedAt = String(requestData.submitted_at ?? requestData.created_at ?? new Date().toISOString());
+    const stepId = String(record.id);
 
     return {
-      id: row.id,
-      type: requestTypeLabel(row.request_type),
-      typeTone: requestTypeTone(row.request_type),
+      id: String(requestData.id),
+      type: requestTypeLabel(String(requestData.request_type)),
+      typeTone: requestTypeTone(String(requestData.request_type)),
       employeeName,
-      details: summarizeQueueDetails(row.request_type, payload),
+      details: summarizeQueueDetails(String(requestData.request_type), payload),
       timeLabel: formatRelativeTime(submittedAt),
-      href: actionReviewHref(row.request_type, employeeId),
+      href: actionReviewHref(stepId),
     };
   });
 

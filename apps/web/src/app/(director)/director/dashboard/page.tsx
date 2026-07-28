@@ -1,10 +1,5 @@
-import { ScaffoldPage } from "@/components/scaffold-page";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return (
-    <ScaffoldPage
-      title="Director dashboard"
-      
-    />
-  );
+  redirect("/director/analytics");
 }

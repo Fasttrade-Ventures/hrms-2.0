@@ -1,45 +1,7 @@
-import { REQUEST_TYPE_LABELS, type ApprovalDetail, type ApprovalInboxRow, type ApprovalRequestType } from "@/lib/approvals/types";
+import { mapApprovalDetail, mapApprovalInboxRow } from "@/lib/approvals/inbox";
+import type { ApprovalDetail, ApprovalInboxRow } from "@/lib/approvals/types";
 import { requireManagerContext } from "@/lib/manager/context";
 import { createClient } from "@/lib/supabase/server";
-
-function summarizePayload(requestType: ApprovalRequestType, payload: Record<string, unknown>): string {
-  switch (requestType) {
-    case "leave":
-      return `${payload.leaveTypeName ?? "Leave"} · ${payload.startDate ?? ""} → ${payload.endDate ?? ""}`;
-    case "claim":
-      return `${payload.claimTypeName ?? "Claim"} · RM ${payload.amount ?? "0"}`;
-    case "overtime":
-      return `${payload.workDate ?? ""} · ${payload.hours ?? "0"}h @ ${payload.rateType ?? "1.5"}x`;
-    case "replacement_credit":
-      return `${payload.workDate ?? ""} · ${payload.creditDays ?? "1"} day(s)`;
-    case "late":
-      return `${payload.requestDate ?? ""} · arrived ${payload.actualArrivalTime ?? ""}`;
-    case "attendance":
-      return `${payload.requestDate ?? ""} · manual attendance`;
-    default:
-      return "Pending request";
-  }
-}
-
-function mapInboxRow(row: Record<string, unknown>): ApprovalInboxRow {
-  const request = row.approval_requests as Record<string, unknown>;
-  const requester = request.employees as Record<string, unknown> | null;
-  const profile = requester?.employee_profiles as Record<string, unknown> | null;
-  const requestType = request.request_type as ApprovalRequestType;
-  const payload = (request.payload ?? {}) as Record<string, unknown>;
-
-  return {
-    stepId: String(row.id),
-    requestId: String(request.id),
-    requestType,
-    requestTypeLabel: REQUEST_TYPE_LABELS[requestType] ?? requestType,
-    requesterName: String(profile?.full_name ?? requester?.email ?? "Employee"),
-    requesterEmployeeNumber: String(requester?.employee_number ?? "—"),
-    submittedAt: String(request.submitted_at ?? request.created_at ?? ""),
-    summary: summarizePayload(requestType, payload),
-    status: String(row.status),
-  };
-}
 
 export async function listManagerApprovals(): Promise<ApprovalInboxRow[]> {
   const { employeeId, organizationId } = await requireManagerContext();
@@ -62,7 +24,7 @@ export async function listManagerApprovals(): Promise<ApprovalInboxRow[]> {
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
-  return (data ?? []).map((row) => mapInboxRow(row as Record<string, unknown>));
+  return (data ?? []).map((row) => mapApprovalInboxRow(row as Record<string, unknown>));
 }
 
 export async function getManagerApprovalDetail(stepId: string): Promise<ApprovalDetail | null> {
@@ -88,14 +50,7 @@ export async function getManagerApprovalDetail(stepId: string): Promise<Approval
   if (error) throw new Error(error.message);
   if (!data) return null;
 
-  const base = mapInboxRow(data as Record<string, unknown>);
-  const request = (data as Record<string, unknown>).approval_requests as Record<string, unknown>;
-
-  return {
-    ...base,
-    payload: (request.payload ?? {}) as Record<string, unknown>,
-    comment: (data as { comment?: string | null }).comment ?? null,
-  };
+  return mapApprovalDetail(data as Record<string, unknown>);
 }
 
 export async function countPendingApprovals(): Promise<number> {

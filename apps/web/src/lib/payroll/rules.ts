@@ -1,3 +1,8 @@
+import {
+  buildStatutoryRuleContextFromPacks,
+  type StatutoryRuleContext,
+} from "@hrms/domain";
+
 import { createClient } from "@/lib/supabase/server";
 
 export type LoadedStatutoryRules = {
@@ -7,7 +12,7 @@ export type LoadedStatutoryRules = {
   loaded: boolean;
 };
 
-/** Loads active statutory rule pack metadata for an as-of date. Calculations still use domain tables as fallback. */
+/** Loads active statutory rule pack metadata for an as-of date. */
 export async function loadActiveStatutoryRules(asOf: string): Promise<LoadedStatutoryRules[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -32,6 +37,32 @@ export async function loadActiveStatutoryRules(asOf: string): Promise<LoadedStat
     });
   }
   return rules;
+}
+
+/** Loads runtime statutory calculation context from active DB rule packs. */
+export async function loadStatutoryRulePacks(asOf: string): Promise<StatutoryRuleContext> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("statutory_rule_versions")
+    .select("rule_set, payload, effective_from")
+    .lte("effective_from", asOf)
+    .or(`effective_to.is.null,effective_to.gte.${asOf}`)
+    .order("effective_from", { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  const seen = new Set<string>();
+  const packs: Array<{ ruleSet: string; payload: Record<string, unknown> }> = [];
+  for (const row of data ?? []) {
+    if (seen.has(row.rule_set)) continue;
+    seen.add(row.rule_set);
+    packs.push({
+      ruleSet: row.rule_set,
+      payload: (row.payload as Record<string, unknown>) ?? {},
+    });
+  }
+
+  return buildStatutoryRuleContextFromPacks(packs);
 }
 
 export async function assertStatutoryRulesAvailable(asOf: string): Promise<void> {

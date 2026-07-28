@@ -1,0 +1,27 @@
+{
+  "format": "perkeso-assist-v2",
+  "employerCode": "A12345678",
+  "month": "072026",
+  "row": {
+    "employeeName": "Ali Ahmad",
+    "icNumber": "900101011234",
+    "socsoWageBase": 4000,
+    "socsoEmployer": 69.15,
+    "socsoEmployee": 19.75,
+    "eisEmployer": 7.9,
+    "eisEmployee": 7.9
+  },
+  "recordLength": 278,
+  "fields": {
+    "employerCode": { "start": 1, "end": 12 },
+    "myCoId": { "start": 13, "end": 32 },
+    "icNumber": { "start": 33, "end": 44 },
+    "employeeName": { "start": 45, "end": 194 },
+    "month": { "start": 195, "end": 200 },
+    "salaryCents": { "start": 201, "end": 214 },
+    "socsoEmployerCents": { "start": 215, "end": 220 },
+    "socsoEmployeeCents": { "start": 221, "end": 226 },
+    "eisEmployerCents": { "start": 227, "end": 232 },
+    "eisEmployeeCents": { "start": 233, "end": 238 }
+  }
+}

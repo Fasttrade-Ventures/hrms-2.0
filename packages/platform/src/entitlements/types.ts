@@ -29,12 +29,12 @@ export const CORE_MODULES: ModuleKey[] = [
   "announcements",
   "calendar",
   "documents",
-  "assets",
-  "performance",
-  "payroll",
 ];
 
 export const PROFESSIONAL_MODULES: ModuleKey[] = [
+  "assets",
+  "performance",
+  "payroll",
   "ot",
   "claims",
   "replacement",

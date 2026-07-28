@@ -473,6 +473,93 @@ async function resetDemoApprovals(admin: SupabaseClient, organizationId: string)
   console.log(`Removed ${demoIds.length} previous demo approval requests`);
 }
 
+async function seedPhase6Enterprise(admin: SupabaseClient, organizationId: string) {
+  const { count: webhookCount } = await admin
+    .from("webhook_endpoints")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", organizationId)
+    .eq("name", "Demo SIEM");
+
+  if ((webhookCount ?? 0) === 0) {
+    await admin.from("webhook_endpoints").insert({
+      organization_id: organizationId,
+      name: "Demo SIEM",
+      url: "https://example.com/webhooks/hrms-demo",
+      secret: "demo-webhook-secret",
+      events_filter: ["employee.*", "leave.*", "payroll.payrun_locked"],
+      status: "inactive",
+    });
+    console.log("Seeded demo webhook endpoint");
+  }
+
+  const { data: existingReq } = await admin
+    .from("job_requisitions")
+    .select("id")
+    .eq("organization_id", organizationId)
+    .eq("title", "Software Engineer (Demo)")
+    .maybeSingle();
+
+  if (existingReq) return;
+
+  const { data: requisition, error: reqError } = await admin
+    .from("job_requisitions")
+    .insert({
+      organization_id: organizationId,
+      title: "Software Engineer (Demo)",
+      description: "Demo recruitment pipeline for Phase 6 enterprise module.",
+      headcount: 1,
+      status: "open",
+    })
+    .select("id")
+    .single();
+
+  if (reqError || !requisition) {
+    console.warn("Skipping recruitment seed:", reqError?.message);
+    return;
+  }
+
+  const candidates = [
+    { full_name: "Aina Rahman", email: "aina.demo@example.com", phone: "+60123456789" },
+    { full_name: "Hafiz Wong", email: "hafiz.demo@example.com", phone: "+60198765432" },
+  ];
+
+  for (const [index, candidate] of candidates.entries()) {
+    const { data: row } = await admin
+      .from("job_candidates")
+      .insert({ organization_id: organizationId, ...candidate })
+      .select("id")
+      .single();
+    if (!row) continue;
+
+    const stage = index === 0 ? "offer" : "screening";
+    const { data: application } = await admin
+      .from("job_applications")
+      .insert({
+        organization_id: organizationId,
+        requisition_id: requisition.id,
+        candidate_id: row.id,
+        stage,
+        applied_at: new Date().toISOString(),
+        stage_updated_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
+
+    if (index === 0 && application) {
+      await admin.from("job_offers").insert({
+        organization_id: organizationId,
+        application_id: application.id,
+        job_title: "Software Engineer",
+        basic_salary: 6500,
+        start_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+        status: "draft",
+      });
+    }
+  }
+
+  console.log("Seeded demo recruitment pipeline");
+}
+
 async function main() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -529,6 +616,7 @@ async function main() {
   await seedPerformance(admin, organizationId, employees);
   await seedAuditEvents(admin, organizationId);
   await seedBranchStatutory(admin, organizationId);
+  await seedPhase6Enterprise(admin, organizationId);
 
   const { count: pendingBefore } = await admin
     .from("approval_requests")

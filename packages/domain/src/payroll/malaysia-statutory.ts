@@ -1,4 +1,6 @@
 import { ceilToNext5Sen, ceilToNextRinggit, money, roundRinggit, type Money } from "../money";
+import type { StatutoryRuleContext } from "./statutory-context";
+import { DEFAULT_STATUTORY_RULES } from "./statutory-context";
 
 export type EpfWageRounding = "none" | "ceil_rm50";
 
@@ -25,24 +27,33 @@ const SOCSO_BAND_CAPS = [
   5000, 5100, 5200, 5300, 5400, 5500, 5600, 5700, 5800, 5900, 6000,
 ];
 
-function eisAssumedWage(wage: Money): Money {
-  const w = Math.min(wage.toNumber(), 6000);
+function eisAssumedWage(wage: Money, rules: StatutoryRuleContext): Money {
+  const w = Math.min(wage.toNumber(), rules.wageCeiling);
   if (w <= 0) return money(0);
   let prev = 0;
   for (const cap of SOCSO_BAND_CAPS) {
     if (w <= cap) return money((prev + cap) / 2);
     prev = cap;
   }
-  return money(5950);
+  return money((rules.wageCeiling - 50 + rules.wageCeiling) / 2);
 }
 
-export function eisEmployee(statutoryWageBase: Money, eligible: boolean): Money {
+export function eisEmployee(
+  statutoryWageBase: Money,
+  eligible: boolean,
+  rules: StatutoryRuleContext = DEFAULT_STATUTORY_RULES,
+): Money {
   if (!eligible) return money(0);
-  return eisAssumedWage(statutoryWageBase).mul(0.002).toDecimalPlaces(2);
+  return eisAssumedWage(statutoryWageBase, rules).mul(rules.eisEmployeeRate).toDecimalPlaces(2);
 }
 
-export function eisEmployer(statutoryWageBase: Money, eligible: boolean): Money {
-  return eisEmployee(statutoryWageBase, eligible);
+export function eisEmployer(
+  statutoryWageBase: Money,
+  eligible: boolean,
+  rules: StatutoryRuleContext = DEFAULT_STATUTORY_RULES,
+): Money {
+  if (!eligible) return money(0);
+  return eisAssumedWage(statutoryWageBase, rules).mul(rules.eisEmployerRate).toDecimalPlaces(2);
 }
 
 function residentTaxAnnual(chargeableIncome: Money): Money {

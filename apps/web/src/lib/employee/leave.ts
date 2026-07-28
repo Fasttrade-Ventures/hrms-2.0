@@ -189,6 +189,9 @@ export async function createLeaveRequest(input: LeaveRequestInput): Promise<stri
   const days = calculateLeaveDays(input);
   const supabase = await createClient();
 
+  const { assertLeaveDatesAllowed } = await import("@/lib/leave/blackout");
+  await assertLeaveDatesAllowed(organizationId, input.leaveTypeId, input.startDate, input.endDate);
+
   const { data: leaveType } = await supabase
     .from("leave_types")
     .select("name")
@@ -230,6 +233,14 @@ export async function createLeaveRequest(input: LeaveRequestInput): Promise<stri
       reason: input.reason ?? null,
     },
   });
+
+  const { emitLeaveWebhook } = await import("@/lib/integrations/webhooks/emit");
+  await emitLeaveWebhook(
+    organizationId,
+    "leave.submitted",
+    { requestId: data.id, employeeId, days },
+    `leave-submitted:${data.id}`,
+  );
 
   return data.id;
 }

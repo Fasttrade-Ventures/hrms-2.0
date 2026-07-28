@@ -391,6 +391,14 @@ export async function deactivateEmployee(
     metadata: { status },
   });
 
+  const { emitEmployeeWebhook } = await import("@/lib/integrations/webhooks/emit");
+  await emitEmployeeWebhook(
+    organizationId,
+    "employee.deactivated",
+    { employeeId, status },
+    `employee-deactivated:${employeeId}`,
+  );
+
   revalidatePath(`/hr/employees/${employeeId}`);
   revalidatePath(`/hr/employees/${employeeId}/edit`);
   revalidatePath("/hr/employees");

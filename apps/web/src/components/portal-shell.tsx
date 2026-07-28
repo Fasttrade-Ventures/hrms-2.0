@@ -19,7 +19,9 @@ import {
   getPortalProfileHref,
   getPortalSettingsHref,
   resolvePortalNavLabel,
+  type PortalNavSection,
 } from "@/lib/portal-nav";
+import type { ModuleKey } from "@hrms/platform";
 
 function notificationsHref(portal: string): string {
   if (portal === "Manager") return "/manager/notifications";
@@ -39,6 +41,8 @@ export function PortalShell({
   user,
   pageSubtitle,
   unreadNotificationCount = 0,
+  navSections,
+  enabledModules,
   children,
 }: {
   portal: string;
@@ -48,13 +52,15 @@ export function PortalShell({
   };
   pageSubtitle?: string;
   unreadNotificationCount?: number;
+  navSections?: PortalNavSection[];
+  enabledModules?: ModuleKey[];
   children: ReactNode;
 }) {
   const pathname = usePathname();
-  const sections = getPortalNavSections(portal);
+  const sections = navSections ?? getPortalNavSections(portal);
   const portalLabel = getPortalLabel(portal);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const currentPage = resolvePortalNavLabel(portal, pathname) ?? portalLabel;
+  const currentPage = resolvePortalNavLabel(portal, pathname, sections) ?? portalLabel;
   const showMobileNav = portal === "Employee" || portal === "Manager";
   const sidebarUserMuted = portal === "Manager" || portal === "HR Administrator";
   const todayLabel = new Date().toLocaleDateString("en-GB", {
@@ -160,7 +166,7 @@ export function PortalShell({
             {children}
           </div>
         </main>
-        {portal === "Employee" ? <EmployeeMobileNav /> : null}
+        {portal === "Employee" ? <EmployeeMobileNav enabledModules={enabledModules} /> : null}
         {portal === "Manager" ? <ManagerMobileNav /> : null}
       </div>
     </div>

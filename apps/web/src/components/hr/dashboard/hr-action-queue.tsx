@@ -15,16 +15,27 @@ const toneClass = {
 
 const MAX_ROWS = 5;
 
-export function HrActionQueue({ rows }: { rows: HrActionQueueRow[] }) {
+export function HrActionQueue({ rows, totalPending }: { rows: HrActionQueueRow[]; totalPending?: number }) {
   const visible = rows.slice(0, MAX_ROWS);
+  const showViewAll = (totalPending ?? rows.length) > MAX_ROWS || rows.length > 0;
 
   return (
     <section className="flex h-full min-h-0 flex-col rounded-xl border border-[var(--border-primary)] bg-[var(--surface-card)] p-4 shadow-[var(--shadow-card)]">
-      <div className="mb-2 min-w-0 shrink-0">
-        <h2 className="text-sm font-semibold text-[var(--foreground-primary)]">HR action queue</h2>
-        <p className="truncate text-[11px] text-[var(--foreground-muted)]">
-          Org-wide items needing HR attention
-        </p>
+      <div className="mb-2 flex min-w-0 shrink-0 items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h2 className="text-sm font-semibold text-[var(--foreground-primary)]">HR action queue</h2>
+          <p className="truncate text-[11px] text-[var(--foreground-muted)]">
+            Org-wide items needing HR attention
+          </p>
+        </div>
+        {showViewAll ? (
+          <Link
+            className="shrink-0 text-[11px] font-medium text-[var(--accent-primary)] hover:underline"
+            href="/hr/operations"
+          >
+            View all
+          </Link>
+        ) : null}
       </div>
 
       {visible.length === 0 ? (

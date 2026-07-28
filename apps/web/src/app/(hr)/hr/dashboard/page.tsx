@@ -70,7 +70,7 @@ export default async function Page() {
       </div>
 
       <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-stretch">
-        <HrActionQueue rows={data.actionQueue} />
+        <HrActionQueue rows={data.actionQueue} totalPending={data.pendingRequests} />
         <div className="flex h-full min-h-0 flex-col gap-3">
           <HrWorkforcePulse
             absentPct={data.workforce.absentPct}

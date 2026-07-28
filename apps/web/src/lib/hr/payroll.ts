@@ -60,6 +60,12 @@ export async function lockPayrun(payrunId: string, actorUserId: string): Promise
   const { maybeAutoSyncPayrunToBukucloud } = await import("@/lib/integrations/bukucloud/sync");
   await maybeAutoSyncPayrunToBukucloud(payrunId, actorUserId);
 
+  const { createPayoutBatchForPayrun } = await import("@/lib/payouts/batches");
+  await createPayoutBatchForPayrun(payrunId).catch(() => undefined);
+
+  const { emitPayrollWebhook } = await import("@/lib/integrations/webhooks/emit");
+  await emitPayrollWebhook(organizationId, "payroll.payrun_locked", { payrunId }, `payrun-locked:${payrunId}`);
+
   const { data: items } = await supabase
     .from("payroll_payrun_items")
     .select("employee_id, gross_pay, epf_employee, socso_employee, eis_employee, pcb")

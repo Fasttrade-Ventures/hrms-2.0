@@ -9,7 +9,7 @@ import {
 } from "@/lib/payroll/build-compute-input";
 import { buildEmployeePayLines } from "@/lib/payroll/feeds";
 import { buildPayrunItemComponentRows } from "@/lib/payroll/item-components";
-import { assertStatutoryRulesAvailable } from "@/lib/payroll/rules";
+import { assertStatutoryRulesAvailable, loadStatutoryRulePacks } from "@/lib/payroll/rules";
 import { ensurePayrollComponents } from "@/lib/payroll/seed";
 import { createClient } from "@/lib/supabase/server";
 
@@ -29,6 +29,7 @@ export async function generateDraftPayrun(input: CreatePayrunInput): Promise<str
   await requireModule("payroll");
   await requireRoleOrPermission(["hr_administrator"], ["payroll_processor"]);
   await assertStatutoryRulesAvailable(input.earningPeriodEnd);
+  const statutoryRules = await loadStatutoryRulePacks(input.earningPeriodEnd);
 
   const organizationId = getOrganizationId();
   const supabase = await createClient();
@@ -181,7 +182,7 @@ export async function generateDraftPayrun(input: CreatePayrunInput): Promise<str
       asOf: input.earningPeriodEnd,
       ytd,
     });
-    const result = computeEmployeePayrun(computeInput);
+    const result = computeEmployeePayrun({ ...computeInput, statutoryRules });
 
     const { data: payrunItem, error: itemError } = await supabase
       .from("payroll_payrun_items")

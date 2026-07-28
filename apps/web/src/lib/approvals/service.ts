@@ -20,11 +20,12 @@ type SubmitApprovalInput = {
 
 type ActOnApprovalInput = {
   stepId: string;
-  actorEmployeeId: string;
+  actorEmployeeId: string | null;
   actorUserId: string;
   organizationId: string;
   event: Extract<ApprovalEvent, "approve" | "reject">;
   comment?: string;
+  hrOverride?: boolean;
 };
 
 async function resolveApproverEmployeeId(
@@ -154,8 +155,13 @@ export async function actOnApproval(input: ActOnApprovalInput): Promise<void> {
 
   if (stepError) throw new Error(stepError.message);
   if (!step) throw new Error("Approval step not found.");
-  if (step.approver_employee_id !== input.actorEmployeeId) {
-    throw new Error("You are not the approver for this request.");
+  if (!input.hrOverride) {
+    if (!input.actorEmployeeId) {
+      throw new Error("Employee context is required to action this request.");
+    }
+    if (step.approver_employee_id !== input.actorEmployeeId) {
+      throw new Error("You are not the approver for this request.");
+    }
   }
   if (step.status !== "pending") {
     throw new Error("This approval step has already been actioned.");
@@ -238,8 +244,23 @@ export async function actOnApproval(input: ActOnApprovalInput): Promise<void> {
     action: `approval.${input.event}`,
     resourceType: request.request_type,
     resourceId: request.id,
-    metadata: { stepId: input.stepId, comment: input.comment },
+    metadata: {
+      stepId: input.stepId,
+      comment: input.comment,
+      hrOverride: input.hrOverride ?? false,
+    },
   });
+
+  if (request.request_type === "leave" && sourceId && (nextStatus === "approved" || nextStatus === "rejected")) {
+    const { emitLeaveWebhook } = await import("@/lib/integrations/webhooks/emit");
+    const event = nextStatus === "approved" ? "leave.approved" : "leave.rejected";
+    await emitLeaveWebhook(
+      input.organizationId,
+      event,
+      { requestId: sourceId, employeeId: request.requester_employee_id },
+      `leave-${nextStatus}:${sourceId}`,
+    );
+  }
 }
 
 export async function submitSourceRecordForApproval(

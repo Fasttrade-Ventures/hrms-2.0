@@ -7,6 +7,7 @@ export * from "./leave/working-days";
 export * from "./calendar/events";
 export * from "./assets/status";
 export * from "./assets/custom-fields";
+export * from "./payroll/statutory-context";
 export * from "./payroll/malaysia-statutory";
 export * from "./payroll/socso";
 export * from "./payroll/socso-bands";
