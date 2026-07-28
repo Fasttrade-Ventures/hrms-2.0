@@ -9,7 +9,9 @@ import { Separator } from "@/components/ui/separator";
 import { HrFilterButton } from "@/components/hr/hr-ui.client";
 import type { EmployeeBranchFilter } from "@/lib/employees/queries";
 
-function buildHref(params: {
+function buildHref(
+  basePath: string,
+  params: {
   search?: string;
   status: string;
   branchId: string;
@@ -21,7 +23,7 @@ function buildHref(params: {
   if (params.branchId !== "all") query.set("branchId", params.branchId);
   if (params.page && params.page > 1) query.set("page", String(params.page));
   const qs = query.toString();
-  return qs ? `/hr/employees?${qs}` : "/hr/employees";
+  return qs ? `${basePath}?${qs}` : basePath;
 }
 
 export function EmployeeDirectoryFilters({
@@ -31,6 +33,7 @@ export function EmployeeDirectoryFilters({
   activeTotal,
   branches,
   inactiveCount,
+  basePath = "/hr/employees",
 }: {
   search?: string;
   status: string;
@@ -38,6 +41,7 @@ export function EmployeeDirectoryFilters({
   activeTotal: number;
   branches: EmployeeBranchFilter[];
   inactiveCount: number;
+  basePath?: string;
 }) {
   return (
     <Card className="py-0">
@@ -48,14 +52,14 @@ export function EmployeeDirectoryFilters({
           </span>
           <HrFilterButton
             active={status === "active" && branchId === "all"}
-            href={buildHref({ search, status: "active", branchId: "all" })}
+            href={buildHref(basePath, { search, status: "active", branchId: "all" })}
           >
             All ({activeTotal})
           </HrFilterButton>
           {branches.map((branch) => (
             <HrFilterButton
               active={status === "active" && branchId === branch.id}
-              href={buildHref({ search, status: "active", branchId: branch.id })}
+              href={buildHref(basePath, { search, status: "active", branchId: branch.id })}
               key={branch.id}
             >
               {branch.name} ({branch.count})
@@ -63,7 +67,7 @@ export function EmployeeDirectoryFilters({
           ))}
           <HrFilterButton
             active={status === "inactive"}
-            href={buildHref({ search, status: "inactive", branchId: "all" })}
+            href={buildHref(basePath, { search, status: "inactive", branchId: "all" })}
           >
             {inactiveCount > 0 ? `Inactive (${inactiveCount})` : "Inactive"}
           </HrFilterButton>
@@ -93,7 +97,7 @@ export function EmployeeDirectoryFilters({
           {search ? (
             <Button
               className="h-8 shrink-0 px-3"
-              render={<Link href={buildHref({ status, branchId })} />}
+              render={<Link href={buildHref(basePath, { status, branchId })} />}
               size="sm"
               variant="outline"
             >

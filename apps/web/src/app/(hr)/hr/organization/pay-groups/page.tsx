@@ -5,7 +5,7 @@ import { requireModule } from "@/lib/entitlements";
 import { listPayGroups } from "@/lib/payroll/queries";
 
 export default async function PayGroupsPage() {
-  requireModule("payroll");
+  await requireModule("payroll");
   await requireRole("hr_administrator");
   const payGroups = await listPayGroups();
 

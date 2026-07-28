@@ -69,6 +69,16 @@ export const createBranchSchema = z.object({
     .transform((value) => (value?.trim() ? value.trim() : null)),
   epfWageRounding: epfWageRoundingSchema.default("none"),
   lindungEmployerRatePercent: z.coerce.number().min(0).max(100).optional(),
+  geofenceEnabled: z.coerce.boolean().default(false),
+  latitude: z
+    .union([z.coerce.number().min(-90).max(90), z.literal(""), z.null()])
+    .optional()
+    .transform((value) => (value === "" || value == null ? null : value)),
+  longitude: z
+    .union([z.coerce.number().min(-180).max(180), z.literal(""), z.null()])
+    .optional()
+    .transform((value) => (value === "" || value == null ? null : value)),
+  geofenceRadiusM: z.coerce.number().int().min(25).max(5000).default(100),
 });
 
 export const updateBranchSchema = createBranchSchema;
@@ -113,7 +123,7 @@ export const listHolidaysSchema = z.object({
   sort: z.enum(["date", "name", "scope", "created"]).default("date"),
   order: z.enum(["asc", "desc"]).default("asc"),
   page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(5).max(50).default(15),
+  pageSize: z.coerce.number().int().min(5).max(50).default(10),
 });
 
 export const createLeaveTypeSchema = z.object({
@@ -124,6 +134,15 @@ export const createLeaveTypeSchema = z.object({
 });
 
 export const updateLeaveTypeSchema = createLeaveTypeSchema;
+
+export const createRosterEntrySchema = z.object({
+  employeeId: z.string().uuid(),
+  shiftId: z.string().uuid(),
+  workDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  notes: z.string().max(500).optional().nullable(),
+});
+
+export const reportScheduleSchema = z.enum(["daily", "weekly", "monthly"]);
 
 export type CreateBranchInput = z.infer<typeof createBranchSchema>;
 export type UpdateBranchInput = z.infer<typeof updateBranchSchema>;

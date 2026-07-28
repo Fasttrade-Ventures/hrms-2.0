@@ -17,7 +17,7 @@ import { requireModule } from "@/lib/entitlements";
 import { firstNameFromFullName, getCurrentEmployeeDetail, greetingForHour } from "@/lib/employees/self";
 
 export default async function Page() {
-  requireModule("announcements");
+  await requireModule("announcements");
   const managerContext = await requireManagerContext();
   const hour = new Date().getHours();
   const employee = await getCurrentEmployeeDetail();

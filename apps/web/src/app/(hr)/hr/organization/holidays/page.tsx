@@ -2,6 +2,7 @@ import { HolidaysList } from "@/components/hr/organization/holidays";
 import { requireRole } from "@/lib/auth/session";
 import { isHolidayYearAllowed } from "@/lib/hr/holiday-window";
 import { getHolidayDirectory, listBranchesForImport } from "@/lib/hr/organization";
+import { DEFAULT_LIST_PAGE_SIZE } from "@/lib/pagination";
 import { listHolidaysSchema } from "@hrms/validation";
 
 export default async function HolidaysPage({
@@ -28,7 +29,7 @@ export default async function HolidaysPage({
     sort: params.sort ?? "date",
     order: params.order ?? "asc",
     page: params.page ?? 1,
-    pageSize: 15,
+    pageSize: DEFAULT_LIST_PAGE_SIZE,
   });
 
   const [directory, branches] = await Promise.all([

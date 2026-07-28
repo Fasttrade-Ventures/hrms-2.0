@@ -63,7 +63,7 @@ export function EmployeeProfileHeader({
 }) {
   return (
     <PortalPageHeader
-      description={[employeeNumber, departmentName, branchName].filter(Boolean).join(" · ")}
+      description={[employeeNumber, email, departmentName, branchName].filter(Boolean).join(" · ")}
       title={fullName}
     />
   );

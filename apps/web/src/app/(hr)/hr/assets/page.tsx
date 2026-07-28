@@ -20,7 +20,7 @@ export default async function Page({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  requireModule("assets");
+  await requireModule("assets");
   await requireRole("hr_administrator");
 
   const query = await searchParams;

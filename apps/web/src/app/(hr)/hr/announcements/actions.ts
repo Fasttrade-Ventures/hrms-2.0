@@ -77,7 +77,7 @@ export async function createAnnouncementAction(
   const files = parseAttachmentFiles(formData);
 
   try {
-    requireModule("announcements");
+    await requireModule("announcements");
     const session = await requireRole("hr_administrator");
     await createAnnouncement({
       form: parsed.data,
@@ -115,7 +115,7 @@ export async function updateAnnouncementAction(
   const files = parseAttachmentFiles(formData);
 
   try {
-    requireModule("announcements");
+    await requireModule("announcements");
     const session = await requireRole("hr_administrator");
     await updateAnnouncement({
       announcementId,
@@ -143,9 +143,9 @@ export async function updateAnnouncementAction(
 
 export async function deleteAnnouncementAction(announcementId: string): Promise<AnnouncementActionState> {
   try {
-    requireModule("announcements");
-    await requireRole("hr_administrator");
-    await deleteAnnouncement(announcementId);
+    await requireModule("announcements");
+    const session = await requireRole("hr_administrator");
+    await deleteAnnouncement(announcementId, session.user.id);
     revalidateAnnouncementPaths();
     return { success: "Announcement deleted." };
   } catch (error) {

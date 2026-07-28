@@ -50,6 +50,11 @@ async function main() {
     process.exit(1);
   }
 
+  await admin
+    .from("organizations")
+    .update({ product_tier: "enterprise", updated_at: new Date().toISOString() })
+    .eq("id", organizationId);
+
   const { data: created, error: createError } = await admin.auth.admin.createUser({
     email,
     password,

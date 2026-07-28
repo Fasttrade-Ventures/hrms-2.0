@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { EmptyState, ListCard, StatusPill } from "@hrms/ui";
 
 import { TeamDocumentsLink } from "@/components/manager/team-documents-link";

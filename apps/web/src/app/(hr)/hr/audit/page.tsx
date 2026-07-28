@@ -1,45 +1,64 @@
-import { EmptyState } from "@hrms/ui";
+import Link from "next/link";
 
-import { formatDateTime } from "@/components/employee/employee-shared";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
-import { listAuditEvents } from "@/lib/hr/audit";
-import { requireRole } from "@/lib/auth/session";
+import { AuditLogPanel } from "@/components/hr/audit/audit-log-panel";
+import { requireAuditAccess } from "@/lib/audit/access";
+import { listAuditEvents } from "@/lib/audit/queries";
 
-export default async function Page() {
-  await requireRole("hr_administrator");
-  const events = await listAuditEvents().catch(() => []);
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    action?: string;
+    resourceType?: string;
+    from?: string;
+    to?: string;
+    cursor?: string;
+  }>;
+}) {
+  await requireAuditAccess();
+  const params = await searchParams;
+  const { events, nextCursor } = await listAuditEvents({
+    action: params.action,
+    resourceType: params.resourceType,
+    from: params.from,
+    to: params.to,
+    cursor: params.cursor,
+  }).catch(() => ({ events: [], nextCursor: null }));
+
+  const exportQuery = new URLSearchParams();
+  if (params.action) exportQuery.set("action", params.action);
+  if (params.resourceType) exportQuery.set("resourceType", params.resourceType);
+  if (params.from) exportQuery.set("from", params.from);
+  if (params.to) exportQuery.set("to", params.to);
 
   return (
     <div className="space-y-6">
       <PortalPageHeader
+        actions={
+          <Link
+            className="text-sm font-medium text-[var(--accent-primary)] hover:underline"
+            href="/hr/audit/settings"
+          >
+            Audit settings
+          </Link>
+        }
         description="Security and compliance audit trail for your organization."
         title="Audit log"
       />
 
-      <div className="overflow-hidden border border-[var(--border-primary)] bg-[var(--surface-card)]">
-        <div className="border-b border-[var(--border-primary)] bg-[var(--surface-muted)] px-4 py-3 text-sm font-medium">
-          Recent events ({events.length})
-        </div>
-        {events.length === 0 ? (
-          <div className="p-6">
-            <EmptyState description="Audit events will appear as users take actions." title="No events" />
-          </div>
-        ) : (
-          <div className="divide-y divide-[var(--border-primary)]">
-            {events.map((event) => (
-              <div className="px-5 py-4" key={event.id}>
-                <p className="font-medium text-[var(--foreground-primary)]">{event.action}</p>
-                <p className="text-sm text-[var(--foreground-secondary)]">
-                  {event.resourceType} · {event.resourceId}
-                </p>
-                <p className="mt-1 text-xs text-[var(--foreground-muted)]">
-                  {formatDateTime(event.occurredAt)}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <AuditLogPanel
+        basePath="/hr/audit"
+        events={events}
+        exportHref={`/api/hr/audit/export?${exportQuery.toString()}`}
+        filters={{
+          action: params.action,
+          resourceType: params.resourceType,
+          from: params.from,
+          to: params.to,
+        }}
+        nextCursor={nextCursor}
+      />
     </div>
   );
 }

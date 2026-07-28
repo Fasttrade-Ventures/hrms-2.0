@@ -1,3 +1,4 @@
+import { queueAuditSiemWebhook } from "@/lib/audit/webhooks";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type AuditEventInput = {
@@ -15,13 +16,32 @@ export async function logAuditEvent(input: AuditEventInput): Promise<void> {
 
   try {
     const admin = createAdminClient();
-    await admin.from("audit_events").insert({
-      organization_id: organizationId,
-      actor_user_id: input.actorUserId,
+    const occurredAt = new Date().toISOString();
+    const { data, error } = await admin
+      .from("audit_events")
+      .insert({
+        organization_id: organizationId,
+        actor_user_id: input.actorUserId,
+        action: input.action,
+        resource_type: input.resourceType,
+        resource_id: input.resourceId,
+        metadata: input.metadata ?? {},
+        occurred_at: occurredAt,
+      })
+      .select("id")
+      .single();
+
+    if (error || !data) return;
+
+    await queueAuditSiemWebhook({
+      organizationId,
+      eventId: data.id,
       action: input.action,
-      resource_type: input.resourceType,
-      resource_id: input.resourceId,
+      resourceType: input.resourceType,
+      resourceId: input.resourceId,
+      actorUserId: input.actorUserId,
       metadata: input.metadata ?? {},
+      occurredAt,
     });
   } catch {
     // Audit must not block flows.

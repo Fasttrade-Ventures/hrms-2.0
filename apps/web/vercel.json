@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/notifications",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 9 * * *"
     },
     {
       "path": "/api/cron/document-compliance",
@@ -11,6 +11,22 @@
     {
       "path": "/api/cron/payslip-email",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/announcements",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/audit-archive",
+      "schedule": "0 2 * * 0"
+    },
+    {
+      "path": "/api/cron/audit-siem",
+      "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/report-subscriptions",
+      "schedule": "0 6 * * *"
     }
   ]
 }

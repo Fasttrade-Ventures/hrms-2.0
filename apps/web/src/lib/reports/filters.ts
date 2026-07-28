@@ -1,5 +1,7 @@
 import { resolveDatePreset, type DatePreset } from "@hrms/domain";
 
+import { DEFAULT_LIST_PAGE_SIZE } from "@hrms/domain";
+
 import type { EmploymentStatusFilter, ReportFilters } from "./types";
 
 const DATE_PRESETS: DatePreset[] = ["this_month", "last_month", "this_quarter", "ytd", "custom"];
@@ -44,7 +46,7 @@ export function parseReportFilters(
   const page = Math.max(1, Number.parseInt(readParam(searchParams, "page") ?? "1", 10) || 1);
   const pageSize = Math.min(
     100,
-    Math.max(1, Number.parseInt(readParam(searchParams, "pageSize") ?? "50", 10) || 50),
+    Math.max(1, Number.parseInt(readParam(searchParams, "pageSize") ?? String(DEFAULT_LIST_PAGE_SIZE), 10) || DEFAULT_LIST_PAGE_SIZE),
   );
 
   const branchId = readParam(searchParams, "branch");
@@ -86,7 +88,7 @@ export function buildReportSearchParams(filters: ReportFilters, page = filters.p
   if (filters.reviewCycleId) params.set("cycle", filters.reviewCycleId);
   if (filters.assetStatus) params.set("assetStatus", filters.assetStatus);
   if (filters.assetCategoryId) params.set("assetCategory", filters.assetCategoryId);
-  if (filters.pageSize !== 50) params.set("pageSize", String(filters.pageSize));
+  if (filters.pageSize !== DEFAULT_LIST_PAGE_SIZE) params.set("pageSize", String(filters.pageSize));
   if (page > 1) params.set("page", String(page));
   return params;
 }

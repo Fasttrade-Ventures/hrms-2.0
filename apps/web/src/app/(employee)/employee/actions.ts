@@ -286,9 +286,14 @@ export async function submitManualAttendance(
   }
 }
 
-export async function employeeClockIn(): Promise<EmployeeActionState> {
+export async function employeeClockIn(formData?: FormData): Promise<EmployeeActionState> {
   try {
-    await clockIn();
+    const latitudeRaw = formData ? String(formData.get("latitude") ?? "").trim() : "";
+    const longitudeRaw = formData ? String(formData.get("longitude") ?? "").trim() : "";
+    await clockIn({
+      latitude: latitudeRaw ? Number(latitudeRaw) : null,
+      longitude: longitudeRaw ? Number(longitudeRaw) : null,
+    });
     revalidatePath("/employee/attendance");
     revalidatePath("/employee/dashboard");
     return { success: "Clocked in successfully." };

@@ -54,7 +54,7 @@ export async function storePayrollExport(input: {
   await logAuditEvent({
     organizationId,
     actorUserId: input.generatedBy,
-    action: "payroll.exported",
+    action: "payroll.export_generated",
     resourceType: "payroll_export",
     resourceId: data.id,
     metadata: { payrunId: input.payrunId, branchId: input.branchId, exportType: input.exportType },

@@ -3,6 +3,7 @@ import { listEmployeesSchema } from "@hrms/validation";
 import { EmployeeList } from "@/components/hr/employees/employee-list";
 import { requireRole } from "@/lib/auth/session";
 import { getEmployeeDirectory } from "@/lib/employees/queries";
+import { DEFAULT_LIST_PAGE_SIZE } from "@/lib/pagination";
 
 export default async function EmployeesPage({
   searchParams,
@@ -17,7 +18,7 @@ export default async function EmployeesPage({
     status: params.status ?? "active",
     branchId: params.branchId ?? "all",
     page: params.page ?? 1,
-    pageSize: 10,
+    pageSize: DEFAULT_LIST_PAGE_SIZE,
   });
 
   const directory = await getEmployeeDirectory(filters);

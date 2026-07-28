@@ -11,6 +11,8 @@ import { runReport } from "@/lib/reports/run";
 import { isReportSlug } from "@/lib/reports/types";
 
 import { exportReportCsv, logReportPrint } from "../actions";
+import { ReportSubscriptionPanel } from "@/components/reports/report-subscription-panel";
+import { getEntitlements } from "@/lib/entitlements";
 
 export default async function HrReportSlugPage({
   params,
@@ -27,9 +29,10 @@ export default async function HrReportSlugPage({
 
   const raw = await searchParams;
   const filters = parseReportFilters(raw);
-  const [{ branches, departments }, result] = await Promise.all([
+  const [{ branches, departments }, result, entitlements] = await Promise.all([
     loadReportFilterOptions(),
     runReport(slug, filters),
+    getEntitlements(),
   ]);
 
   return (
@@ -44,6 +47,11 @@ export default async function HrReportSlugPage({
         definition={definition}
         departments={departments}
         filters={filters}
+      />
+      <ReportSubscriptionPanel
+        enabled={entitlements.tier !== "core"}
+        filters={filters}
+        slug={slug}
       />
       <ReportRunner
         basePath="/hr/reports"

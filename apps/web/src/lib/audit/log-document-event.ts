@@ -3,7 +3,7 @@ import { logAuditEvent } from "@/lib/audit/log-event";
 type DocumentAuditInput = {
   organizationId?: string;
   actorUserId: string | null;
-  action: "document.uploaded" | "document.replaced" | "document.deleted";
+  action: "document.uploaded" | "document.replaced" | "document.deleted" | "document.downloaded";
   documentId: string;
   metadata?: Record<string, unknown>;
 };

@@ -1,4 +1,6 @@
 import { requireEmployeeContext } from "@/lib/employee/leave";
+import { getEmployeeAttendanceContext } from "@/lib/employee/attendance-context";
+import { validateGeofenceClockIn } from "@/lib/attendance/geofence";
 import { createClient } from "@/lib/supabase/server";
 
 export type TodayAttendance = {
@@ -35,22 +37,44 @@ export async function getTodayAttendance(): Promise<TodayAttendance | null> {
   };
 }
 
-export async function clockIn(): Promise<TodayAttendance> {
+export async function clockIn(input?: {
+  latitude?: number | null;
+  longitude?: number | null;
+  ipAddress?: string | null;
+}): Promise<TodayAttendance> {
   const { employeeId, organizationId } = await requireEmployeeContext();
+  const { geofence } = await getEmployeeAttendanceContext();
+  const validation = validateGeofenceClockIn({
+    geofence,
+    latitude: input?.latitude,
+    longitude: input?.longitude,
+  });
+
+  if (!validation.ok) {
+    throw new Error(validation.error);
+  }
+
   const supabase = await createClient();
   const workDate = new Date().toISOString().slice(0, 10);
   const now = new Date().toISOString();
-
   const existing = await getTodayAttendance();
 
   if (existing?.clockInAt) {
     throw new Error("You are already clocked in for today.");
   }
 
+  const record = {
+    clock_in_at: now,
+    status: validation.status,
+    latitude: input?.latitude ?? null,
+    longitude: input?.longitude ?? null,
+    ip_address: input?.ipAddress ?? null,
+  };
+
   if (existing) {
     const { data, error } = await supabase
       .from("attendance_records")
-      .update({ clock_in_at: now, status: "present" })
+      .update(record)
       .eq("id", existing.id)
       .select("id, work_date, clock_in_at, clock_out_at, status")
       .single();
@@ -72,8 +96,7 @@ export async function clockIn(): Promise<TodayAttendance> {
       employee_id: employeeId,
       work_date: workDate,
       session: 1,
-      clock_in_at: now,
-      status: "present",
+      ...record,
     })
     .select("id, work_date, clock_in_at, clock_out_at, status")
     .single();

@@ -5,7 +5,9 @@ import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { requireRole } from "@/lib/auth/session";
 import { buildComplianceMatrix, listRequiredDocuments } from "@/lib/hr/documents";
 
-const COMPLIANCE_PAGE_SIZE = 25;
+import { DEFAULT_LIST_PAGE_SIZE } from "@/lib/pagination";
+
+const COMPLIANCE_PAGE_SIZE = DEFAULT_LIST_PAGE_SIZE;
 
 function buildComplianceHref(page: number) {
   if (page <= 1) return "/hr/documents/compliance";

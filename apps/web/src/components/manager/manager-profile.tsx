@@ -1,7 +1,5 @@
 import Link from "next/link";
 
-import { PortalPageHeader } from "@/components/portal/portal-primitives";
-
 export function ManagerProfileTabs({
   active,
 }: {

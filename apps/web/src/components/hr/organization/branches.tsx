@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState, useMemo } from "react";
 
 import {
@@ -195,6 +194,52 @@ export function BranchForm({ branch }: { branch?: BranchRow }) {
                   min={0}
                   name="hrdfRatePercent"
                   step="0.01"
+                  type="number"
+                />
+              </HrField>
+            </div>
+          </div>
+
+          <div className="space-y-4 rounded-lg border border-[var(--border-primary)] bg-[var(--surface-muted)]/40 p-4">
+            <div>
+              <p className="text-sm font-medium text-foreground">GPS geofence (Professional)</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Require employees assigned to this branch to clock in within the configured radius.
+              </p>
+            </div>
+            <HrCheckbox
+              defaultChecked={branch?.geofenceEnabled ?? false}
+              id="geofenceEnabled"
+              label="Enable geofence validation for clock-in"
+              name="geofenceEnabled"
+            />
+            <div className="grid gap-4 md:grid-cols-3">
+              <HrField id="latitude" label="Latitude">
+                <HrTextInput
+                  defaultValue={branch?.latitude != null ? String(branch.latitude) : ""}
+                  id="latitude"
+                  name="latitude"
+                  placeholder="3.1390"
+                  step="any"
+                  type="number"
+                />
+              </HrField>
+              <HrField id="longitude" label="Longitude">
+                <HrTextInput
+                  defaultValue={branch?.longitude != null ? String(branch.longitude) : ""}
+                  id="longitude"
+                  name="longitude"
+                  placeholder="101.6869"
+                  step="any"
+                  type="number"
+                />
+              </HrField>
+              <HrField id="geofenceRadiusM" label="Radius (meters)">
+                <HrTextInput
+                  defaultValue={String(branch?.geofenceRadiusM ?? 100)}
+                  id="geofenceRadiusM"
+                  min={25}
+                  name="geofenceRadiusM"
                   type="number"
                 />
               </HrField>

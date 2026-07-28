@@ -5,10 +5,8 @@ import { redirect } from "next/navigation";
 
 import {
   assignAssetSchema,
-  createAssetCategorySchema,
   createAssetSchema,
   returnAssetSchema,
-  updateAssetCategorySchema,
   updateAssetSchema,
   assetRequestSchema,
 } from "@hrms/validation";
@@ -16,7 +14,7 @@ import {
 import { requireRole } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
 import { assignAsset, returnAssetAssignment, disposeAsset, acknowledgeAssignment } from "@/lib/assets/assignments";
-import { createAssetCategory, getAssetCategory, updateAssetCategory } from "@/lib/assets/categories";
+import { getAssetCategory } from "@/lib/assets/categories";
 import { createAssetRecord, updateAssetRecord } from "@/lib/assets/queries";
 import { createMyAssetRequest, resolveAssetRequest } from "@/lib/assets/requests";
 
@@ -67,7 +65,7 @@ export async function createAssetAction(
   formData: FormData,
 ): Promise<HrActionState> {
   try {
-    requireModule("assets");
+    await requireModule("assets");
     await requireRole("hr_administrator");
 
     const parsed = createAssetSchema.safeParse({
@@ -90,7 +88,8 @@ export async function createAssetAction(
     }
 
     const customValues = await readCustomValuesForCategory(formData, parsed.data.categoryId);
-    const { customValuesJson: _ignored, ...assetInput } = parsed.data;
+    const { customValuesJson, ...assetInput } = parsed.data;
+    void customValuesJson;
 
     const assetId = await createAssetRecord({
       ...assetInput,
@@ -111,7 +110,7 @@ export async function updateAssetAction(
   formData: FormData,
 ): Promise<HrActionState> {
   try {
-    requireModule("assets");
+    await requireModule("assets");
     await requireRole("hr_administrator");
 
     const parsed = updateAssetSchema.safeParse({
@@ -149,7 +148,7 @@ export async function assignAssetAction(
   formData: FormData,
 ): Promise<HrActionState> {
   try {
-    requireModule("assets");
+    await requireModule("assets");
     await requireRole("hr_administrator");
 
     const parsed = assignAssetSchema.safeParse({
@@ -177,7 +176,7 @@ export async function returnAssetAction(
   formData: FormData,
 ): Promise<HrActionState> {
   try {
-    requireModule("assets");
+    await requireModule("assets");
     await requireRole("hr_administrator");
 
     const parsed = returnAssetSchema.safeParse({
@@ -204,11 +203,13 @@ export async function returnAssetAction(
 
 export async function disposeAssetAction(
   assetId: string,
-  _prev: HrActionState,
-  _formData: FormData,
+  prev: HrActionState,
+  formData: FormData,
 ): Promise<HrActionState> {
+  void prev;
+  void formData;
   try {
-    requireModule("assets");
+    await requireModule("assets");
     await requireRole("hr_administrator");
     await disposeAsset(assetId);
     revalidatePath("/hr/assets");
@@ -222,11 +223,13 @@ export async function disposeAssetAction(
 export async function resolveAssetRequestAction(
   requestId: string,
   assetId: string,
-  _prev: HrActionState,
-  _formData: FormData,
+  prev: HrActionState,
+  formData: FormData,
 ): Promise<HrActionState> {
+  void prev;
+  void formData;
   try {
-    requireModule("assets");
+    await requireModule("assets");
     await requireRole("hr_administrator");
     await resolveAssetRequest(requestId);
     revalidatePath(`/hr/assets/${assetId}`);
@@ -239,11 +242,13 @@ export async function resolveAssetRequestAction(
 export async function acknowledgeAssetAction(
   assignmentId: string,
   assetId: string,
-  _prev: HrActionState,
-  _formData: FormData,
+  prev: HrActionState,
+  formData: FormData,
 ): Promise<HrActionState> {
+  void prev;
+  void formData;
   try {
-    requireModule("assets");
+    await requireModule("assets");
     const { requireEmployeeContext } = await import("@/lib/employee/leave");
     const { employeeId } = await requireEmployeeContext();
     await acknowledgeAssignment(assignmentId, employeeId);
@@ -261,7 +266,7 @@ export async function createAssetRequestAction(
   formData: FormData,
 ): Promise<HrActionState> {
   try {
-    requireModule("assets");
+    await requireModule("assets");
 
     const parsed = assetRequestSchema.safeParse({
       assetId,
@@ -283,7 +288,7 @@ export async function createAssetRequestAction(
 }
 
 export async function exportAssetRegisterCsv() {
-  requireModule("assets");
+  await requireModule("assets");
   await requireRole("hr_administrator");
 
   const { listAssets } = await import("@/lib/assets/queries");

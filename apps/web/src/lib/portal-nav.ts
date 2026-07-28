@@ -21,6 +21,7 @@ const employeeNav: PortalNavSection[] = [
     items: [
       { href: "/employee/leave", label: "Leave", icon: "leave" },
       { href: "/employee/attendance", label: "Attendance", icon: "attendance" },
+      { href: "/employee/schedule", label: "My schedule", icon: "timesheet" },
       { href: "/employee/manual-attendance", label: "Manual attendance", icon: "manual-attendance" },
       { href: "/employee/report-late", label: "Report late", icon: "report-late" },
       { href: "/employee/timesheet", label: "Timesheet", icon: "timesheet" },
@@ -99,6 +100,7 @@ const hrNav: PortalNavSection[] = [
           { href: "/hr/organization/branches", label: "Branches", icon: "organization" },
           { href: "/hr/organization/departments", label: "Departments", icon: "team-performance" },
           { href: "/hr/organization/shifts", label: "Shifts", icon: "attendance" },
+          { href: "/hr/organization/rosters", label: "Rosters", icon: "timesheet" },
           { href: "/hr/organization/holidays", label: "Holidays", icon: "calendar" },
           { href: "/hr/organization/leave-types", label: "Leave types", icon: "leave" },
           { href: "/hr/organization/pay-groups", label: "Pay groups", icon: "payroll" },
@@ -115,8 +117,9 @@ const hrNav: PortalNavSection[] = [
       { href: "/hr/documents", label: "Documents", icon: "documents" },
       { href: "/hr/announcements", label: "Announcements", icon: "announcements" },
       { href: "/hr/calendar", label: "Calendar", icon: "calendar" },
-      { href: "/hr/assets", label: "Assets", icon: "assets" },
-    ],
+          { href: "/hr/assets", label: "Assets", icon: "assets" },
+          { href: "/hr/performance", label: "Performance", icon: "performance" },
+        ],
   },
   {
     label: "Finance & compliance",
@@ -130,6 +133,7 @@ const hrNav: PortalNavSection[] = [
           { href: "/hr/payroll", label: "Pay runs", icon: "payroll" },
           { href: "/hr/payroll/new", label: "New payrun", icon: "payroll" },
           { href: "/hr/payroll/year-end", label: "Year-end", icon: "reports" },
+          { href: "/hr/integrations/bukucloud", label: "BukuCloud", icon: "organization" },
         ],
       },
       { href: "/hr/audit", label: "Audit", icon: "audit" },
@@ -149,10 +153,6 @@ const authNav: PortalNavSection[] = [
   },
 ];
 
-const singleDashboard = (prefix: string, label: string): PortalNavSection[] => [
-  { items: [{ href: `${prefix}/dashboard`, label, icon: "dashboard" }] },
-];
-
 export function getPortalNavSections(portal: string): PortalNavSection[] {
   switch (portal) {
     case "Auth":
@@ -164,7 +164,16 @@ export function getPortalNavSections(portal: string): PortalNavSection[] {
     case "HR Administrator":
       return hrNav;
     case "Branch Admin":
-      return singleDashboard("/branch-admin", "Dashboard");
+      return [
+        {
+          items: [
+            { href: "/branch-admin/dashboard", label: "Dashboard", icon: "dashboard" },
+            { href: "/branch-admin/employees", label: "Employees", icon: "employees" },
+            { href: "/hr/documents", label: "Documents", icon: "documents" },
+            { href: "/hr/calendar", label: "Calendar", icon: "calendar" },
+          ],
+        },
+      ];
     case "Director":
       return [
         {
@@ -176,9 +185,35 @@ export function getPortalNavSections(portal: string): PortalNavSection[] {
         },
       ];
     case "Organization Owner":
-      return singleDashboard("/owner", "Dashboard");
+      return [
+        {
+          items: [
+            { href: "/owner/dashboard", label: "Dashboard", icon: "dashboard" },
+            { href: "/owner/settings", label: "Module settings", icon: "organization" },
+            { href: "/hr/payroll", label: "Payroll", icon: "payroll" },
+            { href: "/hr/reports", label: "Reports", icon: "reports" },
+            { href: "/hr/audit", label: "Audit", icon: "audit" },
+          ],
+        },
+      ];
     case "Platform Admin":
-      return singleDashboard("/platform", "Dashboard");
+      return [
+        {
+          items: [
+            { href: "/platform/dashboard", label: "Dashboard", icon: "dashboard" },
+            { href: "/platform/tenants", label: "Tenants", icon: "organization" },
+          ],
+        },
+      ];
+    case "Auditor":
+      return [
+        {
+          items: [
+            { href: "/auditor/audit", label: "Audit log", icon: "audit" },
+            { href: "/hr/reports", label: "Reports", icon: "reports" },
+          ],
+        },
+      ];
     default:
       return [];
   }
@@ -216,6 +251,7 @@ export function getPortalLabel(portal: string): string {
 export function getPortalProfileHref(portal: string): string {
   if (portal === "Manager") return "/manager/profile";
   if (portal === "HR Administrator") return "/hr/profile";
+  if (portal === "Auditor") return "/employee/profile";
   return "/employee/profile";
 }
 

@@ -12,7 +12,7 @@ export default async function Page({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  requireModule("calendar");
+  await requireModule("calendar");
   const session = await requireRole("hr_administrator");
   const query = await searchParams;
   const { year, month } = parseYearMonth(query);

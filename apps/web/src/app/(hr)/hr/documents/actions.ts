@@ -51,7 +51,7 @@ export async function uploadDocumentAction(
   if (!(file instanceof File) || file.size === 0) return { error: "Choose a file to upload." };
 
   try {
-    requireModule("documents");
+    await requireModule("documents");
     const session = await requireRole("hr_administrator");
     assertDocumentUpload(file);
 
@@ -114,7 +114,7 @@ export async function uploadDocumentAction(
 
 export async function deleteDocumentAction(documentId: string): Promise<DocumentActionState> {
   try {
-    requireModule("documents");
+    await requireModule("documents");
     const session = await requireRole("hr_administrator");
     await deleteEmployeeDocument(documentId, session.user.id);
 
@@ -146,7 +146,7 @@ export async function saveRequiredDocumentAction(
   if (!parsed.success) return { error: "Invalid required document details." };
 
   try {
-    requireModule("documents");
+    await requireModule("documents");
     await requireRole("hr_administrator");
 
     if (id) {
@@ -165,7 +165,7 @@ export async function saveRequiredDocumentAction(
 
 export async function deleteRequiredDocumentAction(id: string): Promise<DocumentActionState> {
   try {
-    requireModule("documents");
+    await requireModule("documents");
     await requireRole("hr_administrator");
     await deleteRequiredDocument(id);
     revalidatePath("/hr/documents/required");
@@ -191,7 +191,7 @@ export async function saveDocumentFolderAction(
   if (!parsed.success) return { error: "Invalid folder details." };
 
   try {
-    requireModule("documents");
+    await requireModule("documents");
     await requireRole("hr_administrator");
 
     if (id) {
@@ -210,7 +210,7 @@ export async function saveDocumentFolderAction(
 
 export async function deleteDocumentFolderAction(id: string): Promise<DocumentActionState> {
   try {
-    requireModule("documents");
+    await requireModule("documents");
     await requireRole("hr_administrator");
     await deleteDocumentFolder(id);
     revalidatePath("/hr/documents/folders");

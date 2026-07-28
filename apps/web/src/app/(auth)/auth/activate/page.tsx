@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 
 import { AuthShell } from "@/components/auth/auth-shell";
 import { AuthGhostButton, AuthCardHeader } from "@/components/auth/auth-primitives";
-import { dashboardPathForRoles } from "@/lib/auth/redirect";
 import { formatPrimaryRoleLabel } from "@/lib/auth/role-labels";
 import { getSession } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";

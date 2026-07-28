@@ -1,8 +1,7 @@
 import { buildSimplePdf } from "@/lib/files/simple-pdf";
 
 import type { StatutoryExportRow } from "./store";
-import { mapStatutoryRows } from "./statutory";
-import { loadPayrunBranchItems, storePayrollExport } from "./store";
+import { storePayrollExport } from "./store";
 
 export function buildEaPdfLines(input: {
   employerName: string;
@@ -238,7 +237,7 @@ export async function generateCp8dExport(
 
   if (ytdError) throw new Error(ytdError.message);
 
-  let cp8dRows = mapYtdBalancesToCp8dRows((ytdRows ?? []) as YtdBalanceRow[], branchId ?? null);
+  const cp8dRows = mapYtdBalancesToCp8dRows((ytdRows ?? []) as YtdBalanceRow[], branchId ?? null);
 
   if (cp8dRows.length === 0) {
     throw new Error(

@@ -12,8 +12,10 @@ import {
   getAnnouncementDisplayStatus,
   summarizeAnnouncementAudience,
 } from "@/lib/announcements/audience";
+import { shouldDeferAnnouncementNotifications } from "@/lib/announcements/schedule";
 import { announcementBodyHasContent, sanitizeAnnouncementHtml } from "@/lib/announcements/sanitize";
 import { queueAnnouncementPublishedNotifications } from "@/lib/announcements/publish-notifications";
+import { logAuditEvent } from "@/lib/audit/log-event";
 import { requireRole } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -95,6 +97,7 @@ function resolvePublishFields(input: AnnouncementFormInput, wasDraft: boolean, e
       displayUntil: input.displayUntil ?? null,
       body: sanitizedBody,
       notify: false,
+      markNotificationsSent: false,
     };
   }
 
@@ -104,6 +107,12 @@ function resolvePublishFields(input: AnnouncementFormInput, wasDraft: boolean, e
       ? input.displayFrom ?? today
       : input.displayFrom ?? null;
   const displayUntil = input.displayUntil ?? null;
+  const deferNotifications = shouldDeferAnnouncementNotifications(
+    input.publishMode,
+    displayFrom,
+    today,
+  );
+  const shouldNotify = (wasDraft || !existingPostedAt) && !deferNotifications;
 
   return {
     status: "published" as const,
@@ -111,7 +120,8 @@ function resolvePublishFields(input: AnnouncementFormInput, wasDraft: boolean, e
     displayFrom,
     displayUntil,
     body: sanitizedBody,
-    notify: wasDraft || !existingPostedAt,
+    notify: shouldNotify,
+    markNotificationsSent: shouldNotify,
   };
 }
 
@@ -263,6 +273,35 @@ export async function createAnnouncement(input: {
     });
   }
 
+  if (publishFields.markNotificationsSent) {
+    await supabase
+      .from("announcements")
+      .update({ notifications_sent_at: new Date().toISOString() })
+      .eq("id", data.id)
+      .eq("organization_id", organizationId);
+  }
+
+  if (publishFields.status === "published") {
+    await logAuditEvent({
+      organizationId,
+      actorUserId: input.actorUserId,
+      action:
+        input.form.publishMode === "schedule" ? "announcement.scheduled" : "announcement.published",
+      resourceType: "announcement",
+      resourceId: data.id,
+      metadata: { title: input.form.title.trim(), publishMode: input.form.publishMode },
+    });
+  } else {
+    await logAuditEvent({
+      organizationId,
+      actorUserId: input.actorUserId,
+      action: "announcement.draft_saved",
+      resourceType: "announcement",
+      resourceId: data.id,
+      metadata: { title: input.form.title.trim() },
+    });
+  }
+
   return data.id;
 }
 
@@ -354,9 +393,31 @@ export async function updateAnnouncement(input: {
       postedAt: publishFields.postedAt,
     });
   }
+
+  if (publishFields.markNotificationsSent) {
+    await admin
+      .from("announcements")
+      .update({ notifications_sent_at: new Date().toISOString() })
+      .eq("id", input.announcementId)
+      .eq("organization_id", organizationId);
+  }
+
+  await logAuditEvent({
+    organizationId,
+    actorUserId: input.actorUserId,
+    action:
+      publishFields.status === "published"
+        ? input.form.publishMode === "schedule"
+          ? "announcement.scheduled"
+          : "announcement.updated"
+        : "announcement.draft_saved",
+    resourceType: "announcement",
+    resourceId: input.announcementId,
+    metadata: { title: input.form.title.trim(), publishMode: input.form.publishMode },
+  });
 }
 
-export async function deleteAnnouncement(announcementId: string): Promise<void> {
+export async function deleteAnnouncement(announcementId: string, actorUserId?: string | null): Promise<void> {
   await requireRole("hr_administrator");
   const organizationId = getOrganizationId();
   const admin = createAdminClient();
@@ -380,4 +441,12 @@ export async function deleteAnnouncement(announcementId: string): Promise<void> 
     .eq("organization_id", organizationId);
 
   if (error) throw new Error(error.message);
+
+  await logAuditEvent({
+    organizationId,
+    actorUserId: actorUserId ?? null,
+    action: "announcement.deleted",
+    resourceType: "announcement",
+    resourceId: announcementId,
+  });
 }

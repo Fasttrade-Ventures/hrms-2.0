@@ -2,12 +2,14 @@ import Link from "next/link";
 
 import { StatusPill } from "@hrms/ui";
 
+import { PayrunBukucloudPanel } from "@/components/hr/payroll/payrun-bukucloud-panel";
 import { PayrunExportPanel } from "@/components/hr/payroll/payrun-export-panel";
 import { PayrunWorkflowActions } from "@/components/hr/payroll/payrun-workflow-actions";
 import { PayrunLinesTable } from "@/components/hr/payroll/payrun-lines-table";
 import { PayrunTotalsSummary } from "@/components/hr/payroll/payrun-totals-summary";
 import { PayrunCalculatorCompare } from "@/components/hr/payroll/payrun-calculator-compare";
 import { DeletePayrunButton } from "@/components/hr/payroll/delete-payrun-button";
+import type { BukucloudSyncStatus } from "@/lib/integrations/bukucloud/sync";
 import type { PayrunDetail } from "@/lib/payroll/queries";
 
 export function PayrunDetailView({
@@ -15,11 +17,15 @@ export function PayrunDetailView({
   branches = [],
   readOnly = false,
   backHref = "/hr/payroll",
+  bukucloudSyncStatus,
+  integrationsEnabled = false,
 }: {
   payrun: PayrunDetail;
   branches?: Array<{ id: string; name: string }>;
   readOnly?: boolean;
   backHref?: string;
+  bukucloudSyncStatus?: BukucloudSyncStatus;
+  integrationsEnabled?: boolean;
 }) {
   const periodLabel = `${payrun.periodYear}-${String(payrun.periodMonth).padStart(2, "0")}`;
 
@@ -71,6 +77,15 @@ export function PayrunDetailView({
       <PayrunLinesTable editable={!readOnly && payrun.status === "draft"} items={payrun.items} payrunId={payrun.id} />
 
       {readOnly ? null : <PayrunExportPanel branches={branches} payrunId={payrun.id} status={payrun.status} />}
+
+      {readOnly || !bukucloudSyncStatus ? null : (
+        <PayrunBukucloudPanel
+          integrationsEnabled={integrationsEnabled}
+          payrunId={payrun.id}
+          status={payrun.status}
+          syncStatus={bukucloudSyncStatus}
+        />
+      )}
 
       <p className="text-xs text-muted-foreground">
         Period {periodLabel} · {payrun.earningPeriodStart} → {payrun.earningPeriodEnd}

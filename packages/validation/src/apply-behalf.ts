@@ -27,7 +27,7 @@ export const applyBehalfListFilterSchema = z.object({
     .optional()
     .transform((value) => (value ? value : undefined)),
   page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(5).max(50).default(15),
+  pageSize: z.coerce.number().int().min(5).max(50).default(10),
 });
 
 export type ApplyBehalfLeaveInput = z.infer<typeof applyBehalfLeaveSchema>;

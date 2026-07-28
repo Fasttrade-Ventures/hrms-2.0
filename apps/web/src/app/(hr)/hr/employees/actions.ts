@@ -39,10 +39,6 @@ function getOrganizationId(): string {
   return organizationId;
 }
 
-function readCheckbox(formData: FormData, name: string): boolean {
-  return formData.get(name) === "on" || formData.get(name) === "true";
-}
-
 function readOptionalUuid(formData: FormData, name: string): string | null {
   const value = String(formData.get(name) ?? "").trim();
   return value ? value : null;

@@ -6,7 +6,6 @@ import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { listAssetCategories } from "@/lib/assets/categories";
 import { getAssetDetail } from "@/lib/assets/queries";
 import { listActiveEmployeesForSelect } from "@/lib/employees/queries";
-import { listBranches } from "@/lib/hr/organization";
 import { requireRole } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
 
@@ -15,14 +14,13 @@ export default async function AssetDetailPage({
 }: {
   params: Promise<{ assetId: string }>;
 }) {
-  requireModule("assets");
+  await requireModule("assets");
   await requireRole("hr_administrator");
 
   const { assetId } = await params;
-  const [asset, categories, branches, employees] = await Promise.all([
+  const [asset, categories, employees] = await Promise.all([
     getAssetDetail(assetId),
     listAssetCategories().catch(() => []),
-    listBranches().catch(() => []),
     listActiveEmployeesForSelect().catch(() => []),
   ]);
 
@@ -41,7 +39,6 @@ export default async function AssetDetailPage({
       />
       <AssetDetailView
         asset={asset}
-        branches={branches.map((branch) => ({ id: branch.id, name: branch.name }))}
         categories={categories}
         employees={employees}
       />

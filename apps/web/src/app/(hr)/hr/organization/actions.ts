@@ -12,6 +12,7 @@ import {
   createAssetCategorySchema,
   updateAssetCategorySchema,
   importHolidaysSchema,
+  createRosterEntrySchema,
   updateBranchSchema,
   updateDepartmentSchema,
   updateHolidaySchema,
@@ -52,6 +53,66 @@ function normalizeTime(value: string): string {
   return trimmed.length === 5 ? `${trimmed}:00` : trimmed;
 }
 
+function readBranchForm(formData: FormData) {
+  return {
+    name: String(formData.get("name") ?? "").trim(),
+    state: String(formData.get("state") ?? "").trim(),
+    weekendMode: String(formData.get("weekendMode") ?? "sat_sun").trim(),
+    payrollCutoffDay: String(formData.get("payrollCutoffDay") ?? "6").trim(),
+    hrdfEnabled: readCheckbox(formData, "hrdfEnabled"),
+    hrdfRegistrationNumber: String(formData.get("hrdfRegistrationNumber") ?? "").trim(),
+    hrdfRatePercent: String(formData.get("hrdfRatePercent") ?? "1").trim(),
+    lindungEnabled: readCheckbox(formData, "lindungEnabled"),
+    epfEmployerNumber: String(formData.get("epfEmployerNumber") ?? "").trim(),
+    socsoEmployerCode: String(formData.get("socsoEmployerCode") ?? "").trim(),
+    epfWageRounding: String(formData.get("epfWageRounding") ?? "none").trim(),
+    lindungEmployerRatePercent: String(formData.get("lindungEmployerRatePercent") ?? "").trim() || undefined,
+    geofenceEnabled: readCheckbox(formData, "geofenceEnabled"),
+    latitude: String(formData.get("latitude") ?? "").trim() || undefined,
+    longitude: String(formData.get("longitude") ?? "").trim() || undefined,
+    geofenceRadiusM: String(formData.get("geofenceRadiusM") ?? "100").trim(),
+  };
+}
+
+function branchPayload(parsed: {
+  name: string;
+  state: string | null;
+  weekendMode: string;
+  payrollCutoffDay: number;
+  hrdfEnabled: boolean;
+  hrdfRegistrationNumber: string | null;
+  hrdfRatePercent: number;
+  lindungEnabled: boolean;
+  epfEmployerNumber: string | null;
+  socsoEmployerCode: string | null;
+  epfWageRounding: string;
+  lindungEmployerRatePercent?: number;
+  geofenceEnabled: boolean;
+  latitude: number | null;
+  longitude: number | null;
+  geofenceRadiusM: number;
+}) {
+  return {
+    name: parsed.name,
+    state: parsed.state,
+    weekend_mode: parsed.weekendMode,
+    payroll_cutoff_day: parsed.payrollCutoffDay,
+    hrdf_enabled: parsed.hrdfEnabled,
+    hrdf_registration_number: parsed.hrdfRegistrationNumber,
+    hrdf_rate: parsed.hrdfRatePercent / 100,
+    lindung_enabled: parsed.lindungEnabled,
+    epf_employer_number: parsed.epfEmployerNumber,
+    socso_employer_code: parsed.socsoEmployerCode,
+    epf_wage_rounding: parsed.epfWageRounding,
+    lindung_employer_rate:
+      parsed.lindungEmployerRatePercent != null ? parsed.lindungEmployerRatePercent / 100 : 0,
+    geofence_enabled: parsed.geofenceEnabled,
+    latitude: parsed.latitude,
+    longitude: parsed.longitude,
+    geofence_radius_m: parsed.geofenceRadiusM,
+  };
+}
+
 function revalidateOrg(paths: string[] = []) {
   revalidatePath("/hr/organization");
   for (const path of paths) {
@@ -66,20 +127,7 @@ export async function createBranch(
   await requireRole("hr_administrator");
   const organizationId = getOrganizationId();
 
-  const parsed = createBranchSchema.safeParse({
-    name: String(formData.get("name") ?? "").trim(),
-    state: String(formData.get("state") ?? "").trim(),
-    weekendMode: String(formData.get("weekendMode") ?? "sat_sun").trim(),
-    payrollCutoffDay: String(formData.get("payrollCutoffDay") ?? "6").trim(),
-    hrdfEnabled: readCheckbox(formData, "hrdfEnabled"),
-    hrdfRegistrationNumber: String(formData.get("hrdfRegistrationNumber") ?? "").trim(),
-    hrdfRatePercent: String(formData.get("hrdfRatePercent") ?? "1").trim(),
-    lindungEnabled: readCheckbox(formData, "lindungEnabled"),
-    epfEmployerNumber: String(formData.get("epfEmployerNumber") ?? "").trim(),
-    socsoEmployerCode: String(formData.get("socsoEmployerCode") ?? "").trim(),
-    epfWageRounding: String(formData.get("epfWageRounding") ?? "none").trim(),
-    lindungEmployerRatePercent: String(formData.get("lindungEmployerRatePercent") ?? "").trim() || undefined,
-  });
+  const parsed = createBranchSchema.safeParse(readBranchForm(formData));
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid branch details." };
@@ -88,21 +136,7 @@ export async function createBranch(
   const supabase = await createClient();
   const { error } = await supabase.from("branches").insert({
     organization_id: organizationId,
-    name: parsed.data.name,
-    state: parsed.data.state,
-    weekend_mode: parsed.data.weekendMode,
-    payroll_cutoff_day: parsed.data.payrollCutoffDay,
-    hrdf_enabled: parsed.data.hrdfEnabled,
-    hrdf_registration_number: parsed.data.hrdfRegistrationNumber,
-    hrdf_rate: parsed.data.hrdfRatePercent / 100,
-    lindung_enabled: parsed.data.lindungEnabled,
-    epf_employer_number: parsed.data.epfEmployerNumber,
-    socso_employer_code: parsed.data.socsoEmployerCode,
-    epf_wage_rounding: parsed.data.epfWageRounding,
-    lindung_employer_rate:
-      parsed.data.lindungEmployerRatePercent != null
-        ? parsed.data.lindungEmployerRatePercent / 100
-        : 0,
+    ...branchPayload(parsed.data),
   });
 
   if (error) return { error: error.message };
@@ -119,20 +153,7 @@ export async function updateBranch(
   await requireRole("hr_administrator");
   const organizationId = getOrganizationId();
 
-  const parsed = updateBranchSchema.safeParse({
-    name: String(formData.get("name") ?? "").trim(),
-    state: String(formData.get("state") ?? "").trim(),
-    weekendMode: String(formData.get("weekendMode") ?? "sat_sun").trim(),
-    payrollCutoffDay: String(formData.get("payrollCutoffDay") ?? "6").trim(),
-    hrdfEnabled: readCheckbox(formData, "hrdfEnabled"),
-    hrdfRegistrationNumber: String(formData.get("hrdfRegistrationNumber") ?? "").trim(),
-    hrdfRatePercent: String(formData.get("hrdfRatePercent") ?? "1").trim(),
-    lindungEnabled: readCheckbox(formData, "lindungEnabled"),
-    epfEmployerNumber: String(formData.get("epfEmployerNumber") ?? "").trim(),
-    socsoEmployerCode: String(formData.get("socsoEmployerCode") ?? "").trim(),
-    epfWageRounding: String(formData.get("epfWageRounding") ?? "none").trim(),
-    lindungEmployerRatePercent: String(formData.get("lindungEmployerRatePercent") ?? "").trim() || undefined,
-  });
+  const parsed = updateBranchSchema.safeParse(readBranchForm(formData));
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid branch details." };
@@ -141,23 +162,7 @@ export async function updateBranch(
   const supabase = await createClient();
   const { error } = await supabase
     .from("branches")
-    .update({
-      name: parsed.data.name,
-      state: parsed.data.state,
-      weekend_mode: parsed.data.weekendMode,
-      payroll_cutoff_day: parsed.data.payrollCutoffDay,
-      hrdf_enabled: parsed.data.hrdfEnabled,
-      hrdf_registration_number: parsed.data.hrdfRegistrationNumber,
-      hrdf_rate: parsed.data.hrdfRatePercent / 100,
-      lindung_enabled: parsed.data.lindungEnabled,
-      epf_employer_number: parsed.data.epfEmployerNumber,
-      socso_employer_code: parsed.data.socsoEmployerCode,
-      epf_wage_rounding: parsed.data.epfWageRounding,
-      lindung_employer_rate:
-        parsed.data.lindungEmployerRatePercent != null
-          ? parsed.data.lindungEmployerRatePercent / 100
-          : 0,
-    })
+    .update(branchPayload(parsed.data))
     .eq("id", branchId)
     .eq("organization_id", organizationId);
 
@@ -816,4 +821,47 @@ export async function updateAssetCategoryAction(
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Failed to update category." };
   }
+}
+
+export async function upsertRosterEntryAction(
+  _prevState: OrgActionState,
+  formData: FormData,
+): Promise<OrgActionState> {
+  await requireRole("hr_administrator");
+  const organizationId = getOrganizationId();
+
+  const parsed = createRosterEntrySchema.safeParse({
+    employeeId: String(formData.get("employeeId") ?? ""),
+    shiftId: String(formData.get("shiftId") ?? ""),
+    workDate: String(formData.get("workDate") ?? ""),
+    notes: String(formData.get("notes") ?? "").trim() || null,
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid roster assignment." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("roster_entries").upsert(
+    {
+      organization_id: organizationId,
+      employee_id: parsed.data.employeeId,
+      shift_id: parsed.data.shiftId,
+      work_date: parsed.data.workDate,
+      notes: parsed.data.notes,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "organization_id,employee_id,work_date" },
+  );
+
+  if (error) return { error: error.message };
+
+  const weekStart = String(formData.get("weekStart") ?? "");
+  const branchId = String(formData.get("branchId") ?? "");
+  revalidateOrg([
+    "/hr/organization/rosters",
+    `/hr/organization/rosters?weekStart=${weekStart}${branchId ? `&branchId=${branchId}` : ""}`,
+    "/employee/schedule",
+  ]);
+  return { success: "Roster assignment saved." };
 }

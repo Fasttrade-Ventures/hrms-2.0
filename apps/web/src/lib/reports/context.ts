@@ -1,7 +1,7 @@
 import { requireReportRunnerAccess } from "@/lib/reports/access";
 import { createClient } from "@/lib/supabase/server";
 
-import type { EmploymentStatusFilter, ReportFilters } from "./types";
+import type { ReportFilters } from "./types";
 
 function getOrganizationId(): string {
   const organizationId = process.env.DEFAULT_ORGANIZATION_ID;

@@ -12,7 +12,7 @@ import { requireEmployeeContext } from "@/lib/employee/leave";
 import { requireModule } from "@/lib/entitlements";
 
 export default async function Page() {
-  requireModule("announcements");
+  await requireModule("announcements");
   const { organizationId, session, employeeId } = await requireEmployeeContext();
   const viewer = await getAnnouncementViewer({
     organizationId,

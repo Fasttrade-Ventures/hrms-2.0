@@ -45,6 +45,10 @@ export type BranchRow = {
   socsoEmployerCode: string | null;
   epfWageRounding: "none" | "ceil_rm50";
   lindungEmployerRate: number;
+  geofenceEnabled: boolean;
+  latitude: number | null;
+  longitude: number | null;
+  geofenceRadiusM: number;
   employeeCount: number;
   createdAt: string;
 };
@@ -210,6 +214,16 @@ export async function getOrgHubData(): Promise<OrgHubData> {
         count: shiftCount,
       },
       {
+        id: "rosters",
+        typeLabel: "Rosters",
+        typeTone: "success",
+        title: "Work rosters",
+        subtitle: "Weekly schedules",
+        details: "Assign shifts to employees by day",
+        href: "/hr/organization/rosters",
+        count: shiftCount,
+      },
+      {
         id: "holidays",
         typeLabel: "Holiday",
         typeTone: "warning",
@@ -252,7 +266,7 @@ export async function listBranches(): Promise<BranchRow[]> {
     supabase
       .from("branches")
       .select(
-        "id, name, state, weekend_mode, payroll_cutoff_day, hrdf_enabled, hrdf_registration_number, hrdf_rate, lindung_enabled, epf_employer_number, socso_employer_code, epf_wage_rounding, lindung_employer_rate, created_at",
+        "id, name, state, weekend_mode, payroll_cutoff_day, hrdf_enabled, hrdf_registration_number, hrdf_rate, lindung_enabled, epf_employer_number, socso_employer_code, epf_wage_rounding, lindung_employer_rate, geofence_enabled, latitude, longitude, geofence_radius_m, created_at",
       )
       .eq("organization_id", organizationId)
       .order("name"),
@@ -282,6 +296,10 @@ export async function listBranches(): Promise<BranchRow[]> {
     socsoEmployerCode: row.socso_employer_code ?? null,
     epfWageRounding: row.epf_wage_rounding === "ceil_rm50" ? "ceil_rm50" : "none",
     lindungEmployerRate: Number(row.lindung_employer_rate ?? 0),
+    geofenceEnabled: row.geofence_enabled ?? false,
+    latitude: row.latitude != null ? Number(row.latitude) : null,
+    longitude: row.longitude != null ? Number(row.longitude) : null,
+    geofenceRadiusM: row.geofence_radius_m ?? 100,
     employeeCount: counts.get(row.id) ?? 0,
     createdAt: row.created_at,
   }));

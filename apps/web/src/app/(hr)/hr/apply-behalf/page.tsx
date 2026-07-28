@@ -3,6 +3,7 @@ import { applyBehalfListFilterSchema } from "@hrms/validation";
 import { ApplyBehalfList } from "@/components/hr/apply-behalf/apply-behalf-ui";
 import { requireRole } from "@/lib/auth/session";
 import { listBehalfApplications } from "@/lib/hr/apply-behalf";
+import { DEFAULT_LIST_PAGE_SIZE } from "@/lib/pagination";
 
 export default async function ApplyBehalfPage({
   searchParams,
@@ -22,7 +23,7 @@ export default async function ApplyBehalfPage({
     dateFrom: params.dateFrom ?? "",
     dateTo: params.dateTo ?? "",
     page: params.page ?? 1,
-    pageSize: 15,
+    pageSize: DEFAULT_LIST_PAGE_SIZE,
   });
 
   const data = await listBehalfApplications(filters);

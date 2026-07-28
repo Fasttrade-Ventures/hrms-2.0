@@ -17,6 +17,12 @@ const NOTIFY_STATUSES = new Set<ComplianceStatus>(["missing", "expired", "expiri
 export async function scanAndQueueDocumentComplianceNotifications(): Promise<{
   queued: number;
 }> {
+  const { getEntitlements } = await import("@/lib/entitlements");
+  const entitlements = await getEntitlements();
+  if (entitlements.tier === "core") {
+    return { queued: 0 };
+  }
+
   const organizationId = getOrganizationId();
   const admin = createAdminClient();
   const today = new Date().toISOString().slice(0, 10);
@@ -103,7 +109,7 @@ export async function scanAndQueueDocumentComplianceNotifications(): Promise<{
           },
           idempotencyKey: `doc-scan-employee:${employee.id}:${required.name}:${status}:${today}`,
         });
-        queued += 2;
+        queued += 1;
       }
 
       for (const hrAdmin of hrAdminsRes.data ?? []) {
@@ -118,7 +124,7 @@ export async function scanAndQueueDocumentComplianceNotifications(): Promise<{
           },
           idempotencyKey: `doc-scan-hr:${hrAdmin.user_id}:${employee.id}:${required.name}:${status}:${today}`,
         });
-        queued += 2;
+        queued += 1;
       }
     }
   }

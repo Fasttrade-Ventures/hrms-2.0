@@ -7,12 +7,6 @@ export type LoadedStatutoryRules = {
   loaded: boolean;
 };
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
-
 /** Loads active statutory rule pack metadata for an as-of date. Calculations still use domain tables as fallback. */
 export async function loadActiveStatutoryRules(asOf: string): Promise<LoadedStatutoryRules[]> {
   const supabase = await createClient();
@@ -42,8 +36,16 @@ export async function loadActiveStatutoryRules(asOf: string): Promise<LoadedStat
 
 export async function assertStatutoryRulesAvailable(asOf: string): Promise<void> {
   const rules = await loadActiveStatutoryRules(asOf);
-  const required = ["epf", "socso", "eis", "pcb"];
-  const missing = required.filter((set) => !rules.some((row) => row.ruleSet === set));
+  const ruleSets = rules.map((row) => row.ruleSet);
+
+  const hasRule = (predicate: (ruleSet: string) => boolean) => ruleSets.some(predicate);
+
+  const missing: string[] = [];
+  if (!hasRule((set) => set.startsWith("epf_"))) missing.push("epf");
+  if (!hasRule((set) => set.includes("socso"))) missing.push("socso");
+  if (!hasRule((set) => set.includes("eis"))) missing.push("eis");
+  if (!hasRule((set) => set.includes("pcb"))) missing.push("pcb");
+
   if (missing.length > 0) {
     throw new Error(`Missing statutory rule packs for: ${missing.join(", ")}. Run pnpm seed-payroll-rules.`);
   }

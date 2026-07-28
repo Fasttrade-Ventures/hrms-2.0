@@ -1,4 +1,4 @@
-import { sendDocumentComplianceEmail, sendPayslipAvailableEmail } from "@hrms/platform";
+import { sendDocumentComplianceEmail, sendPayslipAvailableEmail, sendScheduledReportEmail } from "@hrms/platform";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -63,6 +63,14 @@ export async function processNotificationOutbox(limit = 25): Promise<{
         to: email,
         periodLabel,
         payslipPath: String(payload.href ?? "/employee/payslips"),
+      });
+    } else if (row.template === "reports.scheduled") {
+      result = await sendScheduledReportEmail({
+        to: email,
+        reportTitle: String(payload.reportTitle ?? "Report"),
+        rowCount: Number(payload.rowCount ?? 0),
+        reportPath: String(payload.href ?? "/hr/reports"),
+        schedule: String(payload.schedule ?? "scheduled"),
       });
     }
 

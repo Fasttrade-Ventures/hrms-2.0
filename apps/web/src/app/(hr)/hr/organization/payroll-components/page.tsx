@@ -5,7 +5,7 @@ import { requireModule } from "@/lib/entitlements";
 import { listPayrollComponents } from "@/lib/payroll/settings";
 
 export default async function PayrollComponentsPage() {
-  requireModule("payroll");
+  await requireModule("payroll");
   await requireRole("hr_administrator");
   const components = await listPayrollComponents();
 

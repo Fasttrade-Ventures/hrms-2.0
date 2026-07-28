@@ -1,6 +1,7 @@
-import { buildEmployeeActivationEmail } from "./employee-activation";
 import { buildDocumentComplianceEmail } from "./document-compliance";
+import { buildEmployeeActivationEmail } from "./employee-activation";
 import { buildPayslipAvailableEmail } from "./payslip-available";
+import { buildScheduledReportEmail } from "./scheduled-report";
 
 type SendResult =
   | { sent: true; id?: string }
@@ -97,6 +98,31 @@ export async function sendPayslipAvailableEmail(input: {
   const { subject, html, text } = buildPayslipAvailableEmail({
     periodLabel: input.periodLabel,
     payslipUrl,
+  });
+
+  return sendResendEmail({ to: input.to, subject, html, text });
+}
+
+export async function sendScheduledReportEmail(input: {
+  to: string;
+  reportTitle: string;
+  rowCount: number;
+  reportPath: string;
+  schedule: string;
+  appOrigin?: string;
+}): Promise<SendResult> {
+  const origin = (
+    input.appOrigin ??
+    process.env.NEXT_PUBLIC_APP_URL ??
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    ""
+  ).replace(/\/$/, "");
+  const reportUrl = origin ? `${origin}${input.reportPath}` : input.reportPath;
+  const { subject, html, text } = buildScheduledReportEmail({
+    reportTitle: input.reportTitle,
+    rowCount: input.rowCount,
+    reportUrl,
+    schedule: input.schedule,
   });
 
   return sendResendEmail({ to: input.to, subject, html, text });

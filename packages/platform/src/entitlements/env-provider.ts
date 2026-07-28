@@ -3,8 +3,10 @@ import { CORE_MODULES, ENTERPRISE_MODULES, PROFESSIONAL_MODULES } from "./types"
 
 function parseTier(): ProductTier {
   const raw = process.env.PRODUCT_TIER?.toLowerCase();
+  if (raw === "core") return "core";
   if (raw === "professional" || raw === "pro") return "professional";
   if (raw === "enterprise" || raw === "ent") return "enterprise";
+  if (process.env.DEPLOYMENT_MODE === "standalone") return "enterprise";
   return "core";
 }
 

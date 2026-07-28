@@ -87,55 +87,6 @@ function actionReviewHref(requestType: string, employeeId?: string | null): stri
   return "/hr/employees";
 }
 
-/** Pencil HIH98 placeholder content — used when live data is empty. */
-const PLACEHOLDER_QUEUE: HrActionQueueRow[] = [
-  {
-    id: "ph-leave-1",
-    type: "Leave",
-    typeTone: "leave",
-    employeeName: "Aisha Rahman",
-    details: "Annual leave · manager pending",
-    timeLabel: "2h ago",
-    href: "/hr/apply-behalf?type=leave",
-  },
-  {
-    id: "ph-claim-1",
-    type: "Claim",
-    typeTone: "claim",
-    employeeName: "Kevin Tan",
-    details: "Travel claim · RM 240",
-    timeLabel: "3h ago",
-    href: "/hr/employees",
-  },
-  {
-    id: "ph-ot-1",
-    type: "OT",
-    typeTone: "ot",
-    employeeName: "Mei Ling",
-    details: "Weekday OT · 3.5 hrs",
-    timeLabel: "1h ago",
-    href: "/hr/employees",
-  },
-  {
-    id: "ph-late-1",
-    type: "Late",
-    typeTone: "late",
-    employeeName: "Amira Zain",
-    details: "Late 09:12 · traffic",
-    timeLabel: "45m ago",
-    href: "/hr/apply-behalf?type=late",
-  },
-  {
-    id: "ph-leave-2",
-    type: "Leave",
-    typeTone: "leave",
-    employeeName: "Hafiz Ali",
-    details: "Medical leave · 2 days",
-    timeLabel: "Yesterday",
-    href: "/hr/apply-behalf?type=leave",
-  },
-];
-
 export async function getHrDashboardData(): Promise<HrDashboardData> {
   await requireRole("hr_administrator");
   const organizationId = getOrganizationId();
@@ -202,11 +153,10 @@ export async function getHrDashboardData(): Promise<HrDashboardData> {
   const livePending = pendingRes.count ?? 0;
   const liveComplianceIssues = complianceWatch.issuesCount;
 
-  // Pencil HIH98 placeholders when org has no meaningful live metrics yet.
-  const activeEmployees = liveEmployees > 0 ? liveEmployees : 148;
-  const branchCount = liveBranches > 0 ? liveBranches : 3;
-  const pendingRequests = livePending > 0 ? livePending : 14;
-  const docsExpiring = liveComplianceIssues > 0 ? liveComplianceIssues : 5;
+  const activeEmployees = liveEmployees;
+  const branchCount = liveBranches;
+  const pendingRequests = livePending;
+  const docsExpiring = liveComplianceIssues;
 
   let payoutTotal = 0;
   for (const row of salariesRes.data ?? []) {
@@ -220,21 +170,15 @@ export async function getHrDashboardData(): Promise<HrDashboardData> {
       ? payoutTotal >= 1000
         ? `RM ${Math.round(payoutTotal / 1000)}k`
         : `RM ${Math.round(payoutTotal)}`
-      : "RM 482k";
+      : "RM 0";
 
   const onLeaveCount = new Set((leaveTodayRes.data ?? []).map((r) => r.employee_id)).size;
   const presentCount = attendanceRes.count ?? 0;
   const hasWorkforceSignal = presentCount > 0 || onLeaveCount > 0;
   const denom = Math.max(liveEmployees || activeEmployees, 1);
-  const presentPct = hasWorkforceSignal
-    ? Math.min(100, Math.round((presentCount / denom) * 100))
-    : 82;
-  const onLeavePct = hasWorkforceSignal
-    ? Math.min(100, Math.round((onLeaveCount / denom) * 100))
-    : 12;
-  const absentPct = hasWorkforceSignal
-    ? Math.max(0, 100 - presentPct - onLeavePct)
-    : 6;
+  const presentPct = hasWorkforceSignal ? Math.min(100, Math.round((presentCount / denom) * 100)) : 0;
+  const onLeavePct = hasWorkforceSignal ? Math.min(100, Math.round((onLeaveCount / denom) * 100)) : 0;
+  const absentPct = hasWorkforceSignal ? Math.max(0, 100 - presentPct - onLeavePct) : 0;
 
   const liveQueue: HrActionQueueRow[] = (queueRes.data ?? []).map((row) => {
     const emp = Array.isArray(row.employees) ? row.employees[0] : row.employees;
@@ -258,17 +202,21 @@ export async function getHrDashboardData(): Promise<HrDashboardData> {
     };
   });
 
-  const actionQueue = liveQueue.length > 0 ? liveQueue : PLACEHOLDER_QUEUE;
+  const actionQueue = liveQueue;
   const compliance = complianceWatch.rows;
 
   const heroDescription =
-    livePending > 0 || liveComplianceIssues > 0
+    livePending > 0 && liveComplianceIssues > 0
       ? `${pendingRequests} pending org requests, ${docsExpiring} document compliance issues, and payroll ready to review.`
-      : "14 pending org requests, 5 docs expiring, and July payroll ready to generate.";
+      : livePending > 0
+        ? `${pendingRequests} pending org requests need HR attention.`
+        : liveComplianceIssues > 0
+          ? `${docsExpiring} document compliance issues need follow-up.`
+          : "Organization metrics are up to date. Review payroll and compliance when needed.";
 
   return {
     greeting: greetingForHour(hour),
-    firstName: firstName || "Nora",
+    firstName: firstName || "there",
     heroDescription,
     activeEmployees,
     branchCount,

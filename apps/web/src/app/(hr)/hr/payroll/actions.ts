@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { requireRole, requireRoleOrPermission } from "@/lib/auth/session";
+import { requireRoleOrPermission } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
 import { lockPayrun } from "@/lib/hr/payroll";
 import {
@@ -37,12 +37,12 @@ function exportReadyState(result: {
 }
 
 async function guardPayroll() {
-  requireModule("payroll");
+  await requireModule("payroll");
   return requireRoleOrPermission(["hr_administrator"], ["payroll_processor"]);
 }
 
 async function guardPayrollApprover() {
-  requireModule("payroll");
+  await requireModule("payroll");
   return requireRoleOrPermission(["hr_administrator", "director"], ["payroll_approver"]);
 }
 

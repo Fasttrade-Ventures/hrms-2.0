@@ -24,7 +24,7 @@ export async function uploadMyDocumentAction(
   const file = formData.get("file");
 
   try {
-    requireModule("documents");
+    await requireModule("documents");
     const { employeeId, organizationId, session } = await requireEmployeeContext();
 
     const folderIdRaw = String(formData.get("folderId") ?? "").trim();

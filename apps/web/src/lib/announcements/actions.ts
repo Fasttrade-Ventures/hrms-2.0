@@ -7,7 +7,7 @@ import { requireAuth } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
 
 export async function markAnnouncementReadAction(announcementId: string): Promise<void> {
-  requireModule("announcements");
+  await requireModule("announcements");
   const session = await requireAuth();
   await markAnnouncementRead({
     announcementId,

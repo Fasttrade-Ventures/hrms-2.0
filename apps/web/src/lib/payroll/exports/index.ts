@@ -47,7 +47,7 @@ export async function generateBankExport(
   format: "bank_csv" | "bank_maybank" | "bank_cimb",
   actorUserId: string,
 ) {
-  requireModule("payroll");
+  await requireModule("payroll");
   await requireRole("hr_administrator");
   const payrun = await assertExportablePayrun(payrunId);
   const items = await loadPayrunBranchItems(payrunId, branchId);
@@ -79,7 +79,7 @@ export async function generateStatutoryExport(
   actorUserId: string,
   options?: { employerEpfNumber?: string; employerSocsoCode?: string },
 ) {
-  requireModule("payroll");
+  await requireModule("payroll");
   await requireRole("hr_administrator");
   const payrun = await assertExportablePayrun(payrunId);
   const items = await loadPayrunBranchItems(payrunId, branchId);

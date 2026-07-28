@@ -1,11 +1,16 @@
+import Link from "next/link";
+
 import { EmptyState, ListCard, StatusPill } from "@hrms/ui";
 
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { listTeamPerformance } from "@/lib/manager/performance";
+import { requireModule } from "@/lib/entitlements";
+import { appraisalStatusLabel, appraisalStatusTone } from "@/lib/performance/types";
 import { requireRole } from "@/lib/auth/session";
 
 export default async function Page() {
   await requireRole("manager");
+  await requireModule("performance");
   const rows = await listTeamPerformance().catch(() => []);
 
   return (
@@ -19,7 +24,8 @@ export default async function Page() {
         columns={[
           { key: "employee", label: "Employee" },
           { key: "cycle", label: "Cycle" },
-          { key: "status", label: "Status", className: "w-28" },
+          { key: "status", label: "Status", className: "w-36" },
+          { key: "action", label: "", className: "w-24" },
         ]}
         empty={
           <EmptyState
@@ -40,10 +46,15 @@ export default async function Page() {
               .filter(Boolean)
               .join(" · "),
             status: (
-              <StatusPill
-                label={row.status}
-                tone={row.status === "approved" ? "success" : row.status === "pending" ? "warning" : "neutral"}
-              />
+              <StatusPill label={appraisalStatusLabel(row.status)} tone={appraisalStatusTone(row.status)} />
+            ),
+            action: (
+              <Link
+                className="text-sm font-medium text-[var(--accent-primary)]"
+                href={`/manager/team-performance/${row.id}`}
+              >
+                {row.canReview ? "Review" : "View"}
+              </Link>
             ),
           },
         }))}

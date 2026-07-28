@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth/session";
+import { logDocumentEvent } from "@/lib/audit/log-document-event";
 import { requireModule } from "@/lib/entitlements";
 import { canDownloadFile } from "@/lib/files/download-auth";
 import { getSignedDownloadUrl } from "@/lib/files/storage";
@@ -19,7 +20,7 @@ export async function GET(
   const admin = createAdminClient();
   const { data: file } = await admin
     .from("file_objects")
-    .select("category")
+    .select("category, file_name")
     .eq("id", fileId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -27,7 +28,7 @@ export async function GET(
   const moduleKey = file?.category === "announcement-attachments" ? "announcements" : "documents";
 
   try {
-    requireModule(moduleKey);
+    await requireModule(moduleKey);
   } catch {
     return NextResponse.json({ error: `${moduleKey} module is not enabled.` }, { status: 403 });
   }
@@ -47,6 +48,24 @@ export async function GET(
   if (!url) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+
+  const { data: employeeDocument } = await admin
+    .from("employee_documents")
+    .select("id")
+    .eq("file_id", fileId)
+    .maybeSingle();
+
+  await logDocumentEvent({
+    organizationId: session.membership.organizationId,
+    actorUserId: session.user.id,
+    action: "document.downloaded",
+    documentId: employeeDocument?.id ?? fileId,
+    metadata: {
+      fileId,
+      category: file?.category ?? null,
+      fileName: file?.file_name ?? null,
+    },
+  });
 
   return NextResponse.redirect(url);
 }

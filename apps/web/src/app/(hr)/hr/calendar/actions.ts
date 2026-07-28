@@ -50,7 +50,7 @@ export async function createCompanyEventAction(
   _prev: CalendarActionState,
   formData: FormData,
 ): Promise<CalendarActionState> {
-  requireModule("calendar");
+  await requireModule("calendar");
   const parsed = parseCompanyEventForm(formData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid event details." };
@@ -70,7 +70,7 @@ export async function updateCompanyEventAction(
   _prev: CalendarActionState,
   formData: FormData,
 ): Promise<CalendarActionState> {
-  requireModule("calendar");
+  await requireModule("calendar");
   const eventId = String(formData.get("eventId") ?? "").trim();
   if (!eventId) return { error: "Missing event." };
 
@@ -94,7 +94,7 @@ export async function updateCompanyEventAction(
 }
 
 export async function deleteCompanyEventAction(eventId: string): Promise<CalendarActionState> {
-  requireModule("calendar");
+  await requireModule("calendar");
   try {
     const session = await requireRole("hr_administrator");
     await deleteCompanyEvent({ eventId, actorUserId: session.user.id });
@@ -110,7 +110,7 @@ export async function exportHrCalendarCsvAction(input: {
   month: number;
   filters: HrCalendarFilters;
 }): Promise<{ csv: string; filename: string } | { error: string }> {
-  requireModule("calendar");
+  await requireModule("calendar");
   try {
     await requireRole("hr_administrator");
     const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
@@ -136,7 +136,7 @@ export async function approveCalendarLeaveAction(
   _prev: CalendarActionState,
   formData: FormData,
 ): Promise<CalendarActionState> {
-  requireModule("calendar");
+  await requireModule("calendar");
   const stepId = String(formData.get("stepId") ?? "").trim();
   if (!stepId) return { error: "Missing approval step." };
 
@@ -166,7 +166,7 @@ export async function rejectCalendarLeaveAction(
   _prev: CalendarActionState,
   formData: FormData,
 ): Promise<CalendarActionState> {
-  requireModule("calendar");
+  await requireModule("calendar");
   const stepId = String(formData.get("stepId") ?? "").trim();
   if (!stepId) return { error: "Missing approval step." };
 

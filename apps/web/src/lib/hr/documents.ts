@@ -9,7 +9,9 @@ import {
   type ComplianceStatus,
 } from "@/lib/hr/document-compliance";
 
-export const DOCUMENT_LIBRARY_PAGE_SIZE = 25;
+import { DEFAULT_LIST_PAGE_SIZE } from "@/lib/pagination";
+
+export const DOCUMENT_LIBRARY_PAGE_SIZE = DEFAULT_LIST_PAGE_SIZE;
 
 const PAGE_SIZE = DOCUMENT_LIBRARY_PAGE_SIZE;
 

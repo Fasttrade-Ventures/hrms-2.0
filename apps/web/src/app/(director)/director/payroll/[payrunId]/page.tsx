@@ -11,7 +11,7 @@ export default async function DirectorPayrunDetailPage({
 }: {
   params: Promise<{ payrunId: string }>;
 }) {
-  requireModule("payroll");
+  await requireModule("payroll");
   await requireRole("director");
   const { payrunId } = await params;
   const payrun = await getPayrunDetail(payrunId);

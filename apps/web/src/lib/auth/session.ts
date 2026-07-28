@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { dashboardPathForRoles } from "@/lib/auth/redirect";
+import { getImpersonationOrgId } from "@/lib/platform/impersonation";
 import { createClient } from "@/lib/supabase/server";
 
 export type UserMembership = {
@@ -19,31 +20,54 @@ export type AuthSession = {
   membership: UserMembership;
 };
 
+type MembershipRow = {
+  organization_id: string;
+  employee_id: string | null;
+  roles: string[] | null;
+  permissions: string[] | null;
+};
+
+function mapMembership(row: MembershipRow): UserMembership {
+  return {
+    organizationId: row.organization_id,
+    employeeId: row.employee_id,
+    roles: row.roles ?? [],
+    permissions: row.permissions ?? [],
+  };
+}
+
 async function loadMembership(userId: string): Promise<UserMembership | null> {
   const supabase = await createClient();
   const defaultOrgId = process.env.DEFAULT_ORGANIZATION_ID;
+  const impersonateOrgId = await getImpersonationOrgId();
 
-  let query = supabase
+  const { data: memberships, error } = await supabase
     .from("organization_memberships")
     .select("organization_id, employee_id, roles, permissions")
     .eq("user_id", userId);
 
-  if (defaultOrgId) {
-    query = query.eq("organization_id", defaultOrgId);
-  }
-
-  const { data, error } = await query.maybeSingle();
-
-  if (error || !data) {
+  if (error || !memberships?.length) {
     return null;
   }
 
-  return {
-    organizationId: data.organization_id,
-    employeeId: data.employee_id,
-    roles: data.roles ?? [],
-    permissions: data.permissions ?? [],
-  };
+  const platformMembership = memberships.find((row) => row.roles?.includes("platform_administrator"));
+
+  if (impersonateOrgId && platformMembership) {
+    return {
+      organizationId: impersonateOrgId,
+      employeeId: null,
+      roles: ["organization_owner", "hr_administrator"],
+      permissions: ["platform_impersonating"],
+    };
+  }
+
+  if (defaultOrgId) {
+    const match = memberships.find((row) => row.organization_id === defaultOrgId);
+    return match ? mapMembership(match) : null;
+  }
+
+  const primary = memberships[0];
+  return primary ? mapMembership(primary) : null;
 }
 
 export async function getSession(): Promise<AuthSession | null> {

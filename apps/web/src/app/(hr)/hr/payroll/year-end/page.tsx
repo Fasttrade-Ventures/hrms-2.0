@@ -5,7 +5,7 @@ import { requireModule } from "@/lib/entitlements";
 import { listBranchesForSettings } from "@/lib/payroll/settings";
 
 export default async function PayrollYearEndPage() {
-  requireModule("payroll");
+  await requireModule("payroll");
   await requireRole("hr_administrator");
   const branches = await listBranchesForSettings();
 

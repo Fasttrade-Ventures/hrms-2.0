@@ -67,6 +67,10 @@ export function isReportsPath(pathname: string): boolean {
   return pathname === "/hr/reports" || pathname.startsWith("/hr/reports/");
 }
 
+export function isAuditPath(pathname: string): boolean {
+  return pathname === "/hr/audit" || pathname.startsWith("/hr/audit/") || pathname === "/auditor/audit" || pathname.startsWith("/auditor/audit/");
+}
+
 export function canAccessPath(
   pathname: string,
   roles: readonly string[],
@@ -74,6 +78,35 @@ export function canAccessPath(
 ): boolean {
   if (isReportsPath(pathname) && permissions.includes("auditor")) {
     return true;
+  }
+
+  if (isAuditPath(pathname) && permissions.includes("auditor")) {
+    return true;
+  }
+
+  if (pathname === "/auditor" || pathname.startsWith("/auditor/")) {
+    return permissions.includes("auditor");
+  }
+
+  if (pathname === "/hr" || pathname.startsWith("/hr/")) {
+    if (roles.includes("hr_administrator")) {
+      return true;
+    }
+    if (roles.includes("organization_owner")) {
+      return true;
+    }
+    if (
+      roles.includes("branch_admin") &&
+      (pathname === "/hr/employees" ||
+        pathname.startsWith("/hr/employees/") ||
+        pathname === "/hr/documents" ||
+        pathname.startsWith("/hr/documents/") ||
+        pathname === "/hr/calendar" ||
+        pathname.startsWith("/hr/calendar"))
+    ) {
+      return true;
+    }
+    return false;
   }
 
   return canAccessPortal(pathname, roles);

@@ -53,12 +53,10 @@ function RequestResolveRow({
 export function AssetDetailView({
   asset,
   categories,
-  branches,
   employees,
 }: {
   asset: AssetDetail;
   categories: AssetCategoryRow[];
-  branches: Array<{ id: string; name: string }>;
   employees: Array<{ id: string; full_name: string; employee_number: string }>;
 }) {
   const boundUpdate = updateAssetAction.bind(null, asset.id);

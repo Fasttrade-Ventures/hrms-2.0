@@ -1,6 +1,7 @@
 import type { ListEmployeesInput } from "@hrms/validation";
 
 import { getEmployeeProfilePhotoUrl } from "@/lib/employees/profile-photo";
+import { DEFAULT_LIST_PAGE_SIZE } from "@/lib/pagination";
 import { createClient } from "@/lib/supabase/server";
 
 export type EmployeeListItem = {
@@ -197,7 +198,7 @@ export async function getEmployeeDirectory(filters: ListEmployeesInput): Promise
   const organizationId = getOrganizationId();
   const today = todayIso();
   const page = filters.page ?? 1;
-  const pageSize = filters.pageSize ?? 10;
+  const pageSize = filters.pageSize ?? DEFAULT_LIST_PAGE_SIZE;
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 

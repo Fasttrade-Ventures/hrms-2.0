@@ -8,7 +8,7 @@ import {
 } from "../../apps/web/src/lib/reports/filters";
 
 describe("parseReportFilters", () => {
-  it("defaults to this month with page size 50", () => {
+  it("defaults to this month with page size 10", () => {
     expect(parseReportFilters({}, "2026-07-15")).toEqual({
       preset: "this_month",
       from: "2026-07-01",
@@ -16,7 +16,7 @@ describe("parseReportFilters", () => {
       asOf: "2026-07-15",
       employmentStatus: "all",
       page: 1,
-      pageSize: 50,
+      pageSize: 10,
     });
   });
 
@@ -45,7 +45,7 @@ describe("parseReportFilters", () => {
       employmentStatus: "active",
       employeeQuery: "ali",
       page: 2,
-      pageSize: 50,
+      pageSize: 10,
     });
   });
 });

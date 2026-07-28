@@ -1,9 +1,5 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { EmptyState, ListCard } from "@hrms/ui";
-
-import { formatDate } from "@/components/employee/employee-shared";
 import { EmployeeAssetDetail } from "@/components/employee/assets/employee-asset-detail";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { getMyAssetDetail } from "@/lib/assets/queries";
@@ -14,7 +10,7 @@ export default async function EmployeeAssetDetailPage({
 }: {
   params: Promise<{ assetId: string }>;
 }) {
-  requireModule("assets");
+  await requireModule("assets");
   const { assetId } = await params;
   const asset = await getMyAssetDetail(assetId);
   if (!asset) notFound();

@@ -12,7 +12,7 @@ import { requireModule } from "@/lib/entitlements";
 import { requireManagerContext } from "@/lib/manager/context";
 
 export default async function Page() {
-  requireModule("announcements");
+  await requireModule("announcements");
   const { organizationId, session, employeeId } = await requireManagerContext();
   const viewer = await getAnnouncementViewer({
     organizationId,

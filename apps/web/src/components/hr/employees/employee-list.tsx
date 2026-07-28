@@ -72,7 +72,9 @@ function formatJoined(value: string) {
   });
 }
 
-function buildHref(params: {
+function buildHref(
+  basePath: string,
+  params: {
   search?: string;
   status: string;
   branchId: string;
@@ -84,7 +86,7 @@ function buildHref(params: {
   if (params.branchId !== "all") query.set("branchId", params.branchId);
   if (params.page && params.page > 1) query.set("page", String(params.page));
   const qs = query.toString();
-  return qs ? `/hr/employees?${qs}` : "/hr/employees";
+  return qs ? `${basePath}?${qs}` : basePath;
 }
 
 export function EmployeeList({
@@ -98,6 +100,8 @@ export function EmployeeList({
   stats,
   branches,
   inactiveCount,
+  basePath = "/hr/employees",
+  readOnly = false,
 }: {
   employees: EmployeeListItem[];
   search?: string;
@@ -109,6 +113,8 @@ export function EmployeeList({
   stats: EmployeeDirectoryStats;
   branches: EmployeeBranchFilter[];
   inactiveCount: number;
+  basePath?: string;
+  readOnly?: boolean;
 }) {
   const activeTotal = stats.active;
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
@@ -126,10 +132,12 @@ export function EmployeeList({
         <div className="space-y-1">
           <h2 className="text-base font-semibold text-foreground">Employee directory</h2>
           <p className="max-w-[520px] text-[13px] text-muted-foreground">
-            Create employees, edit roles, and manage employment status for the whole organization.
+            {readOnly
+              ? "View employees assigned to this branch."
+              : "Create employees, edit roles, and manage employment status for the whole organization."}
           </p>
         </div>
-        <HrLinkButton href="/hr/employees/create">Create employee</HrLinkButton>
+        {readOnly ? null : <HrLinkButton href="/hr/employees/create">Create employee</HrLinkButton>}
       </div>
 
       <HrStatCards
@@ -142,6 +150,7 @@ export function EmployeeList({
 
       <EmployeeDirectoryFilters
         activeTotal={activeTotal}
+        basePath={basePath}
         branchId={branchId}
         branches={branches}
         inactiveCount={inactiveCount}
@@ -166,7 +175,11 @@ export function EmployeeList({
         {employees.length === 0 ? (
           <div className="p-6">
             <EmptyState
-              action={<HrLinkButton href="/hr/employees/create">Create employee</HrLinkButton>}
+              action={
+                readOnly ? undefined : (
+                  <HrLinkButton href="/hr/employees/create">Create employee</HrLinkButton>
+                )
+              }
               description={
                 search
                   ? "Try a different search term or clear filters."
@@ -226,38 +239,46 @@ export function EmployeeList({
                     </Badge>
                   </div>
                   <div className="flex items-center justify-start gap-2 md:justify-end">
-                    <Button
-                      aria-label={`View employee dossier for ${employee.fullName}`}
-                      render={<Link href={`/hr/employees/${employee.id}/dossier`} />}
-                      size="icon-sm"
-                      title="Employee dossier PDF"
-                      variant="outline"
-                    >
-                      <svg aria-hidden fill="none" height="16" viewBox="0 0 24 24" width="16">
-                        <path
-                          d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="1.75"
+                    {readOnly ? (
+                      <HrLinkButton href={`/hr/employees/${employee.id}`} size="sm" variant="outline">
+                        View
+                      </HrLinkButton>
+                    ) : (
+                      <>
+                        <Button
+                          aria-label={`View employee dossier for ${employee.fullName}`}
+                          render={<Link href={`/hr/employees/${employee.id}/dossier`} />}
+                          size="icon-sm"
+                          title="Employee dossier PDF"
+                          variant="outline"
+                        >
+                          <svg aria-hidden fill="none" height="16" viewBox="0 0 24 24" width="16">
+                            <path
+                              d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                              stroke="currentColor"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="1.75"
+                            />
+                            <path
+                              d="M14 2v6h6M9.5 13h5M9.5 17h5M9.5 9H12"
+                              stroke="currentColor"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="1.75"
+                            />
+                          </svg>
+                        </Button>
+                        <DeleteEmployeeButton
+                          employeeId={employee.id}
+                          employeeName={employee.fullName}
+                          variant="icon"
                         />
-                        <path
-                          d="M14 2v6h6M9.5 13h5M9.5 17h5M9.5 9H12"
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="1.75"
-                        />
-                      </svg>
-                    </Button>
-                    <DeleteEmployeeButton
-                      employeeId={employee.id}
-                      employeeName={employee.fullName}
-                      variant="icon"
-                    />
-                    <HrLinkButton href={`/hr/employees/${employee.id}/edit`} size="sm" variant="outline">
-                      Edit
-                    </HrLinkButton>
+                        <HrLinkButton href={`/hr/employees/${employee.id}/edit`} size="sm" variant="outline">
+                          Edit
+                        </HrLinkButton>
+                      </>
+                    )}
                   </div>
                 </div>
               );
@@ -270,14 +291,14 @@ export function EmployeeList({
         from={from}
         itemLabel="employees"
         nextHref={
-          page < pageCount ? buildHref({ search, status, branchId, page: page + 1 }) : undefined
+          page < pageCount ? buildHref(basePath, { search, status, branchId, page: page + 1 }) : undefined
         }
         page={page}
         pageLinks={pages.map((pageNumber) => ({
           page: pageNumber,
-          href: buildHref({ search, status, branchId, page: pageNumber }),
+          href: buildHref(basePath, { search, status, branchId, page: pageNumber }),
         }))}
-        prevHref={page > 1 ? buildHref({ search, status, branchId, page: page - 1 }) : undefined}
+        prevHref={page > 1 ? buildHref(basePath, { search, status, branchId, page: page - 1 }) : undefined}
         to={to}
         total={total}
       />

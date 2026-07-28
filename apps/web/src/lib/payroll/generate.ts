@@ -26,7 +26,7 @@ function mapPayFrequency(cycle: string | null | undefined): PayFrequency {
 }
 
 export async function generateDraftPayrun(input: CreatePayrunInput): Promise<string> {
-  requireModule("payroll");
+  await requireModule("payroll");
   await requireRoleOrPermission(["hr_administrator"], ["payroll_processor"]);
   await assertStatutoryRulesAvailable(input.earningPeriodEnd);
 
@@ -70,6 +70,23 @@ export async function generateDraftPayrun(input: CreatePayrunInput): Promise<str
     .single();
 
   if (error || !payrun) throw new Error(error?.message ?? "Failed to create payrun.");
+
+  const { logAuditEvent } = await import("@/lib/audit/log-event");
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  await logAuditEvent({
+    organizationId,
+    actorUserId: user?.id ?? null,
+    action: "payroll.payrun_created",
+    resourceType: "payroll_payrun",
+    resourceId: payrun.id,
+    metadata: {
+      periodYear: input.periodYear,
+      periodMonth,
+      scope: input.scope,
+    },
+  });
 
   const componentIdByCode = await ensurePayrollComponents(supabase, organizationId);
 

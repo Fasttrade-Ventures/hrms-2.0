@@ -3,19 +3,25 @@ import { ListCard } from "@hrms/ui";
 import { AttendanceClockPanel } from "@/components/employee/attendance-clock-panel";
 import { formatDateTime } from "@/components/employee/employee-shared";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
+import { getEmployeeAttendanceContext } from "@/lib/employee/attendance-context";
 import { getTodayAttendance, listRecentAttendance } from "@/lib/employee/attendance";
 
 export default async function Page() {
-  const [today, recent] = await Promise.all([getTodayAttendance(), listRecentAttendance()]);
+  const [today, recent, attendanceContext] = await Promise.all([
+    getTodayAttendance(),
+    listRecentAttendance(),
+    getEmployeeAttendanceContext(),
+  ]);
 
   return (
     <div className="space-y-8">
-      <PortalPageHeader
-        description="Clock in and out for today's shift."
-        title="Attendance"
-      />
+      <PortalPageHeader description="Clock in and out for today's shift." title="Attendance" />
 
-      <AttendanceClockPanel today={today} />
+      <AttendanceClockPanel
+        geofence={attendanceContext.geofence}
+        locationModuleEnabled={attendanceContext.locationModuleEnabled}
+        today={today}
+      />
 
       <ListCard
         columns={[

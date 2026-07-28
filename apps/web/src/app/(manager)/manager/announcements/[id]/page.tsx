@@ -10,7 +10,7 @@ import { requireModule } from "@/lib/entitlements";
 import { requireManagerContext } from "@/lib/manager/context";
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
-  requireModule("announcements");
+  await requireModule("announcements");
   const { id } = await params;
   const { organizationId, session, employeeId } = await requireManagerContext();
   const viewer = await getAnnouncementViewer({

@@ -15,7 +15,7 @@ export default async function Page({
   searchParams: Promise<{ view?: string }>;
 }) {
   await requireRole("hr_administrator");
-  requireModule("announcements");
+  await requireModule("announcements");
 
   const { view } = await searchParams;
 

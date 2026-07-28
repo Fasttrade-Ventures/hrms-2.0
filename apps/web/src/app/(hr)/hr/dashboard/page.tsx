@@ -15,7 +15,7 @@ import { requireModule } from "@/lib/entitlements";
 import { getHrDashboardData } from "@/lib/hr/dashboard";
 
 export default async function Page() {
-  requireModule("announcements");
+  await requireModule("announcements");
   const data = await getHrDashboardData();
   const employeeContext = await requireEmployeeContext().catch(() => null);
   const announcementFeed = employeeContext

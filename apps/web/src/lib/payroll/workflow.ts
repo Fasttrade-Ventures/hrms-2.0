@@ -18,7 +18,7 @@ async function transitionPayrun(
 
   const { data: payrun, error } = await supabase
     .from("payroll_payruns")
-    .select("status")
+    .select("status, period_year, period_month")
     .eq("id", payrunId)
     .eq("organization_id", organizationId)
     .maybeSingle();
@@ -52,6 +52,21 @@ async function transitionPayrun(
     from_status: payrun.status,
     to_status: toStatus,
     actor_user_id: actorUserId,
+  });
+
+  const { logAuditEvent } = await import("@/lib/audit/log-event");
+  await logAuditEvent({
+    organizationId,
+    actorUserId,
+    action: `payroll.payrun_${toStatus === "in_review" ? "submitted" : toStatus}`,
+    resourceType: "payroll_payrun",
+    resourceId: payrunId,
+    metadata: {
+      fromStatus: payrun.status,
+      toStatus,
+      periodYear: payrun.period_year,
+      periodMonth: payrun.period_month,
+    },
   });
 }
 

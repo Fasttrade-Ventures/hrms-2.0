@@ -47,6 +47,19 @@ export async function lockPayrun(payrunId: string, actorUserId: string): Promise
     actor_user_id: actorUserId,
   });
 
+  const { logAuditEvent } = await import("@/lib/audit/log-event");
+  await logAuditEvent({
+    organizationId,
+    actorUserId,
+    action: "payroll.payrun_locked",
+    resourceType: "payroll_payrun",
+    resourceId: payrunId,
+    metadata: { periodYear: payrun.period_year },
+  });
+
+  const { maybeAutoSyncPayrunToBukucloud } = await import("@/lib/integrations/bukucloud/sync");
+  await maybeAutoSyncPayrunToBukucloud(payrunId, actorUserId);
+
   const { data: items } = await supabase
     .from("payroll_payrun_items")
     .select("employee_id, gross_pay, epf_employee, socso_employee, eis_employee, pcb")

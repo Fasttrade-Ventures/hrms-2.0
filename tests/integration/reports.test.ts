@@ -27,4 +27,10 @@ describe("reports access", () => {
     expect(canAccessPath("/hr/reports/leave-balances", [], ["auditor"])).toBe(true);
     expect(canAccessPath("/hr/dashboard", [], ["auditor"])).toBe(false);
   });
+
+  it("whitelists auditor on audit paths", () => {
+    expect(canAccessPath("/auditor/audit", [], ["auditor"])).toBe(true);
+    expect(canAccessPath("/hr/audit", [], ["auditor"])).toBe(true);
+    expect(canAccessPath("/api/hr/audit/export", [], ["auditor"])).toBe(true);
+  });
 });

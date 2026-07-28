@@ -8,7 +8,7 @@ import { listMyAssets } from "@/lib/assets/queries";
 import { requireModule } from "@/lib/entitlements";
 
 export default async function Page() {
-  requireModule("assets");
+  await requireModule("assets");
   const assets = await listMyAssets();
 
   return (
