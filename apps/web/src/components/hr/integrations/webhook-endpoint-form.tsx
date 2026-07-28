@@ -3,7 +3,8 @@
 import { useActionState } from "react";
 
 import { HrFormMessage, HrPrimaryButton, HrTextInput } from "@/components/hr/employees/form-fields";
-import { upsertWebhookEndpoint, WEBHOOK_EVENT_TYPES } from "@/lib/integrations/webhooks/queries";
+import { upsertWebhookEndpoint } from "@/lib/integrations/webhooks/queries";
+import { WEBHOOK_EVENT_TYPES } from "@/lib/integrations/webhooks/types";
 
 export function WebhookEndpointForm() {
   const [state, action, pending] = useActionState(upsertWebhookEndpoint, {});

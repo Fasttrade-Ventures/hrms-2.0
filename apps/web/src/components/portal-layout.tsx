@@ -7,7 +7,7 @@ import { PortalShell } from "@/components/portal-shell";
 import { requireAuth } from "@/lib/auth/session";
 import { getEntitlements } from "@/lib/entitlements";
 import { getHrTopbarMeta } from "@/lib/hr/topbar";
-import { getPortalNavSectionsForEntitlements } from "@/lib/portal-nav";
+import { getPortalNavSectionsForEntitlements, getPortalIntegrationsHref } from "@/lib/portal-nav";
 import { getImpersonationState } from "@/lib/platform/impersonation";
 import { getUnreadNotificationCount } from "@/lib/notifications/inbox";
 
@@ -51,12 +51,15 @@ export async function PortalLayout({
     tier: entitlements.tier,
   });
   const enabledModules = ALL_MODULE_KEYS.filter((module) => entitlements.hasModule(module));
+  const integrationsHref =
+    portal === "HR Administrator" ? getPortalIntegrationsHref(portal) : undefined;
 
   return (
     <>
       {impersonation ? <ImpersonationBanner organizationName={impersonation.organizationName} /> : null}
       <PortalShell
         enabledModules={enabledModules}
+        integrationsHref={integrationsHref}
         navSections={navSections}
         pageSubtitle={pageSubtitle}
         portal={portal}

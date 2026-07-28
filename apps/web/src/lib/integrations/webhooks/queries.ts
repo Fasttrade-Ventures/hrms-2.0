@@ -114,5 +114,3 @@ export async function deleteWebhookEndpoint(endpointId: string): Promise<void> {
   if (error) throw new Error(error.message);
   revalidatePath("/hr/integrations/webhooks");
 }
-
-export { WEBHOOK_EVENT_TYPES };

@@ -18,7 +18,8 @@ const NAV_MODULE_RULES = [
   { prefix: "/hr/organization/payroll-components", module: "payroll" },
   { prefix: "/hr/organization/statutory-rules", module: "payroll" },
   { prefix: "/hr/organization/pay-groups", module: "payroll" },
-  { prefix: "/hr/integrations/bukucloud", module: "payroll" },
+  { prefix: "/hr/integrations/bukucloud", module: "integrations" },
+  { prefix: "/hr/integrations/api", module: "api" },
   { prefix: "/hr/employees/import", module: "import" },
   { prefix: "/employee/replacement-credit", module: "replacement" },
   { prefix: "/employee/overtime", module: "ot" },
@@ -56,9 +57,9 @@ function isNavHrefVisible(
   if (PRO_ONLY_NAV_PREFIXES.some((prefix) => href === prefix || href.startsWith(`${prefix}/`))) {
     return tier !== "core";
   }
-  const module = moduleForNavHref(href);
-  if (!module) return true;
-  return hasModule(module);
+  const navModule = moduleForNavHref(href);
+  if (!navModule) return true;
+  return hasModule(navModule);
 }
 
 function filterNavItem(
@@ -74,6 +75,9 @@ function filterNavItem(
   const selfVisible = isNavHrefVisible(item.href, hasModule, tier);
 
   if (!selfVisible && !childList?.length) return null;
+
+  // Hide grouping-only parents when every child is entitlement-filtered out.
+  if (item.children?.length && childList?.length === 0) return null;
 
   return {
     ...item,
@@ -170,25 +174,28 @@ const managerNav: PortalNavSection[] = [
   },
 ];
 
-/** HR Admin — categorized to match product IA (Profile lives in topbar menu). */
+/** HR Admin — grouped IA with collapsible submenus (profile lives in topbar). */
 const hrNav: PortalNavSection[] = [
   {
-    items: [{ href: "/hr/dashboard", label: "Dashboard", icon: "dashboard" }],
+    items: [
+      { href: "/hr/dashboard", label: "Dashboard", icon: "dashboard" },
+      { href: "/hr/operations", label: "Operations", icon: "approvals" },
+    ],
   },
   {
     label: "People",
     items: [
-      { href: "/hr/operations", label: "Operations", icon: "approvals" },
       {
         href: "/hr/employees",
         label: "Employees",
         icon: "employees",
         children: [
           { href: "/hr/employees", label: "Directory", icon: "employees" },
-          { href: "/hr/employees/create", label: "Create employee", icon: "apply-behalf" },
+          { href: "/hr/employees/create", label: "Add employee", icon: "apply-behalf" },
           { href: "/hr/employees/import", label: "Bulk import", icon: "reports" },
         ],
       },
+      { href: "/hr/apply-behalf", label: "Apply on behalf", icon: "apply-behalf" },
       {
         href: "/hr/organization",
         label: "Organization",
@@ -197,24 +204,27 @@ const hrNav: PortalNavSection[] = [
           { href: "/hr/organization", label: "Overview", icon: "organization" },
           { href: "/hr/organization/branches", label: "Branches", icon: "organization" },
           { href: "/hr/organization/departments", label: "Departments", icon: "team-performance" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Time & attendance",
+    items: [
+      { href: "/hr/leave", label: "Leave", icon: "leave" },
+      { href: "/hr/attendance", label: "Attendance", icon: "attendance" },
+      {
+        href: "/hr/organization/shifts",
+        label: "Schedules & policies",
+        icon: "timesheet",
+        children: [
           { href: "/hr/organization/shifts", label: "Shifts", icon: "attendance" },
           { href: "/hr/organization/rosters", label: "Rosters", icon: "timesheet" },
           { href: "/hr/organization/holidays", label: "Holidays", icon: "calendar" },
           { href: "/hr/organization/leave-types", label: "Leave types", icon: "leave" },
-          { href: "/hr/organization/leave-blackouts", label: "Leave blackouts", icon: "calendar" },
-          { href: "/hr/organization/pay-groups", label: "Pay groups", icon: "payroll" },
-          { href: "/hr/organization/payroll-components", label: "Payroll components", icon: "payroll" },
-          { href: "/hr/organization/statutory-rules", label: "Statutory rules", icon: "reports" },
+          { href: "/hr/organization/leave-blackouts", label: "Blackout periods", icon: "calendar" },
         ],
       },
-      { href: "/hr/apply-behalf", label: "Apply behalf", icon: "apply-behalf" },
-    ],
-  },
-  {
-    label: "Time & leave",
-    items: [
-      { href: "/hr/leave", label: "Leave", icon: "leave" },
-      { href: "/hr/attendance", label: "Attendance", icon: "attendance" },
     ],
   },
   {
@@ -225,27 +235,43 @@ const hrNav: PortalNavSection[] = [
       { href: "/hr/calendar", label: "Calendar", icon: "calendar" },
       { href: "/hr/assets", label: "Assets", icon: "assets" },
       { href: "/hr/performance", label: "Performance", icon: "performance" },
-      { href: "/hr/analytics", label: "Analytics", icon: "reports" },
-      { href: "/hr/recruitment", label: "Recruitment", icon: "employees" },
-      { href: "/hr/integrations", label: "Integrations", icon: "organization" },
     ],
   },
   {
-    label: "Finance & compliance",
+    label: "Payroll & reports",
     items: [
-      { href: "/hr/reports", label: "Reports", icon: "reports" },
       {
         href: "/hr/payroll",
         label: "Payroll",
         icon: "payroll",
         children: [
           { href: "/hr/payroll", label: "Pay runs", icon: "payroll" },
-          { href: "/hr/payroll/new", label: "New payrun", icon: "payroll" },
+          { href: "/hr/payroll/new", label: "New pay run", icon: "payroll" },
           { href: "/hr/payroll/year-end", label: "Year-end", icon: "reports" },
-          { href: "/hr/integrations/bukucloud", label: "BukuCloud", icon: "organization" },
+          { href: "/hr/organization/pay-groups", label: "Pay groups", icon: "organization" },
+          { href: "/hr/organization/payroll-components", label: "Components", icon: "payroll" },
+          { href: "/hr/organization/statutory-rules", label: "Statutory rules", icon: "reports" },
         ],
       },
-      { href: "/hr/audit", label: "Audit", icon: "audit" },
+      { href: "/hr/reports", label: "Reports", icon: "reports" },
+      { href: "/hr/audit", label: "Audit log", icon: "audit" },
+    ],
+  },
+  {
+    label: "Advanced",
+    items: [
+      { href: "/hr/recruitment", label: "Recruitment", icon: "employees" },
+      { href: "/hr/analytics", label: "Analytics", icon: "reports" },
+      {
+        href: "/hr/integrations",
+        label: "Integrations",
+        icon: "organization",
+        children: [
+          { href: "/hr/integrations/webhooks", label: "Webhooks", icon: "organization" },
+          { href: "/hr/integrations/api", label: "API keys", icon: "organization" },
+          { href: "/hr/integrations/bukucloud", label: "BukuCloud", icon: "payroll" },
+        ],
+      },
     ],
   },
 ];
@@ -378,4 +404,9 @@ export function getPortalSettingsHref(portal: string): string {
   if (portal === "Manager") return "/manager/profile/security";
   if (portal === "HR Administrator") return "/hr/profile/security";
   return "/employee/profile/security";
+}
+
+export function getPortalIntegrationsHref(portal: string): string | undefined {
+  if (portal === "HR Administrator") return "/hr/integrations";
+  return undefined;
 }

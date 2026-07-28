@@ -13,7 +13,7 @@ import { HrCheckbox, HrFormMessage, HrPrimaryButton } from "@/components/hr/empl
 import { OrgFormCard } from "@/components/hr/organization/org-ui";
 import { HrLinkButton } from "@/components/hr/hr-ui.client";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
-import { EMPLOYEE_IMPORT_TEMPLATE } from "@/lib/employees/import";
+import { EMPLOYEE_IMPORT_TEMPLATE } from "@/lib/employees/import-csv";
 
 const initialState: EmployeeImportActionState = {};
 

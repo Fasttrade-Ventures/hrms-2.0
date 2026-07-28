@@ -11,11 +11,13 @@ export function PortalAccountMenu({
   email,
   profileHref,
   settingsHref,
+  integrationsHref,
 }: {
   name?: string;
   email?: string;
   profileHref: string;
   settingsHref: string;
+  integrationsHref?: string;
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -103,6 +105,18 @@ export function PortalAccountMenu({
             <PortalIcon name="security" />
             Settings
           </Link>
+
+          {integrationsHref ? (
+            <Link
+              className="flex items-center gap-2 rounded-[var(--radius-sm)] px-2.5 py-2 text-[13px] font-medium text-[var(--foreground-primary)] hover:bg-[var(--surface-muted)]"
+              href={integrationsHref}
+              onClick={() => setOpen(false)}
+              role="menuitem"
+            >
+              <PortalIcon name="organization" />
+              Integrations
+            </Link>
+          ) : null}
 
           <form action="/api/auth/logout" method="post">
             <button

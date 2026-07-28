@@ -29,8 +29,8 @@ export function EmployeeMobileNav({ enabledModules }: { enabledModules?: ModuleK
   const enabled = new Set(enabledModules ?? []);
   const visibleItems = enabledModules
     ? items.filter((item) => {
-        const module = moduleForNavHref(item.href);
-        return module ? enabled.has(module) : true;
+        const navModule = moduleForNavHref(item.href);
+        return navModule ? enabled.has(navModule) : true;
       })
     : items;
   const gridCols = visibleItems.length <= 4 ? "grid-cols-4" : "grid-cols-5";

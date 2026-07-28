@@ -43,6 +43,7 @@ export function PortalShell({
   unreadNotificationCount = 0,
   navSections,
   enabledModules,
+  integrationsHref,
   children,
 }: {
   portal: string;
@@ -54,6 +55,7 @@ export function PortalShell({
   unreadNotificationCount?: number;
   navSections?: PortalNavSection[];
   enabledModules?: ModuleKey[];
+  integrationsHref?: string;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -102,7 +104,7 @@ export function PortalShell({
           {sections.map((section) => (
             <div className="space-y-0.5" key={section.label ?? section.items[0]?.href}>
               {section.label ? (
-                <p className="px-3 pb-0.5 pt-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--foreground-muted)]">
+                <p className="px-3 pb-0.5 pt-3 text-[11px] font-medium text-[var(--foreground-muted)] first:pt-1">
                   {section.label}
                 </p>
               ) : null}
@@ -151,6 +153,7 @@ export function PortalShell({
             <PortalBellButton href={notificationsHref(portal)} unreadCount={unreadNotificationCount} />
             <PortalAccountMenu
               email={user?.email}
+              integrationsHref={integrationsHref}
               name={user?.fullName}
               profileHref={getPortalProfileHref(portal)}
               settingsHref={getPortalSettingsHref(portal)}

@@ -16,9 +16,9 @@ export default async function BukucloudIntegrationPage() {
         actions={
           <Link
             className="text-sm font-medium text-[var(--accent-primary)] hover:underline"
-            href="/hr/payroll"
+            href="/hr/integrations"
           >
-            Back to payroll
+            Back to integrations
           </Link>
         }
         description="Post approved payruns to BukuCloud as balanced payroll journal entries."
