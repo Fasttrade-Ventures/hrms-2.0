@@ -21,7 +21,7 @@ import {
 
 export default async function Page() {
   const hour = new Date().getHours();
-  const employee = await getCurrentEmployeeDetail();
+  const employee = await getCurrentEmployeeDetail().catch(() => null);
   const firstName = firstNameFromFullName(employee?.fullName, employee?.email);
 
   const employeeContext = employee ? await requireEmployeeContext().catch(() => null) : null;
