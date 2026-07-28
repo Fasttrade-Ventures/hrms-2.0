@@ -19,6 +19,7 @@
     "seed-org-catalogs": "tsx scripts/seed-org-catalogs.ts",
     "seed-payroll-rules": "tsx scripts/seed-payroll-rules.ts",
     "seed-demo-data": "tsx scripts/seed-demo-data.ts",
+    "seed-rich-demo": "tsx scripts/seed-rich-demo.ts",
     "upgrade-standalone-tier": "tsx scripts/upgrade-standalone-tier.ts",
     "smoke-test": "tsx scripts/smoke-test.ts",
     "payroll:payslip-email": "tsx scripts/run-payslip-email-job.ts",

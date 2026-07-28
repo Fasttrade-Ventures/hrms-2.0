@@ -11,7 +11,17 @@ Hand these docs to engineering before implementation.
 | [Auth session policy](./auth-session.md) | Remember me, password rules, route guards |
 | [Bootstrap admin](./bootstrap-admin.md) | First admin account setup |
 | [Seed role accounts](./seed-role-accounts.md) | Demo login for every portal role |
-| [Smoke test results](./smoke-test-results.md) | Phase 1–3 automated smoke checks |
+
+**Rich demo dataset** (reports & analytics):
+
+```bash
+set -a && source apps/web/.env.local && set +a
+pnpm seed-org-catalogs
+pnpm seed-rich-demo -- --reset --count 45
+pnpm seed-demo-data
+```
+
+Sets all staff `join_date` to **2026-05-01**, fills full profiles + payroll YTD, attendance, leave, and locked payruns May–Jul 2026.
 | [Architecture notes](./architecture-notes.md) | Deployment modes, authz model, packages, data boundaries |
 | [Architecture decisions](./architecture/README.md) | ADRs |
 | [Legacy feature map](./legacy-feature-map/README.md) | Phase 0 baseline — tables, modules, migration domains |
