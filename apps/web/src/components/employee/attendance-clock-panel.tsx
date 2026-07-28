@@ -2,13 +2,15 @@
 
 import { useActionState, useEffect, useState } from "react";
 
-import { employeeClockIn, employeeClockOut } from "@/app/(employee)/employee/actions";
+import { employeeClockIn, employeeClockOut, type EmployeeActionState } from "@/app/(employee)/employee/actions";
 import { HrFormMessage, HrPrimaryButton } from "@/components/hr/employees/form-fields";
 import { formatDateTime } from "@/components/employee/employee-shared";
 import type { GeofenceConfig } from "@/lib/attendance/geofence";
 import type { TodayAttendance } from "@/lib/employee/attendance";
 
 type LocationState = "idle" | "loading" | "ready" | "denied" | "unsupported";
+
+const initialClockState: EmployeeActionState = {};
 
 export function AttendanceClockPanel({
   today,
@@ -22,18 +24,18 @@ export function AttendanceClockPanel({
   const [locationState, setLocationState] = useState<LocationState>("idle");
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [clockInState, clockInAction, clockInPending] = useActionState(
-    async (prev, formData) => {
+    async (prev: EmployeeActionState, formData: FormData) => {
       void prev;
       return employeeClockIn(formData);
     },
-    {},
+    initialClockState,
   );
   const [clockOutState, clockOutAction, clockOutPending] = useActionState(
-    async (prev) => {
+    async (prev: EmployeeActionState) => {
       void prev;
       return employeeClockOut();
     },
-    {},
+    initialClockState,
   );
 
   useEffect(() => {
