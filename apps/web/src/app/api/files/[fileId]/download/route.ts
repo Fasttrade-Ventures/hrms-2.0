@@ -25,12 +25,15 @@ export async function GET(
     .is("deleted_at", null)
     .maybeSingle();
 
+  const isLeave = file?.category === "leave-attachments";
   const moduleKey = file?.category === "announcement-attachments" ? "announcements" : "documents";
 
-  try {
-    await requireModule(moduleKey);
-  } catch {
-    return NextResponse.json({ error: `${moduleKey} module is not enabled.` }, { status: 403 });
+  if (!isLeave) {
+    try {
+      await requireModule(moduleKey);
+    } catch {
+      return NextResponse.json({ error: `${moduleKey} module is not enabled.` }, { status: 403 });
+    }
   }
 
   const allowed = await canDownloadFile({

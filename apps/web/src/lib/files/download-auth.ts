@@ -60,6 +60,27 @@ export async function canDownloadFile(input: {
     });
   }
 
+  if (file.category === "leave-attachments") {
+    if (input.roles.includes("hr_administrator")) return true;
+    if (!input.employeeId) return false;
+
+    const supabase = await createClient();
+    const { data: leaveReq } = await supabase
+      .from("leave_requests")
+      .select("employee_id, employees(manager_employee_id)")
+      .eq("attachment_file_id", input.fileId)
+      .maybeSingle();
+
+    if (!leaveReq) return false;
+
+    if (leaveReq.employee_id === input.employeeId) return true;
+
+    const requesterManagerId = (leaveReq.employees as { manager_employee_id?: string | null } | null)?.manager_employee_id;
+    if (input.roles.includes("manager") && requesterManagerId === input.employeeId) return true;
+
+    return false;
+  }
+
   const supabase = await createClient();
   const { data: link } = await supabase
     .from("employee_documents")
