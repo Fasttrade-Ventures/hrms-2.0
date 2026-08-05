@@ -126,7 +126,7 @@ export function HrApprovalActions({ stepId }: { stepId: string }) {
               {comment.trim() && (
                 <div className="mt-4 w-full rounded-[var(--radius-md)] bg-[var(--surface-muted)] p-3 text-left border border-[var(--border-primary)]">
                   <span className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wider block">Your comment</span>
-                  <p className="mt-1 text-sm text-[var(--foreground-primary)] break-words italic">"{comment}"</p>
+                  <p className="mt-1 text-sm text-[var(--foreground-primary)] break-words italic">&ldquo;{comment}&rdquo;</p>
                 </div>
               )}
             </div>

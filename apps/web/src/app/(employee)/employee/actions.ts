@@ -27,7 +27,7 @@ export async function applyLeave(
     const leaveTypeId = String(formData.get("leaveTypeId") ?? "");
     const file = formData.get("file");
 
-    const { employeeId, organizationId, session } = await requireEmployeeContext();
+    const { organizationId, session } = await requireEmployeeContext();
     const supabase = await createClient();
     const { data: leaveType, error: leaveTypeError } = await supabase
       .from("leave_types")
