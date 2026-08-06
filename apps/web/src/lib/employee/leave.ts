@@ -16,6 +16,7 @@ export type LeaveTypeOption = {
   name: string;
   entitlementDays: number;
   isUnpaid: boolean;
+  requiresAttachment: boolean;
 };
 
 export type LeaveRequestRow = {
@@ -28,6 +29,8 @@ export type LeaveRequestRow = {
   reason: string | null;
   status: string;
   createdAt: string;
+  attachmentFileId?: string | null;
+  attachmentFileName?: string | null;
 };
 
 export type LeaveBalanceRow = {
@@ -60,7 +63,7 @@ export async function listLeaveTypes(): Promise<LeaveTypeOption[]> {
 
   const { data, error } = await supabase
     .from("leave_types")
-    .select("id, name, entitlement_days, is_unpaid")
+    .select("id, name, entitlement_days, is_unpaid, requires_attachment")
     .eq("organization_id", organizationId)
     .order("name");
 
@@ -71,6 +74,7 @@ export async function listLeaveTypes(): Promise<LeaveTypeOption[]> {
     name: row.name,
     entitlementDays: Number(row.entitlement_days),
     isUnpaid: row.is_unpaid,
+    requiresAttachment: row.requires_attachment,
   }));
 }
 
@@ -106,7 +110,7 @@ export async function getLeaveRequest(requestId: string): Promise<LeaveRequestRo
 
   const { data, error } = await supabase
     .from("leave_requests")
-    .select("id, start_date, end_date, half_day, days, reason, status, created_at, leave_types(name)")
+    .select("id, start_date, end_date, half_day, days, reason, status, created_at, attachment_file_id, leave_types(name), file_objects(file_name)")
     .eq("organization_id", organizationId)
     .eq("employee_id", employeeId)
     .eq("id", requestId)
@@ -114,6 +118,8 @@ export async function getLeaveRequest(requestId: string): Promise<LeaveRequestRo
 
   if (error) throw new Error(error.message);
   if (!data) return null;
+
+  const file = Array.isArray(data.file_objects) ? data.file_objects[0] : data.file_objects;
 
   return {
     id: data.id,
@@ -125,6 +131,8 @@ export async function getLeaveRequest(requestId: string): Promise<LeaveRequestRo
     reason: data.reason,
     status: data.status,
     createdAt: data.created_at,
+    attachmentFileId: data.attachment_file_id,
+    attachmentFileName: (file as { file_name?: string } | null)?.file_name ?? null,
   };
 }
 
@@ -198,6 +206,16 @@ export async function createLeaveRequest(input: LeaveRequestInput): Promise<stri
     .eq("id", input.leaveTypeId)
     .maybeSingle();
 
+  let attachmentFileName = null;
+  if (input.attachmentFileId) {
+    const { data: fileObj } = await supabase
+      .from("file_objects")
+      .select("file_name")
+      .eq("id", input.attachmentFileId)
+      .maybeSingle();
+    attachmentFileName = fileObj?.file_name ?? null;
+  }
+
   const { data, error } = await supabase
     .from("leave_requests")
     .insert({
@@ -210,6 +228,7 @@ export async function createLeaveRequest(input: LeaveRequestInput): Promise<stri
       days,
       reason: input.reason ?? null,
       status: "draft",
+      attachment_file_id: input.attachmentFileId ?? null,
     })
     .select("id")
     .single();
@@ -231,6 +250,8 @@ export async function createLeaveRequest(input: LeaveRequestInput): Promise<stri
       endDate: input.endDate,
       days,
       reason: input.reason ?? null,
+      attachmentFileId: input.attachmentFileId ?? null,
+      attachmentFileName,
     },
   });
 
