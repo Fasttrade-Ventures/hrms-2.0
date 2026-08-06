@@ -25,7 +25,6 @@ export function summarizeApprovalPayload(
 export function mapApprovalInboxRow(row: Record<string, unknown>): ApprovalInboxRow {
   const request = row.approval_requests as Record<string, unknown>;
   const requester = request.employees as Record<string, unknown> | null;
-  const profile = requester?.employee_profiles as Record<string, unknown> | null;
   const requestType = request.request_type as ApprovalRequestType;
   const payload = (request.payload ?? {}) as Record<string, unknown>;
 
@@ -34,7 +33,7 @@ export function mapApprovalInboxRow(row: Record<string, unknown>): ApprovalInbox
     requestId: String(request.id),
     requestType,
     requestTypeLabel: REQUEST_TYPE_LABELS[requestType] ?? requestType,
-    requesterName: String(profile?.full_name ?? requester?.email ?? "Employee"),
+    requesterName: String(requester?.full_name ?? requester?.email ?? "Employee"),
     requesterEmployeeNumber: String(requester?.employee_number ?? "—"),
     submittedAt: String(request.submitted_at ?? request.created_at ?? ""),
     summary: summarizeApprovalPayload(requestType, payload),

@@ -68,6 +68,21 @@ export default async function LeaveDetailPage({
           {request.reason?.trim() || "No reason provided."}
         </p>
       </section>
+
+      {request.attachmentFileId && (
+        <section className="space-y-3 border border-[var(--border-primary)] bg-[var(--surface-card)] p-6">
+          <h2 className="text-base font-semibold text-[var(--foreground-primary)]">Supporting document</h2>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/api/files/${request.attachmentFileId}/download`}
+              target="_blank"
+              className="inline-flex items-center gap-2 text-sm font-medium text-[var(--accent-primary)] hover:underline"
+            >
+              📎 {request.attachmentFileName ?? "Download document"}
+            </Link>
+          </div>
+        </section>
+      )}
     </div>
   );
 }
