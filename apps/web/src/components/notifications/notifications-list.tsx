@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { 
   FileText, 
   Calendar, 
@@ -73,7 +72,6 @@ export function NotificationsList({
   portal: NotificationPortal;
   placeholderNotifications?: NotificationRow[];
 }) {
-  const router = useRouter();
   const showingPlaceholders = notifications.length === 0 && placeholderNotifications.length > 0;
   const initialRows = showingPlaceholders ? placeholderNotifications : notifications;
   
@@ -137,7 +135,7 @@ export function NotificationsList({
     }
   };
 
-  const handleItemClick = async (e: React.MouseEvent, row: NotificationRow, href: string | null) => {
+  const handleItemClick = async (e: React.MouseEvent, row: NotificationRow) => {
     if (showingPlaceholders) return;
 
     if (row.status === "pending") {
@@ -219,7 +217,7 @@ export function NotificationsList({
               <Bell className="h-10 w-10 text-[var(--foreground-muted)] opacity-40 mb-3" />
               <p className="text-sm font-semibold text-[var(--foreground-primary)]">No notifications found</p>
               <p className="text-xs text-[var(--foreground-muted)] mt-1">
-                You're all caught up! No notifications in this category.
+                You&apos;re all caught up! No notifications in this category.
               </p>
             </div>
           ) : (
@@ -285,7 +283,7 @@ export function NotificationsList({
                     }`}
                     href={href}
                     key={row.id}
-                    onClick={(e) => handleItemClick(e, row, href)}
+                    onClick={(e) => handleItemClick(e, row)}
                   >
                     {content}
                   </Link>
@@ -302,7 +300,7 @@ export function NotificationsList({
                         : ""
                   }`}
                   key={row.id}
-                  onClick={(e) => handleItemClick(e, row, null)}
+                  onClick={(e) => handleItemClick(e, row)}
                 >
                   {content}
                 </div>
