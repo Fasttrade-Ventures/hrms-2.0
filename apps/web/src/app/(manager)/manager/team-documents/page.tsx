@@ -14,7 +14,7 @@ export default async function Page() {
     <div className="space-y-6">
       <PortalPageHeader
         description="View-only access to your direct reports' documents and compliance status."
-        title="Team documents"
+        title="Team Documents"
       />
       <TeamDocumentsView documents={documents} summary={summary} />
     </div>

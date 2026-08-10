@@ -25,7 +25,7 @@ export default async function Page({
     <div className="space-y-6">
       <PortalPageHeader
         description="Direct reports and your own leave, plus branch holidays. Approve pending leave from event details."
-        title="Team calendar"
+        title="Team Calendar"
       />
       <CalendarShell
         basePath="/manager/team-calendar"

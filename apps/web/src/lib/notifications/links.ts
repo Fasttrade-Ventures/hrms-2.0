@@ -9,15 +9,15 @@ export function employeeRequestDetailHref(
     case "leave":
       return `/employee/leave/${sourceId}`;
     case "claim":
-      return "/employee/claims";
+      return `/employee/claims/${sourceId}`;
     case "overtime":
-      return "/employee/overtime";
+      return `/employee/overtime/${sourceId}`;
     case "replacement_credit":
       return "/employee/replacement-credit";
     case "late":
-      return "/employee/report-late";
+      return `/employee/report-late/${sourceId}`;
     case "attendance":
-      return "/employee/manual-attendance";
+      return `/employee/manual-attendance/${sourceId}`;
     default:
       return null;
   }

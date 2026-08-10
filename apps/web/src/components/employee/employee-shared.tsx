@@ -10,7 +10,10 @@ export function RequestStatusPill({ status }: { status: string }) {
           ? "danger"
           : "neutral";
 
-  const label = status.replace(/_/g, " ");
+  const label = status
+    .split(/[\s_]+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
 
   return <StatusPill label={label} tone={tone} />;
 }

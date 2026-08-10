@@ -35,7 +35,7 @@ function runScenario(scenario: (typeof scenarios)[number]) {
     lindungEnabled: false,
     lindungRate: 0.0075,
     lindungEmployerRate: 0,
-    maritalCategory: scenario.inputs.maritalCategory,
+    maritalCategory: scenario.inputs.maritalCategory === "married" ? "married" : "single",
   });
 }
 

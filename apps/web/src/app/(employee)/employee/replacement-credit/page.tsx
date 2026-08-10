@@ -11,12 +11,12 @@ export default async function Page() {
 
   return (
     <div className="space-y-6">
-      <PortalPageHeader description="Claim replacement leave credit for working on a rest day." title="Replacement credit" />
+      <PortalPageHeader description="Claim replacement leave credit for working on a rest day." title="Replacement Credit" />
 
       <EmployeeRequestForm
         action={submitReplacementCredit}
         submitLabel="Submit request"
-        title="Replacement credit"
+        title="Replacement Credit"
       >
         <div className="grid gap-5 md:grid-cols-2">
           <HrField id="workDate" label="Work date">

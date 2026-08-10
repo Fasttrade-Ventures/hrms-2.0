@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { EmptyState, ListCard } from "@hrms/ui";
 import { submitClaim } from "@/app/(employee)/employee/actions";
 import {
   EmployeeRequestForm,
@@ -5,15 +7,24 @@ import {
   HrSelect,
   HrTextInput,
 } from "@/components/employee/employee-request-form";
+import {
+  formatDate,
+  formatCurrency,
+  RequestStatusPill,
+} from "@/components/employee/employee-shared";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { listClaimTypes } from "@/lib/employee/catalog";
+import { listClaims } from "@/lib/employee/requests";
 
 export default async function Page() {
-  const claimTypes = await listClaimTypes();
+  const [claimTypes, claims] = await Promise.all([
+    listClaimTypes(),
+    listClaims(),
+  ]);
   const today = new Date().toISOString().slice(0, 10);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PortalPageHeader description="Submit expense claims for approval." title="Claims" />
 
       <EmployeeRequestForm
@@ -45,6 +56,55 @@ export default async function Page() {
           </HrField>
         </div>
       </EmployeeRequestForm>
+
+      <ListCard
+        columns={[
+          { key: "type", label: "Type" },
+          { key: "date", label: "Receipt date", className: "hidden md:block flex-1" },
+          { key: "amount", label: "Amount", className: "w-28" },
+          { key: "status", label: "Status", className: "w-28" },
+        ]}
+        empty={
+          <EmptyState
+            description="Submit your first claim using the form above."
+            title="No claims submitted yet"
+          />
+        }
+        header={
+          <p className="text-sm font-medium text-[var(--foreground-primary)]">
+            My claims ({claims.length})
+          </p>
+        }
+        rows={claims.map((claim) => ({
+          id: claim.id,
+          cells: {
+            type: (
+              <div>
+                <Link
+                  className="font-medium text-[var(--foreground-primary)] hover:text-[var(--accent-primary)]"
+                  href={`/employee/claims/${claim.id}`}
+                >
+                  {claim.claimTypeName}
+                </Link>
+                {claim.description ? (
+                  <p className="text-sm text-[var(--foreground-muted)]">{claim.description}</p>
+                ) : null}
+              </div>
+            ),
+            date: formatDate(claim.receiptDate),
+            amount: formatCurrency(claim.amount),
+            status: <RequestStatusPill status={claim.status} />,
+          },
+          action: (
+            <Link
+              className="text-sm font-medium text-[var(--accent-primary)]"
+              href={`/employee/claims/${claim.id}`}
+            >
+              View
+            </Link>
+          ),
+        }))}
+      />
     </div>
   );
 }
