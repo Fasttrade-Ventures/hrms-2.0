@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./apps/web/src/*"],
+      "@hrms/domain": ["./packages/domain/src/index.ts"],
+      "@hrms/platform": ["./packages/platform/src/index.ts"],
+      "@hrms/db": ["./packages/db/src/index.ts"],
+      "@hrms/ui": ["./packages/ui/src/index.tsx"],
+      "@hrms/validation": ["./packages/validation/src/index.ts"],
+      "@hrms/testkit": ["./packages/testkit/src/index.ts"]
+    }
+  },
+  "include": [
+    "tests/**/*.ts",
+    "tests/**/*.tsx",
+    "scripts/**/*.ts"
+  ]
+}

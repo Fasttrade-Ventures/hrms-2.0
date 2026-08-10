@@ -41,10 +41,11 @@ export async function listPayslips(): Promise<PayslipRow[]> {
   const { data, error } = await supabase
     .from("payroll_payrun_items")
     .select(
-      "id, gross_pay, net_pay, payroll_payruns(period_year, period_month, status, locked_at)",
+      "id, gross_pay, net_pay, payroll_payruns!inner(period_year, period_month, status, locked_at)",
     )
     .eq("organization_id", organizationId)
     .eq("employee_id", employeeId)
+    .eq("payroll_payruns.status", "locked")
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -94,12 +95,13 @@ export async function getPayslip(itemId: string): Promise<PayslipDetail | null> 
       eis_employee,
       eis_employer,
       pcb,
-      payroll_payruns(period_year, period_month, status, locked_at)
+      payroll_payruns!inner(period_year, period_month, status, locked_at)
     `,
     )
     .eq("organization_id", organizationId)
     .eq("employee_id", employeeId)
     .eq("id", itemId)
+    .eq("payroll_payruns.status", "locked")
     .maybeSingle();
 
   if (error) throw new Error(error.message);
