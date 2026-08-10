@@ -16,12 +16,13 @@ import {
 const integrationEnabled = payrollIntegrationEnabled();
 
 describe.skipIf(!integrationEnabled)("payroll lifecycle (postgres)", () => {
-  const admin = createPayrollTestAdmin();
+  let admin: ReturnType<typeof createPayrollTestAdmin>;
   let organizationId = "";
   let employeeId = "";
   let payrunId = "";
 
   beforeAll(async () => {
+    admin = createPayrollTestAdmin();
     organizationId = await ensurePayrollTestOrganization(admin);
     await ensurePayrollRulePacks(admin);
     employeeId = await ensurePayrollTestEmployee(admin, organizationId);
