@@ -17,7 +17,6 @@ import {
 const integrationEnabled = payrollIntegrationEnabled();
 
 describe.skipIf(!integrationEnabled)("payroll lifecycle (postgres)", () => {
-  let admin: ReturnType<typeof createPayrollTestAdmin>;
   let admin: SupabaseClient;
   let organizationId = "";
   let employeeId = "";
