@@ -34,7 +34,6 @@ export function LeaveApplyForm({
   return (
     <form
       action={formAction}
-      encType="multipart/form-data"
       className="space-y-5 border border-[var(--border-primary)] bg-[var(--surface-card)] p-6"
     >
       <div>
