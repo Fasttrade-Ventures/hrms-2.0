@@ -131,6 +131,7 @@ export async function submitClaim(
     });
 
     revalidatePath("/employee/claims");
+    revalidatePath("/employee/dashboard");
     return { success: "Claim submitted for approval." };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Failed to submit claim." };
@@ -178,6 +179,7 @@ export async function submitOvertime(
     });
 
     revalidatePath("/employee/overtime");
+    revalidatePath("/employee/dashboard");
     return { success: "Overtime request submitted." };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Failed to submit overtime." };
@@ -223,6 +225,7 @@ export async function submitReplacementCredit(
     });
 
     revalidatePath("/employee/replacement-credit");
+    revalidatePath("/employee/dashboard");
     return { success: "Replacement credit submitted." };
   } catch (error) {
     return {
@@ -270,6 +273,7 @@ export async function submitLateReport(
     });
 
     revalidatePath("/employee/report-late");
+    revalidatePath("/employee/dashboard");
     return { success: "Late report submitted." };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Failed to submit late report." };
@@ -317,6 +321,7 @@ export async function submitManualAttendance(
     });
 
     revalidatePath("/employee/manual-attendance");
+    revalidatePath("/employee/dashboard");
     return { success: "Manual attendance request submitted." };
   } catch (error) {
     return {

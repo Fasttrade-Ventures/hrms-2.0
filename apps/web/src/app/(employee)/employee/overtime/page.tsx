@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { EmptyState, ListCard } from "@hrms/ui";
 import { submitOvertime } from "@/app/(employee)/employee/actions";
 import {
   EmployeeRequestForm,
@@ -5,13 +7,16 @@ import {
   HrSelect,
   HrTextInput,
 } from "@/components/employee/employee-request-form";
+import { formatDate, RequestStatusPill } from "@/components/employee/employee-shared";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
+import { listOvertimeRequests } from "@/lib/employee/requests";
 
 export default async function Page() {
   const today = new Date().toISOString().slice(0, 10);
+  const requests = await listOvertimeRequests();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PortalPageHeader description="Request overtime approval." title="Overtime" />
 
       <EmployeeRequestForm action={submitOvertime} submitLabel="Submit OT request" title="Overtime request">
@@ -34,6 +39,55 @@ export default async function Page() {
           </HrField>
         </div>
       </EmployeeRequestForm>
+
+      <ListCard
+        columns={[
+          { key: "date", label: "Work date" },
+          { key: "hours", label: "Hours", className: "w-24" },
+          { key: "rate", label: "Rate", className: "hidden md:block w-24" },
+          { key: "status", label: "Status", className: "w-28" },
+        ]}
+        empty={
+          <EmptyState
+            description="Submit your first overtime request using the form above."
+            title="No overtime requests yet"
+          />
+        }
+        header={
+          <p className="text-sm font-medium text-[var(--foreground-primary)]">
+            My OT requests ({requests.length})
+          </p>
+        }
+        rows={requests.map((request) => ({
+          id: request.id,
+          cells: {
+            date: (
+              <div>
+                <Link
+                  className="font-medium text-[var(--foreground-primary)] hover:text-[var(--accent-primary)]"
+                  href={`/employee/overtime/${request.id}`}
+                >
+                  {formatDate(request.workDate)}
+                </Link>
+                {request.reason ? (
+                  <p className="text-sm text-[var(--foreground-muted)]">{request.reason}</p>
+                ) : null}
+              </div>
+            ),
+            hours: `${request.hours}h`,
+            rate: `${request.rateType}x`,
+            status: <RequestStatusPill status={request.status} />,
+          },
+          action: (
+            <Link
+              className="text-sm font-medium text-[var(--accent-primary)]"
+              href={`/employee/overtime/${request.id}`}
+            >
+              View
+            </Link>
+          ),
+        }))}
+      />
     </div>
   );
 }

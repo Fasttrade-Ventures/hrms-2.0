@@ -15,7 +15,7 @@ export default async function Page() {
       <PortalPageHeader
         actions={<TeamDocumentsLink />}
         description="Recent attendance for your direct reports."
-        title="Team attendance"
+        title="Team Attendance"
       />
 
       <ListCard

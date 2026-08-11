@@ -10,19 +10,15 @@ import {
   RequestStatusPill,
 } from "@/components/employee/employee-shared";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
-import { getLeaveRequest } from "@/lib/employee/leave";
-import { getApprovalTimeline } from "@/lib/employee/requests";
+import { getAttendanceCorrection, getApprovalTimeline } from "@/lib/employee/requests";
 
-export default async function LeaveDetailPage({
+export default async function AttendanceCorrectionDetailPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ requestId: string }>;
-  searchParams: Promise<{ submitted?: string }>;
 }) {
   const { requestId } = await params;
-  const query = await searchParams;
-  const request = await getLeaveRequest(requestId);
+  const request = await getAttendanceCorrection(requestId);
 
   if (!request) {
     notFound();
@@ -38,20 +34,14 @@ export default async function LeaveDetailPage({
         actions={
           <Link
             className="inline-flex h-11 items-center border border-[var(--border-primary)] px-5 text-sm font-medium hover:bg-[var(--surface-muted)]"
-            href="/employee/leave"
+            href="/employee/manual-attendance"
           >
-            Back to leave
+            Back to corrections
           </Link>
         }
         description={`Submitted ${formatDateTime(request.createdAt)}`}
-        title={request.leaveTypeName}
+        title="Manual Attendance request"
       />
-
-      {query.submitted === "1" ? (
-        <div className="border border-[var(--accent-primary)] bg-[var(--surface-accent-soft)] px-4 py-3 text-sm text-[var(--accent-primary)]">
-          Leave request submitted and pending manager approval.
-        </div>
-      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="border border-[var(--border-primary)] bg-[var(--surface-card)] p-5">
@@ -60,35 +50,17 @@ export default async function LeaveDetailPage({
             <RequestStatusPill status={request.status} />
           </div>
         </div>
-        <StatCard label="Days" value={request.days} />
-        <StatCard label="Start" value={formatDate(request.startDate)} />
-        <StatCard label="End" value={formatDate(request.endDate)} />
+        <StatCard label="Date" value={formatDate(request.requestDate)} />
+        <StatCard label="Clock in" value={request.clockInTime ? formatDateTime(request.clockInTime) : "—"} />
+        <StatCard label="Clock out" value={request.clockOutTime ? formatDateTime(request.clockOutTime) : "—"} />
       </div>
 
       <section className="space-y-3 border border-[var(--border-primary)] bg-[var(--surface-card)] p-6">
         <h2 className="text-base font-semibold text-[var(--foreground-primary)]">Details</h2>
-        <p className="text-sm text-[var(--foreground-secondary)]">
-          {request.halfDay ? "Includes a half-day on the last date." : "Full-day leave."}
-        </p>
         <p className="text-sm text-[var(--foreground-primary)]">
           {request.reason?.trim() || "No reason provided."}
         </p>
       </section>
-
-      {request.attachmentFileId && (
-        <section className="space-y-3 border border-[var(--border-primary)] bg-[var(--surface-card)] p-6">
-          <h2 className="text-base font-semibold text-[var(--foreground-primary)]">Supporting document</h2>
-          <div className="flex items-center gap-2">
-            <Link
-              href={`/api/files/${request.attachmentFileId}/download`}
-              target="_blank"
-              className="inline-flex items-center gap-2 text-sm font-medium text-[var(--accent-primary)] hover:underline"
-            >
-              📎 {request.attachmentFileName ?? "Download document"}
-            </Link>
-          </div>
-        </section>
-      )}
 
       {timeline.length > 0 && (
         <ApprovalTimeline steps={timeline} />

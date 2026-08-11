@@ -42,7 +42,12 @@ export default async function Page({ params }: { params: Promise<{ stepId: strin
       </div>
 
       <PortalSectionCard
-        action={<StatusPill label={detail.status} tone="pending" />}
+        action={
+          <StatusPill
+            label={detail.status.charAt(0).toUpperCase() + detail.status.slice(1)}
+            tone={detail.status === "pending" ? "warning" : detail.status === "approved" ? "success" : "danger"}
+          />
+        }
         description={detail.summary}
         title="Request summary"
       >

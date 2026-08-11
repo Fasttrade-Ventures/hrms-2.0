@@ -19,7 +19,7 @@ describe("payroll golden cases", () => {
   const { cases } = getPayrollGoldenCases();
 
   it.each(cases)("case $id", (testCase) => {
-    const { inputs, expected } = testCase as {
+    const { inputs, expected } = testCase as unknown as {
       id: string;
       inputs: Record<string, number | boolean | string>;
       expected: Record<string, number>;

@@ -17,7 +17,7 @@ export default async function Page() {
     <div className="space-y-6">
       <PortalPageHeader
         description="Performance appraisals for your direct reports."
-        title="Team performance"
+        title="Team Performance"
       />
 
       <ListCard

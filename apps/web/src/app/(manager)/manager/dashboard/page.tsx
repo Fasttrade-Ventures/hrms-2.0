@@ -118,7 +118,12 @@ export default async function Page() {
                 <p className="text-xs text-[var(--foreground-muted)]">{row.requesterEmployeeNumber}</p>
               </div>
             ),
-            status: <StatusPill label="Pending" tone="pending" />,
+            status: (
+              <StatusPill
+                label={row.status.charAt(0).toUpperCase() + row.status.slice(1)}
+                tone={row.status === "pending" ? "warning" : row.status === "approved" ? "success" : "danger"}
+              />
+            ),
           },
         }))}
       />
@@ -134,25 +139,25 @@ export default async function Page() {
           className="rounded-[var(--radius-md)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-4 py-2.5 text-sm font-medium hover:bg-[var(--surface-muted)]"
           href="/manager/team-leave"
         >
-          Team leave
+          Team Leave
         </Link>
         <Link
           className="rounded-[var(--radius-md)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-4 py-2.5 text-sm font-medium hover:bg-[var(--surface-muted)]"
           href="/manager/team-attendance"
         >
-          Team attendance
+          Team Attendance
         </Link>
         <Link
           className="rounded-[var(--radius-md)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-4 py-2.5 text-sm font-medium hover:bg-[var(--surface-muted)]"
           href="/manager/team-documents"
         >
-          Team documents
+          Team Documents
         </Link>
         <Link
           className="rounded-[var(--radius-md)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-4 py-2.5 text-sm font-medium hover:bg-[var(--surface-muted)]"
           href="/manager/team-calendar"
         >
-          Team calendar
+          Team Calendar
         </Link>
       </div>
     </div>

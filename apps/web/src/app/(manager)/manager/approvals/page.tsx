@@ -51,7 +51,12 @@ export default async function Page({
                 <p className="text-xs text-[var(--foreground-muted)]">{row.requesterEmployeeNumber}</p>
               </div>
             ),
-            status: <StatusPill label="Pending" tone="pending" />,
+            status: (
+              <StatusPill
+                label={row.status.charAt(0).toUpperCase() + row.status.slice(1)}
+                tone={row.status === "pending" ? "warning" : row.status === "approved" ? "success" : "danger"}
+              />
+            ),
           },
         }))}
       />

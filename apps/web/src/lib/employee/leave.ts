@@ -31,6 +31,7 @@ export type LeaveRequestRow = {
   createdAt: string;
   attachmentFileId?: string | null;
   attachmentFileName?: string | null;
+  approvalRequestId?: string | null;
 };
 
 export type LeaveBalanceRow = {
@@ -84,7 +85,7 @@ export async function listLeaveRequests(): Promise<LeaveRequestRow[]> {
 
   const { data, error } = await supabase
     .from("leave_requests")
-    .select("id, start_date, end_date, half_day, days, reason, status, created_at, leave_types(name)")
+    .select("id, start_date, end_date, half_day, days, reason, status, created_at, leave_types(name), approval_request_id")
     .eq("organization_id", organizationId)
     .eq("employee_id", employeeId)
     .order("created_at", { ascending: false });
@@ -101,6 +102,7 @@ export async function listLeaveRequests(): Promise<LeaveRequestRow[]> {
     reason: row.reason,
     status: row.status,
     createdAt: row.created_at,
+    approvalRequestId: row.approval_request_id,
   }));
 }
 
@@ -110,7 +112,7 @@ export async function getLeaveRequest(requestId: string): Promise<LeaveRequestRo
 
   const { data, error } = await supabase
     .from("leave_requests")
-    .select("id, start_date, end_date, half_day, days, reason, status, created_at, attachment_file_id, leave_types(name), file_objects(file_name)")
+    .select("id, start_date, end_date, half_day, days, reason, status, created_at, attachment_file_id, approval_request_id, leave_types(name), file_objects(file_name)")
     .eq("organization_id", organizationId)
     .eq("employee_id", employeeId)
     .eq("id", requestId)
@@ -133,6 +135,7 @@ export async function getLeaveRequest(requestId: string): Promise<LeaveRequestRo
     createdAt: data.created_at,
     attachmentFileId: data.attachment_file_id,
     attachmentFileName: (file as { file_name?: string } | null)?.file_name ?? null,
+    approvalRequestId: data.approval_request_id,
   };
 }
 
