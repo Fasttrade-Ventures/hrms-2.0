@@ -26,9 +26,11 @@ export default async function UnauthorizedPage({
     >
       <AuthCardHeader
         subtitle={
-          params.from
-            ? `You tried to open ${params.from}. Go back to your dashboard or sign in with a different account.`
-            : "Go back to your dashboard or contact your HR administrator if you need access."
+          params.from?.includes("/payslips/")
+            ? "The requested payslip is either unavailable, a draft, or belongs to another employee. Go back to your dashboard or contact your HR administrator."
+            : params.from
+              ? "The page you are trying to open is either unavailable or belongs to a different role portal. Go back to your dashboard or sign in with a different account."
+              : "Go back to your dashboard or contact your HR administrator if you need access."
         }
         title="Unauthorized"
       />

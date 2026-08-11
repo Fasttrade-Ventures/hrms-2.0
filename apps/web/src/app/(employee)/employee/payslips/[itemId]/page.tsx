@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 
 import { StatCard } from "@hrms/ui";
 
@@ -16,7 +16,7 @@ export default async function PayslipDetailPage({
   const payslip = await getPayslip(itemId);
 
   if (!payslip) {
-    notFound();
+    redirect(`/unauthorized?from=/employee/payslips/${itemId}`);
   }
 
   return (

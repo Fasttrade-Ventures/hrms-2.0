@@ -1,6 +1,7 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
+    "baseUrl": ".",
     "noEmit": true,
     "paths": {
       "@/*": ["./apps/web/src/*"],
@@ -14,6 +15,9 @@
   },
   "include": [
     "tests/**/*.ts",
+    "tests/**/*.tsx",
+    "scripts/**/*.ts"
+  ]
     "vitest.config.ts"
   ],
   "exclude": ["node_modules"]
