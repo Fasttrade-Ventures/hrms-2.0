@@ -277,7 +277,7 @@ export async function resendEmployeeActivationEmail(employeeId: string, actorUse
   const linkType = existingMembership?.user_id ? "recovery" : "invite";
 
   const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
-    type: linkType as any,
+    type: linkType as "invite",
     email: employee.email,
     options: {
       redirectTo: `${siteUrl}/auth/callback?next=/auth/activate`,

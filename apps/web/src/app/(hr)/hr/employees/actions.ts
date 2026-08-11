@@ -71,7 +71,7 @@ export async function createEmployee(
 
     redirect(`/hr/employees/${result.employeeId}/edit?created=1`);
   } catch (error) {
-    if (error instanceof Error && (error.message === "NEXT_REDIRECT" || (error as any).digest?.startsWith("NEXT_REDIRECT"))) {
+    if (error instanceof Error && (error.message === "NEXT_REDIRECT" || (error as { digest?: string }).digest?.startsWith("NEXT_REDIRECT"))) {
       throw error;
     }
     return {
