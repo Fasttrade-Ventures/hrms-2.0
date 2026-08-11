@@ -10,6 +10,11 @@ export default defineConfig({
       "packages/**/src/**/*.spec.ts",
       "tests/**/*.test.ts",
     ],
+    server: {
+      deps: {
+        inline: ["@supabase/ssr"],
+      },
+    },
   },
   resolve: {
     alias: {

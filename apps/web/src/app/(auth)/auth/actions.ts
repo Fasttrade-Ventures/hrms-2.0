@@ -173,6 +173,22 @@ export async function activateAccount(
     return { error: error.message };
   }
 
+  // Reactivate employee record in database if status is inactive
+  const { data: membership } = await supabase
+    .from("organization_memberships")
+    .select("employee_id, organization_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (membership) {
+    await supabase
+      .from("employees")
+      .update({ status: "active" })
+      .eq("id", membership.employee_id)
+      .eq("organization_id", membership.organization_id)
+      .eq("status", "inactive");
+  }
+
   await logAuthEvent({
     action: "auth.account.activated",
     actorUserId: user.id,
