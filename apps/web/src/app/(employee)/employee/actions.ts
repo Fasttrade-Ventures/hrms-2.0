@@ -23,24 +23,63 @@ export async function applyLeave(
   _prev: EmployeeActionState,
   formData: FormData,
 ): Promise<EmployeeActionState> {
-  const parsed = leaveRequestSchema.safeParse({
-    leaveTypeId: String(formData.get("leaveTypeId") ?? ""),
-    startDate: String(formData.get("startDate") ?? ""),
-    endDate: String(formData.get("endDate") ?? ""),
-    halfDay: readCheckbox(formData, "halfDay"),
-    reason: String(formData.get("reason") ?? "").trim() || undefined,
-  });
-
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid leave request." };
-  }
-
   try {
+    const leaveTypeId = String(formData.get("leaveTypeId") ?? "");
+    const file = formData.get("file");
+
+    const { organizationId, session } = await requireEmployeeContext();
+    const supabase = await createClient();
+    const { data: leaveType, error: leaveTypeError } = await supabase
+      .from("leave_types")
+      .select("name, requires_attachment")
+      .eq("id", leaveTypeId)
+      .eq("organization_id", organizationId)
+      .maybeSingle();
+
+    if (leaveTypeError) throw new Error(leaveTypeError.message);
+    if (!leaveType) throw new Error("Leave type not found.");
+
+    let attachmentFileId = null;
+
+    if (leaveType.requires_attachment) {
+      if (!(file instanceof File) || file.size === 0) {
+        return { error: `An attachment is required for ${leaveType.name}.` };
+      }
+    }
+
+    if (file instanceof File && file.size > 0) {
+      const { assertDocumentUpload, uploadOrganizationFile } = await import("@/lib/files/storage");
+      assertDocumentUpload(file);
+      const body = new Uint8Array(await file.arrayBuffer());
+      attachmentFileId = await uploadOrganizationFile({
+        organizationId,
+        category: "leave-attachments",
+        fileName: file.name,
+        contentType: file.type || "application/octet-stream",
+        body,
+        uploadedByUserId: session.user.id,
+      });
+    }
+
+    const parsed = leaveRequestSchema.safeParse({
+      leaveTypeId,
+      startDate: String(formData.get("startDate") ?? ""),
+      endDate: String(formData.get("endDate") ?? ""),
+      halfDay: readCheckbox(formData, "halfDay"),
+      reason: String(formData.get("reason") ?? "").trim() || undefined,
+      attachmentFileId: attachmentFileId || undefined,
+    });
+
+    if (!parsed.success) {
+      return { error: parsed.error.issues[0]?.message ?? "Invalid leave request." };
+    }
+
     const requestId = await createLeaveRequest(parsed.data);
     revalidatePath("/employee/leave");
     revalidatePath("/employee/dashboard");
     redirect(`/employee/leave/${requestId}?submitted=1`);
   } catch (error) {
+    if (error instanceof Error && error.message === "NEXT_REDIRECT") throw error;
     return { error: error instanceof Error ? error.message : "Failed to apply leave." };
   }
 }
@@ -92,6 +131,7 @@ export async function submitClaim(
     });
 
     revalidatePath("/employee/claims");
+    revalidatePath("/employee/dashboard");
     return { success: "Claim submitted for approval." };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Failed to submit claim." };
@@ -139,6 +179,7 @@ export async function submitOvertime(
     });
 
     revalidatePath("/employee/overtime");
+    revalidatePath("/employee/dashboard");
     return { success: "Overtime request submitted." };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Failed to submit overtime." };
@@ -184,6 +225,7 @@ export async function submitReplacementCredit(
     });
 
     revalidatePath("/employee/replacement-credit");
+    revalidatePath("/employee/dashboard");
     return { success: "Replacement credit submitted." };
   } catch (error) {
     return {
@@ -231,6 +273,7 @@ export async function submitLateReport(
     });
 
     revalidatePath("/employee/report-late");
+    revalidatePath("/employee/dashboard");
     return { success: "Late report submitted." };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Failed to submit late report." };
@@ -278,6 +321,7 @@ export async function submitManualAttendance(
     });
 
     revalidatePath("/employee/manual-attendance");
+    revalidatePath("/employee/dashboard");
     return { success: "Manual attendance request submitted." };
   } catch (error) {
     return {

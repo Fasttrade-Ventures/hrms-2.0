@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { computeEmployeePayrun, lookupSocsoContribution, money } from "@hrms/domain";
@@ -17,6 +18,7 @@ const integrationEnabled = payrollIntegrationEnabled();
 
 describe.skipIf(!integrationEnabled)("payroll lifecycle (postgres)", () => {
   let admin: ReturnType<typeof createPayrollTestAdmin>;
+  let admin: SupabaseClient;
   let organizationId = "";
   let employeeId = "";
   let payrunId = "";
@@ -57,7 +59,7 @@ describe.skipIf(!integrationEnabled)("payroll lifecycle (postgres)", () => {
         earning_period_end: "2026-01-31",
         pay_date: "2026-02-07",
         status: "draft",
-        scope: "organization",
+        scope: "org_wide",
         payrun_type: "regular",
       })
       .select("id")

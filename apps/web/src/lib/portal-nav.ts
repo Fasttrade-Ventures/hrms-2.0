@@ -122,11 +122,11 @@ const employeeNav: PortalNavSection[] = [
       { href: "/employee/leave", label: "Leave", icon: "leave" },
       { href: "/employee/attendance", label: "Attendance", icon: "attendance" },
       { href: "/employee/schedule", label: "My schedule", icon: "timesheet" },
-      { href: "/employee/manual-attendance", label: "Manual attendance", icon: "manual-attendance" },
-      { href: "/employee/report-late", label: "Report late", icon: "report-late" },
+      { href: "/employee/manual-attendance", label: "Manual Attendance", icon: "manual-attendance" },
+      { href: "/employee/report-late", label: "Report Late", icon: "report-late" },
       { href: "/employee/timesheet", label: "Timesheet", icon: "timesheet" },
       { href: "/employee/overtime", label: "Overtime", icon: "overtime" },
-      { href: "/employee/replacement-credit", label: "Replacement credit", icon: "replacement-credit" },
+      { href: "/employee/replacement-credit", label: "Replacement Credit", icon: "replacement-credit" },
     ],
   },
   {
@@ -165,11 +165,11 @@ const managerNav: PortalNavSection[] = [
   {
     label: "My team",
     items: [
-      { href: "/manager/team-leave", label: "Team leave", icon: "team-leave" },
-      { href: "/manager/team-attendance", label: "Team attendance", icon: "team-attendance" },
-      { href: "/manager/team-documents", label: "Team documents", icon: "documents" },
-      { href: "/manager/team-calendar", label: "Team calendar", icon: "team-calendar" },
-      { href: "/manager/team-performance", label: "Team performance", icon: "team-performance" },
+      { href: "/manager/team-leave", label: "Team Leave", icon: "team-leave" },
+      { href: "/manager/team-attendance", label: "Team Attendance", icon: "team-attendance" },
+      { href: "/manager/team-documents", label: "Team Documents", icon: "documents" },
+      { href: "/manager/team-calendar", label: "Team Calendar", icon: "team-calendar" },
+      { href: "/manager/team-performance", label: "Team Performance", icon: "team-performance" },
     ],
   },
 ];

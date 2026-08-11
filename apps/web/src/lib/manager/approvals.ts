@@ -13,8 +13,7 @@ export async function listManagerApprovals(): Promise<ApprovalInboxRow[]> {
       `id, status, approval_requests!inner(
         id, request_type, status, submitted_at, created_at, payload,
         employees!approval_requests_requester_employee_id_fkey(
-          employee_number, email,
-          employee_profiles(full_name)
+          employee_number, email, full_name
         )
       )`,
     )
@@ -37,8 +36,7 @@ export async function getManagerApprovalDetail(stepId: string): Promise<Approval
       `id, status, comment, approval_requests!inner(
         id, request_type, status, submitted_at, created_at, payload,
         employees!approval_requests_requester_employee_id_fkey(
-          employee_number, email,
-          employee_profiles(full_name)
+          employee_number, email, full_name
         )
       )`,
     )

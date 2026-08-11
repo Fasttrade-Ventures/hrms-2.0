@@ -261,6 +261,27 @@ export async function actOnApproval(input: ActOnApprovalInput): Promise<void> {
       `leave-${nextStatus}:${sourceId}`,
     );
   }
+
+  // Purge the employee-facing caches so they see status changes immediately
+  try {
+    const { revalidatePath } = await import("next/cache");
+    revalidatePath("/employee/dashboard");
+    revalidatePath("/employee/leave");
+    revalidatePath("/employee/claims");
+    revalidatePath("/employee/overtime");
+    revalidatePath("/employee/replacement-credit");
+    revalidatePath("/employee/report-late");
+    revalidatePath("/employee/manual-attendance");
+    if (sourceId && request.request_type) {
+      const detailHref = employeeRequestDetailHref(request.request_type, sourceId);
+      if (detailHref) {
+        revalidatePath(detailHref);
+      }
+    }
+  } catch (err) {
+    // Gracefully handle if cache revalidation fails outside Next.js environment (e.g. tests)
+    console.error("Revalidation failed:", err);
+  }
 }
 
 export async function submitSourceRecordForApproval(

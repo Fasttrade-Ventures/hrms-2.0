@@ -14,7 +14,7 @@ export default async function Page() {
       <PortalPageHeader
         actions={<TeamDocumentsLink />}
         description="Leave requests from your direct reports."
-        title="Team leave"
+        title="Team Leave"
       />
 
       <ListCard
@@ -32,8 +32,8 @@ export default async function Page() {
             details: `${row.leaveTypeName} · ${row.startDate} → ${row.endDate} · ${row.days} day(s)`,
             status: (
               <StatusPill
-                label={row.status}
-                tone={row.status === "approved" ? "success" : row.status === "pending" ? "warning" : "neutral"}
+                label={row.status.charAt(0).toUpperCase() + row.status.slice(1)}
+                tone={row.status === "approved" ? "success" : row.status === "pending" ? "warning" : row.status === "rejected" || row.status === "declined" ? "danger" : "neutral"}
               />
             ),
           },

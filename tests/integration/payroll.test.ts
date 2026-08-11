@@ -12,7 +12,7 @@ describe("payroll feeds", () => {
         { employee_id: "e1", hours: 2, rate_type: "1.5" },
         { employee_id: "e1", hours: 1, rate_type: "2" },
       ],
-      [{ employeeId: "e1", monthlyBasic: 3000 }],
+      [{ employeeId: "e1", monthlyBasic: 3000, joinDate: "2026-01-01" }],
     );
 
     expect(totals.get("e1")).toBeGreaterThan(0);

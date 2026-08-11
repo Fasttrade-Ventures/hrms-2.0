@@ -1,11 +1,11 @@
 import { NotificationsList } from "@/components/notifications/notifications-list";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { getPlaceholderNotifications } from "@/lib/notifications/placeholders";
-import { listUserNotifications, markInAppNotificationsRead } from "@/lib/notifications/inbox";
+import { listUserNotifications } from "@/lib/notifications/inbox";
 
 export default async function Page() {
-  await markInAppNotificationsRead().catch(() => undefined);
   const notifications = await listUserNotifications().catch(() => []);
+
 
   return (
     <div className="space-y-6">

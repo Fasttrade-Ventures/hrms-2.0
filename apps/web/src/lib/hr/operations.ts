@@ -14,8 +14,7 @@ const approvalStepSelect = `
   approval_requests!inner(
     id, request_type, status, submitted_at, created_at, payload,
     employees!approval_requests_requester_employee_id_fkey(
-      employee_number, email,
-      employee_profiles(full_name)
+      employee_number, email, full_name
     )
   )
 `;

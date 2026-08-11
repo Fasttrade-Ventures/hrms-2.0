@@ -14,6 +14,12 @@ import {
 import { getTodayAttendance } from "@/lib/employee/attendance";
 import { getLeaveBalances, listLeaveRequests, requireEmployeeContext } from "@/lib/employee/leave";
 import {
+  listClaims,
+  listOvertimeRequests,
+  listLateReports,
+  listAttendanceCorrections,
+} from "@/lib/employee/requests";
+import {
   firstNameFromFullName,
   getCurrentEmployeeDetail,
   greetingForHour,
@@ -26,9 +32,22 @@ export default async function Page() {
 
   const employeeContext = employee ? await requireEmployeeContext().catch(() => null) : null;
 
-  const [balances, requests, todayAttendance, announcementFeed] = await Promise.all([
+  const [
+    balances,
+    leaveRequests,
+    claims,
+    otRequests,
+    lateReports,
+    attendanceRequests,
+    todayAttendance,
+    announcementFeed
+  ] = await Promise.all([
     getLeaveBalances().catch(() => []),
     listLeaveRequests().catch(() => []),
+    listClaims().catch(() => []),
+    listOvertimeRequests().catch(() => []),
+    listLateReports().catch(() => []),
+    listAttendanceCorrections().catch(() => []),
     getTodayAttendance().catch(() => null),
     employeeContext
       ? getAnnouncementViewer({
@@ -50,7 +69,15 @@ export default async function Page() {
   const announcementPinned = announcementFeed.pinned;
   const announcementItems = announcementFeed.latest;
   const annual = balances.find((row) => row.leaveTypeName === "Annual Leave");
-  const pendingRequests = requests.filter((row) => row.status === "pending").length;
+  const requests = leaveRequests;
+
+  const pendingRequests =
+    leaveRequests.filter((row) => row.status === "pending").length +
+    claims.filter((row) => row.status === "pending").length +
+    otRequests.filter((row) => row.status === "pending").length +
+    lateReports.filter((row) => row.status === "pending").length +
+    attendanceRequests.filter((row) => row.status === "pending").length;
+
   const attendanceLabel = todayAttendance?.clockInAt
     ? todayAttendance.clockOutAt
       ? "Completed"

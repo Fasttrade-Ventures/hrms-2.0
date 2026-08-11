@@ -18,9 +18,9 @@ export const REQUEST_TYPE_LABELS: Record<ApprovalRequestType, string> = {
   leave: "Leave",
   claim: "Claim",
   overtime: "Overtime",
-  replacement_credit: "Replacement credit",
-  late: "Late arrival",
-  attendance: "Manual attendance",
+  replacement_credit: "Replacement Credit",
+  late: "Report Late",
+  attendance: "Manual Attendance",
 };
 
 export type ApprovalInboxRow = {
