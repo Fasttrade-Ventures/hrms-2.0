@@ -28,6 +28,7 @@ export const leaveRequestSchema = z.object({
   endDate: z.string().date(),
   halfDay: z.boolean().default(false),
   reason: z.string().max(2000).optional(),
+  attachmentFileId: z.string().uuid().optional().nullable(),
 });
 
 export const claimRequestSchema = z.object({
