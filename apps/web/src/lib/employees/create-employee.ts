@@ -195,15 +195,22 @@ export async function createEmployeeRecord(
       }
 
       const organizationName = await getOrganizationName(admin, organizationId);
+      const directConfirmLink = `${siteUrl}/auth/confirm?token_hash=${linkData.properties.hashed_token}&type=invite&next=/auth/activate`;
+
+      console.log("\n=========================================");
+      console.log("DEVELOPMENT ACTIVATION LINK FOR:", input.email.trim().toLowerCase());
+      console.log(directConfirmLink);
+      console.log("=========================================\n");
+
       const mailResult = await sendEmployeeActivationEmail({
-        to: input.email.trim().toLowerCase(),
-        fullName: input.fullName.trim(),
-        organizationName,
-        activationLink: linkData.properties.action_link,
-      });
+            to: input.email.trim().toLowerCase(),
+            fullName: input.fullName.trim(),
+            organizationName,
+            activationLink: directConfirmLink,
+          });
 
       activationEmailSent = mailResult.sent;
-      if (!mailResult.sent) {
+      if (!mailResult.sent && "reason" in mailResult) {
         activationEmailError =
           mailResult.reason === "not_configured"
             ? "Email provider is not configured."
@@ -258,8 +265,19 @@ export async function resendEmployeeActivationEmail(employeeId: string, actorUse
     throw new Error(error?.message ?? "Employee not found.");
   }
 
+  const { data: existingMembership } = await admin
+    .from("organization_memberships")
+    .select("id, user_id")
+    .eq("organization_id", organizationId)
+    .eq("employee_id", employeeId)
+    .maybeSingle();
+
+  // If the user already exists in auth.users, generate a recovery link instead of invite link.
+  // This avoids deleting the user record and violating audit_events immutability triggers.
+  const linkType = existingMembership?.user_id ? "recovery" : "invite";
+
   const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
-    type: "invite",
+    type: linkType,
     email: employee.email,
     options: {
       redirectTo: `${siteUrl}/auth/callback?next=/auth/activate`,
@@ -270,13 +288,6 @@ export async function resendEmployeeActivationEmail(employeeId: string, actorUse
   if (linkError || !linkData.user) {
     return { sent: false, error: linkError?.message ?? "Failed to generate activation link." };
   }
-
-  const { data: existingMembership } = await admin
-    .from("organization_memberships")
-    .select("id")
-    .eq("organization_id", organizationId)
-    .eq("employee_id", employeeId)
-    .maybeSingle();
 
   if (!existingMembership) {
     const { error: membershipError } = await admin.from("organization_memberships").insert({
@@ -290,15 +301,32 @@ export async function resendEmployeeActivationEmail(employeeId: string, actorUse
     if (membershipError) {
       return { sent: false, error: membershipError.message };
     }
+  } else if (!existingMembership.user_id) {
+    const { error: membershipUpdateError } = await admin
+      .from("organization_memberships")
+      .update({ user_id: linkData.user.id })
+      .eq("id", existingMembership.id);
+
+    if (membershipUpdateError) {
+      return { sent: false, error: membershipUpdateError.message };
+    }
   }
 
   const organizationName = await getOrganizationName(admin, organizationId);
+
+  const directConfirmLink = `${siteUrl}/auth/confirm?token_hash=${linkData.properties.hashed_token}&type=${linkType}&next=/auth/activate`;
+
+  console.log("\n=========================================");
+  console.log("DEVELOPMENT RESENT ACTIVATION LINK FOR:", employee.email);
+  console.log(directConfirmLink);
+  console.log("=========================================\n");
+
   const mailResult = await sendEmployeeActivationEmail({
-    to: employee.email,
-    fullName: employee.full_name,
-    organizationName,
-    activationLink: linkData.properties.action_link,
-  });
+        to: employee.email,
+        fullName: employee.full_name,
+        organizationName,
+        activationLink: directConfirmLink,
+      });
 
   if (mailResult.sent) {
     await logEmployeeEvent({

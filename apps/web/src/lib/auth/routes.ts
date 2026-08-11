@@ -22,6 +22,7 @@ const PUBLIC_AUTH_EXACT = new Set([
   "/auth/reset-password",
   "/auth/activate",
   "/auth/register",
+  "/auth/confirm",
 ]);
 
 export function isPublicAuthPath(pathname: string): boolean {
