@@ -77,20 +77,27 @@ export function DashboardClockPanel({
   }, [geofence?.enabled, locationModuleEnabled]);
 
   const geofenceRequired = Boolean(geofence?.enabled);
-  const canClockIn = !today?.clockInAt && (!geofenceRequired || locationState === "ready");
-  const canClockOut = today?.clockInAt && !today?.clockOutAt;
+  // Multi-session: allow clock-in again after clock-out (matches /employee/attendance).
+  const isClockedIn = Boolean(today?.sessions?.some((session) => session.clockOutAt === null));
+  const completedSessions = today?.sessions?.filter((session) => session.clockOutAt) ?? [];
+  const lastCompleted = completedSessions[completedSessions.length - 1];
+  const canClockIn = !isClockedIn && (!geofenceRequired || locationState === "ready");
+  const canClockOut = isClockedIn;
 
-  // Format Status details
   let statusText = "Not Clocked In Yet";
   let hintText = "Start Your Shift Today";
-  if (today?.clockInAt) {
-    if (today.clockOutAt) {
-      statusText = "Shift Completed";
-      hintText = `Clocked Out At ${new Date(today.clockOutAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
-    } else {
-      statusText = "Active Shift";
-      hintText = `Clocked In At ${new Date(today.clockInAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
-    }
+  if (isClockedIn) {
+    statusText = "Active Shift";
+    hintText = `Clocked In At ${new Date(today?.clockInAt ?? "").toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+    })}`;
+  } else if (completedSessions.length > 0) {
+    statusText = "Between Sessions";
+    hintText = `Last Clocked Out At ${new Date(lastCompleted?.clockOutAt ?? "").toLocaleTimeString(
+      "en-US",
+      { hour: "numeric", minute: "2-digit" },
+    )}`;
   }
 
   // Loc badge details
@@ -128,7 +135,7 @@ export function DashboardClockPanel({
         </div>
 
         <div>
-          {!today?.clockInAt ? (
+          {!isClockedIn ? (
             <form action={clockInAction}>
               <input name="latitude" type="hidden" value={coords?.latitude ?? ""} />
               <input name="longitude" type="hidden" value={coords?.longitude ?? ""} />
@@ -137,7 +144,11 @@ export function DashboardClockPanel({
                 disabled={clockInPending || !canClockIn}
                 className="w-[120px] sm:w-[130px] rounded-lg bg-white px-4 py-2.5 text-center text-xs font-semibold text-emerald-800 shadow-sm transition hover:bg-emerald-50 active:bg-emerald-100 disabled:opacity-50"
               >
-                {clockInPending ? "Clocking In..." : "Clock In"}
+                {clockInPending
+                  ? "Clocking In..."
+                  : completedSessions.length > 0
+                    ? "Clock In Again"
+                    : "Clock In"}
               </button>
             </form>
           ) : canClockOut ? (
@@ -150,14 +161,7 @@ export function DashboardClockPanel({
                 {clockOutPending ? "Clocking Out..." : "Clock Out"}
               </button>
             </form>
-          ) : (
-            <button
-              disabled
-              className="w-[120px] sm:w-[130px] rounded-lg bg-white/20 px-4 py-2.5 text-center text-xs font-semibold text-white/65 cursor-not-allowed"
-            >
-              Completed
-            </button>
-          )}
+          ) : null}
         </div>
       </div>
       
