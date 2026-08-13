@@ -35,7 +35,7 @@ export default async function Page() {
         }
         header={<p className="text-sm font-medium">Recent attendance</p>}
         rows={recent.map((row) => ({
-          id: row.work_date,
+          id: row.id,
           cells: {
             date: row.work_date,
             in: formatDateTime(row.clock_in_at),

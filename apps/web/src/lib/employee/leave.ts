@@ -59,14 +59,26 @@ export async function requireEmployeeContext() {
 }
 
 export async function listLeaveTypes(): Promise<LeaveTypeOption[]> {
-  const { organizationId } = await requireEmployeeContext();
+  const { employeeId, organizationId } = await requireEmployeeContext();
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  const { data: allowedData } = await supabase
+    .from("employee_allowed_leave_types")
+    .select("leave_type_id")
+    .eq("employee_id", employeeId);
+
+  const allowedIds = (allowedData ?? []).map((row) => row.leave_type_id);
+
+  const query = supabase
     .from("leave_types")
     .select("id, name, entitlement_days, is_unpaid, requires_attachment")
-    .eq("organization_id", organizationId)
-    .order("name");
+    .eq("organization_id", organizationId);
+
+  if (allowedIds.length > 0) {
+    query.in("id", allowedIds);
+  }
+
+  const { data, error } = await query.order("name");
 
   if (error) throw new Error(error.message);
 
@@ -143,11 +155,29 @@ export async function getLeaveBalances(): Promise<LeaveBalanceRow[]> {
   const { employeeId, organizationId } = await requireEmployeeContext();
   const supabase = await createClient();
 
-  const [typesResult, requestsResult] = await Promise.all([
+  const { data: allowedData } = await supabase
+    .from("employee_allowed_leave_types")
+    .select("leave_type_id")
+    .eq("employee_id", employeeId);
+
+  const allowedIds = (allowedData ?? []).map((row) => row.leave_type_id);
+
+  const typesQuery = supabase
+    .from("leave_types")
+    .select("id, name, entitlement_days")
+    .eq("organization_id", organizationId);
+
+  if (allowedIds.length > 0) {
+    typesQuery.in("id", allowedIds);
+  }
+
+  const [employeeResult, typesResult, requestsResult] = await Promise.all([
     supabase
-      .from("leave_types")
-      .select("id, name, entitlement_days")
-      .eq("organization_id", organizationId),
+      .from("employees")
+      .select("annual_leave_entitlement, annual_leave_carry_forward")
+      .eq("id", employeeId)
+      .maybeSingle(),
+    typesQuery,
     supabase
       .from("leave_requests")
       .select("leave_type_id, days, status")
@@ -167,7 +197,12 @@ export async function getLeaveBalances(): Promise<LeaveBalanceRow[]> {
     const pendingDays = matching
       .filter((row) => row.status === "pending")
       .reduce((sum, row) => sum + Number(row.days), 0);
-    const entitlementDays = Number(type.entitlement_days);
+
+    let entitlementDays = Number(type.entitlement_days);
+    if (type.name.toLowerCase() === "annual leave" && employeeResult?.data) {
+      entitlementDays = Number(employeeResult.data.annual_leave_entitlement ?? 14) +
+                        Number(employeeResult.data.annual_leave_carry_forward ?? 0);
+    }
 
     return {
       leaveTypeId: type.id,

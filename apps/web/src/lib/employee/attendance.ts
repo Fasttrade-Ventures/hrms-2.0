@@ -149,7 +149,7 @@ export async function listRecentAttendance(limit = 7) {
 
   const { data, error } = await supabase
     .from("attendance_records")
-    .select("work_date, clock_in_at, clock_out_at, status")
+    .select("id, work_date, clock_in_at, clock_out_at, status")
     .eq("organization_id", organizationId)
     .eq("employee_id", employeeId)
     .order("work_date", { ascending: false })
