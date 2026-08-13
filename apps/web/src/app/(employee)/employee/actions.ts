@@ -3,6 +3,7 @@
 import { claimRequestSchema, leaveRequestSchema } from "@hrms/validation";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 
 import { clockIn, clockOut } from "@/lib/employee/attendance";
 import { createLeaveRequest } from "@/lib/employee/leave";
@@ -334,9 +335,16 @@ export async function employeeClockIn(formData?: FormData): Promise<EmployeeActi
   try {
     const latitudeRaw = formData ? String(formData.get("latitude") ?? "").trim() : "";
     const longitudeRaw = formData ? String(formData.get("longitude") ?? "").trim() : "";
+    
+    const headersList = await headers();
+    const ipAddress = headersList.get("x-forwarded-for")?.split(",")[0] || 
+                     headersList.get("x-real-ip") ||
+                     "127.0.0.1";
+
     await clockIn({
       latitude: latitudeRaw ? Number(latitudeRaw) : null,
       longitude: longitudeRaw ? Number(longitudeRaw) : null,
+      ipAddress,
     });
     revalidatePath("/employee/attendance");
     revalidatePath("/employee/dashboard");
