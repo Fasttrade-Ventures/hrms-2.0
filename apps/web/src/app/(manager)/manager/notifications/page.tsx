@@ -1,24 +1,36 @@
 import { NotificationsList } from "@/components/notifications/notifications-list";
-import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { requireRole } from "@/lib/auth/session";
 import { getPlaceholderNotifications } from "@/lib/notifications/placeholders";
-import { listUserNotifications, markInAppNotificationsRead } from "@/lib/notifications/inbox";
+import { getNotificationTabCounts, listUserNotifications, markInAppNotificationsRead } from "@/lib/notifications/inbox";
 
-export default async function Page() {
+interface PageProps {
+  searchParams: Promise<{ page?: string; tab?: string }>;
+}
+
+export default async function Page({ searchParams }: PageProps) {
   await requireRole("manager");
   await markInAppNotificationsRead().catch(() => undefined);
-  const notifications = await listUserNotifications().catch(() => []);
+
+  const params = await searchParams;
+  const page = Number(params.page ?? "1");
+  const tab = params.tab ?? "all";
+
+  const [notificationsResult, counts] = await Promise.all([
+    listUserNotifications(tab, page, 5),
+    getNotificationTabCounts(),
+  ]);
 
   return (
     <div className="space-y-6">
-      <PortalPageHeader
-        description="Team approval requests and company updates. Open this page from the bell icon in the header."
-        title="Notifications"
-      />
       <NotificationsList
-        notifications={notifications}
+        activeTab={tab}
+        notifications={notificationsResult.notifications}
+        page={page}
+        pageSize={5}
         placeholderNotifications={getPlaceholderNotifications("manager")}
         portal="manager"
+        tabCounts={counts}
+        total={notificationsResult.total}
       />
     </div>
   );

@@ -13,13 +13,99 @@ import {
   CheckSquare
 } from "lucide-react";
 
-import { formatDateTime } from "@/components/employee/employee-shared";
 import { resolveNotificationHref } from "@/lib/notifications/links";
 import type { NotificationPortal } from "@/lib/notifications/placeholders";
-import { notificationTypeDescriptions } from "@/lib/notifications/placeholders";
 import type { NotificationRow } from "@/lib/notifications/types";
 import { formatNotificationMessage } from "@/lib/notifications/types";
 import { markNotificationReadAction, markAllNotificationsReadAction } from "@/lib/notifications/actions";
+import { REQUEST_TYPE_LABELS } from "@/lib/approvals/types";
+import { HrPagination } from "@/components/hr/hr-ui.client";
+
+function formatRelativeTime(value: string): string {
+  const date = new Date(value);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60_000);
+  const diffHours = Math.floor(diffMs / 3_600_000);
+  const diffDays = Math.floor(diffMs / 86_400_000);
+
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays} days ago`;
+
+  return date.toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "short",
+  });
+}
+
+function getNotificationText(row: NotificationRow): { title: string; message: string } {
+  if (row.template === "approval.pending") {
+    const requestType = String(row.payload.requestType ?? "");
+    const label = REQUEST_TYPE_LABELS[requestType as keyof typeof REQUEST_TYPE_LABELS] ?? "Request";
+    return {
+      title: `${label} pending approval`,
+      message: `${label} request is awaiting your approval.`
+    };
+  }
+  if (row.template === "approval.approve") {
+    const requestType = String(row.payload.requestType ?? "");
+    const label = REQUEST_TYPE_LABELS[requestType as keyof typeof REQUEST_TYPE_LABELS] ?? "Request";
+    return {
+      title: `${label} approved`,
+      message: `Your ${label.toLowerCase()} request was approved.`
+    };
+  }
+  if (row.template === "approval.reject") {
+    const requestType = String(row.payload.requestType ?? "");
+    const label = REQUEST_TYPE_LABELS[requestType as keyof typeof REQUEST_TYPE_LABELS] ?? "Request";
+    return {
+      title: `${label} rejected`,
+      message: `Your ${label.toLowerCase()} request was rejected.`
+    };
+  }
+  if (row.template === "announcement.published") {
+    return {
+      title: "New announcement",
+      message: String(row.payload.title ?? "A new announcement has been posted.")
+    };
+  }
+  if (row.template === "document_compliance_employee") {
+    const documentType = String(row.payload.documentType ?? "document");
+    const status = String(row.payload.status ?? "missing");
+    const title = status === "expiring" ? "Document expiring" : status === "expired" ? "Document expired" : "Document missing";
+    return {
+      title,
+      message: `Your ${documentType} is ${status}.`
+    };
+  }
+  if (row.template === "document_compliance_hr") {
+    const employeeName = String(row.payload.employeeName ?? "Employee");
+    const documentType = String(row.payload.documentType ?? "document");
+    const status = String(row.payload.status ?? "missing");
+    const title = status === "expiring" ? "Document expiring" : status === "expired" ? "Document expired" : "Document missing";
+    return {
+      title,
+      message: `${employeeName}'s ${documentType} is ${status}.`
+    };
+  }
+  if (row.template === "payroll.payslip_available") {
+    const year = Number(row.payload.periodYear ?? 0);
+    const month = Number(row.payload.periodMonth ?? 0);
+    const monthName = month ? new Date(2000, month - 1, 1).toLocaleString('en-US', { month: 'long' }) : "";
+    const periodStr = monthName && year ? `${monthName} ${year}` : "";
+    return {
+      title: "Payslip ready",
+      message: periodStr ? `${periodStr} payslip is available.` : "Your payslip is ready."
+    };
+  }
+  return {
+    title: "Notification",
+    message: formatNotificationMessage(row)
+  };
+}
 
 const GROUPS = [
   { id: "all", label: "All" },
@@ -67,16 +153,25 @@ export function NotificationsList({
   notifications,
   portal,
   placeholderNotifications = [],
+  page,
+  pageSize,
+  total,
+  tabCounts,
+  activeTab,
 }: {
   notifications: NotificationRow[];
   portal: NotificationPortal;
   placeholderNotifications?: NotificationRow[];
+  page: number;
+  pageSize: number;
+  total: number;
+  tabCounts: Record<string, number>;
+  activeTab: string;
 }) {
   const showingPlaceholders = notifications.length === 0 && placeholderNotifications.length > 0;
   const initialRows = showingPlaceholders ? placeholderNotifications : notifications;
   
   const [localNotifications, setLocalNotifications] = useState<NotificationRow[]>(initialRows);
-  const [activeTab, setActiveTab] = useState<string>("all");
   const [isPending, setIsPending] = useState(false);
 
   // Sync state with parent props when they change
@@ -84,19 +179,20 @@ export function NotificationsList({
     setLocalNotifications(showingPlaceholders ? placeholderNotifications : notifications);
   }, [notifications, placeholderNotifications, showingPlaceholders]);
 
-  const descriptions = notificationTypeDescriptions[portal];
-
-  const getCountForGroup = (groupId: string) => {
-    if (groupId === "all") return localNotifications.length;
-    return localNotifications.filter((row) => getNotificationGroup(row) === groupId).length;
-  };
-
-  const filteredRows = localNotifications.filter((row) => {
-    if (activeTab === "all") return true;
-    return getNotificationGroup(row) === activeTab;
-  });
+  const filteredRows = localNotifications;
 
   const hasUnread = localNotifications.some(n => n.status === "pending");
+
+  const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, total);
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  const pages = Array.from({ length: Math.min(pageCount, 5) }, (_, index) => {
+    if (pageCount <= 5) return index + 1;
+    const start = Math.min(Math.max(1, page - 2), pageCount - 4);
+    return start + index;
+  });
+
+  const baseHref = `/${portal}/notifications`;
 
   const handleMarkAsRead = async (id: string) => {
     if (showingPlaceholders) return;
@@ -146,26 +242,28 @@ export function NotificationsList({
 
   return (
     <div className="space-y-6">
-      {/* What appears here description card */}
-      <div className="rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-muted)] px-4 py-3">
-        <p className="text-sm font-medium text-[var(--foreground-primary)]">What appears here</p>
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-[var(--foreground-muted)]">
-          {descriptions.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
+      {/* Head */}
+      <div className="flex flex-col gap-0.5">
+        <h2 className="text-lg font-bold text-[var(--foreground-primary)]">Inbox</h2>
+        <p className="text-xs text-[var(--foreground-muted)]">
+          {portal === "employee" 
+            ? "Leave, claims, payslips and system alerts"
+            : portal === "manager"
+              ? "Approvals, team updates and company announcements"
+              : "Document compliance, approvals and system alerts"}
+        </p>
       </div>
 
       {/* Navigation Grouping Tabs */}
       <div className="flex flex-wrap items-center gap-1.5 border-b border-[var(--border-primary)] pb-1.5 overflow-x-auto select-none no-scrollbar">
         {GROUPS.map((group) => {
-          const count = getCountForGroup(group.id);
+          const count = showingPlaceholders ? localNotifications.length : tabCounts[group.id] ?? 0;
           const isActive = activeTab === group.id;
           return (
-            <button
+            <Link
               key={group.id}
-              onClick={() => setActiveTab(group.id)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap ${
+              href={`${baseHref}?tab=${group.id}&page=1`}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 whitespace-nowrap ${
                 isActive
                   ? "bg-[var(--accent-primary)] text-white shadow-sm"
                   : "text-[var(--foreground-secondary)] hover:bg-[var(--surface-muted)]"
@@ -180,7 +278,7 @@ export function NotificationsList({
               }`}>
                 {count}
               </span>
-            </button>
+            </Link>
           );
         })}
       </div>
@@ -225,61 +323,66 @@ export function NotificationsList({
               const href = showingPlaceholders ? null : resolveNotificationHref(row, portal);
               const isUnread = row.status === "pending";
               const group = getNotificationGroup(row);
+              const { title, message } = getNotificationText(row);
 
               const content = (
-                <div className="flex justify-between items-start gap-4">
-                  <div className="flex items-start gap-3 flex-1">
-                    <div className={`mt-0.5 p-1.5 rounded-lg ${
-                      isUnread ? "bg-[var(--surface-accent-soft)]" : "bg-[var(--surface-muted)]"
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3.5 flex-1 min-w-0">
+                    {/* Status Dot */}
+                    <div className={`h-2 w-2 rounded-full shrink-0 ${
+                      isUnread ? "bg-[var(--accent-primary)]" : "bg-zinc-200"
+                    }`} />
+                    
+                    {/* Icon wrapper */}
+                    <div className={`p-1.5 rounded-lg shrink-0 ${
+                      isUnread ? "bg-white" : "bg-[var(--surface-muted)]"
                     }`}>
                       {getGroupIcon(group)}
                     </div>
-                    <div className="space-y-1 flex-1 min-w-0">
-                      <p className={`text-sm text-[var(--foreground-primary)] leading-normal break-words ${
-                        isUnread ? "font-semibold" : "font-normal"
+
+                    {/* Text stack */}
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm text-[var(--foreground-primary)] leading-normal ${
+                        isUnread ? "font-semibold" : "font-medium"
                       }`}>
-                        {formatNotificationMessage(row)}
+                        {title}
                       </p>
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--foreground-muted)]">
-                        <span>{formatDateTime(row.createdAt)}</span>
-                        {isUnread && (
-                          <span className="inline-flex items-center gap-1 rounded bg-[var(--surface-accent-soft)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--accent-primary)]">
-                            <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent-primary)] animate-pulse" />
-                            New
-                          </span>
-                        )}
-                        {href ? (
-                          <span className="font-semibold text-[var(--accent-primary)] hover:underline inline-flex items-center gap-0.5">
-                            View details
-                          </span>
-                        ) : null}
-                      </div>
+                      <p className="text-xs text-[var(--foreground-muted)] leading-normal mt-0.5 break-words">
+                        {message}
+                      </p>
                     </div>
                   </div>
 
-                  {isUnread && !showingPlaceholders && (
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleMarkAsRead(row.id);
-                      }}
-                      className="flex items-center gap-1 text-xs font-semibold text-[var(--accent-primary)] hover:text-[var(--accent-hover)] transition-colors px-2.5 py-1.5 rounded bg-[var(--surface-accent-soft)]/50 hover:bg-[var(--surface-accent-soft)] cursor-pointer whitespace-nowrap"
-                    >
-                      <Check className="h-3.5 w-3.5" />
-                      <span>Mark read</span>
-                    </button>
-                  )}
+                  {/* Right side: time and action */}
+                  <div className="flex items-center gap-4 shrink-0">
+                    <span className="text-xs text-[var(--foreground-muted)] whitespace-nowrap">
+                      {formatRelativeTime(row.createdAt)}
+                    </span>
+
+                    {isUnread && !showingPlaceholders && (
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleMarkAsRead(row.id);
+                        }}
+                        className="flex h-7 items-center justify-center rounded bg-[var(--surface-accent-soft)] px-2.5 text-xs font-semibold text-[var(--accent-primary)] hover:bg-[var(--surface-accent-soft)]/80 transition cursor-pointer"
+                      >
+                        <Check className="h-3.5 w-3.5 mr-1" />
+                        Mark read
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
 
               if (href) {
                 return (
                   <Link
-                    className={`block px-5 py-4 transition-colors ${
+                    className={`block px-5 py-3 transition-colors ${
                       isUnread 
-                        ? "bg-[var(--surface-accent-soft)]/10 hover:bg-[var(--surface-accent-soft)]/20" 
-                        : "hover:bg-[var(--surface-muted)]"
+                        ? "bg-[var(--surface-accent-soft)] hover:bg-[var(--surface-accent-soft)]/80" 
+                        : "bg-[var(--surface-card)] hover:bg-[var(--surface-muted)]/40"
                     }`}
                     href={href}
                     key={row.id}
@@ -292,11 +395,11 @@ export function NotificationsList({
 
               return (
                 <div
-                  className={`px-5 py-4 transition-colors ${
+                  className={`px-5 py-3 transition-colors ${
                     showingPlaceholders 
                       ? "opacity-80" 
                       : isUnread 
-                        ? "cursor-pointer bg-[var(--surface-accent-soft)]/10 hover:bg-[var(--surface-accent-soft)]/20" 
+                        ? "cursor-pointer bg-[var(--surface-accent-soft)] hover:bg-[var(--surface-accent-soft)]/80" 
                         : ""
                   }`}
                   key={row.id}
@@ -308,6 +411,27 @@ export function NotificationsList({
             })
           )}
         </div>
+
+        {/* Pagination */}
+        {pageCount > 1 && !showingPlaceholders && (
+          <div className="border-t border-[var(--border-primary)] bg-[var(--surface-muted)]/20 px-4 py-3">
+            <HrPagination
+              from={from}
+              itemLabel="notifications"
+              nextHref={
+                page < pageCount ? `${baseHref}?tab=${activeTab}&page=${page + 1}` : undefined
+              }
+              page={page}
+              pageLinks={pages.map((pageNumber) => ({
+                page: pageNumber,
+                href: `${baseHref}?tab=${activeTab}&page=${pageNumber}`,
+              }))}
+              prevHref={page > 1 ? `${baseHref}?tab=${activeTab}&page=${page - 1}` : undefined}
+              to={to}
+              total={total}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
