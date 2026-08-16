@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { EmptyState, ListCard, StatusPill } from "@hrms/ui";
 
+import { PortalIcon } from "@/components/portal/portal-icons";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { listManagerApprovals } from "@/lib/manager/approvals";
 import { requireRole } from "@/lib/auth/session";
@@ -35,7 +36,13 @@ export default async function Page({
           { key: "summary", label: "Summary" },
           { key: "status", label: "Status", className: "w-28" },
         ]}
-        empty={<EmptyState description="New requests from your team will appear here." title="Inbox empty" />}
+        empty={
+          <EmptyState
+            description="New requests from your team will appear here."
+            icon={<PortalIcon name="approvals" className="h-6 w-6" />}
+            title="Inbox empty"
+          />
+        }
         header={<p className="text-sm font-medium">Pending ({rows.length})</p>}
         rows={rows.map((row) => ({
           id: row.stepId,

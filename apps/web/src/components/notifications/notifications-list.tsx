@@ -13,6 +13,7 @@ import {
   CheckSquare
 } from "lucide-react";
 
+import { EmptyState } from "@hrms/ui";
 import { formatDateTime } from "@/components/employee/employee-shared";
 import { resolveNotificationHref } from "@/lib/notifications/links";
 import type { NotificationPortal } from "@/lib/notifications/placeholders";
@@ -65,71 +66,56 @@ function getGroupIcon(group: string) {
 
 export function NotificationsList({
   notifications,
-  portal,
   placeholderNotifications = [],
+  portal,
 }: {
   notifications: NotificationRow[];
-  portal: NotificationPortal;
   placeholderNotifications?: NotificationRow[];
+  portal: NotificationPortal;
 }) {
-  const showingPlaceholders = notifications.length === 0 && placeholderNotifications.length > 0;
-  const initialRows = showingPlaceholders ? placeholderNotifications : notifications;
-  
-  const [localNotifications, setLocalNotifications] = useState<NotificationRow[]>(initialRows);
-  const [activeTab, setActiveTab] = useState<string>("all");
+  const [showingPlaceholders, setShowingPlaceholders] = useState(false);
+  const [rows, setRows] = useState<NotificationRow[]>([]);
+  const [activeTab, setActiveTab] = useState<typeof GROUPS[number]["id"] | "all">("all");
   const [isPending, setIsPending] = useState(false);
 
-  // Sync state with parent props when they change
   useEffect(() => {
-    setLocalNotifications(showingPlaceholders ? placeholderNotifications : notifications);
-  }, [notifications, placeholderNotifications, showingPlaceholders]);
+    if (notifications.length === 0) {
+      setRows(placeholderNotifications);
+      setShowingPlaceholders(true);
+    } else {
+      setRows(notifications);
+      setShowingPlaceholders(false);
+    }
+  }, [notifications, placeholderNotifications]);
 
-  const descriptions = notificationTypeDescriptions[portal];
-
-  const getCountForGroup = (groupId: string) => {
-    if (groupId === "all") return localNotifications.length;
-    return localNotifications.filter((row) => getNotificationGroup(row) === groupId).length;
-  };
-
-  const filteredRows = localNotifications.filter((row) => {
+  const filteredRows = rows.filter((row) => {
     if (activeTab === "all") return true;
     return getNotificationGroup(row) === activeTab;
   });
 
-  const hasUnread = localNotifications.some(n => n.status === "pending");
+  const hasUnread = rows.some((row) => row.status === "pending");
 
-  const handleMarkAsRead = async (id: string) => {
-    if (showingPlaceholders) return;
-    
-    // Optimistic update
-    setLocalNotifications(prev =>
-      prev.map(n => n.id === id ? { ...n, status: "sent" } : n)
-    );
-
+  const handleMarkRead = async (id: string) => {
+    if (showingPlaceholders || isPending) return;
+    setIsPending(true);
     try {
       await markNotificationReadAction(id);
+      setRows((prev) => prev.map((r) => (r.id === id ? { ...r, status: "sent" as const } : r)));
     } catch (err) {
       console.error("Failed to mark notification as read:", err);
-      // Revert state on error
-      setLocalNotifications(showingPlaceholders ? placeholderNotifications : notifications);
+    } finally {
+      setIsPending(false);
     }
   };
 
   const handleMarkAllAsRead = async () => {
-    if (showingPlaceholders) return;
+    if (showingPlaceholders || isPending) return;
     setIsPending(true);
-
-    // Optimistic update
-    setLocalNotifications(prev =>
-      prev.map(n => ({ ...n, status: "sent" }))
-    );
-
     try {
       await markAllNotificationsReadAction();
+      setRows((prev) => prev.map((r) => ({ ...r, status: "sent" as const })));
     } catch (err) {
       console.error("Failed to mark all notifications as read:", err);
-      // Revert state on error
-      setLocalNotifications(showingPlaceholders ? placeholderNotifications : notifications);
     } finally {
       setIsPending(false);
     }
@@ -137,12 +123,12 @@ export function NotificationsList({
 
   const handleItemClick = async (e: React.MouseEvent, row: NotificationRow) => {
     if (showingPlaceholders) return;
-
     if (row.status === "pending") {
-      // Mark read optimistically
-      await handleMarkAsRead(row.id);
+      await handleMarkRead(row.id);
     }
   };
+
+  const descriptions = notificationTypeDescriptions[portal];
 
   return (
     <div className="space-y-6">
@@ -159,7 +145,9 @@ export function NotificationsList({
       {/* Navigation Grouping Tabs */}
       <div className="flex flex-wrap items-center gap-1.5 border-b border-[var(--border-primary)] pb-1.5 overflow-x-auto select-none no-scrollbar">
         {GROUPS.map((group) => {
-          const count = getCountForGroup(group.id);
+          const count = rows.filter(
+            (row) => group.id === "all" || getNotificationGroup(row) === group.id,
+          ).length;
           const isActive = activeTab === group.id;
           return (
             <button
@@ -213,13 +201,12 @@ export function NotificationsList({
 
         <div className="divide-y divide-[var(--border-primary)]">
           {filteredRows.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-              <Bell className="h-10 w-10 text-[var(--foreground-muted)] opacity-40 mb-3" />
-              <p className="text-sm font-semibold text-[var(--foreground-primary)]">No notifications found</p>
-              <p className="text-xs text-[var(--foreground-muted)] mt-1">
-                You&apos;re all caught up! No notifications in this category.
-              </p>
-            </div>
+            <EmptyState
+              description="You're all caught up! No notifications in this category."
+              icon={<Bell className="h-6 w-6" />}
+              title="No notifications found"
+              variant="flat"
+            />
           ) : (
             filteredRows.map((row) => {
               const href = showingPlaceholders ? null : resolveNotificationHref(row, portal);
@@ -262,7 +249,7 @@ export function NotificationsList({
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        handleMarkAsRead(row.id);
+                        handleMarkRead(row.id);
                       }}
                       className="flex items-center gap-1 text-xs font-semibold text-[var(--accent-primary)] hover:text-[var(--accent-hover)] transition-colors px-2.5 py-1.5 rounded bg-[var(--surface-accent-soft)]/50 hover:bg-[var(--surface-accent-soft)] cursor-pointer whitespace-nowrap"
                     >

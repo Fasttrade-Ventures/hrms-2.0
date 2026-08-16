@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { EmptyState, ListCard, StatusPill } from "@hrms/ui";
 
+import { PortalIcon } from "@/components/portal/portal-icons";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { listMyAppraisals } from "@/lib/employee/performance";
 import { requireModule } from "@/lib/entitlements";
@@ -26,6 +27,7 @@ export default async function Page() {
         empty={
           <EmptyState
             description="Appraisal cycles will appear here when HR publishes a review period."
+            icon={<PortalIcon name="performance" className="h-6 w-6" />}
             title="No performance reviews"
           />
         }

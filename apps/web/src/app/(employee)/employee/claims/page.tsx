@@ -12,6 +12,7 @@ import {
   formatCurrency,
   RequestStatusPill,
 } from "@/components/employee/employee-shared";
+import { PortalIcon } from "@/components/portal/portal-icons";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { listClaimTypes } from "@/lib/employee/catalog";
 import { listClaims } from "@/lib/employee/requests";
@@ -67,6 +68,7 @@ export default async function Page() {
         empty={
           <EmptyState
             description="Submit your first claim using the form above."
+            icon={<PortalIcon name="claims" className="h-6 w-6" />}
             title="No claims submitted yet"
           />
         }

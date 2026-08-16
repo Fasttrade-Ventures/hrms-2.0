@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useActionState } from "react";
 
 import { uploadMyDocumentAction, type EmployeeDocumentActionState } from "@/app/(employee)/employee/documents/actions";
+import { EmptyState } from "@hrms/ui";
+import { PortalIcon } from "@/components/portal/portal-icons";
 import {
   HrField,
   HrFormMessage,
@@ -85,9 +87,12 @@ export function EmployeeDocumentsView({
           <p className="text-sm font-medium">My documents</p>
         </div>
         {documents.length === 0 ? (
-          <div className="px-4 py-8 text-sm text-muted-foreground">
-            Documents shared by HR will appear here.
-          </div>
+          <EmptyState
+            description="Documents shared by HR will appear here."
+            icon={<PortalIcon name="documents" className="h-6 w-6" />}
+            title="No documents yet"
+            variant="flat"
+          />
         ) : (
           <div className="divide-y divide-border">
             {documents.map((doc) => (

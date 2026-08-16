@@ -7,24 +7,29 @@ import {
   HrTextInput,
 } from "@/components/employee/employee-request-form";
 import { formatDate, RequestStatusPill } from "@/components/employee/employee-shared";
+import { PortalIcon } from "@/components/portal/portal-icons";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { listLateReports } from "@/lib/employee/requests";
 
 export default async function Page() {
+  const requests = await listLateReports().catch(() => []);
   const today = new Date().toISOString().slice(0, 10);
-  const requests = await listLateReports();
 
   return (
-    <div className="space-y-8">
-      <PortalPageHeader description="Report a late arrival for manager review." title="Report Late" />
+    <div className="space-y-6">
+      <PortalPageHeader description="Report arrival latency." title="Report Late" />
 
-      <EmployeeRequestForm action={submitLateReport} submitLabel="Submit Report Late" title="Report Late details">
+      <EmployeeRequestForm
+        action={submitLateReport}
+        submitLabel="Submit report"
+        title="New report"
+      >
         <div className="grid gap-5 md:grid-cols-2">
-          <HrField id="requestDate" label="Date">
-            <HrTextInput defaultValue={today} id="requestDate" name="requestDate" required type="date" />
+          <HrField id="workDate" label="Date">
+            <HrTextInput defaultValue={today} id="workDate" name="workDate" required type="date" />
           </HrField>
-          <HrField id="actualArrivalTime" label="Actual arrival time">
-            <HrTextInput defaultValue="09:30" id="actualArrivalTime" name="actualArrivalTime" required type="time" />
+          <HrField id="arrivalTime" label="Arrival time">
+            <HrTextInput defaultValue="09:30" id="arrivalTime" name="arrivalTime" required />
           </HrField>
           <HrField id="reason" label="Reason">
             <HrTextInput id="reason" name="reason" placeholder="Optional" />
@@ -41,6 +46,7 @@ export default async function Page() {
         empty={
           <EmptyState
             description="Submit your first late report using the form above."
+            icon={<PortalIcon name="report-late" className="h-6 w-6" />}
             title="No Report Late requests yet"
           />
         }
