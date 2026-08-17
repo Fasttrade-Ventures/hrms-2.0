@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 
 import { applyLeave, type EmployeeActionState } from "@/app/(employee)/employee/actions";
 import {
@@ -33,6 +33,11 @@ export function LeaveApplyForm({
   const [durationMode, setDurationMode] = useState<DurationMode>("full");
   const [startDate, setStartDate] = useState(defaultStartDate);
   const [endDate, setEndDate] = useState(defaultEndDate);
+  const [todayStr, setTodayStr] = useState("");
+
+  useEffect(() => {
+    setTodayStr(new Date().toLocaleDateString("en-CA"));
+  }, []);
 
   const selectedType = leaveTypes.find((t) => t.id === selectedLeaveTypeId);
   const requiresAttachment = selectedType?.requiresAttachment ?? false;
@@ -165,6 +170,7 @@ export function LeaveApplyForm({
               name="startDate"
               required
               type="date"
+              min={todayStr || undefined}
             />
           </HrField>
 
@@ -176,6 +182,7 @@ export function LeaveApplyForm({
               name="endDate"
               required
               type="date"
+              min={startDate || todayStr || undefined}
             />
           </HrField>
         </div>

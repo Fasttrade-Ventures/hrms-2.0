@@ -72,9 +72,10 @@ export async function assertLeaveDatesAllowed(
       !blackout.leave_type_ids?.length || (blackout.leave_type_ids as string[]).includes(leaveTypeId);
     if (!applies) continue;
     if (datesOverlap(startDate, endDate, blackout.start_date, blackout.end_date)) {
-      throw new Error(
-        `Leave is blocked during "${blackout.name}" (${blackout.start_date} to ${blackout.end_date}).`,
-      );
+      const formattedName = blackout.name.toLowerCase().includes("period")
+        ? blackout.name
+        : `${blackout.name} period`;
+      throw new Error(`Leave cannot be applied during ${formattedName}.`);
     }
   }
 }
