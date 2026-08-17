@@ -20,10 +20,10 @@ export default async function Page() {
 
       <ListCard
         columns={[
-          { key: "employee", label: "Employee" },
-          { key: "date", label: "Date", className: "w-32" },
-          { key: "clockIn", label: "Clock in", className: "w-40" },
-          { key: "clockOut", label: "Clock out", className: "w-40" },
+          { key: "employee", label: "Employee", className: "min-w-0 flex-1 font-semibold" },
+          { key: "date", label: "Date", className: "hidden sm:block w-28" },
+          { key: "clockIn", label: "Clock in", className: "w-40 text-right sm:text-left" },
+          { key: "clockOut", label: "Clock out", className: "hidden md:block w-40" },
         ]}
         empty={
           <EmptyState description="Assign direct reports in HR to see team attendance here." title="No records" />
