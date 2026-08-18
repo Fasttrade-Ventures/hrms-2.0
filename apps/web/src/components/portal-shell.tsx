@@ -133,20 +133,36 @@ export function PortalShell({
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-[var(--border-primary)] bg-[var(--surface-card)] px-4 sm:px-8">
           <div className="flex items-center gap-3">
-            <button
-              aria-label="Open navigation"
-              className="rounded-[var(--radius-md)] p-2 text-[var(--foreground-secondary)] lg:hidden"
-              onClick={() => setMobileOpen(true)}
-              type="button"
-            >
-              <MenuIcon />
-            </button>
-            <div>
-              <h1 className="text-lg font-semibold text-[var(--foreground-primary)]">{currentPage}</h1>
-              {pageSubtitle ? (
-                <p className="text-xs text-[var(--foreground-muted)]">{pageSubtitle}</p>
-              ) : null}
-            </div>
+            {showMobileNav ? (
+              <>
+                <div className="lg:hidden">
+                  <PortalBrand />
+                </div>
+                <div className="hidden lg:block">
+                  <h1 className="text-lg font-semibold text-[var(--foreground-primary)]">{currentPage}</h1>
+                  {pageSubtitle ? (
+                    <p className="text-xs text-[var(--foreground-muted)]">{pageSubtitle}</p>
+                  ) : null}
+                </div>
+              </>
+            ) : (
+              <>
+                <button
+                  aria-label="Open navigation"
+                  className="rounded-[var(--radius-md)] p-2 text-[var(--foreground-secondary)] lg:hidden"
+                  onClick={() => setMobileOpen(true)}
+                  type="button"
+                >
+                  <MenuIcon />
+                </button>
+                <div>
+                  <h1 className="text-lg font-semibold text-[var(--foreground-primary)]">{currentPage}</h1>
+                  {pageSubtitle ? (
+                    <p className="text-xs text-[var(--foreground-muted)]">{pageSubtitle}</p>
+                  ) : null}
+                </div>
+              </>
+            )}
           </div>
           <div className="flex items-center gap-3 sm:gap-4">
             <p className="hidden text-[13px] text-[var(--foreground-muted)] md:block">{todayLabel}</p>
@@ -162,10 +178,10 @@ export function PortalShell({
         </header>
 
         <main
-          className={`min-h-0 flex-1 overflow-y-auto ${showMobileNav ? "pb-24 lg:pb-6" : ""}`}
+          className={`min-h-0 flex-1 min-w-0 overflow-x-hidden overflow-y-auto ${showMobileNav ? "pb-24 lg:pb-6" : ""}`}
           style={{ padding: portal === "HR Administrator" ? 24 : undefined }}
         >
-          <div className={portal === "HR Administrator" ? "" : "px-4 py-6 sm:px-6 sm:py-6 lg:px-8"}>
+          <div className={portal === "HR Administrator" ? "min-w-0 w-full" : "min-w-0 w-full px-4 py-6 sm:px-6 sm:py-6 lg:px-8"}>
             {children}
           </div>
         </main>

@@ -311,6 +311,36 @@ export default async function Page() {
 
         {/* Side Col (right col) */}
         <div className="space-y-4">
+          {/* Missing Documents Card */}
+          {complianceSummary.missing > 0 && (
+            <div className="rounded-[var(--radius-xl)] border border-[var(--danger)]/20 bg-[var(--danger-soft)]/50 p-4 flex flex-col gap-3">
+              <div className="flex items-center gap-2 text-[var(--danger)]">
+                <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <h4 className="text-sm font-semibold text-[var(--danger)]">Missing Documents</h4>
+              </div>
+              <ul className="text-xs space-y-1.5 text-[var(--foreground-primary)] list-disc list-inside pl-1 font-semibold">
+                {complianceSummary.uploadableTypes.map((type) => (
+                  <li key={type.id}>
+                    <Link
+                      href={`/employee/documents?type=${encodeURIComponent(type.name)}`}
+                      className="hover:underline hover:text-[var(--accent-hover)] transition"
+                    >
+                      {type.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/employee/documents"
+                className="mt-1 w-full text-center inline-flex h-9 items-center justify-center rounded-lg bg-[var(--danger)] text-xs font-semibold text-white hover:opacity-90 shadow-sm transition"
+              >
+                Upload Now
+              </Link>
+            </div>
+          )}
+
           {/* Announcements Card */}
           <div className="rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-card)] shadow-[var(--shadow-card)] p-4 flex flex-col gap-3">
             <div className="flex items-center justify-between">

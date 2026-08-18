@@ -56,16 +56,27 @@ export function CalendarMonth({
               const inMonth = date.startsWith(monthPrefix);
               const isToday = date === today;
               return (
-                <button
+                <div
                   className={cn(
-                    "min-h-24 space-y-1 p-1.5 text-left align-top transition-colors hover:bg-muted/30",
+                    "min-h-24 space-y-1 p-1.5 text-left align-top transition-colors hover:bg-muted/30 cursor-pointer focus:outline-none focus:ring-1 focus:ring-inset focus:ring-primary",
                     !inMonth && "bg-muted/20 text-muted-foreground",
                     isWeekendDate(date, weekendMode) && inMonth && "bg-muted/10",
                     isToday && "ring-1 ring-inset ring-primary",
                   )}
                   key={date}
-                  onClick={() => onDayClick(date, dayEvents)}
-                  type="button"
+                  onClick={(e) => {
+                    if (e.target === e.currentTarget || !(e.target as HTMLElement).closest("button")) {
+                      onDayClick(date, dayEvents);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onDayClick(date, dayEvents);
+                    }
+                  }}
                 >
                   <span className="text-xs font-medium">{Number(date.slice(8, 10))}</span>
                   <div className="space-y-0.5">
@@ -83,7 +94,7 @@ export function CalendarMonth({
                       </span>
                     ) : null}
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>

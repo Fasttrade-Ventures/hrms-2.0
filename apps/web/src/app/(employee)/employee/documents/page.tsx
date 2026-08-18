@@ -2,7 +2,12 @@ import { EmployeeDocumentsView } from "@/components/employee/employee-documents-
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { getMyDocumentComplianceSummary, listMyDocuments } from "@/lib/employee/documents";
 
-export default async function Page() {
+interface PageProps {
+  searchParams: Promise<{ type?: string }>;
+}
+
+export default async function Page({ searchParams }: PageProps) {
+  const { type } = await searchParams;
   const [documents, summary] = await Promise.all([
     listMyDocuments(),
     getMyDocumentComplianceSummary(),
@@ -11,7 +16,7 @@ export default async function Page() {
   return (
     <div className="space-y-6">
       <PortalPageHeader description="Your HR documents and required uploads." title="Documents" />
-      <EmployeeDocumentsView documents={documents} summary={summary} />
+      <EmployeeDocumentsView defaultType={type} documents={documents} summary={summary} />
     </div>
   );
 }

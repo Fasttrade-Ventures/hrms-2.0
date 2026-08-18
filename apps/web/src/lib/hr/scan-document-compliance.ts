@@ -131,3 +131,77 @@ export async function scanAndQueueDocumentComplianceNotifications(): Promise<{
 
   return { queued };
 }
+
+export async function syncEmployeeDocumentCompliance(
+  organizationId: string,
+  employeeId: string,
+  userId: string,
+  employeeName: string
+): Promise<void> {
+  const { getEntitlements } = await import("@/lib/entitlements");
+  const entitlements = await getEntitlements();
+  if (entitlements.tier === "core") {
+    return;
+  }
+
+  const admin = createAdminClient();
+  const today = new Date().toISOString().slice(0, 10);
+
+  const [requiredRes, documentsRes] = await Promise.all([
+    admin
+      .from("required_documents")
+      .select("name, requires_expiry, warning_days")
+      .eq("organization_id", organizationId)
+      .eq("is_active", true),
+    admin
+      .from("employee_documents")
+      .select("document_type, expires_at, created_at, file_objects(deleted_at)")
+      .eq("organization_id", organizationId)
+      .eq("employee_id", employeeId)
+      .order("created_at", { ascending: false }),
+  ]);
+
+  if (requiredRes.error) throw new Error(requiredRes.error.message);
+  if (documentsRes.error) throw new Error(documentsRes.error.message);
+
+  const docs = (documentsRes.data ?? []).filter((row) => {
+    const file = Array.isArray(row.file_objects) ? row.file_objects[0] : row.file_objects;
+    return file && !file.deleted_at;
+  });
+
+  for (const required of requiredRes.data ?? []) {
+    const latest = docs.find((doc) => documentTypesMatch(doc.document_type, required.name));
+    const status = resolveDocumentCompliance({
+      required: {
+        requiresExpiry: required.requires_expiry,
+        warningDays: required.warning_days,
+      },
+      document: latest ? { expiresAt: latest.expires_at } : null,
+      today,
+    });
+
+    if (status === "missing" || status === "expired" || status === "expiring") {
+      const statusLabel =
+        status === "expiring" ? "expiring soon" : status === "expired" ? "expired" : "missing";
+
+      const payload = {
+        employeeName,
+        documentType: required.name,
+        status,
+        expiresAt: latest?.expires_at ?? null,
+      };
+
+      await queueDocumentComplianceNotice({
+        organizationId,
+        recipientUserId: userId,
+        audience: "employee",
+        payload: {
+          ...payload,
+          subject: `Action needed: ${required.name} is ${statusLabel}`,
+          href: "/employee/documents",
+        },
+        idempotencyKey: `doc-scan-employee:${employeeId}:${required.name}:${status}:${today}`,
+      });
+    }
+  }
+}

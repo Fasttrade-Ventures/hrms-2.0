@@ -374,6 +374,10 @@ export function resolvePortalNavLabel(
   pathname: string,
   sections?: PortalNavSection[],
 ): string | undefined {
+  if (pathname.endsWith("/notifications")) {
+    return "Notifications";
+  }
+
   const navItems = sections
     ? sections.flatMap((section) => flattenNavItems(section.items))
     : getPortalNav(portal);

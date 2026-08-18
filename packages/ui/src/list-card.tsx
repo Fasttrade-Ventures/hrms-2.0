@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 
 function columnClassName(col: { className?: string }, variant: "header" | "cell") {
   const base = col.className ?? "min-w-0 flex-1";
-  const width = col.className?.match(/\bw-\S+/)?.[0];
-  const sized = width ? `${width} shrink-0` : base;
+  const hasWidth = col.className?.split(/\s+/).some((c) => c.startsWith("w-"));
+  const sized = hasWidth ? `${base} shrink-0` : base;
 
   if (variant === "header") {
     return `${sized} text-xs font-medium uppercase tracking-wide text-[var(--foreground-muted)]`;
@@ -37,7 +37,7 @@ export function ListCard({
       </div>
       <div className="overflow-x-auto">
         {rows.length > 0 ? (
-          <div className="min-w-max">
+          <div className="min-w-full w-full">
             <div className="flex items-center gap-4 border-b border-[var(--border-primary)] bg-[var(--surface-muted)]/60 px-4 py-2.5">
               {columns.map((col) => (
                 <div key={col.key} className={columnClassName(col, "header")}>

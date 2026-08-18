@@ -29,10 +29,10 @@ export function HrField({
 }
 
 const selectClassName =
-  "h-10 w-full rounded-lg border border-input bg-muted/40 px-3.5 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
+  "h-10 w-full rounded-lg border border-input bg-muted/40 px-3.5 text-base md:text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
 
 export function HrTextInput({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
-  return <Input className={cn("h-10 bg-muted/40", className)} {...props} />;
+  return <Input className={cn("h-10 bg-muted/40 text-base md:text-sm", className)} {...props} />;
 }
 
 export function HrSelect(props: SelectHTMLAttributes<HTMLSelectElement>) {
@@ -43,7 +43,7 @@ export function HrTextarea({ className, ...props }: TextareaHTMLAttributes<HTMLT
   return (
     <textarea
       className={cn(
-        "min-h-[88px] w-full rounded-lg border border-input bg-muted/40 px-3.5 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+        "min-h-[88px] w-full rounded-lg border border-input bg-muted/40 px-3.5 py-2.5 text-base md:text-sm text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
         className,
       )}
       {...props}

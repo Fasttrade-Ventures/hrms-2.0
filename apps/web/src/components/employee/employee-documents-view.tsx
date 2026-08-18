@@ -24,9 +24,11 @@ const initialState: EmployeeDocumentActionState = {};
 export function EmployeeDocumentsView({
   documents,
   summary,
+  defaultType,
 }: {
   documents: MyDocumentRow[];
   summary: MyDocumentComplianceSummary;
+  defaultType?: string;
 }) {
   const [state, action, pending] = useActionState(uploadMyDocumentAction, initialState);
 
@@ -45,7 +47,13 @@ export function EmployeeDocumentsView({
             <p className="text-sm font-medium">Upload a missing required document</p>
             <form action={action} className="grid gap-4 md:grid-cols-2">
               <HrField id="documentType" label="Document type">
-                <HrSelect defaultValue="" id="documentType" name="documentType" required>
+                <HrSelect
+                  key={defaultType || "empty"}
+                  defaultValue={defaultType || ""}
+                  id="documentType"
+                  name="documentType"
+                  required
+                >
                   <option disabled value="">
                     Select document type
                   </option>
