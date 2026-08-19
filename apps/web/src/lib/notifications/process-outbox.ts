@@ -1,6 +1,23 @@
-import { sendDocumentComplianceEmail, sendPayslipAvailableEmail, sendScheduledReportEmail } from "@hrms/platform";
+import {
+  S3R2StorageAdapter,
+  StubR2StorageAdapter,
+  type R2StorageAdapter,
+  sendDocumentComplianceEmail,
+  sendPayslipAvailableEmail,
+  sendScheduledReportEmail,
+} from "@hrms/platform";
 
+import { generatePayslipPdf } from "@/lib/payroll/pdf";
 import { createAdminClient } from "@/lib/supabase/admin";
+
+function getStorageAdapter(): R2StorageAdapter {
+  try {
+    return new S3R2StorageAdapter();
+  } catch (err) {
+    console.warn("R2 storage not configured, using StubR2StorageAdapter:", err);
+    return new StubR2StorageAdapter();
+  }
+}
 
 export async function processNotificationOutbox(limit = 25): Promise<{
   processed: number;
@@ -59,10 +76,81 @@ export async function processNotificationOutbox(limit = 25): Promise<{
         periodYear && periodMonth
           ? `${periodYear}-${String(periodMonth).padStart(2, "0")}`
           : "this period";
+
+      let secureLink: string | undefined;
+      let attachment: { filename: string; content: string } | undefined;
+
+      if (payload.itemId) {
+        const { data: item } = await admin
+          .from("payroll_payrun_items")
+          .select(`
+            id,
+            gross_pay,
+            net_pay,
+            epf_employee,
+            epf_employer,
+            socso_employee,
+            socso_employer,
+            eis_employee,
+            eis_employer,
+            pcb,
+            employees (
+              full_name,
+              employee_number
+            )
+          `)
+          .eq("id", payload.itemId)
+          .maybeSingle();
+
+        if (item) {
+          const employee = Array.isArray(item.employees) ? item.employees[0] : item.employees;
+          const employeeName = employee?.full_name ?? "Employee";
+          const employeeNumber = employee?.employee_number ?? "";
+
+          const pdfBuffer = generatePayslipPdf({
+            employeeName,
+            employeeNumber,
+            periodLabel,
+            grossPay: Number(item.gross_pay ?? 0),
+            netPay: Number(item.net_pay ?? 0),
+            epfEmployee: Number(item.epf_employee ?? 0),
+            epfEmployer: Number(item.epf_employer ?? 0),
+            socsoEmployee: Number(item.socso_employee ?? 0),
+            socsoEmployer: Number(item.socso_employer ?? 0),
+            eisEmployee: Number(item.eis_employee ?? 0),
+            eisEmployer: Number(item.eis_employer ?? 0),
+            pcb: Number(item.pcb ?? 0),
+          });
+
+          const adapter = getStorageAdapter();
+          const organizationId = String(payload.organizationId ?? process.env.DEFAULT_ORGANIZATION_ID);
+          try {
+            const ref = await adapter.putObject({
+              organizationId,
+              category: "payslips",
+              fileName: `payslip-${item.id}.pdf`,
+              contentType: "application/pdf",
+              body: pdfBuffer,
+            });
+
+            secureLink = await adapter.getSignedDownloadUrl(ref, { expiresInSeconds: 7 * 24 * 60 * 60 });
+          } catch (storageErr) {
+            console.error("Failed to upload/sign payslip PDF:", storageErr);
+          }
+
+          attachment = {
+            filename: `payslip-${periodLabel}.pdf`,
+            content: Buffer.from(pdfBuffer).toString("base64"),
+          };
+        }
+      }
+
       result = await sendPayslipAvailableEmail({
         to: email,
         periodLabel,
         payslipPath: String(payload.href ?? "/employee/payslips"),
+        secureLink,
+        attachment,
       });
     } else if (row.template === "reports.scheduled") {
       result = await sendScheduledReportEmail({
