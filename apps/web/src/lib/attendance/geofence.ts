@@ -4,6 +4,7 @@ export type GeofenceConfig = {
   longitude: number;
   radiusMeters: number;
   branchName: string;
+  outsideAction?: "flag" | "block" | null;
 };
 
 export function distanceMeters(
@@ -48,7 +49,13 @@ export function validateGeofenceClockIn(input: {
     input.geofence,
   );
 
-  return within
-    ? { ok: true, status: "present" }
-    : { ok: true, status: "out_of_range" };
+  if (within) {
+    return { ok: true, status: "present" };
+  }
+
+  if (input.geofence.outsideAction === "block") {
+    return { ok: false, error: "You are outside the allowed clock-in radius for this branch." };
+  }
+
+  return { ok: true, status: "out_of_range" };
 }

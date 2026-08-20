@@ -79,6 +79,7 @@ export const createBranchSchema = z.object({
     .optional()
     .transform((value) => (value === "" || value == null ? null : value)),
   geofenceRadiusM: z.coerce.number().int().min(25).max(5000).default(100),
+  geofenceOutsideAction: z.enum(["flag", "block"]).default("flag"),
 });
 
 export const updateBranchSchema = createBranchSchema;

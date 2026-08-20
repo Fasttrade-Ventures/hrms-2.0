@@ -213,7 +213,7 @@ export function BranchForm({ branch }: { branch?: BranchRow }) {
               label="Enable geofence validation for clock-in"
               name="geofenceEnabled"
             />
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2">
               <HrField id="latitude" label="Latitude">
                 <HrTextInput
                   defaultValue={branch?.latitude != null ? String(branch.latitude) : ""}
@@ -242,6 +242,16 @@ export function BranchForm({ branch }: { branch?: BranchRow }) {
                   name="geofenceRadiusM"
                   type="number"
                 />
+              </HrField>
+              <HrField id="geofenceOutsideAction" label="Outside radius rule">
+                <HrSelect
+                  defaultValue={branch?.geofenceOutsideAction ?? "flag"}
+                  id="geofenceOutsideAction"
+                  name="geofenceOutsideAction"
+                >
+                  <option value="flag">Flag (Allow clock-in, but flag as out-of-range)</option>
+                  <option value="block">Block (Block clock-in from outside range)</option>
+                </HrSelect>
               </HrField>
             </div>
           </div>

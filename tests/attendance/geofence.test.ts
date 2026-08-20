@@ -29,12 +29,24 @@ describe("attendance geofence", () => {
     }
   });
 
-  it("marks out_of_range when outside geofence", () => {
+  it("marks out_of_range when outside geofence and outsideAction is flag", () => {
     const result = validateGeofenceClockIn({
-      geofence: branch,
+      geofence: { ...branch, outsideAction: "flag" },
       latitude: 3.2,
       longitude: 101.8,
     });
     expect(result).toEqual({ ok: true, status: "out_of_range" });
+  });
+
+  it("blocks clock-in when outside geofence and outsideAction is block", () => {
+    const result = validateGeofenceClockIn({
+      geofence: { ...branch, outsideAction: "block" },
+      latitude: 3.2,
+      longitude: 101.8,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain("outside the allowed clock-in radius");
+    }
   });
 });

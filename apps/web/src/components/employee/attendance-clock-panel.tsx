@@ -50,7 +50,7 @@ export function AttendanceClockPanel({
   const [time, setTime] = useState<string>("");
   const [mounted, setMounted] = useState(false);
   const [hoursSoFar, setHoursSoFar] = useState<string>("0h 00m");
-  const [activeOverlay, setActiveOverlay] = useState<"success_in" | "success_out" | "already_clocked" | "gps_denied" | null>(null);
+  const [activeOverlay, setActiveOverlay] = useState<"success_in" | "success_out" | "already_clocked" | "gps_denied" | "geofence_outside" | null>(null);
   const [processedMessage, setProcessedMessage] = useState<string | null>(null);
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -185,6 +185,12 @@ export function AttendanceClockPanel({
         setActiveOverlay("success_out");
       } else if (currentMessage.toLowerCase().includes("already")) {
         setActiveOverlay("already_clocked");
+      } else if (
+        currentMessage.toLowerCase().includes("outside the allowed") ||
+        currentMessage.toLowerCase().includes("out of range") ||
+        currentMessage.toLowerCase().includes("geofence")
+      ) {
+        setActiveOverlay("geofence_outside");
       }
       setProcessedMessage(currentMessage);
     }
@@ -440,6 +446,11 @@ export function AttendanceClockPanel({
                 <Info className="size-6" />
               </div>
             )}
+            {activeOverlay === "geofence_outside" && (
+              <div className="w-12 h-12 rounded-full bg-red-500/10 text-red-600 flex items-center justify-center shrink-0">
+                <MapPinOff className="size-6" />
+              </div>
+            )}
 
             {/* Modal Text */}
             <div className="text-center space-y-2">
@@ -448,6 +459,7 @@ export function AttendanceClockPanel({
                 {activeOverlay === "success_out" && "Clocked out successfully"}
                 {activeOverlay === "gps_denied" && "Location required"}
                 {activeOverlay === "already_clocked" && "Already clocked in"}
+                {activeOverlay === "geofence_outside" && "Outside Allowed Area"}
               </h4>
               <p className="text-xs text-[var(--foreground-muted)] leading-relaxed">
                 {activeOverlay === "success_in" &&
@@ -458,6 +470,8 @@ export function AttendanceClockPanel({
                   "Enable GPS to allow location tracking when clocking in."}
                 {activeOverlay === "already_clocked" &&
                   `You clocked in at ${formatTime(today?.clockInAt)}. Clock out first before starting a new session.`}
+                {activeOverlay === "geofence_outside" &&
+                  "You are outside the allowed clock-in radius for this branch. Please move within the approved geofence to clock in."}
               </p>
             </div>
 

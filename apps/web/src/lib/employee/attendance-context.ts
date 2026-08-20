@@ -29,7 +29,7 @@ export async function getEmployeeAttendanceContext(): Promise<{
 
   const { data: branch } = await supabase
     .from("branches")
-    .select("name, geofence_enabled, latitude, longitude, geofence_radius_m")
+    .select("name, geofence_enabled, latitude, longitude, geofence_radius_m, geofence_outside_action")
     .eq("id", employee.branch_id)
     .maybeSingle();
 
@@ -45,6 +45,7 @@ export async function getEmployeeAttendanceContext(): Promise<{
       latitude: Number(branch.latitude),
       longitude: Number(branch.longitude),
       radiusMeters: branch.geofence_radius_m ?? 100,
+      outsideAction: branch.geofence_outside_action === "block" ? "block" : "flag",
     },
   };
 }

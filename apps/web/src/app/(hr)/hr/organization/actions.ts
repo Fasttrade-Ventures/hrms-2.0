@@ -71,6 +71,7 @@ function readBranchForm(formData: FormData) {
     latitude: String(formData.get("latitude") ?? "").trim() || undefined,
     longitude: String(formData.get("longitude") ?? "").trim() || undefined,
     geofenceRadiusM: String(formData.get("geofenceRadiusM") ?? "100").trim(),
+    geofenceOutsideAction: String(formData.get("geofenceOutsideAction") ?? "flag").trim(),
   };
 }
 
@@ -91,6 +92,7 @@ function branchPayload(parsed: {
   latitude: number | null;
   longitude: number | null;
   geofenceRadiusM: number;
+  geofenceOutsideAction: "flag" | "block";
 }) {
   return {
     name: parsed.name,
@@ -110,6 +112,7 @@ function branchPayload(parsed: {
     latitude: parsed.latitude,
     longitude: parsed.longitude,
     geofence_radius_m: parsed.geofenceRadiusM,
+    geofence_outside_action: parsed.geofenceOutsideAction,
   };
 }
 

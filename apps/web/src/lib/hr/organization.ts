@@ -49,6 +49,7 @@ export type BranchRow = {
   latitude: number | null;
   longitude: number | null;
   geofenceRadiusM: number;
+  geofenceOutsideAction: "flag" | "block";
   employeeCount: number;
   createdAt: string;
 };
@@ -266,7 +267,7 @@ export async function listBranches(): Promise<BranchRow[]> {
     supabase
       .from("branches")
       .select(
-        "id, name, state, weekend_mode, payroll_cutoff_day, hrdf_enabled, hrdf_registration_number, hrdf_rate, lindung_enabled, epf_employer_number, socso_employer_code, epf_wage_rounding, lindung_employer_rate, geofence_enabled, latitude, longitude, geofence_radius_m, created_at",
+        "id, name, state, weekend_mode, payroll_cutoff_day, hrdf_enabled, hrdf_registration_number, hrdf_rate, lindung_enabled, epf_employer_number, socso_employer_code, epf_wage_rounding, lindung_employer_rate, geofence_enabled, latitude, longitude, geofence_radius_m, geofence_outside_action, created_at",
       )
       .eq("organization_id", organizationId)
       .order("name"),
@@ -300,6 +301,7 @@ export async function listBranches(): Promise<BranchRow[]> {
     latitude: row.latitude != null ? Number(row.latitude) : null,
     longitude: row.longitude != null ? Number(row.longitude) : null,
     geofenceRadiusM: row.geofence_radius_m ?? 100,
+    geofenceOutsideAction: (row.geofence_outside_action === "block" ? "block" : "flag") as "flag" | "block",
     employeeCount: counts.get(row.id) ?? 0,
     createdAt: row.created_at,
   }));
