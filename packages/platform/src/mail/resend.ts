@@ -52,6 +52,7 @@ export async function sendDocumentComplianceEmail(input: {
   status: string;
   expiresAt?: string | null;
   audience: "employee" | "hr";
+  remainingDays?: number | null;
 }): Promise<SendResult> {
   const { subject, html, text } = buildDocumentComplianceEmail({
     recipientName: input.recipientName,
@@ -60,6 +61,7 @@ export async function sendDocumentComplianceEmail(input: {
     status: input.status,
     expiresAt: input.expiresAt,
     audience: input.audience,
+    remainingDays: input.remainingDays,
   });
 
   return sendResendEmail({ to: input.to, subject, html, text });

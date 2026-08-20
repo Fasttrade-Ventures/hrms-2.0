@@ -14,7 +14,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const queued = await scanAndQueueDocumentComplianceNotifications();
+  const { searchParams } = new URL(request.url);
+  const asOf = searchParams.get("asOf") || undefined;
+
+  const queued = await scanAndQueueDocumentComplianceNotifications(asOf);
   const sent = await processNotificationOutbox(100);
   return NextResponse.json({ ok: true, queued, sent });
 }
