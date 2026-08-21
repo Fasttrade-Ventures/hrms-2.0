@@ -14,7 +14,7 @@ function getOrganizationId(): string {
 
 const NOTIFY_STATUSES = new Set<ComplianceStatus>(["missing", "expired", "expiring"]);
 
-export async function scanAndQueueDocumentComplianceNotifications(): Promise<{
+export async function scanAndQueueDocumentComplianceNotifications(asOf?: string): Promise<{
   queued: number;
 }> {
   const { getEntitlements } = await import("@/lib/entitlements");
@@ -25,7 +25,7 @@ export async function scanAndQueueDocumentComplianceNotifications(): Promise<{
 
   const organizationId = getOrganizationId();
   const admin = createAdminClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = asOf || new Date().toISOString().slice(0, 10);
   let queued = 0;
 
   const [employeesRes, requiredRes, documentsRes, hrAdminsRes] = await Promise.all([
@@ -87,6 +87,13 @@ export async function scanAndQueueDocumentComplianceNotifications(): Promise<{
 
       if (!NOTIFY_STATUSES.has(status)) continue;
 
+      let remainingDays: number | null = null;
+      if (status === "expiring" && latest?.expiresAt) {
+        const todayMs = Date.parse(`${today}T00:00:00Z`);
+        const expiresMs = Date.parse(`${latest.expiresAt}T00:00:00Z`);
+        remainingDays = Math.ceil((expiresMs - todayMs) / 86_400_000);
+      }
+
       const statusLabel =
         status === "expiring" ? "expiring soon" : status === "expired" ? "expired" : "missing";
 
@@ -95,6 +102,7 @@ export async function scanAndQueueDocumentComplianceNotifications(): Promise<{
         documentType: required.name,
         status,
         expiresAt: latest?.expiresAt ?? null,
+        remainingDays,
       };
 
       if (membership?.user_id) {

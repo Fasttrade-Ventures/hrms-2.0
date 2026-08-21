@@ -68,6 +68,7 @@ export async function processNotificationOutbox(limit = 25): Promise<{
         status: String(payload.status ?? "missing"),
         expiresAt: typeof payload.expiresAt === "string" ? payload.expiresAt : null,
         audience: row.template === "document_compliance_hr" ? "hr" : "employee",
+        remainingDays: typeof payload.remainingDays === "number" ? payload.remainingDays : null,
       });
     } else if (row.template === "payroll.payslip_available") {
       const periodYear = Number(payload.periodYear ?? 0);
