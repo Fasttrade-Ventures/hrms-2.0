@@ -23,6 +23,9 @@ export default defineConfig({
       "@hrms/platform": path.resolve(__dirname, "packages/platform/src/index.ts"),
       "@hrms/testkit": path.resolve(__dirname, "packages/testkit/src/index.ts"),
       "@hrms/validation": path.resolve(__dirname, "packages/validation/src/index.ts"),
+      "next/cache": path.resolve(__dirname, "tests/mocks/next-cache.ts"),
+      "next/headers": path.resolve(__dirname, "tests/mocks/next-headers.ts"),
+      "next/navigation": path.resolve(__dirname, "tests/mocks/next-navigation.ts"),
     },
   },
 });
