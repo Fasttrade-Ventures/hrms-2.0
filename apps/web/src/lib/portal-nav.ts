@@ -121,7 +121,7 @@ const employeeNav: PortalNavSection[] = [
     items: [
       { href: "/employee/leave", label: "Leave", icon: "leave" },
       { href: "/employee/attendance", label: "Attendance", icon: "attendance" },
-      { href: "/employee/schedule", label: "My schedule", icon: "timesheet" },
+      { href: "/employee/schedule", label: "My Schedule", icon: "timesheet" },
       { href: "/employee/manual-attendance", label: "Manual Attendance", icon: "manual-attendance" },
       { href: "/employee/report-late", label: "Report Late", icon: "report-late" },
       { href: "/employee/timesheet", label: "Timesheet", icon: "timesheet" },
