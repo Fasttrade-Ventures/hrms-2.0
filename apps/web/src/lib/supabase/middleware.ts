@@ -11,6 +11,7 @@ import {
 function isPublicPath(pathname: string): boolean {
   if (pathname === "/") return true;
   if (pathname === "/api/health") return true;
+  if (pathname.startsWith("/api/cron/")) return true;
   if (pathname === "/api/auth/logout") return true;
   if (pathname === "/unauthorized") return true;
   if (isPublicAuthPath(pathname)) return true;

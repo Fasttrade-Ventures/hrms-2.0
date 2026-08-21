@@ -9,13 +9,14 @@ function authorizeCron(request: Request): boolean {
   return request.headers.get("authorization") === `Bearer ${secret}`;
 }
 
-/** Queue payslip emails for pay_date = today (MYT) and flush the email outbox. */
+/** Queue payslip emails for pay_date = today (MYT) or asOf query parameter and flush the email outbox. */
 export async function GET(request: Request) {
   if (!authorizeCron(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const asOf = new Date().toISOString().slice(0, 10);
+  const { searchParams } = new URL(request.url);
+  const asOf = searchParams.get("asOf") ?? new Date().toISOString().slice(0, 10);
   const queued = await runPayslipEmailJob(asOf);
   const delivered = await processNotificationOutbox();
 

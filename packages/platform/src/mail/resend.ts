@@ -12,6 +12,7 @@ async function sendResendEmail(input: {
   subject: string;
   html: string;
   text: string;
+  attachments?: Array<{ filename: string; content: string }>;
 }): Promise<SendResult> {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.MAIL_FROM;
@@ -32,6 +33,7 @@ async function sendResendEmail(input: {
       subject: input.subject,
       html: input.html,
       text: input.text,
+      attachments: input.attachments,
     }),
   });
 
@@ -92,15 +94,24 @@ export async function sendPayslipAvailableEmail(input: {
   periodLabel: string;
   payslipPath: string;
   appOrigin?: string;
+  secureLink?: string;
+  attachment?: { filename: string; content: string };
 }): Promise<SendResult> {
   const origin = (input.appOrigin ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
   const payslipUrl = origin ? `${origin}${input.payslipPath}` : input.payslipPath;
   const { subject, html, text } = buildPayslipAvailableEmail({
     periodLabel: input.periodLabel,
     payslipUrl,
+    secureLink: input.secureLink,
   });
 
-  return sendResendEmail({ to: input.to, subject, html, text });
+  return sendResendEmail({
+    to: input.to,
+    subject,
+    html,
+    text,
+    attachments: input.attachment ? [input.attachment] : undefined,
+  });
 }
 
 export async function sendScheduledReportEmail(input: {
