@@ -31,6 +31,7 @@ export async function getEmployeeAttendanceContext(): Promise<{
     .from("branches")
     .select("name, geofence_enabled, latitude, longitude, geofence_radius_m, geofence_outside_action")
     .eq("id", employee.branch_id)
+    .eq("organization_id", organizationId)
     .maybeSingle();
 
   if (!branch?.geofence_enabled || branch.latitude == null || branch.longitude == null) {

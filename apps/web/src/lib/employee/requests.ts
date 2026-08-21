@@ -10,9 +10,10 @@ export type TimelineStep = {
 };
 
 export async function getApprovalTimeline(approvalRequestId: string): Promise<TimelineStep[]> {
+  const { employeeId, organizationId } = await requireEmployeeContext();
   const supabase = await createClient();
 
-  // Get the requester and submitted info
+  // Get the requester and submitted info, scoped to organization and requesting employee
   const { data: request } = await supabase
     .from("approval_requests")
     .select(`
@@ -20,25 +21,28 @@ export async function getApprovalTimeline(approvalRequestId: string): Promise<Ti
       status,
       requester_employee_id
     `)
+    .eq("organization_id", organizationId)
     .eq("id", approvalRequestId)
+    .eq("requester_employee_id", employeeId)
     .maybeSingle();
 
+  if (!request) return [];
+
   let requesterName = "Employee";
-  if (request) {
-    const { data: empRaw } = await supabase
-      .from("employees")
-      .select("full_name, email")
-      .eq("id", request.requester_employee_id)
-      .maybeSingle();
-    requesterName = empRaw?.full_name ?? empRaw?.email ?? "Employee";
-  }
+  const { data: empRaw } = await supabase
+    .from("employees")
+    .select("full_name, email")
+    .eq("organization_id", organizationId)
+    .eq("id", employeeId)
+    .maybeSingle();
+  requesterName = empRaw?.full_name ?? empRaw?.email ?? "Employee";
 
   const timeline: TimelineStep[] = [
     {
       label: "Submitted",
       approverName: requesterName,
       status: "completed",
-      actedAt: request?.created_at ?? null,
+      actedAt: request.created_at,
       comment: null,
     },
   ];
@@ -53,6 +57,7 @@ export async function getApprovalTimeline(approvalRequestId: string): Promise<Ti
       comment,
       approver_employee_id
     `)
+    .eq("organization_id", organizationId)
     .eq("approval_request_id", approvalRequestId)
     .order("step_order", { ascending: true });
 
@@ -64,6 +69,7 @@ export async function getApprovalTimeline(approvalRequestId: string): Promise<Ti
       const { data: empRaw } = await supabase
         .from("employees")
         .select("full_name, email")
+        .eq("organization_id", organizationId)
         .eq("id", step.approver_employee_id)
         .maybeSingle();
       approverName = empRaw?.full_name ?? empRaw?.email ?? "Manager";
