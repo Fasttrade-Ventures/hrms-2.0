@@ -70,14 +70,20 @@ const APPRAISAL_SELECT = `
 export async function getAppraisalDetail(
   organizationId: string,
   appraisalId: string,
+  employeeId?: string,
 ): Promise<AppraisalDetail | null> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("performance_appraisals")
     .select(APPRAISAL_SELECT)
     .eq("organization_id", organizationId)
-    .eq("id", appraisalId)
-    .maybeSingle();
+    .eq("id", appraisalId);
+
+  if (employeeId) {
+    query = query.eq("employee_id", employeeId);
+  }
+
+  const { data, error } = await query.maybeSingle();
 
   if (error) throw new Error(error.message);
   if (!data) return null;

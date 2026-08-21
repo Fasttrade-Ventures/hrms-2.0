@@ -65,6 +65,7 @@ export async function listLeaveTypes(): Promise<LeaveTypeOption[]> {
   const { data: allowedData } = await supabase
     .from("employee_allowed_leave_types")
     .select("leave_type_id")
+    .eq("organization_id", organizationId)
     .eq("employee_id", employeeId);
 
   const allowedIds = (allowedData ?? []).map((row) => row.leave_type_id);
@@ -158,6 +159,7 @@ export async function getLeaveBalances(): Promise<LeaveBalanceRow[]> {
   const { data: allowedData } = await supabase
     .from("employee_allowed_leave_types")
     .select("leave_type_id")
+    .eq("organization_id", organizationId)
     .eq("employee_id", employeeId);
 
   const allowedIds = (allowedData ?? []).map((row) => row.leave_type_id);
@@ -175,6 +177,7 @@ export async function getLeaveBalances(): Promise<LeaveBalanceRow[]> {
     supabase
       .from("employees")
       .select("annual_leave_entitlement, annual_leave_carry_forward")
+      .eq("organization_id", organizationId)
       .eq("id", employeeId)
       .maybeSingle(),
     typesQuery,
@@ -241,6 +244,7 @@ export async function createLeaveRequest(input: LeaveRequestInput): Promise<stri
   const { data: leaveType } = await supabase
     .from("leave_types")
     .select("name")
+    .eq("organization_id", organizationId)
     .eq("id", input.leaveTypeId)
     .maybeSingle();
 
@@ -249,6 +253,7 @@ export async function createLeaveRequest(input: LeaveRequestInput): Promise<stri
     const { data: fileObj } = await supabase
       .from("file_objects")
       .select("file_name")
+      .eq("organization_id", organizationId)
       .eq("id", input.attachmentFileId)
       .maybeSingle();
     attachmentFileName = fileObj?.file_name ?? null;

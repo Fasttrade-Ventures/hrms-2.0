@@ -45,7 +45,7 @@ export async function getMyAppraisal(appraisalId: string) {
   const employeeId = session.membership.employeeId;
   if (!employeeId) throw new Error("No employee record linked to this account.");
 
-  const appraisal = await getAppraisalDetail(getOrganizationId(), appraisalId);
+  const appraisal = await getAppraisalDetail(getOrganizationId(), appraisalId, employeeId);
   if (!appraisal || appraisal.employeeId !== employeeId) return null;
   return appraisal;
 }
@@ -56,7 +56,7 @@ export async function submitSelfAppraisal(appraisalId: string, formData: FormDat
   if (!employeeId) throw new Error("No employee record linked to this account.");
 
   const organizationId = getOrganizationId();
-  const appraisal = await getAppraisalDetail(organizationId, appraisalId);
+  const appraisal = await getAppraisalDetail(organizationId, appraisalId, employeeId);
   if (!appraisal || appraisal.employeeId !== employeeId) {
     throw new Error("Appraisal not found.");
   }

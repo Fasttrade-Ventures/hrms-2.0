@@ -128,6 +128,7 @@ export async function clockIn(input?: {
 }
 
 export async function clockOut(): Promise<TodayAttendance> {
+  const { employeeId, organizationId } = await requireEmployeeContext();
   const supabase = await createClient();
   const existing = await getTodayAttendance();
   const now = new Date().toISOString();
@@ -141,6 +142,8 @@ export async function clockOut(): Promise<TodayAttendance> {
     .from("attendance_records")
     .update({ clock_out_at: now })
     .eq("id", activeSession.id)
+    .eq("organization_id", organizationId)
+    .eq("employee_id", employeeId)
     .select("id, work_date, session, clock_in_at, clock_out_at, status")
     .single();
 
