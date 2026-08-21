@@ -13,8 +13,12 @@ import {
   CheckSquare
 } from "lucide-react";
 
+import { EmptyState } from "@hrms/ui";
 import { resolveNotificationHref } from "@/lib/notifications/links";
-import type { NotificationPortal } from "@/lib/notifications/placeholders";
+import { 
+  type NotificationPortal, 
+  notificationTypeDescriptions 
+} from "@/lib/notifications/placeholders";
 import type { NotificationRow } from "@/lib/notifications/types";
 import { formatNotificationMessage } from "@/lib/notifications/types";
 import { markNotificationReadAction, markAllNotificationsReadAction } from "@/lib/notifications/actions";
@@ -212,7 +216,7 @@ export function NotificationsList({
   };
 
   const handleMarkAllAsRead = async () => {
-    if (showingPlaceholders) return;
+    if (showingPlaceholders || isPending) return;
     setIsPending(true);
 
     // Optimistic update
@@ -240,18 +244,18 @@ export function NotificationsList({
     }
   };
 
+  const descriptions = notificationTypeDescriptions[portal];
+
   return (
     <div className="space-y-6">
-      {/* Head */}
-      <div className="flex flex-col gap-0.5">
-        <h2 className="text-lg font-bold text-[var(--foreground-primary)]">Inbox</h2>
-        <p className="text-xs text-[var(--foreground-muted)]">
-          {portal === "employee" 
-            ? "Leave, claims, payslips and system alerts"
-            : portal === "manager"
-              ? "Approvals, team updates and company announcements"
-              : "Document compliance, approvals and system alerts"}
-        </p>
+      {/* What appears here description card */}
+      <div className="rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-muted)] px-4 py-3">
+        <p className="text-sm font-medium text-[var(--foreground-primary)]">What appears here</p>
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-[var(--foreground-muted)]">
+          {descriptions.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
       </div>
 
       {/* Navigation Grouping Tabs */}
@@ -311,13 +315,12 @@ export function NotificationsList({
 
         <div className="divide-y divide-[var(--border-primary)]">
           {filteredRows.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-              <Bell className="h-10 w-10 text-[var(--foreground-muted)] opacity-40 mb-3" />
-              <p className="text-sm font-semibold text-[var(--foreground-primary)]">No notifications found</p>
-              <p className="text-xs text-[var(--foreground-muted)] mt-1">
-                You&apos;re all caught up! No notifications in this category.
-              </p>
-            </div>
+            <EmptyState
+              description="You're all caught up! No notifications in this category."
+              icon={<Bell className="h-6 w-6" />}
+              title="No notifications found"
+              variant="flat"
+            />
           ) : (
             filteredRows.map((row) => {
               const href = showingPlaceholders ? null : resolveNotificationHref(row, portal);

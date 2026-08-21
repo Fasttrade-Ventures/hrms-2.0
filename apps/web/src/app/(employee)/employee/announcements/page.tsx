@@ -1,6 +1,7 @@
 import { EmptyState } from "@hrms/ui";
 
 import { AnnouncementList } from "@/components/announcements/announcement-list";
+import { PortalIcon } from "@/components/portal/portal-icons";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import {
   getAnnouncementViewer,
@@ -33,7 +34,11 @@ export default async function Page() {
       </p>
 
       {items.length === 0 ? (
-        <EmptyState description="Announcements from HR will appear here." title="No announcements" />
+        <EmptyState
+          description="Announcements from HR will appear here."
+          icon={<PortalIcon name="announcements" className="h-6 w-6" />}
+          title="No announcements yet"
+        />
       ) : (
         <AnnouncementList basePath="/employee/announcements" items={items} />
       )}

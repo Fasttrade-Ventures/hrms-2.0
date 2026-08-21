@@ -8,6 +8,7 @@ import {
   HrTextInput,
 } from "@/components/employee/employee-request-form";
 import { formatDate, RequestStatusPill } from "@/components/employee/employee-shared";
+import { PortalIcon } from "@/components/portal/portal-icons";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { listOvertimeRequests } from "@/lib/employee/requests";
 
@@ -50,6 +51,7 @@ export default async function Page() {
         empty={
           <EmptyState
             description="Submit your first overtime request using the form above."
+            icon={<PortalIcon name="overtime" className="h-6 w-6" />}
             title="No overtime requests yet"
           />
         }

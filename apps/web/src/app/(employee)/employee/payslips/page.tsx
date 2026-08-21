@@ -3,6 +3,7 @@ import Link from "next/link";
 import { EmptyState, ListCard } from "@hrms/ui";
 
 import { formatCurrency } from "@/components/employee/employee-shared";
+import { PortalIcon } from "@/components/portal/portal-icons";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { listPayslips } from "@/lib/employee/payslips";
 
@@ -24,8 +25,9 @@ export default async function Page() {
         ]}
         empty={
           <EmptyState
-            description="Payslips appear here after HR locks a payroll run."
-            title="No payslips yet"
+            description="Payslips will appear after payroll is finalized."
+            icon={<PortalIcon name="payslips" className="h-6 w-6" />}
+            title="No payslips available yet."
           />
         }
         header={<p className="text-sm font-medium">Your payslips ({payslips.length})</p>}

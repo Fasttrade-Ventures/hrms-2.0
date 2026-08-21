@@ -2,6 +2,7 @@ import { EmptyState, ListCard } from "@hrms/ui";
 
 import { formatDateTime } from "@/components/employee/employee-shared";
 import { TeamDocumentsLink } from "@/components/manager/team-documents-link";
+import { PortalIcon } from "@/components/portal/portal-icons";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { listTeamAttendance } from "@/lib/manager/team";
 import { requireRole } from "@/lib/auth/session";
@@ -26,7 +27,11 @@ export default async function Page() {
           { key: "clockOut", label: "Clock out", className: "hidden md:block w-40" },
         ]}
         empty={
-          <EmptyState description="Assign direct reports in HR to see team attendance here." title="No records" />
+          <EmptyState
+            description="Assign direct reports in HR to see team attendance here."
+            icon={<PortalIcon name="team-attendance" className="h-6 w-6" />}
+            title="No records"
+          />
         }
         header={<p className="text-sm font-medium">Records ({rows.length})</p>}
         rows={rows.map((row) => ({

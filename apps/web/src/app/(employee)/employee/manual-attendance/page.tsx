@@ -7,6 +7,7 @@ import {
   HrTextInput,
 } from "@/components/employee/employee-request-form";
 import { formatDate, formatDateTime, RequestStatusPill } from "@/components/employee/employee-shared";
+import { PortalIcon } from "@/components/portal/portal-icons";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { listAttendanceCorrections } from "@/lib/employee/requests";
 
@@ -49,6 +50,7 @@ export default async function Page() {
         empty={
           <EmptyState
             description="Submit your first attendance correction request using the form above."
+            icon={<PortalIcon name="manual-attendance" className="h-6 w-6" />}
             title="No Manual Attendance requests yet"
           />
         }
