@@ -41,6 +41,7 @@ export default async function Page() {
                   <th className="px-4 py-3 font-medium">Organization</th>
                   <th className="px-4 py-3 font-medium">Slug</th>
                   <th className="px-4 py-3 font-medium">Tier</th>
+                  <th className="px-4 py-3 font-medium">Subscription</th>
                   <th className="px-4 py-3 font-medium">Employees</th>
                   <th className="px-4 py-3 font-medium">Created</th>
                   <th className="px-4 py-3 font-medium">Actions</th>
@@ -53,6 +54,11 @@ export default async function Page() {
                     <td className="px-4 py-3 text-muted-foreground">{tenant.slug ?? "—"}</td>
                     <td className="px-4 py-3 capitalize">
                       <TenantTierSelect currentTier={tenant.productTier} organizationId={tenant.id} />
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {tenant.subscriptionStatus
+                        ? `${tenant.subscriptionStatus.replace("_", " ")}${tenant.billingInterval ? ` · ${tenant.billingInterval}` : ""}`
+                        : "—"}
                     </td>
                     <td className="px-4 py-3">{tenant.employeeCount}</td>
                     <td className="px-4 py-3 text-muted-foreground">

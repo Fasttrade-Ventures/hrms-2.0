@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import type { ModuleKey } from "@hrms/platform";
 
 import { ImpersonationBanner } from "@/components/platform/impersonation-controls";
+import { BillingTrialBanner } from "@/components/owner/billing-trial-banner";
 import { PortalShell } from "@/components/portal-shell";
 import { listUserMemberships, requireRole, requireRoleOrPermission } from "@/lib/auth/session";
 import { getEntitlements } from "@/lib/entitlements";
@@ -73,6 +74,9 @@ export async function PortalLayout({
   return (
     <>
       {impersonation ? <ImpersonationBanner organizationName={impersonation.organizationName} /> : null}
+      {portal === "Organization Owner" ? (
+        <BillingTrialBanner organizationId={session.membership.organizationId} />
+      ) : null}
       <PortalShell
         enabledModules={enabledModules}
         integrationsHref={integrationsHref}

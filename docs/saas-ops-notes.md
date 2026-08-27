@@ -32,10 +32,20 @@ Health checks treat `DEFAULT_ORGANIZATION_ID` as required only when standalone.
 
 - Payslip email and document-compliance crons iterate **all** organizations in SaaS (standalone still uses DEFAULT only).
 
+## Billing (Billplz)
+
+- Opt-in: `BILLING_ENABLED=true` with `DEPLOYMENT_MODE=saas`.
+- Migration: `20260828120000_saas_billing.sql` (plans, subscriptions, invoices, webhooks).
+- Register: plan + interval picker; 14-day trial with Professional entitlements.
+- Owner: `/owner/billing` — pay via Billplz, invoice history.
+- Webhook: `POST /api/webhooks/billplz` (X Signature).
+- Cron: `GET /api/cron/billing-renewal` (Bearer `CRON_SECRET`).
+- Spec + plan: `docs/superpowers/specs/2026-08-27-billplz-saas-billing-design.md`, `docs/superpowers/plans/2026-08-27-billplz-saas-billing.md`.
+
 ## Still FUTURE
 
-- Billplz subscription billing — **design spec:** `docs/superpowers/specs/2026-08-27-billplz-saas-billing-design.md`
 - Public marketing / pricing page
+- Pay-first signup (`BILLING_SIGNUP_MODE=pay_first`)
 - Usage metering / hard seat limits
 
 ## Verify locally

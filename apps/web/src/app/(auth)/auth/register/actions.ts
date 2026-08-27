@@ -3,9 +3,11 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
-import { isSaasMode } from "@hrms/platform";
+import { isSaasMode, type ProductTier } from "@hrms/platform";
 
 import { logAuthEvent } from "@/lib/audit/log-auth-event";
+import { createSubscriptionOnRegister } from "@/lib/billing/subscriptions";
+import type { BillingInterval } from "@/lib/billing/plans";
 import { setActiveOrganizationCookie } from "@/lib/auth/organization-context";
 import { provisionTenant } from "@/lib/platform/provision-tenant";
 import { checkRateLimitDurable } from "@/lib/rate-limit";
@@ -14,6 +16,17 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
 export type RegisterState = {
   error?: string;
 };
+
+function parsePlanTier(value: FormDataEntryValue | null): ProductTier {
+  const tier = String(value ?? "professional");
+  if (tier === "core" || tier === "professional" || tier === "enterprise") return tier;
+  return "professional";
+}
+
+function parseBillingInterval(value: FormDataEntryValue | null): BillingInterval {
+  const interval = String(value ?? "month");
+  return interval === "year" ? "year" : "month";
+}
 
 export async function registerOrganizationAction(
   _prev: RegisterState,
@@ -27,6 +40,8 @@ export async function registerOrganizationAction(
   const fullName = String(formData.get("fullName") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
+  const planTier = parsePlanTier(formData.get("planTier"));
+  const billingInterval = parseBillingInterval(formData.get("billingInterval"));
 
   if (!company || !fullName || !email || !password) {
     return { error: "All fields are required." };
@@ -61,8 +76,16 @@ export async function registerOrganizationAction(
       fullName,
       email,
       password,
+      productTier: planTier,
     });
     organizationId = result.organizationId;
+
+    await createSubscriptionOnRegister({
+      organizationId,
+      ownerEmail: email,
+      planTier,
+      billingInterval,
+    });
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Registration failed." };
   }
@@ -80,7 +103,7 @@ export async function registerOrganizationAction(
     actorUserId: data.user?.id,
     organizationId,
     email,
-    metadata: { company },
+    metadata: { company, planTier, billingInterval },
   });
 
   redirect("/owner/dashboard");

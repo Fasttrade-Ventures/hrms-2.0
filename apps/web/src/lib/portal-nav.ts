@@ -347,6 +347,9 @@ export function getPortalNavSections(portal: string): PortalNavSection[] {
           items: [
             { href: "/owner/dashboard", label: "Dashboard", icon: "dashboard" },
             { href: "/hr/analytics", label: "Analytics", icon: "reports" },
+            ...(isSaasMode()
+              ? [{ href: "/owner/billing", label: "Billing", icon: "payroll" as const }]
+              : []),
             { href: "/owner/settings", label: "Module settings", icon: "organization" },
           ],
         },
