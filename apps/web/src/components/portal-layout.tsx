@@ -4,7 +4,7 @@ import type { ModuleKey } from "@hrms/platform";
 
 import { ImpersonationBanner } from "@/components/platform/impersonation-controls";
 import { PortalShell } from "@/components/portal-shell";
-import { requireAuth } from "@/lib/auth/session";
+import { requireRole, requireRoleOrPermission } from "@/lib/auth/session";
 import { getEntitlements } from "@/lib/entitlements";
 import { getHrTopbarMeta } from "@/lib/hr/topbar";
 import { getPortalNavSectionsForEntitlements, getPortalIntegrationsHref } from "@/lib/portal-nav";
@@ -33,12 +33,24 @@ const ALL_MODULE_KEYS: ModuleKey[] = [
 
 export async function PortalLayout({
   portal,
+  requiredRoles,
+  requiredPermissions,
   children,
 }: {
   portal: string;
+  /** Membership roles allowed into this portal shell (mirrors middleware). */
+  requiredRoles?: string[];
+  /** Optional permissions that also grant access (e.g. auditor). */
+  requiredPermissions?: string[];
   children: ReactNode;
 }) {
-  const session = await requireAuth();
+  const session =
+    requiredPermissions?.length && requiredRoles?.length
+      ? await requireRoleOrPermission(requiredRoles, requiredPermissions)
+      : requiredPermissions?.length
+        ? await requireRoleOrPermission([], requiredPermissions)
+        : await requireRole(...(requiredRoles ?? []));
+
   const [pageSubtitle, unreadNotificationCount, impersonation, entitlements] = await Promise.all([
     portal === "HR Administrator" ? getHrTopbarMeta().catch(() => undefined) : Promise.resolve(undefined),
     getUnreadNotificationCount().catch(() => 0),

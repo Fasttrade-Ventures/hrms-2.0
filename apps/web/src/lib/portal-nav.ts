@@ -1,5 +1,6 @@
 import type { PortalIconName } from "@/components/portal/portal-icons";
 import type { ModuleKey, ProductTier } from "@hrms/platform";
+import { isSaasMode } from "@hrms/platform";
 
 export type PortalNavItem = {
   href: string;
@@ -109,7 +110,18 @@ export function getPortalNavSectionsForEntitlements(
     tier: ProductTier;
   },
 ): PortalNavSection[] {
-  return filterPortalNavSections(getPortalNavSections(portal), options);
+  let sections = filterPortalNavSections(getPortalNavSections(portal), options);
+
+  if (portal === "Platform Admin" && !isSaasMode()) {
+    sections = sections
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) => item.href !== "/platform/tenants"),
+      }))
+      .filter((section) => section.items.length > 0);
+  }
+
+  return sections;
 }
 
 const employeeNav: PortalNavSection[] = [
@@ -304,8 +316,6 @@ export function getPortalNavSections(portal: string): PortalNavSection[] {
           items: [
             { href: "/branch-admin/dashboard", label: "Dashboard", icon: "dashboard" },
             { href: "/branch-admin/employees", label: "Employees", icon: "employees" },
-            { href: "/hr/documents", label: "Documents", icon: "documents" },
-            { href: "/hr/calendar", label: "Calendar", icon: "calendar" },
           ],
         },
       ];
@@ -327,9 +337,6 @@ export function getPortalNavSections(portal: string): PortalNavSection[] {
             { href: "/owner/dashboard", label: "Dashboard", icon: "dashboard" },
             { href: "/hr/analytics", label: "Analytics", icon: "reports" },
             { href: "/owner/settings", label: "Module settings", icon: "organization" },
-            { href: "/hr/payroll", label: "Payroll", icon: "payroll" },
-            { href: "/hr/reports", label: "Reports", icon: "reports" },
-            { href: "/hr/audit", label: "Audit", icon: "audit" },
           ],
         },
       ];

@@ -158,9 +158,13 @@ export async function updateSession(request: NextRequest) {
   if (user && !isPublicPath(pathname) && !pathname.startsWith("/api/")) {
     const membership = await getMembership(supabase, user.id);
 
-    // Auth/DB slow or down: fail open to the page rather than 504 the whole site.
+    // Auth/DB slow or down: fail closed so portal role checks are never skipped.
+    // Timeout still avoids MIDDLEWARE_INVOCATION_TIMEOUT (redirect instead of waiting).
     if (!membership) {
-      return supabaseResponse;
+      const url = request.nextUrl.clone();
+      url.pathname = "/auth/login";
+      url.searchParams.set("error", "session_check_timeout");
+      return NextResponse.redirect(url);
     }
 
     const { roles, permissions } = membership;
@@ -183,8 +187,10 @@ export async function updateSession(request: NextRequest) {
   if (user && pathname === "/") {
     const membership = await getMembership(supabase, user.id);
     if (!membership) {
-      // Let the home page resolve the portal redirect (or show login) without timing out edge.
-      return supabaseResponse;
+      const url = request.nextUrl.clone();
+      url.pathname = "/auth/login";
+      url.searchParams.set("error", "session_check_timeout");
+      return NextResponse.redirect(url);
     }
     const url = request.nextUrl.clone();
     url.pathname = dashboardPathForRoles(membership.roles);

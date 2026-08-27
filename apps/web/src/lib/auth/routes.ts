@@ -98,12 +98,7 @@ export function canAccessPath(
     }
     if (
       roles.includes("branch_admin") &&
-      (pathname === "/hr/employees" ||
-        pathname.startsWith("/hr/employees/") ||
-        pathname === "/hr/documents" ||
-        pathname.startsWith("/hr/documents/") ||
-        pathname === "/hr/calendar" ||
-        pathname.startsWith("/hr/calendar"))
+      (pathname === "/hr/employees" || pathname.startsWith("/hr/employees/"))
     ) {
       return true;
     }

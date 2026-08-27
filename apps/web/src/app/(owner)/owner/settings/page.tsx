@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { StatusPill } from "@hrms/ui";
+import { isSaasMode } from "@hrms/platform";
 
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { Button } from "@/components/ui/button";
@@ -56,6 +57,7 @@ function ModuleTable({ modules }: { modules: OwnerModuleSetting[] }) {
 export default async function Page() {
   await requireRole("organization_owner");
   const settings = await getOwnerEntitlementSettings();
+  const canEditTier = !isSaasMode();
 
   const coreModules = settings.modules.filter((module) => module.tier === "Core");
   const professionalModules = settings.modules.filter((module) => module.tier === "Professional");
@@ -73,17 +75,24 @@ export default async function Page() {
           <CardTitle>Product tier</CardTitle>
           <CardDescription>
             Current tier: <span className="font-medium capitalize">{settings.productTier}</span>
+            {!canEditTier
+              ? " — tier changes are managed by Platform in SaaS mode."
+              : null}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
-          {(["core", "professional", "enterprise"] as const).map((tier) => (
-            <form action={updateProductTierFormAction} key={tier}>
-              <input name="tier" type="hidden" value={tier} />
-              <Button type="submit" variant={settings.productTier === tier ? "default" : "outline"}>
-                {tier}
-              </Button>
-            </form>
-          ))}
+          {canEditTier
+            ? (["core", "professional", "enterprise"] as const).map((tier) => (
+                <form action={updateProductTierFormAction} key={tier}>
+                  <input name="tier" type="hidden" value={tier} />
+                  <Button type="submit" variant={settings.productTier === tier ? "default" : "outline"}>
+                    {tier}
+                  </Button>
+                </form>
+              ))
+            : (
+              <StatusPill label={settings.productTier} tone="neutral" />
+            )}
         </CardContent>
       </Card>
 

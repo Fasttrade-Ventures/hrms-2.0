@@ -1,5 +1,5 @@
 import type { ModuleKey, ProductTier } from "@hrms/platform";
-import { CORE_MODULES, ENTERPRISE_MODULES, PROFESSIONAL_MODULES } from "@hrms/platform";
+import { CORE_MODULES, ENTERPRISE_MODULES, PROFESSIONAL_MODULES, isSaasMode } from "@hrms/platform";
 
 import { logAuditEvent } from "@/lib/audit/log-event";
 import { createClient } from "@/lib/supabase/server";
@@ -125,6 +125,10 @@ export async function updateOwnerProductTier(
   tier: ProductTier,
   actorUserId?: string | null,
 ): Promise<void> {
+  if (isSaasMode()) {
+    throw new Error("Product tier can only be changed by Platform in SaaS mode.");
+  }
+
   const supabase = await createClient();
   const organizationId = getOrganizationId();
 
