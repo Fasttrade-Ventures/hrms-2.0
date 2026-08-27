@@ -6,7 +6,7 @@ import {
   selectMembershipRow,
   type MembershipRow,
 } from "@/lib/auth/membership-selection";
-import { getImpersonationOrgId, IMPERSONATION_COOKIE } from "@/lib/platform/impersonation";
+import { getImpersonationOrgId, IMPERSONATION_COOKIE } from "@/lib/platform/impersonation-cookie";
 import { createClient } from "@/lib/supabase/server";
 
 export type UserMembership = {

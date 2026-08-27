@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { verifyBillplzCallbackSignature } from "@hrms/platform";
+import { verifyBillplzCallbackSignature } from "@hrms/platform/billing/billplz/signature";
 
 import { markInvoicePaidFromCallback } from "@/lib/billing/subscriptions";
 

@@ -4,7 +4,10 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./billing/billplz/signature": "./src/billing/billplz/signature.ts",
+    "./billing/billplz/client": "./src/billing/billplz/client.ts",
+    "./billing/billplz/types": "./src/billing/billplz/types.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",

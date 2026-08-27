@@ -5,7 +5,7 @@ import type { EntitlementProvider, ModuleKey } from "@hrms/platform";
 import { createDbEntitlementProvider, createEnvEntitlementProvider } from "@hrms/platform";
 
 import { getEffectiveOrganizationId } from "@/lib/auth/organization-context";
-import { getImpersonationOrgId } from "@/lib/platform/impersonation";
+import { getImpersonationOrgId } from "@/lib/platform/impersonation-cookie";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 

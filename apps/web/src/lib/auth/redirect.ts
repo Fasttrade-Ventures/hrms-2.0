@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 import { selectMembershipRow, type MembershipRow } from "@/lib/auth/membership-selection";
-import { getImpersonationOrgId } from "@/lib/platform/impersonation";
+import { getImpersonationOrgId } from "@/lib/platform/impersonation-cookie";
 import { type SystemRole } from "@hrms/domain";
 
 const ACTIVE_ORG_COOKIE = "hrms_active_org_id";

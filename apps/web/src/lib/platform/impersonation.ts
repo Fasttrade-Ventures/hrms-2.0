@@ -7,16 +7,9 @@ import { logAuditEvent } from "@/lib/audit/log-event";
 import { requireAuth, requireRole } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export const IMPERSONATION_COOKIE = "hrms_impersonate_org_id";
+import { getImpersonationOrgId, IMPERSONATION_COOKIE } from "./impersonation-cookie";
 
-export async function getImpersonationOrgId(): Promise<string | null> {
-  try {
-    const cookieStore = await cookies();
-    return cookieStore.get?.(IMPERSONATION_COOKIE)?.value ?? null;
-  } catch {
-    return null;
-  }
-}
+export { IMPERSONATION_COOKIE, getImpersonationOrgId } from "./impersonation-cookie";
 
 export async function getImpersonationState(session: {
   membership: { roles: string[]; permissions: string[] };

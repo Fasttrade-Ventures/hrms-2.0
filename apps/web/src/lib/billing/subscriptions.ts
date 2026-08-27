@@ -1,14 +1,10 @@
 import type { ProductTier } from "@hrms/platform";
-import {
-  BillplzClient,
-  createBillplzClientFromEnv,
-  isSaasMode,
-} from "@hrms/platform";
+import { isSaasMode } from "@hrms/platform";
+import { createBillplzClientFromEnv } from "@hrms/platform/billing/billplz/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { calculateSubscriptionAmount, type InvoiceType } from "@/lib/billing/calculate-invoice";
 import {
-  BILLING_PLANS,
   resolveBillplzCollectionId,
   type BillingInterval,
 } from "@/lib/billing/plans";
@@ -418,5 +414,3 @@ export async function createCheckoutInvoiceForOrganization(organizationId: strin
 
   return createBillForInvoice(invoiceId);
 }
-
-export { BILLING_PLANS, BillplzClient };

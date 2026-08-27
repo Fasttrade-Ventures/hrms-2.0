@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 
-import { getImpersonationOrgId } from "@/lib/platform/impersonation";
+import { getImpersonationOrgId } from "@/lib/platform/impersonation-cookie";
 import { getSession } from "@/lib/auth/session";
 
 /** Cookie for multi-membership active organization (SaaS). */
