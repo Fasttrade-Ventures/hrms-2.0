@@ -7,6 +7,7 @@ export const applyBehalfLeaveSchema = z.object({
   endDate: z.string().date(),
   halfDay: z.boolean().default(false),
   reason: z.string().max(2000).optional(),
+  overrideReason: z.string().max(2000).optional(),
 });
 
 export const applyBehalfLateSchema = z.object({

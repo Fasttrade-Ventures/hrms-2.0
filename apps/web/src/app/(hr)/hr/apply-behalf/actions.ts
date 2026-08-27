@@ -30,6 +30,7 @@ export async function submitBehalfLeave(
     endDate: String(formData.get("endDate") ?? "").trim(),
     halfDay: readCheckbox(formData, "halfDay"),
     reason: String(formData.get("reason") ?? "").trim() || undefined,
+    overrideReason: String(formData.get("overrideReason") ?? "").trim() || undefined,
   });
 
   if (!parsed.success) {

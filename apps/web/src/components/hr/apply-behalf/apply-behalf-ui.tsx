@@ -390,6 +390,17 @@ export function ApplyBehalfForm({
                 <HrField id="reason" label="Reason">
                   <HrTextInput id="reason" name="reason" placeholder="Optional" />
                 </HrField>
+                <HrField
+                  id="overrideReason"
+                  label="Balance override reason"
+                  hint="Required only when the request exceeds remaining leave balance."
+                >
+                  <HrTextInput
+                    id="overrideReason"
+                    name="overrideReason"
+                    placeholder="Optional unless over balance"
+                  />
+                </HrField>
               </>
             ) : (
               <>

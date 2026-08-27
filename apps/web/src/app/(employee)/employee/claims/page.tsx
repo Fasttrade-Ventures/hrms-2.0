@@ -16,8 +16,10 @@ import { PortalIcon } from "@/components/portal/portal-icons";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { listClaimTypes } from "@/lib/employee/catalog";
 import { listClaims } from "@/lib/employee/requests";
+import { requireModule } from "@/lib/entitlements";
 
 export default async function Page() {
+  await requireModule("claims");
   const [claimTypes, claims] = await Promise.all([
     listClaimTypes(),
     listClaims(),

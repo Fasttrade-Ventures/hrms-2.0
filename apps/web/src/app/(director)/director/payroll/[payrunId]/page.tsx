@@ -23,7 +23,7 @@ export default async function DirectorPayrunDetailPage({
         description={`${payrun.earningPeriodStart} → ${payrun.earningPeriodEnd}`}
         title={`Payrun ${payrun.periodYear}-${String(payrun.periodMonth).padStart(2, "0")}`}
       />
-      <PayrunDetailView backHref="/director/payroll" payrun={payrun} readOnly />
+      <PayrunDetailView approveOnly backHref="/director/payroll" payrun={payrun} readOnly />
     </div>
   );
 }

@@ -175,6 +175,9 @@ export function CreateEmployeeForm({
 
           <div className="space-y-3">
             <Label className="text-sm font-medium">Allowed leave types</Label>
+            <p className="text-xs text-muted-foreground">
+              If none are selected, the employee can apply for all organization leave types.
+            </p>
             <div className="grid gap-2 sm:grid-cols-2">
               {leaveTypes.map((leaveType) => (
                 <HrCheckbox

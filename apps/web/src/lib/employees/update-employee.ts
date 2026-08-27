@@ -19,6 +19,18 @@ export async function updateEmployeeFullProfile(
   const admin = createAdminClient();
   const organizationId = getOrganizationId();
 
+  const { data: existingEmployee, error: existingError } = await admin
+    .from("employees")
+    .select("manager_employee_id")
+    .eq("id", employeeId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  if (existingError) throw new Error(existingError.message);
+
+  const previousManagerId = existingEmployee?.manager_employee_id ?? null;
+  const nextManagerId = input.managerEmployeeId ?? null;
+
   const { error: employeeError } = await admin
     .from("employees")
     .update({
@@ -27,7 +39,7 @@ export async function updateEmployeeFullProfile(
       employee_number: input.employeeNumber?.trim() || undefined,
       branch_id: input.branchId ?? null,
       department_id: input.departmentId ?? null,
-      manager_employee_id: input.managerEmployeeId ?? null,
+      manager_employee_id: nextManagerId,
       shift_id: input.shiftId ?? null,
       pay_group_id: input.payGroupId ?? null,
       employment_type: input.employmentType ?? null,
@@ -42,6 +54,17 @@ export async function updateEmployeeFullProfile(
 
   if (employeeError) {
     throw new Error(employeeError.message);
+  }
+
+  if (previousManagerId !== nextManagerId && previousManagerId && nextManagerId) {
+    const { reassignPendingApprovalsForManagerChange } = await import("@/lib/approvals/reassign");
+    await reassignPendingApprovalsForManagerChange({
+      organizationId,
+      reportEmployeeId: employeeId,
+      oldManagerEmployeeId: previousManagerId,
+      newManagerEmployeeId: nextManagerId,
+      actorUserId,
+    });
   }
 
   const { error: profileError } = await admin

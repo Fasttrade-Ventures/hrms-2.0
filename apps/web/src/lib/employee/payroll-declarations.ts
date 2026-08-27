@@ -12,6 +12,29 @@ export type EmployeePayrollDeclarations = EmployeePayrollDeclarationsInput & {
   epfEmployeeRate: number;
 };
 
+function assertDeclarations(input: EmployeePayrollDeclarationsInput): EmployeePayrollDeclarationsInput {
+  const fields: Array<[keyof EmployeePayrollDeclarationsInput, number, number]> = [
+    ["zakatAnnual", 0, 1_000_000],
+    ["zakatMonthly", 0, 100_000],
+    ["otherReliefs", 0, 1_000_000],
+    ["voluntaryEpfExtraRate", 0, 0.2],
+  ];
+
+  for (const [key, min, max] of fields) {
+    const value = Number(input[key]);
+    if (!Number.isFinite(value) || value < min || value > max) {
+      throw new Error(`${key} must be between ${min} and ${max}.`);
+    }
+  }
+
+  return {
+    zakatAnnual: Number(input.zakatAnnual),
+    zakatMonthly: Number(input.zakatMonthly),
+    otherReliefs: Number(input.otherReliefs),
+    voluntaryEpfExtraRate: Number(input.voluntaryEpfExtraRate),
+  };
+}
+
 export async function getEmployeePayrollDeclarations(): Promise<EmployeePayrollDeclarations> {
   const { employeeId, organizationId } = await requireEmployeeContext();
   const supabase = await createClient();
@@ -52,6 +75,8 @@ export async function getEmployeePayrollDeclarations(): Promise<EmployeePayrollD
 export async function upsertEmployeePayrollDeclarations(
   input: EmployeePayrollDeclarationsInput,
 ): Promise<void> {
+  const values = assertDeclarations(input);
+
   const { employeeId, organizationId } = await requireEmployeeContext();
   const supabase = await createClient();
 
@@ -77,9 +102,9 @@ export async function upsertEmployeePayrollDeclarations(
   const { error: taxError } = await supabase.from("employee_tax_profiles").upsert({
     employee_id: employeeId,
     organization_id: organizationId,
-    zakat_annual: input.zakatAnnual,
-    zakat_monthly: input.zakatMonthly,
-    tp1_payload: { otherReliefs: input.otherReliefs },
+    zakat_annual: values.zakatAnnual,
+    zakat_monthly: values.zakatMonthly,
+    tp1_payload: { otherReliefs: values.otherReliefs },
     updated_at: new Date().toISOString(),
   });
 
@@ -96,7 +121,7 @@ export async function upsertEmployeePayrollDeclarations(
     organization_id: organizationId,
     pay_basis: payBasis,
     basic_salary: basicSalary,
-    voluntary_epf_extra_rate: input.voluntaryEpfExtraRate,
+    voluntary_epf_extra_rate: values.voluntaryEpfExtraRate,
     updated_at: new Date().toISOString(),
   });
 

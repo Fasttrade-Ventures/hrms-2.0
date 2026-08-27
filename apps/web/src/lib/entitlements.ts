@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { redirect } from "next/navigation";
 
 import type { EntitlementProvider, ModuleKey } from "@hrms/platform";
 import { createDbEntitlementProvider, createEnvEntitlementProvider } from "@hrms/platform";
@@ -35,13 +36,13 @@ export const getEntitlements = cache(async (): Promise<EntitlementProvider> => {
 export async function requireModule(module: ModuleKey): Promise<void> {
   const entitlements = await getEntitlements();
   if (!entitlements.hasModule(module)) {
-    throw new Error(`The ${module} module is not enabled on your plan.`);
+    redirect(`/unauthorized?reason=module&module=${module}`);
   }
 }
 
 export async function requireProfessionalTier(): Promise<void> {
   const entitlements = await getEntitlements();
   if (entitlements.tier === "core") {
-    throw new Error("This feature requires the Professional plan or higher.");
+    redirect("/unauthorized?reason=tier");
   }
 }

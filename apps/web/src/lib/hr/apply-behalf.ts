@@ -191,6 +191,17 @@ export async function createBehalfLeave(
   const { assertLeaveDatesAllowed } = await import("@/lib/leave/blackout");
   await assertLeaveDatesAllowed(organizationId, input.leaveTypeId, input.startDate, input.endDate);
 
+  const { assertLeaveBalance } = await import("@/lib/leave/balance");
+  await assertLeaveBalance({
+    organizationId,
+    employeeId: input.employeeId,
+    leaveTypeId: input.leaveTypeId,
+    days,
+    allowOverride: true,
+    overrideReason: input.overrideReason,
+    client: admin,
+  });
+
   const { data, error } = await admin
     .from("leave_requests")
     .insert({
@@ -215,7 +226,12 @@ export async function createBehalfLeave(
     actorUserId,
     organizationId,
     employeeId: input.employeeId,
-    metadata: { type: "leave", requestId: data.id, days },
+    metadata: {
+      type: "leave",
+      requestId: data.id,
+      days,
+      overrideReason: input.overrideReason?.trim() || null,
+    },
   });
 
   return data.id;

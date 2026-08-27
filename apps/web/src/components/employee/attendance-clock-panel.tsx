@@ -5,6 +5,7 @@ import { Info, MapPinOff, Check, Loader2 } from "lucide-react";
 
 import { employeeClockIn, employeeClockOut, type EmployeeActionState } from "@/app/(employee)/employee/actions";
 import type { GeofenceConfig } from "@/lib/attendance/geofence";
+import { distanceMeters } from "@/lib/attendance/geofence";
 import type { TodayAttendance } from "@/lib/employee/attendance";
 
 type LocationState = "idle" | "loading" | "ready" | "denied" | "unsupported";
@@ -250,7 +251,7 @@ export function AttendanceClockPanel({
     if (today && today.sessions.length > 0) {
       return (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200/30">
-          Completed
+          Between Sessions
         </span>
       );
     }
@@ -263,7 +264,7 @@ export function AttendanceClockPanel({
 
   const getStatusLabel = () => {
     if (isClockedIn) return "Clocked in";
-    if (today && today.sessions.length > 0) return "Clocked out";
+    if (today && today.sessions.length > 0) return "Between Sessions";
     return "Not clocked in";
   };
 
@@ -273,12 +274,24 @@ export function AttendanceClockPanel({
     }
     if (today && today.sessions.length > 0) {
       const lastSession = today.sessions[today.sessions.length - 1];
-      return `Clocked out at ${mounted ? formatTime(lastSession?.clockOutAt) : "—"}`;
+      return `Clocked out at ${mounted ? formatTime(lastSession?.clockOutAt) : "—"} · Clock In Again when ready`;
     }
     if (geofenceRequired) {
       if (locationState === "idle") return "Location not verified yet";
       if (locationState === "loading") return "Verifying GPS location…";
-      if (locationState === "ready") return "Location ready · within range";
+      if (locationState === "ready" && coords && geofence) {
+        const meters = Math.round(
+          distanceMeters(coords, {
+            latitude: geofence.latitude,
+            longitude: geofence.longitude,
+          }),
+        );
+        const within = meters <= geofence.radiusMeters;
+        return within
+          ? `Location ready · within range (~${meters}m)`
+          : `Outside range (~${meters}m of ${geofence.radiusMeters}m)`;
+      }
+      if (locationState === "ready") return "Location ready";
       if (locationState === "denied") return "Location permission denied";
       if (locationState === "unsupported") return "GPS not supported on this device";
     }
@@ -328,7 +341,7 @@ export function AttendanceClockPanel({
                         {locationState === "loading" ? "Verifying GPS…" : "Clocking in…"}
                       </>
                     ) : (
-                      "Clock in"
+                      today && today.sessions.length > 0 ? "Clock In Again" : "Clock in"
                     )}
                   </button>
                 </form>

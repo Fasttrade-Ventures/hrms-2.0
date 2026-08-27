@@ -36,12 +36,21 @@ function WorkflowForm({
   );
 }
 
-export function PayrunWorkflowActions({ payrunId, status }: { payrunId: string; status: string }) {
+export function PayrunWorkflowActions({
+  payrunId,
+  status,
+  mode = "full",
+}: {
+  payrunId: string;
+  status: string;
+  /** Directors may approve but not submit/lock. */
+  mode?: "full" | "approve-only";
+}) {
   if (status === "locked") return null;
 
   return (
     <div className="flex flex-wrap gap-4">
-      {status === "draft" ? (
+      {mode === "full" && status === "draft" ? (
         <WorkflowForm
           action={submitPayrunAction}
           label="Submit for review"
@@ -57,7 +66,7 @@ export function PayrunWorkflowActions({ payrunId, status }: { payrunId: string; 
           pendingLabel="Approving…"
         />
       ) : null}
-      {status === "approved" ? (
+      {mode === "full" && status === "approved" ? (
         <WorkflowForm
           action={lockPayrunAction}
           label="Lock payrun"

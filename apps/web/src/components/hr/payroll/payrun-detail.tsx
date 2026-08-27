@@ -17,6 +17,7 @@ export function PayrunDetailView({
   payrun,
   branches = [],
   readOnly = false,
+  approveOnly = false,
   backHref = "/hr/payroll",
   bukucloudSyncStatus,
   integrationsEnabled = false,
@@ -26,6 +27,8 @@ export function PayrunDetailView({
   payrun: PayrunDetail;
   branches?: Array<{ id: string; name: string }>;
   readOnly?: boolean;
+  /** Show approve action only (Director). */
+  approveOnly?: boolean;
   backHref?: string;
   bukucloudSyncStatus?: BukucloudSyncStatus;
   integrationsEnabled?: boolean;
@@ -81,15 +84,21 @@ export function PayrunDetailView({
         </div>
       ) : null}
 
-      {readOnly ? null : (
+      {readOnly && !approveOnly ? null : (
         <div className="flex flex-wrap items-center gap-3">
-          <PayrunWorkflowActions payrunId={payrun.id} status={payrun.status} />
-          <DeletePayrunButton
-            label="Delete payrun"
+          <PayrunWorkflowActions
+            mode={approveOnly ? "approve-only" : "full"}
             payrunId={payrun.id}
-            periodLabel={periodLabel}
             status={payrun.status}
           />
+          {approveOnly ? null : (
+            <DeletePayrunButton
+              label="Delete payrun"
+              payrunId={payrun.id}
+              periodLabel={periodLabel}
+              status={payrun.status}
+            />
+          )}
         </div>
       )}
 

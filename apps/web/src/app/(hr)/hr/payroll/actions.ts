@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { requireRoleOrPermission } from "@/lib/auth/session";
+import { requireRole, requireRoleOrPermission } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
 import { lockPayrun } from "@/lib/hr/payroll";
 import {
@@ -44,6 +44,11 @@ async function guardPayroll() {
 async function guardPayrollApprover() {
   await requireModule("payroll");
   return requireRoleOrPermission(["hr_administrator", "director"], ["payroll_approver"]);
+}
+
+async function guardPayrollLocker() {
+  await requireModule("payroll");
+  return requireRole("hr_administrator");
 }
 
 function revalidateEmployee(employeeId: string) {
@@ -241,7 +246,7 @@ export async function lockPayrunAction(
   if (!payrunId) return { error: "Missing payrun." };
 
   try {
-    const session = await guardPayrollApprover();
+    const session = await guardPayrollLocker();
     await lockPayrun(payrunId, session.user.id);
     revalidatePath("/hr/payroll");
     revalidatePath(`/hr/payroll/${payrunId}`);

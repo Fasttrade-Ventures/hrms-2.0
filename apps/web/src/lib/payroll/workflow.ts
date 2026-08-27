@@ -72,6 +72,13 @@ async function transitionPayrun(
 
 export async function submitPayrunForReview(payrunId: string, actorUserId: string): Promise<void> {
   await requireRoleOrPermission(["hr_administrator"], ["payroll_processor"]);
+  const organizationId = getOrganizationId();
+  const supabase = await createClient();
+  await supabase
+    .from("payroll_payruns")
+    .update({ last_edited_by: actorUserId })
+    .eq("id", payrunId)
+    .eq("organization_id", organizationId);
   await transitionPayrun(payrunId, actorUserId, ["draft"], "in_review");
 }
 

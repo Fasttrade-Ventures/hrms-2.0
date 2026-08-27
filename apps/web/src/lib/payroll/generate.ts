@@ -52,6 +52,10 @@ export async function generateDraftPayrun(input: CreatePayrunInput): Promise<str
   const frequency = mapPayFrequency(payGroupCycle);
   const periodMonth = input.periodMonth ?? new Date(input.earningPeriodEnd).getMonth() + 1;
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   const { data: payrun, error } = await supabase
     .from("payroll_payruns")
     .insert({
@@ -66,6 +70,7 @@ export async function generateDraftPayrun(input: CreatePayrunInput): Promise<str
       status: "draft",
       scope: input.scope,
       payrun_type: input.payrunType,
+      last_edited_by: user?.id ?? null,
     })
     .select("id")
     .single();
@@ -73,9 +78,6 @@ export async function generateDraftPayrun(input: CreatePayrunInput): Promise<str
   if (error || !payrun) throw new Error(error?.message ?? "Failed to create payrun.");
 
   const { logAuditEvent } = await import("@/lib/audit/log-event");
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   await logAuditEvent({
     organizationId,
     actorUserId: user?.id ?? null,

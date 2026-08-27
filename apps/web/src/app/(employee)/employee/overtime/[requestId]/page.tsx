@@ -11,12 +11,14 @@ import {
 } from "@/components/employee/employee-shared";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { getOvertimeRequest, getApprovalTimeline } from "@/lib/employee/requests";
+import { requireModule } from "@/lib/entitlements";
 
 export default async function OvertimeDetailPage({
   params,
 }: {
   params: Promise<{ requestId: string }>;
 }) {
+  await requireModule("ot");
   const { requestId } = await params;
   const request = await getOvertimeRequest(requestId);
 

@@ -22,9 +22,12 @@ export async function approveRequestAsHr(
   formData: FormData,
 ): Promise<HrOperationsActionState> {
   const stepId = String(formData.get("stepId") ?? "");
-  const comment = String(formData.get("comment") ?? "").trim() || undefined;
+  const comment = String(formData.get("comment") ?? "").trim();
 
   if (!stepId) return { error: "Missing approval step." };
+  if (comment.length < 3) {
+    return { error: "Override comment is required (min 3 characters)." };
+  }
 
   try {
     const session = await requireRole("hr_administrator");
@@ -37,6 +40,16 @@ export async function approveRequestAsHr(
       event: "approve",
       comment,
       hrOverride: true,
+    });
+
+    const { logAuditEvent } = await import("@/lib/audit/log-event");
+    await logAuditEvent({
+      organizationId,
+      actorUserId: session.user.id,
+      action: "hr.operations.override_approve",
+      resourceType: "approval_step",
+      resourceId: stepId,
+      metadata: { comment },
     });
 
     revalidatePath("/hr/operations");
@@ -53,9 +66,12 @@ export async function rejectRequestAsHr(
   formData: FormData,
 ): Promise<HrOperationsActionState> {
   const stepId = String(formData.get("stepId") ?? "");
-  const comment = String(formData.get("comment") ?? "").trim() || undefined;
+  const comment = String(formData.get("comment") ?? "").trim();
 
   if (!stepId) return { error: "Missing approval step." };
+  if (comment.length < 3) {
+    return { error: "Override comment is required (min 3 characters)." };
+  }
 
   try {
     const session = await requireRole("hr_administrator");
@@ -68,6 +84,16 @@ export async function rejectRequestAsHr(
       event: "reject",
       comment,
       hrOverride: true,
+    });
+
+    const { logAuditEvent } = await import("@/lib/audit/log-event");
+    await logAuditEvent({
+      organizationId,
+      actorUserId: session.user.id,
+      action: "hr.operations.override_reject",
+      resourceType: "approval_step",
+      resourceId: stepId,
+      metadata: { comment },
     });
 
     revalidatePath("/hr/operations");

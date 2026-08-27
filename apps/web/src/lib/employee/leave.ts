@@ -70,6 +70,7 @@ export async function listLeaveTypes(): Promise<LeaveTypeOption[]> {
 
   const allowedIds = (allowedData ?? []).map((row) => row.leave_type_id);
 
+  // Intentional policy: empty allow-list means all org leave types are available.
   const query = supabase
     .from("leave_types")
     .select("id, name, entitlement_days, is_unpaid, requires_attachment")
@@ -240,6 +241,14 @@ export async function createLeaveRequest(input: LeaveRequestInput): Promise<stri
 
   const { assertLeaveDatesAllowed } = await import("@/lib/leave/blackout");
   await assertLeaveDatesAllowed(organizationId, input.leaveTypeId, input.startDate, input.endDate);
+
+  const { assertLeaveBalance } = await import("@/lib/leave/balance");
+  await assertLeaveBalance({
+    organizationId,
+    employeeId,
+    leaveTypeId: input.leaveTypeId,
+    days,
+  });
 
   const { data: leaveType } = await supabase
     .from("leave_types")
