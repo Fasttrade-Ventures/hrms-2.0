@@ -39,7 +39,8 @@ export default async function BranchReportSlugPage({
   const raw = await searchParams;
   const filters = {
     ...parseReportFilters(raw),
-    branchId: context.branchId,
+    branchId: context.branchIds.length === 1 ? context.branchIds[0] : undefined,
+    branchIds: context.branchIds,
   };
   const [{ departments }, result] = await Promise.all([
     loadReportFilterOptions(),

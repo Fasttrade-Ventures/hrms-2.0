@@ -3,6 +3,7 @@ import type { ListEmployeesInput } from "@hrms/validation";
 import { getEmployeeProfilePhotoUrl } from "@/lib/employees/profile-photo";
 import { DEFAULT_LIST_PAGE_SIZE } from "@/lib/pagination";
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
 export type EmployeeListItem = {
   id: string;
@@ -116,15 +117,6 @@ export type EmployeeDetail = {
   } | null;
 };
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-
-  if (!organizationId) {
-    throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  }
-
-  return organizationId;
-}
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -193,9 +185,11 @@ export async function listEmployees(filters: ListEmployeesInput): Promise<Employ
   return result.employees;
 }
 
-export async function getEmployeeDirectory(filters: ListEmployeesInput): Promise<EmployeeDirectoryResult> {
+export async function getEmployeeDirectory(
+  filters: ListEmployeesInput & { branchIds?: string[] },
+): Promise<EmployeeDirectoryResult> {
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const today = todayIso();
   const page = filters.page ?? 1;
   const pageSize = filters.pageSize ?? DEFAULT_LIST_PAGE_SIZE;
@@ -221,7 +215,13 @@ export async function getEmployeeDirectory(filters: ListEmployeesInput): Promise
 
   const onLeaveIds = new Set((leaveRes.data ?? []).map((row) => row.employee_id));
 
-  const statsRows = allForStatsRes.data ?? [];
+  let statsRows = allForStatsRes.data ?? [];
+  if (filters.branchIds && filters.branchIds.length > 0) {
+    const scope = new Set(filters.branchIds);
+    statsRows = statsRows.filter((row) => row.branch_id && scope.has(row.branch_id));
+  } else if (filters.branchId && filters.branchId !== "all") {
+    statsRows = statsRows.filter((row) => row.branch_id === filters.branchId);
+  }
   const activeCount = statsRows.filter((row) => row.status === "active").length;
   const inactiveCount = statsRows.filter((row) => row.status === "inactive").length;
   const onLeaveCount = statsRows.filter(
@@ -266,7 +266,9 @@ export async function getEmployeeDirectory(filters: ListEmployeesInput): Promise
     query = query.eq("status", "active");
   }
 
-  if (filters.branchId && filters.branchId !== "all") {
+  if (filters.branchIds && filters.branchIds.length > 0) {
+    query = query.in("branch_id", filters.branchIds);
+  } else if (filters.branchId && filters.branchId !== "all") {
     query = query.eq("branch_id", filters.branchId);
   }
 
@@ -301,7 +303,7 @@ export async function getEmployeeDirectory(filters: ListEmployeesInput): Promise
 
 export async function getEmployeeDetail(employeeId: string): Promise<EmployeeDetail | null> {
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data: employee, error } = await supabase
     .from("employees")
@@ -489,7 +491,7 @@ export async function getEmployeeDetail(employeeId: string): Promise<EmployeeDet
 
 export async function listActiveEmployeesForSelect() {
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data, error } = await supabase
     .from("employees")
@@ -504,7 +506,7 @@ export async function listActiveEmployeesForSelect() {
 
 export async function getEmployeeOptions() {
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const [branches, departments, managers, shifts, payGroups, leaveTypes] = await Promise.all([
     supabase.from("branches").select("id, name").eq("organization_id", organizationId).order("name"),
@@ -532,5 +534,5 @@ export async function getEmployeeOptions() {
 
 export async function getSuggestedEmployeeNumber(): Promise<string> {
   const { getNextEmployeeNumber } = await import("./organization");
-  return getNextEmployeeNumber(getOrganizationId());
+  return getNextEmployeeNumber(await requireOrganizationId());
 }

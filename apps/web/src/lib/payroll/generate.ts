@@ -12,12 +12,8 @@ import { buildPayrunItemComponentRows } from "@/lib/payroll/item-components";
 import { assertStatutoryRulesAvailable, loadStatutoryRulePacks } from "@/lib/payroll/rules";
 import { ensurePayrollComponents } from "@/lib/payroll/seed";
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 function mapPayFrequency(cycle: string | null | undefined): PayFrequency {
   if (cycle === "weekly") return "weekly";
@@ -31,7 +27,7 @@ export async function generateDraftPayrun(input: CreatePayrunInput): Promise<str
   await assertStatutoryRulesAvailable(input.earningPeriodEnd);
   const statutoryRules = await loadStatutoryRulePacks(input.earningPeriodEnd);
 
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   if (input.scope === "pay_group" && !input.payGroupId) {

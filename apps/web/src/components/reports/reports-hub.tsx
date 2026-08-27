@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/card";
 import { REPORT_CATALOG } from "@/lib/reports/catalog";
 
+const BRANCH_ADMIN_EXCLUDED = new Set(["asset-register", "performance-snapshot"]);
+
 const QUICK_EXPORTS = [
   {
     id: "calendar",
@@ -45,6 +47,10 @@ export function ReportsHub({
 }) {
   const payrollHref = portal === "hr" ? "/hr/payroll" : undefined;
   const showQuickExports = portal === "hr";
+  const catalog =
+    portal === "branch-admin"
+      ? REPORT_CATALOG.filter((report) => !BRANCH_ADMIN_EXCLUDED.has(report.slug))
+      : REPORT_CATALOG;
 
   return (
     <div className="space-y-6">
@@ -56,7 +62,7 @@ export function ReportsHub({
           </p>
         </div>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {REPORT_CATALOG.map((report) => (
+          {catalog.map((report) => (
             <Card className="flex flex-col" key={report.slug} size="sm">
               <CardHeader className="pb-2">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-primary">

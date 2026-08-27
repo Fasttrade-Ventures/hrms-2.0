@@ -22,6 +22,8 @@ export type ReportFilters = {
   to: string;
   asOf: string;
   branchId?: string;
+  /** When set (e.g. multi-branch Branch Admin), restrict to these branches. */
+  branchIds?: string[];
   departmentId?: string;
   employmentStatus: EmploymentStatusFilter;
   employeeQuery?: string;

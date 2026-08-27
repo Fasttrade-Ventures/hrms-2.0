@@ -6,6 +6,7 @@ import {
   type EmployeeImportRowResult,
 } from "./import-csv";
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
 export type { EmployeeImportRowResult } from "./import-csv";
 
@@ -27,11 +28,6 @@ function mapCsvRow(raw: Record<string, string>) {
   };
 }
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 async function resolveLookupIds(
   organizationId: string,
@@ -75,7 +71,7 @@ export async function importEmployeesFromCsv(
   actorUserId: string,
   options: { sendActivationEmail: boolean },
 ): Promise<{ results: EmployeeImportRowResult[]; successCount: number; errorCount: number }> {
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const parsedRows = parseEmployeeImportCsv(csvText);
   const results: EmployeeImportRowResult[] = [];
 

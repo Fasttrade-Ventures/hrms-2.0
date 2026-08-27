@@ -41,11 +41,12 @@ export async function resolvePostLoginPath(supabase: SupabaseClient): Promise<st
     return "/auth/login";
   }
 
+  const deploymentMode = process.env.DEPLOYMENT_MODE ?? "standalone";
   const defaultOrgId = process.env.DEFAULT_ORGANIZATION_ID;
 
   let query = supabase.from("organization_memberships").select("roles").eq("user_id", user.id);
 
-  if (defaultOrgId) {
+  if (deploymentMode === "standalone" && defaultOrgId) {
     query = query.eq("organization_id", defaultOrgId);
   }
 

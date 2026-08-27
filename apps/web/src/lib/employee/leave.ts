@@ -4,12 +4,8 @@ import { countWorkingDays } from "@hrms/domain";
 import { submitForApproval } from "@/lib/approvals/service";
 import { requireAuth } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export type LeaveTypeOption = {
   id: string;
@@ -54,7 +50,7 @@ export async function requireEmployeeContext() {
   return {
     session,
     employeeId,
-    organizationId: getOrganizationId(),
+    organizationId: await requireOrganizationId(),
   };
 }
 

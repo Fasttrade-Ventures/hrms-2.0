@@ -2,12 +2,8 @@ import { requireRole } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { ReportFilters, ReportSlug } from "@/lib/reports/types";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export type ReportSchedule = "daily" | "weekly" | "monthly";
 
@@ -49,7 +45,7 @@ export function computeNextRunAt(schedule: ReportSchedule, fromDate = new Date()
 export async function listReportSubscriptionsForUser(userId: string): Promise<ReportSubscriptionRow[]> {
   await requireRole("hr_administrator", "director");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data, error } = await supabase
     .from("report_subscriptions")
@@ -79,7 +75,7 @@ export async function upsertReportSubscription(input: {
   recipientUserId: string;
 }): Promise<void> {
   await requireRole("hr_administrator", "director");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
   const nextRunAt = computeNextRunAt(input.schedule);
 
@@ -114,7 +110,7 @@ export async function upsertReportSubscription(input: {
 
 export async function deleteReportSubscription(subscriptionId: string): Promise<void> {
   await requireRole("hr_administrator", "director");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
   const { error } = await supabase
     .from("report_subscriptions")
@@ -125,7 +121,7 @@ export async function deleteReportSubscription(subscriptionId: string): Promise<
 }
 
 export async function dispatchDueReportSubscriptions(asOf = new Date()): Promise<number> {
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const admin = createAdminClient();
   const asOfIso = asOf.toISOString();
 

@@ -10,7 +10,7 @@ export default async function BranchNewApplyBehalfPage() {
   const context = await requireBranchAdminContext();
 
   const [employees, leaveTypes] = await Promise.all([
-    listActiveEmployeesForBehalf({ branchId: context.branchId }),
+    listActiveEmployeesForBehalf({ branchIds: context.branchIds }),
     listLeaveTypesForBehalf(),
   ]);
 

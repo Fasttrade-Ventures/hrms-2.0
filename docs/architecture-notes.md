@@ -86,13 +86,33 @@ UI must not contain payroll formulas or leave entitlement math.
 
 ## Security checklist
 
-- [ ] RLS denies cross-org reads/writes
-- [ ] Manager cannot approve outside team scope
-- [ ] HR create-employee is org-scoped and audited
-- [ ] R2 objects not world-readable
-- [ ] Scheduled job endpoints are authenticated / locked down
-- [ ] Payroll regenerate is atomic; locked runs cannot change
+- [x] RLS denies cross-org reads/writes — dual-org seeded JWT probe in `supabase/tests/001_rls_matrix.sql`; CI job `rls-matrix` runs `supabase test db` (2026-08-27 re-audit).
+- [x] Manager cannot approve outside team scope — `apps/web/src/lib/approvals/service.ts` requires `step.approver_employee_id === actorEmployeeId` (approver is the assigned manager).
+- [x] HR create-employee is org-scoped and audited — `apps/web/src/lib/employees/create-employee.ts` writes `organization_id` + `logEmployeeEvent`.
+- [x] R2 objects not world-readable — private bucket + `getSignedDownloadUrl` / download ACL (`apps/web/src/lib/files/storage.ts`, `/api/files/[fileId]/download`).
+- [x] Scheduled job endpoints are authenticated / locked down — each `/api/cron/*` checks `Authorization: Bearer CRON_SECRET`; middleware bypasses session only after that path match.
+- [x] Payroll regenerate is atomic; locked runs cannot change — locked payruns reject delete (`workflow.ts`); lock transition via payroll actions; regenerate creates draft runs only (`generate.ts`).
 
+### Entitlements packaging
+
+- Standalone env provider (`createEnvEntitlementProvider`): unset `PRODUCT_TIER` defaults to **enterprise** (all modules). Set `PRODUCT_TIER=core|professional` for narrower packaging; optional `MODULE_OVERRIDES` JSON toggles.
+- Owner may edit tier/module flags in standalone; SaaS tier changes are Platform-only.
+- Payroll module key is **Pro** in `packages/platform` entitlements even when sold as part of a commercial bundle.
+
+### Specialist permissions
+
+- **Wired:** `payroll_processor`, `payroll_approver`, `auditor` (`WIRED_SPECIALIST_PERMISSIONS` in `packages/domain/src/roles.ts`).
+- **Deferred (catalog only):** recruiter, document_custodian, asset_manager, exporter, integration_manager — do not invent path gates until product needs duty segregation.
+
+### Jobs / outbox
+
+- Durable work: `notification_outbox` + Vercel cron routes. In-memory `packages/platform` jobs ledger is **deprecated**.
+- `/api/health` reports pending notification/webhook outbox depths under `ops` (informational).
+- Platform Admin dashboard (`/platform/dashboard`) surfaces the same health probes for ops.
+
+### Email
+
+- Production checklist: [email-ops-checklist.md](./email-ops-checklist.md)
 ---
 
 ## Environments

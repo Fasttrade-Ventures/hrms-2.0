@@ -2,10 +2,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { canAccessAnnouncementAttachment } from "@/lib/announcements/queries";
 import { rolesCanAccessFolder } from "@/lib/hr/document-folder-access";
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string | undefined {
-  return process.env.DEFAULT_ORGANIZATION_ID;
-}
 
 async function canDownloadAnnouncementFile(input: {
   roles: string[];
@@ -49,7 +47,7 @@ export async function canDownloadFile(input: {
   if (!file || file.deleted_at) return false;
 
   if (file.category === "announcement-attachments") {
-    const organizationId = input.organizationId ?? getOrganizationId();
+    const organizationId = input.organizationId ?? await requireOrganizationId();
     if (!organizationId) return false;
     if (input.roles.includes("hr_administrator")) return true;
     return canDownloadAnnouncementFile({

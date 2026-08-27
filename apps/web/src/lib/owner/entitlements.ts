@@ -3,12 +3,8 @@ import { CORE_MODULES, ENTERPRISE_MODULES, PROFESSIONAL_MODULES, isSaasMode } fr
 
 import { logAuditEvent } from "@/lib/audit/log-event";
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export type OwnerModuleSetting = {
   key: ModuleKey;
@@ -57,7 +53,7 @@ export async function getOwnerEntitlementSettings(): Promise<{
   payrollDutySegregation: boolean;
 }> {
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data, error } = await supabase
     .from("organizations")
@@ -94,7 +90,7 @@ export async function updateOwnerPayrollDutySegregation(
   actorUserId?: string | null,
 ): Promise<void> {
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { error } = await supabase
     .from("organizations")
@@ -121,7 +117,7 @@ export async function updateOwnerModuleFlag(
   actorUserId?: string | null,
 ): Promise<void> {
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data, error } = await supabase
     .from("organizations")
@@ -161,7 +157,7 @@ export async function updateOwnerProductTier(
   }
 
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { error } = await supabase
     .from("organizations")

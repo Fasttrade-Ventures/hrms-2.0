@@ -5,6 +5,7 @@ import { MapPinOff, Check, Loader2 } from "lucide-react";
 import { employeeClockIn, employeeClockOut, type EmployeeActionState } from "@/app/(employee)/employee/actions";
 
 import type { GeofenceConfig } from "@/lib/attendance/geofence";
+import { distanceMeters } from "@/lib/attendance/geofence";
 import type { TodayAttendance } from "@/lib/employee/attendance";
 
 type LocationState = "idle" | "loading" | "ready" | "denied" | "unsupported";
@@ -193,6 +194,25 @@ export function DashboardClockPanel({
           { hour: "numeric", minute: "2-digit" },
         )}`
       : "Last Clocked Out At ...";
+  } else if (geofenceRequired) {
+    if (locationState === "loading") {
+      hintText = "Verifying GPS location…";
+    } else if (locationState === "ready" && coords && geofence) {
+      const meters = Math.round(
+        distanceMeters(coords, {
+          latitude: geofence.latitude,
+          longitude: geofence.longitude,
+        }),
+      );
+      const within = meters <= geofence.radiusMeters;
+      hintText = within
+        ? `Location ready · within range (~${meters}m)`
+        : `Outside range (~${meters}m of ${geofence.radiusMeters}m)`;
+    } else if (locationState === "denied") {
+      hintText = "Location permission denied";
+    } else if (locationState === "unsupported") {
+      hintText = "GPS not supported on this device";
+    }
   }
 
   // Intercept clock-in to show confirm modal first

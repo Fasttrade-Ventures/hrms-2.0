@@ -1,9 +1,11 @@
 # HRMS development phases
 
-**Last updated:** 23 Jul 2026  
+**Last updated:** 27 Aug 2026  
 **Audience:** product + engineering  
 **Design source:** [`pencil-new.pen`](../pencil-new.pen) · [ui-design-inventory.md](./ui-design-inventory.md)  
 **Architecture:** [developer-brief.md](./developer-brief.md) · [architecture-notes.md](./architecture-notes.md)
+
+> Prefer [features.md](./features.md) for feature inventory truth after the 2026-08-27 refresh. This phases doc may lag on older checkbox rows.
 
 ---
 
@@ -348,7 +350,7 @@ Use this to track **all** login-related work:
 
 - [ ] `NEXT_PUBLIC_SITE_URL` on Vercel
 - [ ] Supabase site URL + redirect allowlist
-- [ ] Resend domain + `MAIL_FROM`
+- [ ] Resend domain + `MAIL_FROM` — follow [email-ops-checklist.md](./email-ops-checklist.md); confirm `/api/health` `services.resend.ok`
 - [ ] Bootstrap admin password rotated
 
 ---

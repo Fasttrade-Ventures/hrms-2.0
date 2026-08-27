@@ -2,10 +2,15 @@ import Link from "next/link";
 
 import { EmptyState } from "@hrms/ui";
 
-import { HrPagination } from "@/components/hr/hr-ui.client";
+import { uploadBranchDocumentAction } from "@/app/(branch-admin)/branch-admin/documents/actions";
+import { UploadDocumentDialog } from "@/components/hr/documents/upload-document-dialog";
+import { HrLinkButton, HrPagination } from "@/components/hr/hr-ui.client";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { requireBranchAdminContext } from "@/lib/branch-admin/context";
 import { listBranchDocuments } from "@/lib/branch-admin/documents";
+import { listDocumentFolders } from "@/lib/hr/document-folders";
+import { listRequiredDocuments } from "@/lib/hr/documents";
+import { listActiveEmployeesForBehalf } from "@/lib/hr/apply-behalf";
 
 export default async function BranchDocumentsPage({
   searchParams,
@@ -15,13 +20,39 @@ export default async function BranchDocumentsPage({
   const context = await requireBranchAdminContext();
   const query = await searchParams;
   const page = Number(query.page ?? "1") || 1;
-  const library = await listBranchDocuments(page, 20);
+  const [library, employees, requiredTypes, folders] = await Promise.all([
+    listBranchDocuments(page, 20),
+    listActiveEmployeesForBehalf({ branchIds: context.branchIds }),
+    listRequiredDocuments(true),
+    listDocumentFolders(),
+  ]);
   const pageCount = Math.max(1, Math.ceil(library.total / library.pageSize));
 
   return (
     <div className="space-y-6">
       <PortalPageHeader
-        description={`${context.branchName} · employee documents for this branch only`}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <HrLinkButton href="/branch-admin/documents/compliance" variant="outline">
+              Compliance
+            </HrLinkButton>
+            <UploadDocumentDialog
+              action={uploadBranchDocumentAction}
+              employees={employees}
+              folders={folders.map((folder) => ({
+                id: folder.id,
+                name: folder.name,
+                parentName: folder.parentName,
+              }))}
+              requiredTypes={requiredTypes.map((type) => ({
+                id: type.id,
+                name: type.name,
+                requiresExpiry: type.requiresExpiry,
+              }))}
+            />
+          </div>
+        }
+        description={`${context.branchName} · employee documents for your branch scope`}
         title="Documents"
       />
 
@@ -33,7 +64,10 @@ export default async function BranchDocumentsPage({
       ) : null}
 
       {library.rows.length === 0 ? (
-        <EmptyState description="No documents uploaded for employees in this branch yet." title="No documents" />
+        <EmptyState
+          description="No documents yet. Use Upload document to attach files for branch employees."
+          title="No documents"
+        />
       ) : (
         <div className="overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-card)]">
           <div className="grid grid-cols-[1.4fr_1fr_1.2fr_6rem] gap-3 border-b border-[var(--border-primary)] bg-[var(--surface-muted)] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">

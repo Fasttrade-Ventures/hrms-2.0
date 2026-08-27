@@ -113,8 +113,13 @@ export async function exportHrCalendarCsvAction(input: {
   await requireModule("calendar");
   try {
     await requireRole("hr_administrator");
-    const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-    if (!organizationId) return { error: "Organization not configured." };
+    const { requireOrganizationId } = await import("@/lib/auth/organization-context");
+    let organizationId: string;
+    try {
+      organizationId = await requireOrganizationId();
+    } catch {
+      return { error: "Organization not configured." };
+    }
 
     const events = await listHrCalendarDays({
       organizationId,

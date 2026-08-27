@@ -1,4 +1,3 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { User } from "@supabase/supabase-js";
 
@@ -8,6 +7,7 @@ import {
   isAuthEntryPath,
   isPublicAuthPath,
 } from "@/lib/auth/routes";
+import { createMiddlewareSupabaseClient } from "@/lib/supabase/create-middleware-client";
 
 /** Stay well under Vercel middleware invocation limits when Auth/DB is slow or unreachable. */
 const AUTH_TIMEOUT_MS = 2_500;
@@ -44,42 +44,69 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
 }
 
 type MembershipRow = {
+  organization_id: string;
   roles: string[] | null;
   permissions: string[] | null;
 };
 
+type MiddlewareSupabase = ReturnType<typeof createMiddlewareSupabaseClient>["supabase"];
+
 async function getMembership(
-  supabase: ReturnType<typeof createServerClient>,
+  supabase: MiddlewareSupabase,
   userId: string,
+  request: NextRequest,
 ): Promise<{ roles: string[]; permissions: string[] } | null> {
+  const deploymentMode = process.env.DEPLOYMENT_MODE ?? "standalone";
   const defaultOrgId = process.env.DEFAULT_ORGANIZATION_ID;
+  const impersonateOrgId = request.cookies.get("hrms_impersonate_org_id")?.value;
+  const activeOrgId = request.cookies.get("hrms_active_org_id")?.value;
 
-  let query = supabase
-    .from("organization_memberships")
-    .select("roles, permissions")
-    .eq("user_id", userId);
-
-  if (defaultOrgId) {
-    query = query.eq("organization_id", defaultOrgId);
-  }
-
-  const result = await withTimeout<{ data: MembershipRow | null }>(
-    Promise.resolve(query.maybeSingle()),
+  const result = await withTimeout<{ data: MembershipRow[] | null }>(
+    Promise.resolve(
+      supabase
+        .from("organization_memberships")
+        .select("organization_id, roles, permissions")
+        .eq("user_id", userId),
+    ),
     AUTH_TIMEOUT_MS,
   );
   if (!result) {
     return null;
   }
 
-  const { data } = result;
+  const memberships = result.data ?? [];
+  if (memberships.length === 0) {
+    return { roles: [], permissions: [] };
+  }
+
+  const isPlatformAdmin = memberships.some((row) => row.roles?.includes("platform_administrator"));
+  if (impersonateOrgId && isPlatformAdmin) {
+    return {
+      roles: ["organization_owner", "hr_administrator", "platform_administrator"],
+      permissions: ["platform_impersonating"],
+    };
+  }
+
+  let selected: MembershipRow | undefined;
+  if (deploymentMode === "standalone" && defaultOrgId) {
+    selected = memberships.find((row) => row.organization_id === defaultOrgId);
+  } else if (activeOrgId) {
+    selected = memberships.find((row) => row.organization_id === activeOrgId);
+  }
+  selected ??= memberships[0];
+
+  if (!selected) {
+    return { roles: [], permissions: [] };
+  }
+
   return {
-    roles: data?.roles ?? [],
-    permissions: data?.permissions ?? [],
+    roles: selected.roles ?? [],
+    permissions: selected.permissions ?? [],
   };
 }
 
 async function getUserWithTimeout(
-  supabase: ReturnType<typeof createServerClient>,
+  supabase: MiddlewareSupabase,
 ): Promise<User | null> {
   const result = await withTimeout<{ data: { user: User | null } }>(
     supabase.auth.getUser(),
@@ -112,22 +139,15 @@ export async function updateSession(request: NextRequest) {
 
   let supabaseResponse = NextResponse.next({ request });
 
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) => {
-          request.cookies.set(name, value);
-        });
-        supabaseResponse = NextResponse.next({ request });
-        cookiesToSet.forEach(({ name, value, options }) => {
-          supabaseResponse.cookies.set(name, value, options);
-        });
-      },
+  const { supabase, getResponse } = createMiddlewareSupabaseClient(
+    supabaseUrl,
+    supabaseAnonKey,
+    request,
+    (response) => {
+      supabaseResponse = response;
     },
-  });
+    supabaseResponse,
+  );
 
   // Timed auth lookup — never block the edge until Vercel kills the invocation.
   const user = await getUserWithTimeout(supabase);
@@ -156,7 +176,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && !isPublicPath(pathname) && !pathname.startsWith("/api/")) {
-    const membership = await getMembership(supabase, user.id);
+    const membership = await getMembership(supabase, user.id, request);
 
     // Auth/DB slow or down: fail closed so portal role checks are never skipped.
     // Timeout still avoids MIDDLEWARE_INVOCATION_TIMEOUT (redirect instead of waiting).
@@ -185,7 +205,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && pathname === "/") {
-    const membership = await getMembership(supabase, user.id);
+    const membership = await getMembership(supabase, user.id, request);
     if (!membership) {
       const url = request.nextUrl.clone();
       url.pathname = "/auth/login";
@@ -198,5 +218,5 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  return supabaseResponse;
+  return getResponse();
 }

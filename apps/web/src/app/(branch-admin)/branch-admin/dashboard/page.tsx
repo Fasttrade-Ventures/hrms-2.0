@@ -10,7 +10,7 @@ import { greetingForHour } from "@/lib/employees/self";
 
 export default async function Page() {
   const context = await requireBranchAdminContext();
-  const data = await getBranchDashboardData(context.organizationId, context.branchId);
+  const data = await getBranchDashboardData(context.organizationId, context.branchIds);
   const hour = new Date().getHours();
   const firstName = context.fullName?.split(/\s+/)[0] ?? "Admin";
 

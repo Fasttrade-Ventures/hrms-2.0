@@ -9,7 +9,11 @@ import type { ReportFilters, ReportSlug } from "@/lib/reports/types";
 
 export async function exportBranchReportCsv(slug: ReportSlug, filters: ReportFilters) {
   const context = await requireBranchAdminContext();
-  const scoped = { ...filters, branchId: context.branchId };
+  const scoped = {
+    ...filters,
+    branchId: context.branchIds.length === 1 ? context.branchIds[0] : undefined,
+    branchIds: context.branchIds,
+  };
   const { headers, rows, filename } = await getReportCsvRows(slug, scoped);
   await logReportExport({ slug, format: "csv", filters: scoped });
   return { csv: rowsToCsv(headers, rows), filename };
@@ -17,6 +21,10 @@ export async function exportBranchReportCsv(slug: ReportSlug, filters: ReportFil
 
 export async function logBranchReportPrint(slug: ReportSlug, filters: ReportFilters) {
   const context = await requireBranchAdminContext();
-  const scoped = { ...filters, branchId: context.branchId };
+  const scoped = {
+    ...filters,
+    branchId: context.branchIds.length === 1 ? context.branchIds[0] : undefined,
+    branchIds: context.branchIds,
+  };
   await logReportExport({ slug, format: "print", filters: scoped });
 }

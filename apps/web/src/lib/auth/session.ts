@@ -1,7 +1,8 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { dashboardPathForRoles } from "@/lib/auth/redirect";
-import { getImpersonationOrgId } from "@/lib/platform/impersonation";
+import { getImpersonationOrgId, IMPERSONATION_COOKIE } from "@/lib/platform/impersonation";
 import { createClient } from "@/lib/supabase/server";
 
 export type UserMembership = {
@@ -27,6 +28,9 @@ type MembershipRow = {
   permissions: string[] | null;
 };
 
+/** Keep in sync with organization-context ACTIVE_ORG_COOKIE (avoid circular import). */
+const ACTIVE_ORG_COOKIE = "hrms_active_org_id";
+
 function mapMembership(row: MembershipRow): UserMembership {
   return {
     organizationId: row.organization_id,
@@ -38,6 +42,7 @@ function mapMembership(row: MembershipRow): UserMembership {
 
 async function loadMembership(userId: string): Promise<UserMembership | null> {
   const supabase = await createClient();
+  const deploymentMode = process.env.DEPLOYMENT_MODE ?? "standalone";
   const defaultOrgId = process.env.DEFAULT_ORGANIZATION_ID;
   const impersonateOrgId = await getImpersonationOrgId();
 
@@ -61,13 +66,23 @@ async function loadMembership(userId: string): Promise<UserMembership | null> {
     };
   }
 
-  if (defaultOrgId) {
-    const match = memberships.find((row) => row.organization_id === defaultOrgId);
-    return match ? mapMembership(match) : null;
+  if (deploymentMode === "standalone") {
+    if (defaultOrgId) {
+      const match = memberships.find((row) => row.organization_id === defaultOrgId);
+      return match ? mapMembership(match) : null;
+    }
+    return mapMembership(memberships[0]!);
   }
 
-  const primary = memberships[0];
-  return primary ? mapMembership(primary) : null;
+  // SaaS: prefer active-org cookie when it matches a membership (never force DEFAULT).
+  const cookieStore = await cookies();
+  const activeOrgId = cookieStore.get(ACTIVE_ORG_COOKIE)?.value;
+  if (activeOrgId) {
+    const match = memberships.find((row) => row.organization_id === activeOrgId);
+    if (match) return mapMembership(match);
+  }
+
+  return mapMembership(memberships[0]!);
 }
 
 export async function getSession(): Promise<AuthSession | null> {
@@ -145,6 +160,18 @@ export async function getMembershipRoles(userId: string): Promise<string[]> {
   return membership?.roles ?? [];
 }
 
+export async function listUserMemberships(userId: string): Promise<UserMembership[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("organization_memberships")
+    .select("organization_id, employee_id, roles, permissions")
+    .eq("user_id", userId);
+  if (error || !data) return [];
+  return data.map(mapMembership);
+}
+
 export function redirectToUserDashboard(roles: readonly string[]): never {
   redirect(dashboardPathForRoles([...roles]));
 }
+
+export { IMPERSONATION_COOKIE };

@@ -6,12 +6,8 @@ import { getNextEmployeeNumber } from "@/lib/employees/organization";
 
 import type { RecruitmentStage } from "./types";
 import { canMoveToStage } from "./types";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export async function moveApplicationStage(input: {
   applicationId: string;
@@ -20,7 +16,7 @@ export async function moveApplicationStage(input: {
   notes?: string;
 }): Promise<void> {
   const admin = createAdminClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data: application } = await admin
     .from("job_applications")
@@ -54,7 +50,7 @@ export async function moveApplicationStage(input: {
 
 export async function acceptOffer(offerId: string, actorUserId: string): Promise<{ employeeId: string }> {
   const admin = createAdminClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data: offer } = await admin
     .from("job_offers")
@@ -145,7 +141,7 @@ export async function createOfferForApplication(input: {
   actorUserId: string;
 }): Promise<{ offerId: string }> {
   const admin = createAdminClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data: application } = await admin
     .from("job_applications")

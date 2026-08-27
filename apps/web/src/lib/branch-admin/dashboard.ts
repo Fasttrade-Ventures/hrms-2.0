@@ -10,17 +10,18 @@ export type BranchDashboardData = {
 
 export async function getBranchDashboardData(
   organizationId: string,
-  branchId: string,
+  branchIds: string[],
 ): Promise<BranchDashboardData> {
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
+  const ids = branchIds.length > 0 ? branchIds : ["00000000-0000-0000-0000-000000000000"];
 
   const [employeesRes, attendanceRes, leaveRes, pendingRes] = await Promise.all([
     supabase
       .from("employees")
       .select("id", { count: "exact", head: true })
       .eq("organization_id", organizationId)
-      .eq("branch_id", branchId)
+      .in("branch_id", ids)
       .eq("status", "active"),
     supabase
       .from("attendance_records")
@@ -28,7 +29,7 @@ export async function getBranchDashboardData(
       .eq("organization_id", organizationId)
       .eq("work_date", today)
       .not("clock_in_at", "is", null)
-      .eq("employees.branch_id", branchId),
+      .in("employees.branch_id", ids),
     supabase
       .from("leave_requests")
       .select("employee_id, employees!inner(branch_id)")
@@ -36,7 +37,7 @@ export async function getBranchDashboardData(
       .eq("status", "approved")
       .lte("start_date", today)
       .gte("end_date", today)
-      .eq("employees.branch_id", branchId),
+      .in("employees.branch_id", ids),
     supabase
       .from("approval_requests")
       .select("id, requester_employee_id, employees!approval_requests_requester_employee_id_fkey(branch_id)", {
@@ -45,7 +46,7 @@ export async function getBranchDashboardData(
       })
       .eq("organization_id", organizationId)
       .eq("status", "pending")
-      .eq("employees.branch_id", branchId),
+      .in("employees.branch_id", ids),
   ]);
 
   const employeeCount = employeesRes.count ?? 0;
@@ -56,7 +57,7 @@ export async function getBranchDashboardData(
     .from("employees")
     .select("id")
     .eq("organization_id", organizationId)
-    .eq("branch_id", branchId)
+    .in("branch_id", ids)
     .eq("status", "active");
 
   const employeeIds = (branchEmployees ?? []).map((row) => row.id);

@@ -3,12 +3,8 @@ import { S3R2StorageAdapter } from "@hrms/platform";
 import { logAuditEvent } from "@/lib/audit/log-event";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export type ExportResult = {
   exportId: string;
@@ -25,7 +21,7 @@ export async function storePayrollExport(input: {
   body: Uint8Array;
   generatedBy: string;
 }): Promise<ExportResult> {
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const adapter = new S3R2StorageAdapter();
   const ref = await adapter.putObject({
     organizationId,
@@ -68,7 +64,7 @@ export async function storePayrollExport(input: {
 }
 
 export async function getPayrollExportDownloadUrl(exportId: string): Promise<string | null> {
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
   const { data } = await supabase
     .from("payroll_exports")
@@ -115,7 +111,7 @@ export type StatutoryExportRow = {
 };
 
 export async function loadPayrunBranchItems(payrunId: string, branchId: string | null) {
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   let query = supabase

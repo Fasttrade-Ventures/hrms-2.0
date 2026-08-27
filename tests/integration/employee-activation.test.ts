@@ -54,6 +54,7 @@ vi.mock("next/navigation", () => ({
 // Mock Next.js headers cookies
 vi.mock("next/headers", () => ({
   cookies: vi.fn().mockResolvedValue({
+    get: vi.fn().mockReturnValue(undefined),
     getAll: vi.fn().mockReturnValue([]),
     set: vi.fn(),
   }),
@@ -68,8 +69,13 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn().mockResolvedValue((globalThis as any).mockSupabaseClient),
 }));
 
-vi.mock("@supabase/ssr", () => ({
-  createServerClient: vi.fn(() => (globalThis as any).mockSupabaseClient),
+vi.mock("@/lib/supabase/create-middleware-client", () => ({
+  createMiddlewareSupabaseClient: vi.fn(
+    (_url: string, _key: string, _request: unknown, _onResponse: unknown, initialResponse: unknown) => ({
+      supabase: (globalThis as any).mockSupabaseClient,
+      getResponse: () => initialResponse,
+    }),
+  ),
 }));
 
 // Mock Platform Mailing
@@ -398,7 +404,7 @@ describe("employee activation and auth flows", () => {
     });
 
     it("redirects authenticated users away from public auth paths to home", async () => {
-      mockSupabaseClient.auth.getUser.mockResolvedValueOnce({
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
         data: { user: { id: "user-123", email: "test@example.com" } },
         error: null,
       });

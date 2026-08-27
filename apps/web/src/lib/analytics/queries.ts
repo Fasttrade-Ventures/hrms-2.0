@@ -1,10 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export type HeadcountMetrics = {
   total: number;
@@ -31,7 +27,7 @@ export type RecruitmentMetrics = {
 };
 
 export async function getHeadcountMetrics(): Promise<HeadcountMetrics> {
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const [{ count: total }, { data: employees, error }] = await Promise.all([
@@ -77,7 +73,7 @@ export async function getHeadcountMetrics(): Promise<HeadcountMetrics> {
 }
 
 export async function getLeaveLiabilityMetrics(): Promise<LeaveLiabilityMetrics> {
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const [{ data: employees }, { data: requests }] = await Promise.all([
@@ -122,7 +118,7 @@ export async function getLeaveLiabilityMetrics(): Promise<LeaveLiabilityMetrics>
 }
 
 export async function getPayrollCostMetrics(): Promise<PayrollCostMetrics> {
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
   const year = new Date().getFullYear();
 
@@ -176,7 +172,7 @@ export async function getPayrollCostMetrics(): Promise<PayrollCostMetrics> {
 }
 
 export async function getRecruitmentMetrics(): Promise<RecruitmentMetrics> {
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const [{ count: openRequisitions }, { count: activeCandidates }] = await Promise.all([

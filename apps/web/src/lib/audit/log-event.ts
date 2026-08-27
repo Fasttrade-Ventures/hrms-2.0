@@ -11,7 +11,10 @@ type AuditEventInput = {
 };
 
 export async function logAuditEvent(input: AuditEventInput): Promise<void> {
-  const organizationId = input.organizationId ?? process.env.DEFAULT_ORGANIZATION_ID;
+  const deploymentMode = process.env.DEPLOYMENT_MODE ?? "standalone";
+  const organizationId =
+    input.organizationId ??
+    (deploymentMode === "standalone" ? process.env.DEFAULT_ORGANIZATION_ID : undefined);
   if (!organizationId) return;
 
   try {

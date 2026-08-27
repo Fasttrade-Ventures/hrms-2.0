@@ -2,12 +2,8 @@ import { requireRole } from "@/lib/auth/session";
 import { generateDraftPayrun } from "@/lib/payroll/generate";
 import { getPayrunDetail, listPayruns, type PayrunListItem } from "@/lib/payroll/queries";
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export type PayrunRow = PayrunListItem;
 
@@ -15,7 +11,7 @@ export { generateDraftPayrun as createDraftPayrun, getPayrunDetail, listPayruns 
 
 export async function lockPayrun(payrunId: string, actorUserId: string): Promise<void> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const { data: payrun, error: fetchError } = await supabase

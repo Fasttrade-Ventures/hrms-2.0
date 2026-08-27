@@ -39,7 +39,7 @@ export async function submitBranchBehalfLeave(
 
   try {
     await createBehalfLeave(parsed.data, context.session.user.id, {
-      branchId: context.branchId,
+      branchIds: context.branchIds,
     });
     revalidatePath("/branch-admin/apply-behalf");
     redirect("/branch-admin/apply-behalf?created=leave");
@@ -70,7 +70,7 @@ export async function submitBranchBehalfLate(
 
   try {
     await createBehalfLate(parsed.data, context.session.user.id, {
-      branchId: context.branchId,
+      branchIds: context.branchIds,
     });
     revalidatePath("/branch-admin/apply-behalf");
     redirect("/branch-admin/apply-behalf?created=late");

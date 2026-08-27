@@ -1,9 +1,32 @@
+import { cookies } from "next/headers";
+
 import { getImpersonationOrgId } from "@/lib/platform/impersonation";
 import { getSession } from "@/lib/auth/session";
 
+/** Cookie for multi-membership active organization (SaaS). */
+export const ACTIVE_ORG_COOKIE = "hrms_active_org_id";
+
+export async function getActiveOrganizationCookie(): Promise<string | null> {
+  try {
+    const cookieStore = await cookies();
+    return cookieStore.get?.(ACTIVE_ORG_COOKIE)?.value ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolves the organization for the current request.
+ * Priority: impersonation → standalone DEFAULT → active-org cookie (validated in session) → session membership.
+ */
 export async function getEffectiveOrganizationId(): Promise<string | null> {
   const deploymentMode = process.env.DEPLOYMENT_MODE ?? "standalone";
-  const impersonateOrgId = await getImpersonationOrgId();
+  let impersonateOrgId: string | null = null;
+  try {
+    impersonateOrgId = await getImpersonationOrgId();
+  } catch {
+    impersonateOrgId = null;
+  }
 
   if (impersonateOrgId) {
     return impersonateOrgId;
@@ -13,6 +36,23 @@ export async function getEffectiveOrganizationId(): Promise<string | null> {
     return process.env.DEFAULT_ORGANIZATION_ID ?? null;
   }
 
-  const session = await getSession();
-  return session?.membership.organizationId ?? null;
+  try {
+    const session = await getSession();
+    return session?.membership.organizationId ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Like getEffectiveOrganizationId but throws when unresolved. */
+export async function requireOrganizationId(): Promise<string> {
+  const organizationId = await getEffectiveOrganizationId();
+  if (!organizationId) {
+    throw new Error(
+      process.env.DEPLOYMENT_MODE === "saas"
+        ? "No organization in session. Sign in again or select an organization."
+        : "DEFAULT_ORGANIZATION_ID is not configured.",
+    );
+  }
+  return organizationId;
 }

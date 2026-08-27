@@ -2,12 +2,8 @@ import { requireReportRunnerAccess } from "@/lib/reports/access";
 import { createClient } from "@/lib/supabase/server";
 
 import type { ReportFilters } from "./types";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export type FilterOption = { id: string; name: string };
 
@@ -17,7 +13,7 @@ export async function loadReportFilterOptions(): Promise<{
 }> {
   await requireReportRunnerAccess();
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const [branchesRes, departmentsRes] = await Promise.all([
     supabase.from("branches").select("id, name").eq("organization_id", organizationId).order("name"),
@@ -63,7 +59,7 @@ async function loadOnLeaveEmployeeIds(organizationId: string, asOf: string): Pro
 export async function listReportEmployees(filters: ReportFilters): Promise<ReportEmployee[]> {
   await requireReportRunnerAccess();
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   let query = supabase
     .from("employees")
@@ -73,7 +69,11 @@ export async function listReportEmployees(filters: ReportFilters): Promise<Repor
     .eq("organization_id", organizationId)
     .order("employee_number");
 
-  if (filters.branchId) query = query.eq("branch_id", filters.branchId);
+  if (filters.branchIds && filters.branchIds.length > 0) {
+    query = query.in("branch_id", filters.branchIds);
+  } else if (filters.branchId) {
+    query = query.eq("branch_id", filters.branchId);
+  }
   if (filters.departmentId) query = query.eq("department_id", filters.departmentId);
 
   if (filters.employmentStatus === "active") {
@@ -134,13 +134,21 @@ export function buildFilterSummary(filters: ReportFilters): string {
   }
   parts.push(`${filters.from} to ${filters.to}`);
   if (filters.asOf) parts.push(`As of ${filters.asOf}`);
-  if (filters.branchId) parts.push(`Branch filter applied`);
+  if (filters.branchIds && filters.branchIds.length > 0) {
+    parts.push(
+      filters.branchIds.length === 1
+        ? `Branch filter applied`
+        : `${filters.branchIds.length} branches in scope`,
+    );
+  } else if (filters.branchId) {
+    parts.push(`Branch filter applied`);
+  }
   if (filters.departmentId) parts.push(`Department filter applied`);
   if (filters.employmentStatus !== "all") parts.push(`Status: ${filters.employmentStatus}`);
   if (filters.employeeQuery) parts.push(`Search: ${filters.employeeQuery}`);
   return parts.join(" · ");
 }
 
-export function getOrganizationIdForReports(): string {
-  return getOrganizationId();
+export async function getOrganizationIdForReports(): Promise<string> {
+  return requireOrganizationId();
 }

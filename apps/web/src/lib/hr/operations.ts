@@ -2,12 +2,8 @@ import { mapApprovalDetail, mapApprovalInboxRow } from "@/lib/approvals/inbox";
 import type { ApprovalDetail, ApprovalInboxRow } from "@/lib/approvals/types";
 import { requireRole } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 const approvalStepSelect = `
   id, status, comment,
@@ -21,7 +17,7 @@ const approvalStepSelect = `
 
 export async function listOrgPendingApprovals(): Promise<ApprovalInboxRow[]> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -43,7 +39,7 @@ export async function listOrgPendingApprovals(): Promise<ApprovalInboxRow[]> {
 
 export async function getHrApprovalDetail(stepId: string): Promise<ApprovalDetail | null> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const { data, error } = await supabase

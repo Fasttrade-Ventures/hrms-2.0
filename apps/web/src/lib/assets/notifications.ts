@@ -1,16 +1,12 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { queueNotification } from "@/lib/notifications/queue";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 async function listHrAdminUserIds(): Promise<string[]> {
   const admin = createAdminClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const { data } = await admin
     .from("organization_memberships")
     .select("user_id")
@@ -26,7 +22,7 @@ export async function notifyAssetAssigned(input: {
   assetName: string;
 }): Promise<void> {
   if (!input.employeeUserId) return;
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   await queueNotification({
     organizationId,
     recipientUserId: input.employeeUserId,
@@ -47,7 +43,7 @@ export async function notifyAssetReturned(input: {
   assetName: string;
 }): Promise<void> {
   if (!input.employeeUserId) return;
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   await queueNotification({
     organizationId,
     recipientUserId: input.employeeUserId,
@@ -69,7 +65,7 @@ export async function notifyAssetRequestToHr(input: {
   kind: string;
   requestId: string;
 }): Promise<void> {
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const hrAdmins = await listHrAdminUserIds();
 
   for (const userId of hrAdmins) {

@@ -1,11 +1,7 @@
 import { requireRole } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export type PayrunListItem = {
   id: string;
@@ -79,7 +75,7 @@ export type PayGroupOption = {
 
 export async function listPayrunBranches(payrunId: string): Promise<Array<{ id: string; name: string }>> {
   await requireRole("hr_administrator", "director");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const { data: items, error } = await supabase
@@ -107,7 +103,7 @@ export async function listPayruns(): Promise<PayrunListItem[]> {
     .select(
       "id, period_year, period_month, status, earning_period_start, earning_period_end, pay_date, scope, payrun_type, pay_groups(name)",
     )
-    .eq("organization_id", getOrganizationId())
+    .eq("organization_id", await requireOrganizationId())
     .order("period_year", { ascending: false })
     .order("period_month", { ascending: false });
 
@@ -137,7 +133,7 @@ export async function listPayGroups(): Promise<PayGroupOption[]> {
   const { data, error } = await supabase
     .from("pay_groups")
     .select("id, name, cycle, cutoff_day")
-    .eq("organization_id", getOrganizationId())
+    .eq("organization_id", await requireOrganizationId())
     .order("name");
 
   if (error) throw new Error(error.message);
@@ -155,7 +151,7 @@ export async function getPayrunDetail(
   opts?: { page?: number; pageSize?: number },
 ): Promise<PayrunDetail | null> {
   await requireRole("hr_administrator", "director");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
   const pageSize = Math.min(Math.max(opts?.pageSize ?? 50, 10), 200);
   const page = Math.max(opts?.page ?? 1, 1);
@@ -176,8 +172,7 @@ export async function getPayrunDetail(
 
   const [
     { data: items, error: itemsError, count: itemCount },
-    { data: totalRows, error: totalsError },
-    { count: flaggedCount },
+    { data: totalsRow, error: totalsError },
   ] = await Promise.all([
     supabase
       .from("payroll_payrun_items")
@@ -189,23 +184,17 @@ export async function getPayrunDetail(
       .eq("organization_id", organizationId)
       .order("created_at")
       .range(from, to),
-    supabase
-      .from("payroll_payrun_items")
-      .select(
-        "gross_pay, epf_employee, epf_employer, socso_employee, socso_employer, eis_employee, eis_employer, pcb, hrdf_employer, net_pay",
-      )
-      .eq("payrun_id", payrunId)
-      .eq("organization_id", organizationId),
-    supabase
-      .from("payroll_payrun_items")
-      .select("id", { count: "exact", head: true })
-      .eq("payrun_id", payrunId)
-      .eq("organization_id", organizationId)
-      .eq("requires_resolution", true),
+    supabase.rpc("payrun_item_totals", {
+      p_organization_id: organizationId,
+      p_payrun_id: payrunId,
+    }),
   ]);
 
   if (itemsError) throw new Error(itemsError.message);
   if (totalsError) throw new Error(totalsError.message);
+
+  const totalsSource = Array.isArray(totalsRow) ? totalsRow[0] : totalsRow;
+  const flaggedCount = Number(totalsSource?.flagged_count ?? 0);
 
   const itemIds = (items ?? []).map((row) => row.id);
   const basicByItem = new Map<string, string>();
@@ -253,32 +242,18 @@ export async function getPayrunDetail(
     };
   });
 
-  const totals = (totalRows ?? []).reduce(
-    (acc, item) => ({
-      gross: acc.gross + Number(item.gross_pay),
-      epfEmployee: acc.epfEmployee + Number(item.epf_employee),
-      epfEmployer: acc.epfEmployer + Number(item.epf_employer),
-      socsoEmployee: acc.socsoEmployee + Number(item.socso_employee),
-      socsoEmployer: acc.socsoEmployer + Number(item.socso_employer),
-      eisEmployee: acc.eisEmployee + Number(item.eis_employee),
-      eisEmployer: acc.eisEmployer + Number(item.eis_employer),
-      pcb: acc.pcb + Number(item.pcb),
-      hrdfEmployer: acc.hrdfEmployer + Number(item.hrdf_employer),
-      net: acc.net + Number(item.net_pay),
-    }),
-    {
-      gross: 0,
-      epfEmployee: 0,
-      epfEmployer: 0,
-      socsoEmployee: 0,
-      socsoEmployer: 0,
-      eisEmployee: 0,
-      eisEmployer: 0,
-      pcb: 0,
-      hrdfEmployer: 0,
-      net: 0,
-    },
-  );
+  const totals = {
+    gross: Number(totalsSource?.gross_pay ?? 0),
+    epfEmployee: Number(totalsSource?.epf_employee ?? 0),
+    epfEmployer: Number(totalsSource?.epf_employer ?? 0),
+    socsoEmployee: Number(totalsSource?.socso_employee ?? 0),
+    socsoEmployer: Number(totalsSource?.socso_employer ?? 0),
+    eisEmployee: Number(totalsSource?.eis_employee ?? 0),
+    eisEmployer: Number(totalsSource?.eis_employer ?? 0),
+    pcb: Number(totalsSource?.pcb ?? 0),
+    hrdfEmployer: Number(totalsSource?.hrdf_employer ?? 0),
+    net: Number(totalsSource?.net_pay ?? 0),
+  };
 
   const payGroup = Array.isArray(payrun.pay_groups) ? payrun.pay_groups[0] : payrun.pay_groups;
 

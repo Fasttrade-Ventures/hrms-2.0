@@ -9,6 +9,7 @@ import { calculateLeaveDays } from "@/lib/employee/leave";
 import { requireRole } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
 export type {
   BehalfApplicationDetail,
@@ -26,23 +27,37 @@ import type {
   BehalfListData,
 } from "@/lib/hr/apply-behalf-shared";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 function normalizeTime(value: string): string {
   const trimmed = value.trim();
   return trimmed.length === 5 ? `${trimmed}:00` : trimmed;
 }
 
+function resolveBranchScopeIds(options?: {
+  branchId?: string;
+  branchIds?: string[];
+}): string[] | null {
+  if (options?.branchIds && options.branchIds.length > 0) return options.branchIds;
+  if (options?.branchId) return [options.branchId];
+  return null;
+}
+
+function employeeInBranchScope(
+  employeeBranchId: string | null | undefined,
+  options?: { branchId?: string; branchIds?: string[] },
+): boolean {
+  const scope = resolveBranchScopeIds(options);
+  if (!scope) return true;
+  return Boolean(employeeBranchId && scope.includes(employeeBranchId));
+}
+
 export async function listActiveEmployeesForBehalf(options?: {
   branchId?: string;
+  branchIds?: string[];
 }): Promise<Array<{ id: string; full_name: string; employee_number: string }>> {
   await requireRole("hr_administrator", "branch_admin");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   let query = supabase
     .from("employees")
@@ -51,8 +66,9 @@ export async function listActiveEmployeesForBehalf(options?: {
     .eq("status", "active")
     .order("full_name");
 
-  if (options?.branchId) {
-    query = query.eq("branch_id", options.branchId);
+  const scopeIds = resolveBranchScopeIds(options);
+  if (scopeIds) {
+    query = query.in("branch_id", scopeIds);
   }
 
   const { data, error } = await query;
@@ -64,7 +80,7 @@ export async function listActiveEmployeesForBehalf(options?: {
 export async function listLeaveTypesForBehalf(): Promise<Array<{ id: string; name: string }>> {
   await requireRole("hr_administrator", "branch_admin");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data, error } = await supabase
     .from("leave_types")
@@ -78,19 +94,20 @@ export async function listLeaveTypesForBehalf(): Promise<Array<{ id: string; nam
 
 export async function listBehalfApplications(
   filters: ApplyBehalfListFilter,
-  options?: { branchId?: string },
+  options?: { branchId?: string; branchIds?: string[] },
 ): Promise<BehalfListData> {
   await requireRole("hr_administrator", "branch_admin");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   let branchEmployeeIds: string[] | null = null;
-  if (options?.branchId) {
+  const scopeIds = resolveBranchScopeIds(options);
+  if (scopeIds) {
     const { data: branchEmployees, error: branchError } = await supabase
       .from("employees")
       .select("id")
       .eq("organization_id", organizationId)
-      .eq("branch_id", options.branchId);
+      .in("branch_id", scopeIds);
     if (branchError) throw new Error(branchError.message);
     branchEmployeeIds = (branchEmployees ?? []).map((row) => row.id);
     if (branchEmployeeIds.length === 0) {
@@ -212,10 +229,10 @@ export async function listBehalfApplications(
 export async function createBehalfLeave(
   input: ApplyBehalfLeaveInput,
   actorUserId: string,
-  options?: { branchId?: string },
+  options?: { branchId?: string; branchIds?: string[] },
 ): Promise<string> {
   await requireRole("hr_administrator", "branch_admin");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const admin = createAdminClient();
   const days = calculateLeaveDays(input);
 
@@ -229,7 +246,7 @@ export async function createBehalfLeave(
 
   if (employeeError) throw new Error(employeeError.message);
   if (!employee) throw new Error("Employee not found or inactive.");
-  if (options?.branchId && employee.branch_id !== options.branchId) {
+  if (!employeeInBranchScope(employee.branch_id, options)) {
     throw new Error("Employee is outside your branch scope.");
   }
 
@@ -285,10 +302,10 @@ export async function createBehalfLeave(
 export async function createBehalfLate(
   input: ApplyBehalfLateInput,
   actorUserId: string,
-  options?: { branchId?: string },
+  options?: { branchId?: string; branchIds?: string[] },
 ): Promise<string> {
   await requireRole("hr_administrator", "branch_admin");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const admin = createAdminClient();
 
   const { data: employee, error: employeeError } = await admin
@@ -301,7 +318,7 @@ export async function createBehalfLate(
 
   if (employeeError) throw new Error(employeeError.message);
   if (!employee) throw new Error("Employee not found or inactive.");
-  if (options?.branchId && employee.branch_id !== options.branchId) {
+  if (!employeeInBranchScope(employee.branch_id, options)) {
     throw new Error("Employee is outside your branch scope.");
   }
 
@@ -351,15 +368,18 @@ async function resolveSubmitterName(
   return employee?.full_name ?? null;
 }
 
-export async function getBehalfLeaveDetail(requestId: string): Promise<BehalfLeaveDetail | null> {
-  await requireRole("hr_administrator");
+export async function getBehalfLeaveDetail(
+  requestId: string,
+  options?: { branchId?: string; branchIds?: string[] },
+): Promise<BehalfLeaveDetail | null> {
+  await requireRole("hr_administrator", "branch_admin");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data, error } = await supabase
     .from("leave_requests")
     .select(
-      "id, employee_id, start_date, end_date, half_day, days, reason, status, created_at, applied_on_behalf_by, leave_types(name), employees(full_name, employee_number)",
+      "id, employee_id, start_date, end_date, half_day, days, reason, status, created_at, applied_on_behalf_by, leave_types(name), employees(full_name, employee_number, branch_id)",
     )
     .eq("organization_id", organizationId)
     .eq("id", requestId)
@@ -369,7 +389,15 @@ export async function getBehalfLeaveDetail(requestId: string): Promise<BehalfLea
   if (error) throw new Error(error.message);
   if (!data) return null;
 
-  const employee = data.employees as { full_name?: string; employee_number?: string } | null;
+  const employee = data.employees as {
+    full_name?: string;
+    employee_number?: string;
+    branch_id?: string | null;
+  } | null;
+  if (!employeeInBranchScope(employee?.branch_id, options)) {
+    return null;
+  }
+
   const leaveType = data.leave_types as { name?: string } | null;
   const submittedByName = await resolveSubmitterName(
     supabase,
@@ -396,15 +424,18 @@ export async function getBehalfLeaveDetail(requestId: string): Promise<BehalfLea
   };
 }
 
-export async function getBehalfLateDetail(requestId: string): Promise<BehalfLateDetail | null> {
-  await requireRole("hr_administrator");
+export async function getBehalfLateDetail(
+  requestId: string,
+  options?: { branchId?: string; branchIds?: string[] },
+): Promise<BehalfLateDetail | null> {
+  await requireRole("hr_administrator", "branch_admin");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data, error } = await supabase
     .from("late_requests")
     .select(
-      "id, employee_id, request_date, actual_arrival_time, reason, status, created_at, applied_on_behalf_by, employees(full_name, employee_number)",
+      "id, employee_id, request_date, actual_arrival_time, reason, status, created_at, applied_on_behalf_by, employees(full_name, employee_number, branch_id)",
     )
     .eq("organization_id", organizationId)
     .eq("id", requestId)
@@ -414,7 +445,15 @@ export async function getBehalfLateDetail(requestId: string): Promise<BehalfLate
   if (error) throw new Error(error.message);
   if (!data) return null;
 
-  const employee = data.employees as { full_name?: string; employee_number?: string } | null;
+  const employee = data.employees as {
+    full_name?: string;
+    employee_number?: string;
+    branch_id?: string | null;
+  } | null;
+  if (!employeeInBranchScope(employee?.branch_id, options)) {
+    return null;
+  }
+
   const submittedByName = await resolveSubmitterName(
     supabase,
     organizationId,

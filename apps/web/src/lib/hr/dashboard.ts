@@ -2,12 +2,8 @@ import { requireRole } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { firstNameFromFullName, getCurrentEmployeeDetail, greetingForHour } from "@/lib/employees/self";
 import { getComplianceWatchRows } from "@/lib/hr/documents";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export type HrActionQueueRow = {
   id: string;
@@ -83,7 +79,7 @@ function actionReviewHref(stepId: string): string {
 
 export async function getHrDashboardData(): Promise<HrDashboardData> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
   const employee = await getCurrentEmployeeDetail();
   const firstName = firstNameFromFullName(employee?.fullName, employee?.email);

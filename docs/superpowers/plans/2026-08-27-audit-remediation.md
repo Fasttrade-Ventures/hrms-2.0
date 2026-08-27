@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**Status:** Implemented on `fix/audit-remediation-pr-a` (2026-08-27). Task 11 geofence distance copy closed in Critical/High gap plan; Task 17 SQL aggregates remain optional per `docs/perf-followups.md`.
+
 **Goal:** Close every finding from the Aug 27, 2026 deep role audit (authz, leave/payroll correctness, nav/guard alignment, entitlements, UX polish, and performance) without reintroducing middleware 504 outages.
 
 **Architecture:** Defense in depth — middleware remains a fast edge gate with timeout; portal layouts enforce `requireRole`; pages/actions enforce `requireModule` / business rules. Prefer removing broken nav/middleware exceptions over building incomplete Branch Admin surfaces in this pass. Standalone mode keeps Owner tier edits; SaaS mode locks tier to Platform-only.
@@ -58,29 +60,29 @@
 
 ## Coverage checklist (every audit row)
 
-| Finding | Task |
-| --- | --- |
-| Middleware fail-open / 504 tradeoff | 1 |
-| Portal layouts only `requireAuth` | 1 |
-| Impersonation exit broken | 2 |
-| Branch Admin broken HR deep-links | 3 |
-| Owner nav unauthorized | 4 |
-| Owner tier self-upgrade (SaaS) | 4 |
-| Leave balance not enforced | 5 |
-| Apply-behalf no balance/blackout | 6 |
-| Employee Pro URL bypass | 7 |
-| `requireModule` throws 500 | 7 |
-| Duty segregation incomplete | 8 |
-| Director approve without UI / lock mismatch | 9 |
-| Manager approver stale | 10 |
-| Attendance labels / geofence UX | 11 |
-| Unbounded payroll declarations | 12 |
-| HR override comment/audit | 13 |
-| Empty leave types = all (document) | 14 |
-| Notification placeholders | 15 |
-| Platform tenants nav in standalone | 16 |
-| Heavy analytics / unpaginated lists | 17 |
-| Branch Admin thin / incomplete | 3 + 18 |
+| Finding | Task | Status |
+| --- | --- | --- |
+| Middleware fail-open / 504 tradeoff | 1 | DONE |
+| Portal layouts only `requireAuth` | 1 | DONE |
+| Impersonation exit broken | 2 | DONE |
+| Branch Admin broken HR deep-links | 3 | DONE |
+| Owner nav unauthorized | 4 | DONE |
+| Owner tier self-upgrade (SaaS) | 4 | DONE |
+| Leave balance not enforced | 5 | DONE |
+| Apply-behalf no balance/blackout | 6 | DONE |
+| Employee Pro URL bypass | 7 | DONE |
+| `requireModule` throws 500 | 7 | DONE |
+| Duty segregation incomplete | 8 | DONE |
+| Director approve without UI / lock mismatch | 9 | DONE |
+| Manager approver stale | 10 | DONE |
+| Attendance labels / geofence UX | 11 | DONE |
+| Unbounded payroll declarations | 12 | DONE |
+| HR override comment/audit | 13 | DONE |
+| Empty leave types = all (document) | 14 | DONE |
+| Notification placeholders | 15 | DONE |
+| Platform tenants nav in standalone | 16 | DONE |
+| Heavy analytics / unpaginated lists | 17 | PARTIAL (pagination done; SQL aggregates optional) |
+| Branch Admin thin / incomplete | 3 + 18 | DONE (remaining enhancements in branch-admin-backlog) |
 
 ---
 

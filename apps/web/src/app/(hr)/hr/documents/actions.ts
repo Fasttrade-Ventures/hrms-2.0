@@ -22,17 +22,13 @@ import {
 } from "@/lib/hr/documents";
 import { createDocumentFolder, deleteDocumentFolder, updateDocumentFolder } from "@/lib/hr/document-folders";
 import { queueDocumentComplianceNotifications } from "@/lib/hr/document-notifications";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
 export type DocumentActionState = {
   error?: string;
   success?: string;
 };
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export async function uploadDocumentAction(
   _prev: DocumentActionState,
@@ -67,7 +63,7 @@ export async function uploadDocumentAction(
 
     const body = new Uint8Array(await file.arrayBuffer());
     const fileId = await uploadOrganizationFile({
-      organizationId: getOrganizationId(),
+      organizationId: await requireOrganizationId(),
       category: "employee-documents",
       fileName: file.name,
       contentType: file.type || "application/octet-stream",
@@ -84,7 +80,7 @@ export async function uploadDocumentAction(
     });
 
     await logDocumentEvent({
-      organizationId: getOrganizationId(),
+      organizationId: await requireOrganizationId(),
       actorUserId: session.user.id,
       action: replaced ? "document.replaced" : "document.uploaded",
       documentId: id,

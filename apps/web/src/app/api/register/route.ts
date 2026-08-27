@@ -3,10 +3,25 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 import { provisionTenant } from "@/lib/platform/provision-tenant";
+import { checkRateLimitDurable } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   if (!isSaasMode()) {
     return NextResponse.json({ error: "Registration is disabled in standalone mode." }, { status: 403 });
+  }
+
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown";
+  const limited = await checkRateLimitDurable(`register:${ip}`, 5, 60_000, 3_000);
+  if (!limited.allowed) {
+    return NextResponse.json(
+      {
+        error: `Too many registration attempts. Try again in ${limited.retryAfterSeconds} seconds.`,
+      },
+      { status: 429 },
+    );
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

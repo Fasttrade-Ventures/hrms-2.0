@@ -26,7 +26,7 @@ export async function listBranchDocuments(page = 1, pageSize = 20): Promise<{
     .from("employees")
     .select("id")
     .eq("organization_id", context.organizationId)
-    .eq("branch_id", context.branchId)
+    .in("branch_id", context.branchIds)
     .eq("status", "active");
 
   if (employeesError) throw new Error(employeesError.message);
@@ -78,4 +78,20 @@ export async function listBranchDocuments(page = 1, pageSize = 20): Promise<{
     pageSize,
     truncated: (count ?? 0) > fetchedCap || (data?.length ?? 0) >= fetchedCap,
   };
+}
+
+export async function assertEmployeeInBranchScope(employeeId: string): Promise<void> {
+  const context = await requireBranchAdminContext();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("employees")
+    .select("id, branch_id")
+    .eq("id", employeeId)
+    .eq("organization_id", context.organizationId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!data?.branch_id || !context.branchIds.includes(data.branch_id)) {
+    throw new Error("Employee is outside your branch scope.");
+  }
 }

@@ -6,26 +6,38 @@ import {
   type ComplianceStatus,
 } from "@/lib/hr/document-compliance";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
-
 const NOTIFY_STATUSES = new Set<ComplianceStatus>(["missing", "expired", "expiring"]);
 
-export async function scanAndQueueDocumentComplianceNotifications(asOf?: string): Promise<{
-  queued: number;
-}> {
-  const { getEntitlements } = await import("@/lib/entitlements");
-  const entitlements = await getEntitlements();
-  if (entitlements.tier === "core") {
-    return { queued: 0 };
+type AdminClient = ReturnType<typeof createAdminClient>;
+
+async function listOrganizationIds(admin: AdminClient): Promise<string[]> {
+  const deploymentMode = process.env.DEPLOYMENT_MODE ?? "standalone";
+  const defaultOrgId = process.env.DEFAULT_ORGANIZATION_ID;
+
+  if (deploymentMode === "standalone" && defaultOrgId) {
+    return [defaultOrgId];
   }
 
-  const organizationId = getOrganizationId();
-  const admin = createAdminClient();
-  const today = asOf || new Date().toISOString().slice(0, 10);
+  const { data, error } = await admin.from("organizations").select("id");
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => row.id);
+}
+
+async function scanOrganization(
+  admin: AdminClient,
+  organizationId: string,
+  today: string,
+): Promise<number> {
+  const { data: org } = await admin
+    .from("organizations")
+    .select("product_tier")
+    .eq("id", organizationId)
+    .maybeSingle();
+
+  if (org && "product_tier" in org && org.product_tier === "core") {
+    return 0;
+  }
+
   let queued = 0;
 
   const [employeesRes, requiredRes, documentsRes, hrAdminsRes] = await Promise.all([
@@ -137,6 +149,21 @@ export async function scanAndQueueDocumentComplianceNotifications(asOf?: string)
     }
   }
 
+  return queued;
+}
+
+export async function scanAndQueueDocumentComplianceNotifications(asOf?: string): Promise<{
+  queued: number;
+}> {
+  const admin = createAdminClient();
+  const today = asOf || new Date().toISOString().slice(0, 10);
+  const organizationIds = await listOrganizationIds(admin);
+
+  let queued = 0;
+  for (const organizationId of organizationIds) {
+    queued += await scanOrganization(admin, organizationId, today);
+  }
+
   return { queued };
 }
 
@@ -144,7 +171,7 @@ export async function syncEmployeeDocumentCompliance(
   organizationId: string,
   employeeId: string,
   userId: string,
-  employeeName: string
+  employeeName: string,
 ): Promise<void> {
   const { getEntitlements } = await import("@/lib/entitlements");
   const entitlements = await getEntitlements();

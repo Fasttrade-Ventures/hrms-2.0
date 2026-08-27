@@ -22,6 +22,7 @@ import {
 import { updateEmployeeFullProfile } from "@/lib/employees/update-employee";
 import { requireRole } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
 export type EmployeeActionState = {
   error?: string;
@@ -29,15 +30,6 @@ export type EmployeeActionState = {
   employeeId?: string;
 };
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-
-  if (!organizationId) {
-    throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  }
-
-  return organizationId;
-}
 
 function readOptionalUuid(formData: FormData, name: string): string | null {
   const value = String(formData.get(name) ?? "").trim();
@@ -122,7 +114,7 @@ export async function updateEmployeeCore(
   formData: FormData,
 ): Promise<EmployeeActionState> {
   const session = await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const parsed = updateEmployeeCoreSchema.safeParse({
     fullName: String(formData.get("fullName") ?? "").trim() || undefined,
@@ -181,7 +173,7 @@ export async function updateEmployeePersonal(
   formData: FormData,
 ): Promise<EmployeeActionState> {
   const session = await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const parsed = updateEmployeePersonalSchema.safeParse({
     phone: String(formData.get("phone") ?? "").trim() || null,
@@ -224,7 +216,7 @@ export async function updateEmployeeAddress(
   formData: FormData,
 ): Promise<EmployeeActionState> {
   const session = await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const parsed = updateEmployeeAddressSchema.safeParse({
     addressLine1: String(formData.get("addressLine1") ?? "").trim() || null,
@@ -275,7 +267,7 @@ export async function updateEmployeeBank(
   formData: FormData,
 ): Promise<EmployeeActionState> {
   const session = await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const parsed = updateEmployeeBankSchema.safeParse({
     bankName: String(formData.get("bankName") ?? "").trim() || null,
@@ -326,7 +318,7 @@ export async function addEmergencyContact(
   formData: FormData,
 ): Promise<EmployeeActionState> {
   const session = await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const parsed = emergencyContactSchema.safeParse({
     name: String(formData.get("name") ?? "").trim(),
@@ -368,7 +360,7 @@ export async function deactivateEmployee(
   formData: FormData,
 ): Promise<EmployeeActionState> {
   const session = await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const status = String(formData.get("status") ?? "inactive").trim();
 
   if (status !== "inactive" && status !== "terminated") {

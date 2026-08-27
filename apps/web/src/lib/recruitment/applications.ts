@@ -1,19 +1,15 @@
 import { addCandidateSchema, type AddCandidateInput } from "@hrms/validation";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export async function addCandidateToRequisition(
   input: AddCandidateInput,
 ): Promise<{ applicationId: string }> {
   const parsed = addCandidateSchema.parse(input);
   const admin = createAdminClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data: requisition } = await admin
     .from("job_requisitions")
@@ -61,7 +57,7 @@ export async function addCandidateToRequisition(
 
 export async function getRequisitionPipeline(requisitionId: string) {
   const admin = createAdminClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data: requisition } = await admin
     .from("job_requisitions")

@@ -16,24 +16,20 @@ import { addCandidateToRequisition } from "@/lib/recruitment/applications";
 import { acceptOffer, createOfferForApplication, moveApplicationStage } from "@/lib/recruitment/offers";
 import { createRequisition } from "@/lib/recruitment/requisitions";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
 export type RecruitmentActionState = {
   error?: string;
   success?: string;
 };
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 async function getOrganizationName(): Promise<string> {
   const admin = createAdminClient();
   const { data } = await admin
     .from("organizations")
     .select("name")
-    .eq("id", getOrganizationId())
+    .eq("id", await requireOrganizationId())
     .maybeSingle();
   return data?.name ?? "Organization";
 }

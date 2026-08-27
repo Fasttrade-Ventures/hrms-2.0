@@ -153,7 +153,7 @@ export function ApplyBehalfList({
         ) : (
           <div className="divide-y divide-border">
             {data.rows.map((row) => (
-              <BehalfRow key={`${row.type}-${row.id}`} row={row} />
+              <BehalfRow basePath={basePath} key={`${row.type}-${row.id}`} row={row} />
             ))}
           </div>
         )}
@@ -178,7 +178,7 @@ export function ApplyBehalfList({
   );
 }
 
-function BehalfRow({ row }: { row: BehalfApplicationRow }) {
+function BehalfRow({ row, basePath }: { row: BehalfApplicationRow; basePath: string }) {
   return (
     <div className={BEHALF_TABLE_ROW}>
       <div className="flex w-fit items-center justify-self-start">
@@ -200,7 +200,11 @@ function BehalfRow({ row }: { row: BehalfApplicationRow }) {
         </Badge>
       </div>
       <div className="flex items-center justify-self-start">
-        <HrLinkButton href={getBehalfApplicationPath(row.type, row.id)} size="sm" variant="outline">
+        <HrLinkButton
+          href={getBehalfApplicationPath(row.type, row.id, basePath)}
+          size="sm"
+          variant="outline"
+        >
           View
         </HrLinkButton>
       </div>
@@ -225,14 +229,20 @@ function DetailField({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function ApplyBehalfDetail({ application }: { application: BehalfApplicationDetail }) {
+export function ApplyBehalfDetail({
+  application,
+  listHref = "/hr/apply-behalf",
+}: {
+  application: BehalfApplicationDetail;
+  listHref?: string;
+}) {
   const isLeave = application.type === "leave";
 
   return (
     <div className="space-y-6">
       <PortalPageHeader
         actions={
-          <HrLinkButton href="/hr/apply-behalf" variant="outline">
+          <HrLinkButton href={listHref} variant="outline">
             Back to list
           </HrLinkButton>
         }

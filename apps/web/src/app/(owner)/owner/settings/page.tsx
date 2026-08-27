@@ -77,7 +77,7 @@ export default async function Page() {
             Current tier: <span className="font-medium capitalize">{settings.productTier}</span>
             {!canEditTier
               ? " — tier changes are managed by Platform in SaaS mode."
-              : null}
+              : " — standalone packaging uses PRODUCT_TIER / module flags, not a payment subscription."}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">

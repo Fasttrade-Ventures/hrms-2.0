@@ -4,12 +4,8 @@ import { requireProfessionalTier } from "@/lib/entitlements";
 import { listBranches, listShifts } from "@/lib/hr/organization";
 import { listRosterWeek } from "@/lib/hr/rosters";
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export default async function RostersPage({
   searchParams,
@@ -21,7 +17,7 @@ export default async function RostersPage({
   const params = await searchParams;
   const weekStart = typeof params.weekStart === "string" ? params.weekStart : undefined;
   const branchId = typeof params.branchId === "string" ? params.branchId : undefined;
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const [{ weekStart: resolvedWeekStart, weekDates, entries }, branches, shifts] = await Promise.all([

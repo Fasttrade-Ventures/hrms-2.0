@@ -11,7 +11,7 @@ export async function listLeaveBalanceRows(filters: ReportFilters): Promise<{
   total: number;
 }> {
   const supabase = await createClient();
-  const organizationId = getOrganizationIdForReports();
+  const organizationId = await getOrganizationIdForReports();
   const employees = await listReportEmployees(filters);
   const employeeIds = employees.map((employee) => employee.id);
 

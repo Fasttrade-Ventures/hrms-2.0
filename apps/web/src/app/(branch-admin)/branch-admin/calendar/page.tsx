@@ -6,6 +6,7 @@ import { listHrCalendarDays, listCompanyEventsForHr } from "@/lib/calendar/queri
 import { parseHrCalendarFilters, parseYearMonth } from "@/lib/calendar/parse-filters";
 import { requireModule } from "@/lib/entitlements";
 import { listDepartments, listLeaveTypes } from "@/lib/hr/organization";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function BranchCalendarPage({
   searchParams,
@@ -18,11 +19,14 @@ export default async function BranchCalendarPage({
   const { year, month } = parseYearMonth(query);
   const filters = {
     ...parseHrCalendarFilters(query),
-    branchId: context.branchId,
+    branchId: context.branchIds.length === 1 ? context.branchIds[0]! : null,
+    branchIds: context.branchIds,
     allBranches: false,
   };
 
-  const [events, departments, leaveTypes, companyEvents] = await Promise.all([
+  const supabase = await createClient();
+  const [{ data: branchRows }, events, departments, leaveTypes, companyEvents] = await Promise.all([
+    supabase.from("branches").select("id, name").in("id", context.branchIds).order("name"),
     listHrCalendarDays({
       organizationId: context.organizationId,
       year,
@@ -35,6 +39,8 @@ export default async function BranchCalendarPage({
     listCompanyEventsForHr(),
   ]);
 
+  const branches = (branchRows ?? []).map((row) => ({ id: row.id, name: row.name }));
+
   return (
     <div className="space-y-6">
       <PortalPageHeader
@@ -44,7 +50,7 @@ export default async function BranchCalendarPage({
 
       <CalendarFilters
         basePath="/branch-admin/calendar"
-        branches={[{ id: context.branchId, name: context.branchName }]}
+        branches={branches}
         departments={departments.map((row) => ({ id: row.id, name: row.name }))}
         filters={filters}
         leaveTypes={leaveTypes.map((row) => ({ id: row.id, name: row.name }))}
@@ -53,7 +59,7 @@ export default async function BranchCalendarPage({
       />
 
       <HrCalendarView
-        branches={[{ id: context.branchId, name: context.branchName }]}
+        branches={branches}
         companyEvents={companyEvents}
         departments={departments.map((row) => ({ id: row.id, name: row.name }))}
         events={events}

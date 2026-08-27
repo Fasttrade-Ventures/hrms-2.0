@@ -10,7 +10,7 @@ import { createLeaveRequest } from "@/lib/employee/leave";
 import { requireEmployeeContext } from "@/lib/employee/leave";
 import { submitEmployeeRequest } from "@/lib/employee/submit-request";
 import { createClient } from "@/lib/supabase/server";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRateLimitDurable } from "@/lib/rate-limit";
 
 export type EmployeeActionState = {
   error?: string;
@@ -31,7 +31,7 @@ export async function applyLeave(
 
     const { organizationId, session, employeeId } = await requireEmployeeContext();
 
-    const rateLimit = checkRateLimit(`leave:${employeeId}`, 5, 60000, 3000);
+    const rateLimit = await checkRateLimitDurable(`leave:${employeeId}`, 5, 60000, 3000);
     if (!rateLimit.allowed) {
       return { error: `Too many requests. Please try again in ${rateLimit.retryAfterSeconds} seconds.` };
     }
@@ -109,7 +109,7 @@ export async function submitClaim(
   try {
     const { employeeId, organizationId } = await requireEmployeeContext();
 
-    const rateLimit = checkRateLimit(`claim:${employeeId}`, 15, 60000, 2000);
+    const rateLimit = await checkRateLimitDurable(`claim:${employeeId}`, 15, 60000, 2000);
     if (!rateLimit.allowed) {
       return { error: `Too many requests. Please try again in ${rateLimit.retryAfterSeconds} seconds.` };
     }
@@ -345,7 +345,7 @@ export async function submitManualAttendance(
 export async function employeeClockIn(formData?: FormData): Promise<EmployeeActionState> {
   try {
     const { employeeId } = await requireEmployeeContext();
-    const rateLimit = checkRateLimit(`clock_in:${employeeId}`, 5, 60000, 3000);
+    const rateLimit = await checkRateLimitDurable(`clock_in:${employeeId}`, 5, 60000, 3000);
     if (!rateLimit.allowed) {
       return { error: `Too many requests. Please try again in ${rateLimit.retryAfterSeconds} seconds.` };
     }
@@ -374,7 +374,7 @@ export async function employeeClockIn(formData?: FormData): Promise<EmployeeActi
 export async function employeeClockOut(): Promise<EmployeeActionState> {
   try {
     const { employeeId } = await requireEmployeeContext();
-    const rateLimit = checkRateLimit(`clock_out:${employeeId}`, 5, 60000, 3000);
+    const rateLimit = await checkRateLimitDurable(`clock_out:${employeeId}`, 5, 60000, 3000);
     if (!rateLimit.allowed) {
       return { error: `Too many requests. Please try again in ${rateLimit.retryAfterSeconds} seconds.` };
     }

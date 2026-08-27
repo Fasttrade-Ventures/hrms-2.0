@@ -9,12 +9,8 @@ import { requireModule } from "@/lib/entitlements";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { WEBHOOK_EVENT_TYPES } from "./types";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export async function listWebhookEndpoints() {
   await requireModule("integrations");
@@ -24,7 +20,7 @@ export async function listWebhookEndpoints() {
   const { data, error } = await admin
     .from("webhook_endpoints")
     .select("id, name, url, events_filter, status, created_at, updated_at")
-    .eq("organization_id", getOrganizationId())
+    .eq("organization_id", await requireOrganizationId())
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -39,7 +35,7 @@ export async function listWebhookDeliveryLog(limit = 50) {
   const { data, error } = await admin
     .from("webhook_outbox")
     .select("id, event_type, destination_url, status, attempts, last_error, created_at, sent_at")
-    .eq("organization_id", getOrganizationId())
+    .eq("organization_id", await requireOrganizationId())
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -66,7 +62,7 @@ export async function upsertWebhookEndpoint(
       return { error: "Name and URL are required." };
     }
 
-    const organizationId = getOrganizationId();
+    const organizationId = await requireOrganizationId();
     const admin = createAdminClient();
 
     if (id) {
@@ -109,7 +105,7 @@ export async function deleteWebhookEndpoint(endpointId: string): Promise<void> {
     .from("webhook_endpoints")
     .delete()
     .eq("id", endpointId)
-    .eq("organization_id", getOrganizationId());
+    .eq("organization_id", await requireOrganizationId());
 
   if (error) throw new Error(error.message);
   revalidatePath("/hr/integrations/webhooks");

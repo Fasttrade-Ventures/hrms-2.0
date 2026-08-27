@@ -1,11 +1,7 @@
 import { requireRole } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export type RosterEntryRow = {
   id: string;
@@ -44,7 +40,7 @@ export async function listRosterWeek(input: {
   branchId?: string;
 }): Promise<{ weekStart: string; weekDates: string[]; entries: RosterEntryRow[] }> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const weekStart = input.weekStart ?? startOfWeek(new Date());
   const weekDates = getWeekDates(weekStart);
   const weekEnd = weekDates[6];

@@ -3,20 +3,12 @@ import { getEmployeeProfilePhotoUrl } from "@/lib/employees/profile-photo";
 import { createClient } from "@/lib/supabase/server";
 
 import type { EmployeeDetail } from "./queries";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-
-  if (!organizationId) {
-    throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  }
-
-  return organizationId;
-}
 
 export async function getCurrentEmployeeDetail(): Promise<EmployeeDetail | null> {
   const session = await requireAuth();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   if (!session.membership.employeeId) {
     return null;

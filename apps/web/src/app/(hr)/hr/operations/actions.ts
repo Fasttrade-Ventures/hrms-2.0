@@ -5,17 +5,13 @@ import { redirect } from "next/navigation";
 
 import { actOnApproval } from "@/lib/approvals/service";
 import { requireRole } from "@/lib/auth/session";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
 export type HrOperationsActionState = {
   error?: string;
   success?: string;
 };
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export async function approveRequestAsHr(
   _prev: HrOperationsActionState,
@@ -31,7 +27,7 @@ export async function approveRequestAsHr(
 
   try {
     const session = await requireRole("hr_administrator");
-    const organizationId = getOrganizationId();
+    const organizationId = await requireOrganizationId();
     await actOnApproval({
       stepId,
       actorEmployeeId: session.membership.employeeId,
@@ -75,7 +71,7 @@ export async function rejectRequestAsHr(
 
   try {
     const session = await requireRole("hr_administrator");
-    const organizationId = getOrganizationId();
+    const organizationId = await requireOrganizationId();
     await actOnApproval({
       stepId,
       actorEmployeeId: session.membership.employeeId,

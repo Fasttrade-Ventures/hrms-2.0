@@ -1,12 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { parseBankResponse } from "./parse-response";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export async function reconcilePayoutBatchFromUpload(input: {
   batchId: string;
@@ -14,7 +10,7 @@ export async function reconcilePayoutBatchFromUpload(input: {
   uploadedBy: string;
 }): Promise<{ matched: number; updated: number }> {
   const admin = createAdminClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data: batch } = await admin
     .from("payrun_payout_batches")

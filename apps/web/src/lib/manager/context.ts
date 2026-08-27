@@ -1,10 +1,6 @@
 import { requireRole } from "@/lib/auth/session";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export async function requireManagerContext() {
   const session = await requireRole("manager");
@@ -17,7 +13,7 @@ export async function requireManagerContext() {
   return {
     session,
     employeeId,
-    organizationId: getOrganizationId(),
+    organizationId: await requireOrganizationId(),
     userId: session.user.id,
   };
 }

@@ -26,7 +26,7 @@ export default async function BranchApplyBehalfPage({
     pageSize: DEFAULT_LIST_PAGE_SIZE,
   });
 
-  const data = await listBehalfApplications(filters, { branchId: context.branchId });
+  const data = await listBehalfApplications(filters, { branchIds: context.branchIds });
 
   let banner: string | undefined;
   if (params.created === "leave") banner = "Leave submitted on behalf and auto-approved.";

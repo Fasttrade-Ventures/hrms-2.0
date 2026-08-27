@@ -1,13 +1,10 @@
 import { requireRole } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import type { ListHolidaysInput } from "@hrms/validation";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) {
-    throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  }
-  return organizationId;
+export async function getOrganizationId(): Promise<string> {
+  return requireOrganizationId();
 }
 
 export type OrgHubModule = {
@@ -123,7 +120,7 @@ function formatTime(value: string) {
 export async function getOrgHubData(): Promise<OrgHubData> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const year = new Date().getFullYear();
 
   const [branches, departments, shifts, holidays, leaveTypes, assetCategories] = await Promise.all([
@@ -261,7 +258,7 @@ export async function getOrgHubData(): Promise<OrgHubData> {
 export async function listBranches(): Promise<BranchRow[]> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const [{ data, error }, { data: employees, error: employeeError }] = await Promise.all([
     supabase
@@ -315,7 +312,7 @@ export async function getBranch(branchId: string): Promise<BranchRow | null> {
 export async function listDepartments(): Promise<DepartmentRow[]> {
   await requireRole("hr_administrator", "branch_admin");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const [{ data, error }, { data: employees, error: employeeError }] = await Promise.all([
     supabase
@@ -353,7 +350,7 @@ export async function getDepartment(departmentId: string): Promise<DepartmentRow
 export async function listShifts(): Promise<ShiftRow[]> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const [{ data, error }, { data: employees, error: employeeError }] = await Promise.all([
     supabase
@@ -424,7 +421,7 @@ function compareHolidayRows(
 
 async function fetchHolidaysForYear(year: number): Promise<HolidayRow[]> {
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data, error } = await supabase
     .from("holidays")
@@ -506,7 +503,7 @@ export async function listHolidays(year?: number): Promise<HolidayRow[]> {
 export async function getHoliday(holidayId: string): Promise<HolidayRow | null> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data, error } = await supabase
     .from("holidays")
@@ -531,7 +528,7 @@ export async function getHoliday(holidayId: string): Promise<HolidayRow | null> 
 export async function listLeaveTypes(): Promise<LeaveTypeRow[]> {
   await requireRole("hr_administrator", "branch_admin");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const [{ data, error }, { data: requests, error: requestError }] = await Promise.all([
     supabase
@@ -574,7 +571,7 @@ export async function listBranchOptions(): Promise<Array<{ id: string; name: str
 export async function listBranchesForImport(): Promise<BranchImportOption[]> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data, error } = await supabase
     .from("branches")
@@ -590,4 +587,4 @@ export async function listBranchesForImport(): Promise<BranchImportOption[]> {
   }));
 }
 
-export { weekendLabel, formatTime, getOrganizationId };
+export { weekendLabel, formatTime };

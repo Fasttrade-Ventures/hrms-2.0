@@ -10,27 +10,19 @@ export type RateLimitResult = {
 };
 
 /**
- * Checks if an operation is allowed under rate limiting / spam prevention policies.
- * Uses a sliding window with support for an optional minimum cooldown between requests.
- *
- * @param key Unique key identifying the entity and operation (e.g. `leave:${employeeId}`)
- * @param limit Maximum number of requests allowed within the window
- * @param windowMs Time window in milliseconds
- * @param cooldownMs Minimum time required between consecutive requests in milliseconds
+ * In-process sliding-window limiter (unit tests + fallback when DB RPC unavailable).
  */
 export function checkRateLimit(
   key: string,
   limit: number,
   windowMs: number,
-  cooldownMs = 0
+  cooldownMs = 0,
 ): RateLimitResult {
   const now = Date.now();
   const timestamps = rateLimitStore.get(key) || [];
 
-  // Filter out timestamps outside the sliding window
   const validTimestamps = timestamps.filter((t) => now - t < windowMs);
 
-  // Check minimum cooldown if configured
   if (cooldownMs > 0 && validTimestamps.length > 0) {
     const lastTimestamp = validTimestamps[validTimestamps.length - 1]!;
     const elapsed = now - lastTimestamp;
@@ -40,7 +32,6 @@ export function checkRateLimit(
     }
   }
 
-  // Check if limit is exceeded
   if (validTimestamps.length >= limit) {
     const oldestTimestamp = validTimestamps[0]!;
     const timeUntilExpiry = windowMs - (now - oldestTimestamp);
@@ -48,15 +39,48 @@ export function checkRateLimit(
     return { allowed: false, retryAfterSeconds: Math.max(1, retryAfter) };
   }
 
-  // Allow the request and record the timestamp
   validTimestamps.push(now);
   rateLimitStore.set(key, validTimestamps);
   return { allowed: true, retryAfterSeconds: 0 };
 }
 
 /**
- * Resets the entire rate limiter state. Primarily useful in test runs.
+ * Durable limiter via Postgres `consume_rate_limit` (service role).
+ * Falls back to in-memory when admin client / RPC is unavailable (local unit tests).
  */
+export async function checkRateLimitDurable(
+  key: string,
+  limit: number,
+  windowMs: number,
+  cooldownMs = 0,
+): Promise<RateLimitResult> {
+  try {
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const admin = createAdminClient();
+    const { data, error } = await admin.rpc("consume_rate_limit", {
+      p_key: key,
+      p_limit: limit,
+      p_window_ms: windowMs,
+      p_cooldown_ms: cooldownMs,
+    });
+
+    if (!error && data != null) {
+      const row = Array.isArray(data) ? data[0] : data;
+      if (row && typeof row.allowed === "boolean") {
+        return {
+          allowed: row.allowed,
+          retryAfterSeconds: Number(row.retry_after_seconds ?? 0),
+        };
+      }
+    }
+  } catch {
+    // Fall through to memory.
+  }
+
+  return checkRateLimit(key, limit, windowMs, cooldownMs);
+}
+
+/** Resets the in-memory store. Primarily useful in test runs. */
 export function clearRateLimitStore(): void {
   rateLimitStore.clear();
 }

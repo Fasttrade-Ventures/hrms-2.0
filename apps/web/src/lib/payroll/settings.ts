@@ -2,12 +2,8 @@ import type { CreatePayGroupInput, UpdatePayGroupInput } from "@hrms/validation"
 
 import { requireRole } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export async function listPayrollComponents() {
   await requireRole("hr_administrator");
@@ -15,7 +11,7 @@ export async function listPayrollComponents() {
   const { data, error } = await supabase
     .from("payroll_components")
     .select("id, code, name, component_type, is_system, is_active, sort_order")
-    .eq("organization_id", getOrganizationId())
+    .eq("organization_id", await requireOrganizationId())
     .order("sort_order");
   if (error) throw new Error(error.message);
   return data ?? [];
@@ -28,7 +24,7 @@ export async function setPayrollComponentActive(componentId: string, isActive: b
     .from("payroll_components")
     .update({ is_active: isActive })
     .eq("id", componentId)
-    .eq("organization_id", getOrganizationId());
+    .eq("organization_id", await requireOrganizationId());
   if (error) throw new Error(error.message);
 }
 
@@ -49,7 +45,7 @@ export async function listBranchesForSettings() {
   const { data, error } = await supabase
     .from("branches")
     .select("id, name")
-    .eq("organization_id", getOrganizationId())
+    .eq("organization_id", await requireOrganizationId())
     .order("name");
   if (error) throw new Error(error.message);
   return data ?? [];
@@ -61,7 +57,7 @@ export async function createPayGroup(input: CreatePayGroupInput) {
   const { data, error } = await supabase
     .from("pay_groups")
     .insert({
-      organization_id: getOrganizationId(),
+      organization_id: await requireOrganizationId(),
       name: input.name,
       cycle: input.cycle,
       cutoff_day: input.cutoffDay,
@@ -83,13 +79,13 @@ export async function updatePayGroup(groupId: string, input: UpdatePayGroupInput
       cutoff_day: input.cutoffDay,
     })
     .eq("id", groupId)
-    .eq("organization_id", getOrganizationId());
+    .eq("organization_id", await requireOrganizationId());
   if (error) throw new Error(error.message);
 }
 
 export async function deletePayGroup(groupId: string) {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const [{ count: employeeCount, error: employeeError }, { count: payrunCount, error: payrunError }] =

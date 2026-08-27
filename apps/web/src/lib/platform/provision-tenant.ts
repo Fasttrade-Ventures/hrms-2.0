@@ -1,6 +1,8 @@
 import type { ProductTier } from "@hrms/platform";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { seedOrgCatalogs } from "@/lib/platform/seed-org-catalogs";
+
 export type ProvisionTenantInput = {
   company: string;
   fullName: string;
@@ -126,6 +128,17 @@ export async function provisionTenant(
     employee_id: employee.id,
     organization_id: org.id,
   });
+
+  try {
+    await seedOrgCatalogs(admin, org.id);
+  } catch (seedError) {
+    await admin.from("employees").delete().eq("id", employee.id);
+    await admin.auth.admin.deleteUser(authUser.user.id);
+    await admin.from("organizations").delete().eq("id", org.id);
+    throw seedError instanceof Error
+      ? seedError
+      : new Error("Failed to seed organization catalogs.");
+  }
 
   return { organizationId: org.id, slug };
 }

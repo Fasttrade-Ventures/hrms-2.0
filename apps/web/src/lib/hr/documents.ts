@@ -10,16 +10,12 @@ import {
 } from "@/lib/hr/document-compliance";
 
 import { DEFAULT_LIST_PAGE_SIZE } from "@/lib/pagination";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
 export const DOCUMENT_LIBRARY_PAGE_SIZE = DEFAULT_LIST_PAGE_SIZE;
 
 const PAGE_SIZE = DOCUMENT_LIBRARY_PAGE_SIZE;
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export type HrDocumentRow = {
   id: string;
@@ -135,7 +131,7 @@ export async function listDocumentLibrary(
 }> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const today = new Date().toISOString().slice(0, 10);
 
   let query = supabase
@@ -207,13 +203,13 @@ export async function listEmployeeDocumentsForProfile(employeeId: string): Promi
 }
 
 export async function listRequiredDocuments(activeOnly = false): Promise<RequiredDocumentRow[]> {
-  await requireRole("hr_administrator");
+  await requireRole("hr_administrator", "branch_admin");
   const supabase = await createClient();
 
   let query = supabase
     .from("required_documents")
     .select("id, name, description, requires_expiry, warning_days, is_active, sort_order")
-    .eq("organization_id", getOrganizationId())
+    .eq("organization_id", await requireOrganizationId())
     .order("sort_order")
     .order("name");
 
@@ -245,7 +241,7 @@ export async function createRequiredDocument(input: {
   const supabase = await createClient();
 
   const { error } = await supabase.from("required_documents").insert({
-    organization_id: getOrganizationId(),
+    organization_id: await requireOrganizationId(),
     name: input.name,
     description: input.description ?? null,
     requires_expiry: input.requiresExpiry,
@@ -282,7 +278,7 @@ export async function updateRequiredDocument(
       sort_order: input.sortOrder,
     })
     .eq("id", id)
-    .eq("organization_id", getOrganizationId());
+    .eq("organization_id", await requireOrganizationId());
 
   if (error) throw new Error(error.message);
 }
@@ -295,7 +291,7 @@ export async function deleteRequiredDocument(id: string): Promise<void> {
     .from("required_documents")
     .delete()
     .eq("id", id)
-    .eq("organization_id", getOrganizationId());
+    .eq("organization_id", await requireOrganizationId());
 
   if (error) throw new Error(error.message);
 }
@@ -406,10 +402,10 @@ export async function attachEmployeeDocument(input: {
   folderId?: string | null;
   expiresAt?: string | null;
 }): Promise<{ id: string; replaced: boolean }> {
-  await requireRole("hr_administrator");
+  await requireRole("hr_administrator", "branch_admin");
 
   return saveEmployeeDocument({
-    organizationId: getOrganizationId(),
+    organizationId: await requireOrganizationId(),
     employeeId: input.employeeId,
     documentType: input.documentType,
     fileId: input.fileId,
@@ -424,7 +420,7 @@ export async function deleteEmployeeDocument(
 ): Promise<void> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data, error } = await supabase
     .from("employee_documents")
@@ -467,7 +463,7 @@ export async function deleteEmployeeDocument(
 export async function getDocumentsHubStats(): Promise<DocumentsHubStats> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const today = new Date().toISOString().slice(0, 10);
 
   const [documentsResult, foldersResult, requiredResult, matrix] = await Promise.all([
@@ -500,19 +496,27 @@ export async function getDocumentsHubStats(): Promise<DocumentsHubStats> {
   };
 }
 
-export async function buildComplianceMatrix(): Promise<ComplianceMatrixRow[]> {
-  await requireRole("hr_administrator");
+export async function buildComplianceMatrix(options?: {
+  branchIds?: string[];
+}): Promise<ComplianceMatrixRow[]> {
+  await requireRole("hr_administrator", "branch_admin");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const today = new Date().toISOString().slice(0, 10);
 
+  let employeesQuery = supabase
+    .from("employees")
+    .select("id, full_name, employee_number")
+    .eq("organization_id", organizationId)
+    .eq("status", "active")
+    .order("full_name");
+
+  if (options?.branchIds && options.branchIds.length > 0) {
+    employeesQuery = employeesQuery.in("branch_id", options.branchIds);
+  }
+
   const [employeesResult, requiredResult, documentsResult] = await Promise.all([
-    supabase
-      .from("employees")
-      .select("id, full_name, employee_number")
-      .eq("organization_id", organizationId)
-      .eq("status", "active")
-      .order("full_name"),
+    employeesQuery,
     listRequiredDocuments(true),
     supabase
       .from("employee_documents")

@@ -10,8 +10,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export const IMPERSONATION_COOKIE = "hrms_impersonate_org_id";
 
 export async function getImpersonationOrgId(): Promise<string | null> {
-  const cookieStore = await cookies();
-  return cookieStore.get(IMPERSONATION_COOKIE)?.value ?? null;
+  try {
+    const cookieStore = await cookies();
+    return cookieStore.get?.(IMPERSONATION_COOKIE)?.value ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function getImpersonationState(session: {

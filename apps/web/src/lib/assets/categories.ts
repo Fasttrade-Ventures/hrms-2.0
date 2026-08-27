@@ -5,12 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 
 import { logAssetEvent } from "./audit";
 import type { AssetCategoryRow } from "./types";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 function mapCategoryRow(row: {
   id: string;
@@ -35,7 +31,7 @@ export async function listAssetCategories(options?: {
 }): Promise<AssetCategoryRow[]> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   let query = supabase
     .from("asset_categories")
@@ -56,7 +52,7 @@ export async function listAssetCategories(options?: {
 export async function getAssetCategory(categoryId: string): Promise<AssetCategoryRow | null> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data, error } = await supabase
     .from("asset_categories")
@@ -78,7 +74,7 @@ export async function createAssetCategory(input: {
 }): Promise<string> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data, error } = await supabase
     .from("asset_categories")
@@ -110,7 +106,7 @@ export async function updateAssetCategory(
 ): Promise<void> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { error } = await supabase
     .from("asset_categories")

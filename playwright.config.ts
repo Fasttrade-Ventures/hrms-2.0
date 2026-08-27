@@ -54,9 +54,9 @@ export default defineConfig({
 
   /* Run local dev server before starting the tests if not already running */
   webServer: {
-    command: "pnpm dev",
+    command: "pnpm --filter @hrms/web dev",
     url: "http://localhost:3000",
-    reuseExistingServer: true,
+    reuseExistingServer: !process.env.CI,
     stdout: "ignore",
     stderr: "pipe",
     timeout: 120000,

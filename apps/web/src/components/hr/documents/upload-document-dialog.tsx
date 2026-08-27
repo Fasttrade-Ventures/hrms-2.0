@@ -35,14 +35,19 @@ export function UploadDocumentDialog({
   folders,
   defaultEmployeeId,
   triggerLabel = "Upload document",
+  action: uploadAction = uploadDocumentAction,
 }: {
   employees: Array<{ id: string; full_name: string; employee_number: string }>;
   requiredTypes: Array<{ id: string; name: string; requiresExpiry: boolean }>;
   folders: Array<{ id: string; name: string; parentName: string | null }>;
   defaultEmployeeId?: string;
   triggerLabel?: string;
+  action?: (
+    prev: DocumentActionState,
+    formData: FormData,
+  ) => Promise<DocumentActionState>;
 }) {
-  const [state, action, pending] = useActionState(uploadDocumentAction, initialState);
+  const [state, action, pending] = useActionState(uploadAction, initialState);
   const [folderId, setFolderId] = useState("");
 
   const folderLabel = folderId

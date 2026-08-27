@@ -8,6 +8,7 @@ import {
 import { buildPayrunItemComponentRows } from "@/lib/payroll/item-components";
 import { ensurePayrollComponents } from "@/lib/payroll/seed";
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
 const STATUTORY_CODES = new Set([
   "DED_EPF",
@@ -23,11 +24,6 @@ const STATUTORY_CODES = new Set([
   "ER_LINDUNG",
 ]);
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export async function editPayrunLine(
   payrunItemId: string,
@@ -35,7 +31,7 @@ export async function editPayrunLine(
   amount: number,
 ): Promise<void> {
   const session = await requireRoleOrPermission(["hr_administrator"], ["payroll_processor"]);
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const { data: item, error: itemError } = await supabase

@@ -32,7 +32,9 @@ export function LoginForm({ showRegister }: { showRegister: boolean }) {
         ? "Sign-in link expired or is invalid. Try again."
         : authError === "invalid_link"
           ? "This link is invalid. Request a new one from your HR administrator."
-          : undefined);
+          : authError === "session_check_timeout"
+            ? "We could not verify your session in time. Sign in again."
+            : undefined);
 
   return (
     <>
@@ -68,7 +70,16 @@ export function LoginForm({ showRegister }: { showRegister: boolean }) {
           required
         />
 
-        <AuthCheckbox defaultChecked id="remember" label="Keep me signed in for 30 days" name="remember" />
+        <AuthCheckbox
+          defaultChecked
+          id="remember"
+          label="Keep me signed in on this device"
+          name="remember"
+        />
+        <p className="-mt-3 text-[12px] text-[var(--foreground-muted)]">
+          Preference is recorded for future idle-timeout settings; session cookies use the standard
+          Supabase refresh flow today.
+        </p>
 
         {errorMessage ? <AuthError>{errorMessage}</AuthError> : null}
 

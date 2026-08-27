@@ -2,14 +2,8 @@ import type { CreateEmployeeInput } from "@hrms/validation";
 
 import { logEmployeeEvent } from "@/lib/audit/log-employee-event";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) {
-    throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  }
-  return organizationId;
-}
 
 export async function updateEmployeeFullProfile(
   employeeId: string,
@@ -17,7 +11,7 @@ export async function updateEmployeeFullProfile(
   actorUserId: string,
 ): Promise<void> {
   const admin = createAdminClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data: existingEmployee, error: existingError } = await admin
     .from("employees")

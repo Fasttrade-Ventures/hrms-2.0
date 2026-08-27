@@ -5,12 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { logAssetEvent } from "./audit";
 import { notifyAssetRequestToHr } from "./notifications";
 import type { AssetRequestKind } from "./types";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export async function createAssetRequest(input: {
   assetId: string;
@@ -19,7 +15,7 @@ export async function createAssetRequest(input: {
   message?: string | null;
 }): Promise<void> {
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data: assignment, error: assignmentError } = await supabase
     .from("asset_assignments")
@@ -85,7 +81,7 @@ export async function resolveAssetRequest(requestId: string): Promise<void> {
   const session = await requireRole("hr_administrator");
   const supabase = await createClient();
 
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { error } = await supabase
     .from("asset_requests")

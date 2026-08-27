@@ -1,12 +1,8 @@
 import { createRequisitionSchema, type CreateRequisitionInput } from "@hrms/validation";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export async function createRequisition(
   input: CreateRequisitionInput,
@@ -14,7 +10,7 @@ export async function createRequisition(
 ): Promise<{ requisitionId: string }> {
   const parsed = createRequisitionSchema.parse(input);
   const admin = createAdminClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data, error } = await admin
     .from("job_requisitions")
@@ -41,7 +37,7 @@ export async function listRequisitions() {
   const { data, error } = await admin
     .from("job_requisitions")
     .select("id, title, status, headcount, created_at")
-    .eq("organization_id", getOrganizationId())
+    .eq("organization_id", await requireOrganizationId())
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);

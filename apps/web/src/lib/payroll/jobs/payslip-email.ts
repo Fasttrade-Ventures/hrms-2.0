@@ -1,12 +1,26 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { queueNotification } from "@/lib/notifications/queue";
 
-/** Queue payslip emails for locked payruns with pay_date = asOf (YYYY-MM-DD). */
-export async function runPayslipEmailJob(asOf: string): Promise<number> {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) return 0;
+async function listOrganizationIds(
+  admin: ReturnType<typeof createAdminClient>,
+): Promise<string[]> {
+  const deploymentMode = process.env.DEPLOYMENT_MODE ?? "standalone";
+  const defaultOrgId = process.env.DEFAULT_ORGANIZATION_ID;
 
-  const admin = createAdminClient();
+  if (deploymentMode === "standalone" && defaultOrgId) {
+    return [defaultOrgId];
+  }
+
+  const { data, error } = await admin.from("organizations").select("id");
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => row.id);
+}
+
+async function queuePayslipsForOrganization(
+  admin: ReturnType<typeof createAdminClient>,
+  organizationId: string,
+  asOf: string,
+): Promise<number> {
   const { data: payruns } = await admin
     .from("payroll_payruns")
     .select("id, period_year, period_month")
@@ -43,11 +57,25 @@ export async function runPayslipEmailJob(asOf: string): Promise<number> {
           periodYear: payrun.period_year,
           periodMonth: payrun.period_month,
           href: `/employee/payslips/${item.id}`,
+          organizationId,
         },
         idempotencyKey: `payslip-email:${item.id}:${asOf}`,
       });
       queued += 1;
     }
+  }
+
+  return queued;
+}
+
+/** Queue payslip emails for locked payruns with pay_date = asOf (YYYY-MM-DD). */
+export async function runPayslipEmailJob(asOf: string): Promise<number> {
+  const admin = createAdminClient();
+  const organizationIds = await listOrganizationIds(admin);
+
+  let queued = 0;
+  for (const organizationId of organizationIds) {
+    queued += await queuePayslipsForOrganization(admin, organizationId, asOf);
   }
 
   return queued;

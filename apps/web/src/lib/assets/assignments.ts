@@ -13,19 +13,15 @@ import { createClient } from "@/lib/supabase/server";
 import { logAssetEvent } from "./audit";
 import { notifyAssetAssigned, notifyAssetReturned } from "./notifications";
 import type { ReturnDestination } from "./types";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 async function getEmployeeUserId(employeeId: string): Promise<string | null> {
   const admin = createAdminClient();
   const { data } = await admin
     .from("organization_memberships")
     .select("user_id")
-    .eq("organization_id", getOrganizationId())
+    .eq("organization_id", await requireOrganizationId())
     .eq("employee_id", employeeId)
     .maybeSingle();
   return data?.user_id ?? null;
@@ -40,7 +36,7 @@ export async function assignAsset(input: {
   await requireRole("hr_administrator");
   const session = await getSession();
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data: asset, error: assetError } = await supabase
     .from("assets")
@@ -137,7 +133,7 @@ export async function returnAssetAssignment(input: {
   await requireRole("hr_administrator");
   const session = await getSession();
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data: assignment, error: assignmentError } = await supabase
     .from("asset_assignments")
@@ -192,7 +188,7 @@ export async function returnAssetAssignment(input: {
 export async function disposeAsset(assetId: string): Promise<void> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data: asset, error: assetError } = await supabase
     .from("assets")
@@ -228,7 +224,7 @@ export async function disposeAsset(assetId: string): Promise<void> {
 
 export async function acknowledgeAssignment(assignmentId: string, employeeId: string): Promise<void> {
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data: assignment, error } = await supabase
     .from("asset_assignments")

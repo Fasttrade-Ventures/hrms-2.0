@@ -6,6 +6,7 @@ import { parseHrCalendarFilters, parseYearMonth } from "@/lib/calendar/parse-fil
 import { requireModule } from "@/lib/entitlements";
 import { listBranches, listDepartments, listLeaveTypes } from "@/lib/hr/organization";
 import { requireRole } from "@/lib/auth/session";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
 export default async function Page({
   searchParams,
@@ -17,8 +18,7 @@ export default async function Page({
   const query = await searchParams;
   const { year, month } = parseYearMonth(query);
   const filters = parseHrCalendarFilters(query);
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
+  const organizationId = await requireOrganizationId();
 
   const [events, branches, departments, leaveTypes, companyEvents] = await Promise.all([
     listHrCalendarDays({
