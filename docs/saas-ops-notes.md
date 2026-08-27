@@ -21,7 +21,12 @@ Health checks treat `DEFAULT_ORGANIZATION_ID` as required only when standalone.
 
 - Cookie: `hrms_active_org_id` (validated against memberships).
 - Portal topbar shows an org switcher when the user has 2+ memberships in SaaS mode.
+- Register (SaaS): provisions tenant, signs in, sets active org, redirects to owner dashboard.
 - Platform impersonation: `hrms_impersonate_org_id` honored by middleware (synthetic owner/HR roles) and by `requireOrganizationId()`.
+
+## Platform ops
+
+- Platform admin can change tenant product tier on `/platform/tenants`.
 
 ## Background jobs
 
@@ -29,8 +34,8 @@ Health checks treat `DEFAULT_ORGANIZATION_ID` as required only when standalone.
 
 ## Still FUTURE
 
-- In-app billing / Stripe / signup→pay
-- Public marketing / pricing
+- Billplz subscription billing — **design spec:** `docs/superpowers/specs/2026-08-27-billplz-saas-billing-design.md`
+- Public marketing / pricing page
 - Usage metering / hard seat limits
 
 ## Verify locally

@@ -46,3 +46,8 @@ export async function requireProfessionalTier(): Promise<void> {
     redirect("/unauthorized?reason=tier");
   }
 }
+
+export async function hasModule(module: ModuleKey): Promise<boolean> {
+  const entitlements = await getEntitlements();
+  return entitlements.hasModule(module);
+}

@@ -83,7 +83,7 @@ export async function stopImpersonation(): Promise<void> {
   }
 
   const cookieStore = await cookies();
-  cookieStore.delete(IMPERSONATION_COOKIE);
+  cookieStore.delete({ name: IMPERSONATION_COOKIE, path: "/" });
 
   await logAuditEvent({
     organizationId,

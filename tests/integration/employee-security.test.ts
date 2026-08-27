@@ -18,8 +18,9 @@ vi.mock("@/lib/employee/submit-request", () => ({
   submitEmployeeRequest: vi.fn(),
 }));
 
-
-
+vi.mock("@/lib/entitlements", () => ({
+  requireModule: vi.fn().mockResolvedValue(undefined),
+}));
 import { requireEmployeeContext, createLeaveRequest } from "@/lib/employee/leave";
 import { createClient } from "@/lib/supabase/server";
 import { clockIn, clockOut } from "@/lib/employee/attendance";
@@ -53,27 +54,61 @@ describe("Employee Security - Spam Prevention Rate Limiter", () => {
       organizationId: mockOrgId,
     });
 
-    // Default mock setup for Supabase database query (for claim & leave type verification)
+    // Default mock setup for Supabase database query (leave types, claim types, claims)
     vi.mocked(createClient).mockResolvedValue({
-      from: vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
+      from: vi.fn((table: string) => {
+        if (table === "leave_types") {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({
+                    data: { name: "Medical Leave", requires_attachment: false },
+                    error: null,
+                  }),
+                }),
+              }),
+            }),
+          };
+        }
+
+        if (table === "claim_types") {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({
+                    data: { id: VALID_CLAIM_TYPE_UUID, name: "Travel Claim", max_amount: null },
+                    error: null,
+                  }),
+                }),
+              }),
+            }),
+          };
+        }
+
+        if (table === "claims") {
+          return {
+            insert: vi.fn().mockReturnValue({
+              select: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: { id: "claim-789", claim_types: { name: "Travel Claim" } },
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+
+        return {
+          select: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({
-                data: { name: "Medical Leave", requires_attachment: false },
-                error: null,
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
               }),
             }),
           }),
-        }),
-        insert: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: { id: "claim-789", claim_types: { name: "Travel Claim" } },
-              error: null,
-            }),
-          }),
-        }),
+        };
       }),
     } as any);
 

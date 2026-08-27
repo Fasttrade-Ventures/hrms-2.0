@@ -66,3 +66,32 @@ export async function getTenantById(tenantId: string): Promise<{ id: string; nam
   if (error) throw new Error(error.message);
   return data;
 }
+
+export async function updateTenantProductTier(
+  tenantId: string,
+  tier: ProductTier,
+  actorUserId: string,
+): Promise<void> {
+  await requireRole("platform_administrator");
+  if (!isSaasMode()) {
+    throw new Error("Tenant tier changes are only available in SaaS deployment mode.");
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("organizations")
+    .update({ product_tier: tier, updated_at: new Date().toISOString() })
+    .eq("id", tenantId);
+
+  if (error) throw new Error(error.message);
+
+  const { logAuditEvent } = await import("@/lib/audit/log-event");
+  await logAuditEvent({
+    organizationId: tenantId,
+    actorUserId,
+    action: "platform.tenant.tier_updated",
+    resourceType: "organization",
+    resourceId: tenantId,
+    metadata: { tier },
+  });
+}

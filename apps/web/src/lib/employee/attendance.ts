@@ -1,3 +1,4 @@
+import { orgLocalDateString } from "@/lib/datetime/org-timezone";
 import { requireEmployeeContext } from "@/lib/employee/leave";
 import { getEmployeeAttendanceContext } from "@/lib/employee/attendance-context";
 import { validateGeofenceClockIn } from "@/lib/attendance/geofence";
@@ -21,7 +22,7 @@ export type TodayAttendance = {
 export async function getTodayAttendance(): Promise<TodayAttendance | null> {
   const { employeeId, organizationId } = await requireEmployeeContext();
   const supabase = await createClient();
-  const workDate = new Date().toISOString().slice(0, 10);
+  const workDate = orgLocalDateString();
 
   const { data, error } = await supabase
     .from("attendance_records")
@@ -90,7 +91,7 @@ export async function clockIn(input?: {
   }
 
   const supabase = await createClient();
-  const workDate = new Date().toISOString().slice(0, 10);
+  const workDate = orgLocalDateString();
   const now = new Date().toISOString();
   const existing = await getTodayAttendance();
 

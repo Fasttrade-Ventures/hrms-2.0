@@ -15,7 +15,7 @@ export default async function DirectorPayrollPage() {
   return (
     <div className="space-y-8">
       <PortalPageHeader
-        description="Read-only view of payroll payruns and totals."
+        description="Review payruns and approve when ready."
         title="Payroll"
       />
 

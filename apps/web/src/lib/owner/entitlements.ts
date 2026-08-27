@@ -116,6 +116,10 @@ export async function updateOwnerModuleFlag(
   enabled: boolean,
   actorUserId?: string | null,
 ): Promise<void> {
+  if (isSaasMode()) {
+    throw new Error("Module flags can only be changed by Platform in SaaS mode.");
+  }
+
   const supabase = await createClient();
   const organizationId = await requireOrganizationId();
 

@@ -38,9 +38,16 @@ const NAV_MODULE_RULES = [
   { prefix: "/hr/payroll", module: "payroll" },
   { prefix: "/director/analytics", module: "analytics" },
   { prefix: "/director/payroll", module: "payroll" },
+  { prefix: "/manager/announcements", module: "announcements" },
+  { prefix: "/manager/team-calendar", module: "calendar" },
+  { prefix: "/manager/team-documents", module: "documents" },
+  { prefix: "/manager/team-performance", module: "performance" },
 ] as const satisfies ReadonlyArray<{ prefix: string; module: ModuleKey }>;
 
-const PRO_ONLY_NAV_PREFIXES = ["/hr/organization/leave-blackouts"];
+const PRO_ONLY_NAV_PREFIXES = [
+  "/hr/organization/leave-blackouts",
+  "/hr/organization/rosters",
+];
 
 export function moduleForNavHref(href: string): ModuleKey | null {
   const sorted = [...NAV_MODULE_RULES].sort((a, b) => b.prefix.length - a.prefix.length);

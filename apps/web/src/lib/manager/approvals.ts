@@ -20,7 +20,8 @@ export async function listManagerApprovals(): Promise<ApprovalInboxRow[]> {
     .eq("organization_id", organizationId)
     .eq("approver_employee_id", employeeId)
     .eq("status", "pending")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(100);
 
   if (error) throw new Error(error.message);
   return (data ?? []).map((row) => mapApprovalInboxRow(row as Record<string, unknown>));
@@ -52,6 +53,16 @@ export async function getManagerApprovalDetail(stepId: string): Promise<Approval
 }
 
 export async function countPendingApprovals(): Promise<number> {
-  const rows = await listManagerApprovals().catch(() => []);
-  return rows.length;
+  const { employeeId, organizationId } = await requireManagerContext();
+  const supabase = await createClient();
+
+  const { count, error } = await supabase
+    .from("approval_steps")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", organizationId)
+    .eq("approver_employee_id", employeeId)
+    .eq("status", "pending");
+
+  if (error) throw new Error(error.message);
+  return count ?? 0;
 }

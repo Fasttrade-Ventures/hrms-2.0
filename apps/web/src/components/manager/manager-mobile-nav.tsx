@@ -4,7 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
+import type { ModuleKey } from "@hrms/platform";
+
 import { PortalIcon, type PortalIconName, MenuIcon } from "@/components/portal/portal-icons";
+import { moduleForNavHref } from "@/lib/portal-nav";
 
 const items: Array<{ href: string; label: string; icon: PortalIconName }> = [
   { href: "/manager/dashboard", label: "Home", icon: "dashboard" },
@@ -32,17 +35,32 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function ManagerMobileNav() {
+export function ManagerMobileNav({ enabledModules }: { enabledModules?: ModuleKey[] }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const enabled = new Set(enabledModules ?? []);
 
-  const isMoreActive = menuOpen || !items.some((item) => isActive(pathname, item.href));
+  const visibleItems = enabledModules
+    ? items.filter((item) => {
+        const navModule = moduleForNavHref(item.href);
+        return navModule ? enabled.has(navModule) : true;
+      })
+    : items;
+
+  const visibleMoreItems = enabledModules
+    ? moreItems.filter((item) => {
+        const navModule = moduleForNavHref(item.href);
+        return navModule ? enabled.has(navModule) : true;
+      })
+    : moreItems;
+
+  const isMoreActive = menuOpen || !visibleItems.some((item) => isActive(pathname, item.href));
 
   return (
     <>
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--border-primary)] bg-[var(--surface-card)] px-1 pb-[calc(6px+env(safe-area-inset-bottom))] pt-1.5 lg:hidden">
         <ul className="grid grid-cols-5 gap-1">
-          {items.map((item) => {
+          {visibleItems.map((item) => {
             const active = isActive(pathname, item.href);
 
             return (
@@ -98,7 +116,7 @@ export function ManagerMobileNav() {
             </div>
 
             <div className="grid grid-cols-4 gap-y-4 gap-x-2">
-              {moreItems.map((item) => {
+              {visibleMoreItems.map((item) => {
                 const active = isActive(pathname, item.href);
                 return (
                   <Link

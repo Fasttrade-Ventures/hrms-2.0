@@ -1,6 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { cookies } from "next/headers";
 
+import { selectMembershipRow, type MembershipRow } from "@/lib/auth/membership-selection";
+import { getImpersonationOrgId } from "@/lib/platform/impersonation";
 import { type SystemRole } from "@hrms/domain";
+
+const ACTIVE_ORG_COOKIE = "hrms_active_org_id";
 
 const ROLE_PRIORITY: SystemRole[] = [
   "platform_administrator",
@@ -43,19 +48,29 @@ export async function resolvePostLoginPath(supabase: SupabaseClient): Promise<st
 
   const deploymentMode = process.env.DEPLOYMENT_MODE ?? "standalone";
   const defaultOrgId = process.env.DEFAULT_ORGANIZATION_ID;
+  const impersonateOrgId = await getImpersonationOrgId();
+  const cookieStore = await cookies();
+  const activeOrgId = cookieStore.get(ACTIVE_ORG_COOKIE)?.value ?? null;
 
-  let query = supabase.from("organization_memberships").select("roles").eq("user_id", user.id);
-
-  if (deploymentMode === "standalone" && defaultOrgId) {
-    query = query.eq("organization_id", defaultOrgId);
-  }
-
-  const { data: memberships, error } = await query;
+  const { data: memberships, error } = await supabase
+    .from("organization_memberships")
+    .select("organization_id, employee_id, roles, permissions")
+    .eq("user_id", user.id);
 
   if (error || !memberships?.length) {
     return "/auth/login?error=no_membership";
   }
 
-  const roles = memberships.flatMap((membership) => membership.roles ?? []);
-  return dashboardPathForRoles(roles);
+  const selected = selectMembershipRow(memberships as MembershipRow[], {
+    deploymentMode,
+    defaultOrgId,
+    activeOrgId,
+    impersonateOrgId,
+  });
+
+  if (!selected) {
+    return "/auth/login?error=no_membership";
+  }
+
+  return dashboardPathForRoles(selected.roles ?? []);
 }

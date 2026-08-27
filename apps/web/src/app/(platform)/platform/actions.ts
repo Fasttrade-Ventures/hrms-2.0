@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 import type { ProductTier } from "@hrms/platform";
 
 import { startImpersonation, stopImpersonation } from "@/lib/platform/impersonation";
-import { provisionTenantAsPlatformAdmin } from "@/lib/platform/tenants";
+import { provisionTenantAsPlatformAdmin, updateTenantProductTier } from "@/lib/platform/tenants";
+import { requireRole } from "@/lib/auth/session";
 
 export type PlatformActionState = {
   error?: string;
@@ -43,4 +44,17 @@ export async function impersonateTenantAction(formData: FormData): Promise<void>
 
 export async function stopImpersonationAction(): Promise<void> {
   await stopImpersonation();
+}
+
+export async function updateTenantTierAction(formData: FormData): Promise<void> {
+  const session = await requireRole("platform_administrator");
+  const organizationId = String(formData.get("organizationId") ?? "");
+  const tier = String(formData.get("tier") ?? "core") as ProductTier;
+
+  if (!organizationId) {
+    throw new Error("Organization ID is required.");
+  }
+
+  await updateTenantProductTier(organizationId, tier, session.user.id);
+  revalidatePath("/platform/tenants");
 }

@@ -231,10 +231,14 @@ export async function createBehalfLeave(
   actorUserId: string,
   options?: { branchId?: string; branchIds?: string[] },
 ): Promise<string> {
-  await requireRole("hr_administrator", "branch_admin");
+  const session = await requireRole("hr_administrator", "branch_admin");
+  const isHr = session.membership.roles.includes("hr_administrator");
   const organizationId = await requireOrganizationId();
   const admin = createAdminClient();
-  const days = calculateLeaveDays(input);
+
+  const { loadLeaveHolidayDates } = await import("@/lib/leave/holidays");
+  const holidays = await loadLeaveHolidayDates(organizationId);
+  const days = calculateLeaveDays(input, { holidays });
 
   const { data: employee, error: employeeError } = await admin
     .from("employees")
@@ -259,7 +263,7 @@ export async function createBehalfLeave(
     employeeId: input.employeeId,
     leaveTypeId: input.leaveTypeId,
     days,
-    allowOverride: true,
+    allowOverride: isHr,
     overrideReason: input.overrideReason,
     client: admin,
   });

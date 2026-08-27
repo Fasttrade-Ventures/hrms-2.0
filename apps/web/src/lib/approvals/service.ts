@@ -211,6 +211,39 @@ export async function actOnApproval(input: ActOnApprovalInput): Promise<void> {
       .eq("organization_id", input.organizationId);
 
     if (sourceError) throw new Error(sourceError.message);
+
+    if (
+      sourceTable === "attendance_requests" &&
+      nextStatus === "approved" &&
+      input.event === "approve"
+    ) {
+      const { applyApprovedAttendanceRequest } = await import(
+        "@/lib/attendance/apply-approved-request"
+      );
+      await applyApprovedAttendanceRequest(input.organizationId, sourceId);
+    }
+
+    if (sourceTable === "leave_requests" && nextStatus === "approved" && input.event === "approve") {
+      const admin = createAdminClient();
+      const { data: leaveReq, error: leaveFetchError } = await admin
+        .from("leave_requests")
+        .select("employee_id, leave_type_id, days")
+        .eq("id", sourceId)
+        .eq("organization_id", input.organizationId)
+        .maybeSingle();
+
+      if (leaveFetchError) throw new Error(leaveFetchError.message);
+      if (leaveReq) {
+        const { assertLeaveBalance } = await import("@/lib/leave/balance");
+        await assertLeaveBalance({
+          organizationId: input.organizationId,
+          employeeId: leaveReq.employee_id,
+          leaveTypeId: leaveReq.leave_type_id,
+          days: Number(leaveReq.days),
+          client: admin,
+        });
+      }
+    }
   }
 
   const requesterUserId = await resolveUserIdForEmployee(

@@ -198,7 +198,7 @@ export function PortalShell({
           </div>
         </main>
         {portal === "Employee" ? <EmployeeMobileNav enabledModules={enabledModules} /> : null}
-        {portal === "Manager" ? <ManagerMobileNav /> : null}
+        {portal === "Manager" ? <ManagerMobileNav enabledModules={enabledModules} /> : null}
       </div>
     </div>
   );

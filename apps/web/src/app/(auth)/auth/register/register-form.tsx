@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useActionState } from "react";
 
 import {
   AuthCardHeader,
@@ -10,46 +10,16 @@ import {
   AuthTextField,
 } from "@/components/auth/auth-primitives";
 import { AuthPasswordField } from "@/components/auth/auth-password-field";
+import {
+  registerOrganizationAction,
+  type RegisterState,
+} from "@/app/(auth)/auth/register/actions";
+
+const initialState: RegisterState = {};
 
 export function RegisterForm() {
   const router = useRouter();
-  const [error, setError] = useState<string>();
-  const [loading, setLoading] = useState(false);
-
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError(undefined);
-    setLoading(true);
-
-    const form = event.currentTarget;
-    const formData = new FormData(form);
-
-    try {
-      const response = await fetch("/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          company: formData.get("company"),
-          fullName: formData.get("fullName"),
-          email: formData.get("email"),
-          password: formData.get("password"),
-        }),
-      });
-
-      const payload = (await response.json()) as { error?: string };
-
-      if (!response.ok) {
-        setError(payload.error ?? "Registration failed.");
-        return;
-      }
-
-      router.push("/auth/login?registered=1");
-    } catch {
-      setError("Registration failed. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }
+  const [state, formAction, pending] = useActionState(registerOrganizationAction, initialState);
 
   return (
     <>
@@ -58,7 +28,7 @@ export function RegisterForm() {
         title="Register organization"
       />
 
-      <form className="space-y-4" onSubmit={onSubmit}>
+      <form action={formAction} className="space-y-4">
         <AuthTextField id="company" label="Company name" name="company" required />
         <AuthTextField id="fullName" label="Your full name" name="fullName" required />
         <AuthTextField
@@ -71,20 +41,17 @@ export function RegisterForm() {
         />
         <AuthPasswordField id="password" label="Password" name="password" required />
 
-        {error ? (
+        {state.error ? (
           <p className="text-sm text-[var(--status-danger)]" role="alert">
-            {error}
+            {state.error}
           </p>
         ) : null}
 
-        <AuthPrimaryButton disabled={loading} type="submit">
-          {loading ? "Creating organization…" : "Create organization"}
+        <AuthPrimaryButton disabled={pending} type="submit">
+          {pending ? "Creating organization…" : "Create organization"}
         </AuthPrimaryButton>
 
-        <AuthGhostButton
-          onClick={() => router.push("/auth/login")}
-          type="button"
-        >
+        <AuthGhostButton onClick={() => router.push("/auth/login")} type="button">
           Back to sign in
         </AuthGhostButton>
       </form>

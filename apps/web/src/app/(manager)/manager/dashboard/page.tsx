@@ -13,31 +13,34 @@ import {
   getAnnouncementViewer,
   listDashboardAnnouncementItems,
 } from "@/lib/announcements/queries";
-import { requireModule } from "@/lib/entitlements";
+import { hasModule } from "@/lib/entitlements";
 import { firstNameFromFullName, getCurrentEmployeeDetail, greetingForHour } from "@/lib/employees/self";
 
 export default async function Page() {
-  await requireModule("announcements");
   const managerContext = await requireManagerContext();
   const hour = new Date().getHours();
   const employee = await getCurrentEmployeeDetail();
   const firstName = firstNameFromFullName(employee?.fullName, employee?.email);
 
-  const viewer = await getAnnouncementViewer({
-    organizationId: managerContext.organizationId,
-    employeeId: managerContext.employeeId,
-    roles: managerContext.session.membership.roles,
-  });
-
   const [pending, teamSize, queue, announcementFeed] = await Promise.all([
     countPendingApprovals().catch(() => 0),
     countDirectReports().catch(() => 0),
     listManagerApprovals().catch(() => []),
-    listDashboardAnnouncementItems({
-      organizationId: managerContext.organizationId,
-      viewer,
-      userId: managerContext.session.user.id,
-    }).catch(() => ({ pinned: [], latest: [] })),
+    (async () => {
+      if (!(await hasModule("announcements"))) {
+        return { pinned: [], latest: [] };
+      }
+      const viewer = await getAnnouncementViewer({
+        organizationId: managerContext.organizationId,
+        employeeId: managerContext.employeeId,
+        roles: managerContext.session.membership.roles,
+      });
+      return listDashboardAnnouncementItems({
+        organizationId: managerContext.organizationId,
+        viewer,
+        userId: managerContext.session.user.id,
+      }).catch(() => ({ pinned: [], latest: [] }));
+    })(),
   ]);
 
   return (
@@ -128,11 +131,13 @@ export default async function Page() {
         }))}
       />
 
-      <AnnouncementDashboardWidget
-        basePath="/manager/announcements"
-        items={announcementFeed.latest}
-        pinnedItems={announcementFeed.pinned}
-      />
+      {announcementFeed.latest.length > 0 || announcementFeed.pinned.length > 0 ? (
+        <AnnouncementDashboardWidget
+          basePath="/manager/announcements"
+          items={announcementFeed.latest}
+          pinnedItems={announcementFeed.pinned}
+        />
+      ) : null}
 
       <div className="flex flex-wrap gap-3">
         <Link

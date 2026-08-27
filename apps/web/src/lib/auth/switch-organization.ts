@@ -1,9 +1,8 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 
-import { ACTIVE_ORG_COOKIE } from "@/lib/auth/organization-context";
+import { setActiveOrganizationCookie } from "@/lib/auth/organization-context";
 import { listUserMemberships, requireAuth } from "@/lib/auth/session";
 
 export async function switchOrganizationAction(organizationId: string): Promise<{ error?: string }> {
@@ -15,14 +14,7 @@ export async function switchOrganizationAction(organizationId: string): Promise<
     return { error: "You are not a member of that organization." };
   }
 
-  const cookieStore = await cookies();
-  cookieStore.set(ACTIVE_ORG_COOKIE, organizationId, {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 60 * 60 * 24 * 365,
-  });
+  await setActiveOrganizationCookie(organizationId);
 
   revalidatePath("/", "layout");
   return {};

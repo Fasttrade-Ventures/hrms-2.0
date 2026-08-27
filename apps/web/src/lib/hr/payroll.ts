@@ -16,7 +16,7 @@ export async function lockPayrun(payrunId: string, actorUserId: string): Promise
 
   const { data: payrun, error: fetchError } = await supabase
     .from("payroll_payruns")
-    .select("status, period_year, last_edited_by")
+    .select("status, period_year, last_edited_by, approved_by")
     .eq("id", payrunId)
     .eq("organization_id", organizationId)
     .maybeSingle();
@@ -34,8 +34,13 @@ export async function lockPayrun(payrunId: string, actorUserId: string): Promise
     .eq("id", organizationId)
     .maybeSingle();
 
-  if (org?.payroll_duty_segregation && payrun.last_edited_by === actorUserId) {
-    throw new Error("Duty segregation: another user must lock this payrun.");
+  if (org?.payroll_duty_segregation) {
+    if (payrun.last_edited_by === actorUserId) {
+      throw new Error("Duty segregation: another user must lock this payrun.");
+    }
+    if (payrun.approved_by === actorUserId) {
+      throw new Error("Duty segregation: the approver cannot lock this payrun.");
+    }
   }
 
   const { error } = await supabase

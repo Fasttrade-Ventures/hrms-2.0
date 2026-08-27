@@ -11,7 +11,7 @@ export type LeaveBalanceSnapshot = {
   remainingDays: number;
 };
 
-type BalanceClient = Awaited<ReturnType<typeof createClient>> | ReturnType<typeof createAdminClient>;
+export type BalanceClient = Awaited<ReturnType<typeof createClient>> | ReturnType<typeof createAdminClient>;
 
 /**
  * Compute remaining entitlement for one leave type for an employee.

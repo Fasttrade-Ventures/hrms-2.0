@@ -105,7 +105,8 @@ export async function listPayruns(): Promise<PayrunListItem[]> {
     )
     .eq("organization_id", await requireOrganizationId())
     .order("period_year", { ascending: false })
-    .order("period_month", { ascending: false });
+    .order("period_month", { ascending: false })
+    .limit(100);
 
   if (error) throw new Error(error.message);
 

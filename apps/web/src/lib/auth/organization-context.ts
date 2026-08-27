@@ -15,6 +15,17 @@ export async function getActiveOrganizationCookie(): Promise<string | null> {
   }
 }
 
+export async function setActiveOrganizationCookie(organizationId: string): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.set(ACTIVE_ORG_COOKIE, organizationId, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 60 * 60 * 24 * 365,
+  });
+}
+
 /**
  * Resolves the organization for the current request.
  * Priority: impersonation → standalone DEFAULT → active-org cookie (validated in session) → session membership.

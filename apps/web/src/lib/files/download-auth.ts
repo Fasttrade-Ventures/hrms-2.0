@@ -2,8 +2,38 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { canAccessAnnouncementAttachment } from "@/lib/announcements/queries";
 import { rolesCanAccessFolder } from "@/lib/hr/document-folder-access";
 import { createClient } from "@/lib/supabase/server";
-import { requireOrganizationId } from "@/lib/auth/organization-context";
 
+async function resolveBranchAdminScopeIds(
+  organizationId: string,
+  userId: string,
+): Promise<string[]> {
+  const supabase = await createClient();
+  const { data: membership } = await supabase
+    .from("organization_memberships")
+    .select("id, employee_id")
+    .eq("organization_id", organizationId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (!membership?.employee_id) return [];
+
+  const { data: scoped } = await supabase
+    .from("organization_membership_branches")
+    .select("branch_id")
+    .eq("membership_id", membership.id)
+    .eq("organization_id", organizationId);
+
+  const branchIds = (scoped ?? []).map((row) => row.branch_id);
+  if (branchIds.length > 0) return branchIds;
+
+  const { data: employee } = await supabase
+    .from("employees")
+    .select("branch_id")
+    .eq("id", membership.employee_id)
+    .maybeSingle();
+
+  return employee?.branch_id ? [employee.branch_id] : [];
+}
 
 async function canDownloadAnnouncementFile(input: {
   roles: string[];
@@ -36,25 +66,28 @@ export async function canDownloadFile(input: {
   employeeId: string | null;
   fileId: string;
   organizationId?: string;
+  userId?: string;
 }): Promise<boolean> {
+  if (!input.organizationId) return false;
+
   const admin = createAdminClient();
   const { data: file } = await admin
     .from("file_objects")
-    .select("id, deleted_at, category")
+    .select("id, deleted_at, category, organization_id")
     .eq("id", input.fileId)
+    .eq("organization_id", input.organizationId)
     .maybeSingle();
 
   if (!file || file.deleted_at) return false;
+  if (file.organization_id !== input.organizationId) return false;
 
   if (file.category === "announcement-attachments") {
-    const organizationId = input.organizationId ?? await requireOrganizationId();
-    if (!organizationId) return false;
     if (input.roles.includes("hr_administrator")) return true;
     return canDownloadAnnouncementFile({
       roles: input.roles,
       employeeId: input.employeeId,
       fileId: input.fileId,
-      organizationId,
+      organizationId: input.organizationId,
     });
   }
 
@@ -66,6 +99,7 @@ export async function canDownloadFile(input: {
     const { data: leaveReq } = await supabase
       .from("leave_requests")
       .select("employee_id, employees(manager_employee_id)")
+      .eq("organization_id", input.organizationId)
       .eq("attachment_file_id", input.fileId)
       .maybeSingle();
 
@@ -73,7 +107,8 @@ export async function canDownloadFile(input: {
 
     if (leaveReq.employee_id === input.employeeId) return true;
 
-    const requesterManagerId = (leaveReq.employees as { manager_employee_id?: string | null } | null)?.manager_employee_id;
+    const requesterManagerId = (leaveReq.employees as { manager_employee_id?: string | null } | null)
+      ?.manager_employee_id;
     if (input.roles.includes("manager") && requesterManagerId === input.employeeId) return true;
 
     return false;
@@ -82,7 +117,7 @@ export async function canDownloadFile(input: {
   const supabase = await createClient();
   const { data: link } = await supabase
     .from("employee_documents")
-    .select("employee_id, document_folders(access_roles)")
+    .select("employee_id, document_folders(access_roles), employees(branch_id)")
     .eq("file_id", input.fileId)
     .maybeSingle();
 
@@ -98,6 +133,14 @@ export async function canDownloadFile(input: {
   if (input.roles.includes("hr_administrator")) return true;
 
   if (input.employeeId && link.employee_id === input.employeeId) return true;
+
+  if (input.roles.includes("branch_admin") && input.userId) {
+    const branchIds = await resolveBranchAdminScopeIds(input.organizationId, input.userId);
+    const employeeBranch = (
+      link.employees as { branch_id?: string | null } | null | undefined
+    )?.branch_id;
+    if (employeeBranch && branchIds.includes(employeeBranch)) return true;
+  }
 
   if (!input.employeeId || !input.roles.includes("manager")) return false;
 

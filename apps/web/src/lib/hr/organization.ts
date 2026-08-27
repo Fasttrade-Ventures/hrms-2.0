@@ -123,6 +123,13 @@ export async function getOrgHubData(): Promise<OrgHubData> {
   const organizationId = await requireOrganizationId();
   const year = new Date().getFullYear();
 
+  const { data: orgRow } = await supabase
+    .from("organizations")
+    .select("product_tier")
+    .eq("id", organizationId)
+    .maybeSingle();
+  const productTier = orgRow?.product_tier ?? "enterprise";
+
   const [branches, departments, shifts, holidays, leaveTypes, assetCategories] = await Promise.all([
     supabase
       .from("branches")
@@ -204,23 +211,27 @@ export async function getOrgHubData(): Promise<OrgHubData> {
       {
         id: "shifts",
         typeLabel: "Shifts",
-        typeTone: "accent",
+        typeTone: "accent" as const,
         title: "Work shifts",
         subtitle: `${shiftCount} pattern${shiftCount === 1 ? "" : "s"}`,
         details: shiftNames,
         href: "/hr/organization/shifts",
         count: shiftCount,
       },
-      {
-        id: "rosters",
-        typeLabel: "Rosters",
-        typeTone: "success",
-        title: "Work rosters",
-        subtitle: "Weekly schedules",
-        details: "Assign shifts to employees by day",
-        href: "/hr/organization/rosters",
-        count: shiftCount,
-      },
+      ...(productTier !== "core"
+        ? [
+            {
+              id: "rosters",
+              typeLabel: "Rosters",
+              typeTone: "success" as const,
+              title: "Work rosters",
+              subtitle: "Weekly schedules",
+              details: "Assign shifts to employees by day",
+              href: "/hr/organization/rosters",
+              count: shiftCount,
+            } satisfies OrgHubModule,
+          ]
+        : []),
       {
         id: "holidays",
         typeLabel: "Holiday",

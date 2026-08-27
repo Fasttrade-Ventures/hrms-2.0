@@ -308,7 +308,9 @@ describe("employee activation and auth flows", () => {
     });
 
     it("succeeds with strong passwords, updates user, and redirects", async () => {
-      mockSupabaseClient._mockData = [{ roles: ["employee"] }];
+      mockSupabaseClient._mockData = [
+        { organization_id: "org-123", employee_id: "emp-1", roles: ["employee"], permissions: [] },
+      ];
 
       const formData = new FormData();
       formData.append("fullName", "Alex Smith");
@@ -329,13 +331,22 @@ describe("employee activation and auth flows", () => {
 
   describe("3. Login Redirect (resolvePostLoginPath)", () => {
     it("redirects employee user to /employee/dashboard", async () => {
-      mockSupabaseClient._mockData = [{ roles: ["employee"] }];
+      mockSupabaseClient._mockData = [
+        { organization_id: "org-123", employee_id: "emp-1", roles: ["employee"], permissions: [] },
+      ];
       const path = await resolvePostLoginPath(mockSupabaseClient as any);
       expect(path).toBe("/employee/dashboard");
     });
 
     it("redirects hr administrator user to /hr/dashboard", async () => {
-      mockSupabaseClient._mockData = [{ roles: ["hr_administrator"] }];
+      mockSupabaseClient._mockData = [
+        {
+          organization_id: "org-123",
+          employee_id: "emp-1",
+          roles: ["hr_administrator"],
+          permissions: [],
+        },
+      ];
       const path = await resolvePostLoginPath(mockSupabaseClient as any);
       expect(path).toBe("/hr/dashboard");
     });
@@ -364,7 +375,9 @@ describe("employee activation and auth flows", () => {
     });
 
     it("succeeds when inputs are valid, updates password, and redirects", async () => {
-      mockSupabaseClient._mockData = [{ roles: ["employee"] }];
+      mockSupabaseClient._mockData = [
+        { organization_id: "org-123", employee_id: "emp-1", roles: ["employee"], permissions: [] },
+      ];
 
       const formData = new FormData();
       formData.append("currentPassword", "SecurePass1!");
@@ -409,7 +422,9 @@ describe("employee activation and auth flows", () => {
         error: null,
       });
 
-      mockSupabaseClient._mockSingleData = { roles: ["employee"] };
+      mockSupabaseClient._mockData = [
+        { organization_id: "org-123", employee_id: "emp-1", roles: ["employee"], permissions: [] },
+      ];
 
       const request = new NextRequest("http://localhost:3000/auth/login");
       const response = await updateSession(request);

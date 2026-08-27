@@ -22,6 +22,7 @@ export async function GET(
     .from("file_objects")
     .select("category, file_name")
     .eq("id", fileId)
+    .eq("organization_id", session.membership.organizationId)
     .is("deleted_at", null)
     .maybeSingle();
 
@@ -41,6 +42,7 @@ export async function GET(
     employeeId: session.membership.employeeId,
     fileId,
     organizationId: session.membership.organizationId,
+    userId: session.user.id,
   });
 
   if (!allowed) {
