@@ -8,13 +8,17 @@ import { getPayrunDetail } from "@/lib/payroll/queries";
 
 export default async function DirectorPayrunDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ payrunId: string }>;
+  searchParams: Promise<{ page?: string }>;
 }) {
   await requireModule("payroll");
   await requireRole("director");
   const { payrunId } = await params;
-  const payrun = await getPayrunDetail(payrunId);
+  const query = await searchParams;
+  const page = Number(query.page ?? "1") || 1;
+  const payrun = await getPayrunDetail(payrunId, { page, pageSize: 50 });
   if (!payrun) notFound();
 
   return (

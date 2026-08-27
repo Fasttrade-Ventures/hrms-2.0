@@ -313,7 +313,7 @@ export async function getBranch(branchId: string): Promise<BranchRow | null> {
 }
 
 export async function listDepartments(): Promise<DepartmentRow[]> {
-  await requireRole("hr_administrator");
+  await requireRole("hr_administrator", "branch_admin");
   const supabase = await createClient();
   const organizationId = getOrganizationId();
 
@@ -529,7 +529,7 @@ export async function getHoliday(holidayId: string): Promise<HolidayRow | null> 
 }
 
 export async function listLeaveTypes(): Promise<LeaveTypeRow[]> {
-  await requireRole("hr_administrator");
+  await requireRole("hr_administrator", "branch_admin");
   const supabase = await createClient();
   const organizationId = getOrganizationId();
 

@@ -5,12 +5,17 @@ import { requireAuth, type AuthSession } from "@/lib/auth/session";
 export function canAccessReports(session: AuthSession): boolean {
   return (
     session.membership.roles.includes("hr_administrator") ||
+    session.membership.roles.includes("branch_admin") ||
     session.membership.permissions.includes("auditor")
   );
 }
 
 export function canRunOrgReports(session: AuthSession): boolean {
-  return canAccessReports(session) || session.membership.roles.includes("director");
+  return (
+    canAccessReports(session) ||
+    session.membership.roles.includes("director") ||
+    session.membership.roles.includes("branch_admin")
+  );
 }
 
 export async function requireReportsAccess(): Promise<AuthSession> {

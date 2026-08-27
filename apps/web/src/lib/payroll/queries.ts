@@ -52,6 +52,9 @@ export type PayrunDetail = {
   payGroupName: string | null;
   lockedAt: string | null;
   flaggedCount: number;
+  itemTotal: number;
+  page: number;
+  pageSize: number;
   totals: {
     gross: number;
     epfEmployee: number;
@@ -147,10 +150,17 @@ export async function listPayGroups(): Promise<PayGroupOption[]> {
   }));
 }
 
-export async function getPayrunDetail(payrunId: string): Promise<PayrunDetail | null> {
+export async function getPayrunDetail(
+  payrunId: string,
+  opts?: { page?: number; pageSize?: number },
+): Promise<PayrunDetail | null> {
   await requireRole("hr_administrator", "director");
   const organizationId = getOrganizationId();
   const supabase = await createClient();
+  const pageSize = Math.min(Math.max(opts?.pageSize ?? 50, 10), 200);
+  const page = Math.max(opts?.page ?? 1, 1);
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
 
   const { data: payrun, error } = await supabase
     .from("payroll_payruns")
@@ -164,16 +174,38 @@ export async function getPayrunDetail(payrunId: string): Promise<PayrunDetail | 
   if (error) throw new Error(error.message);
   if (!payrun) return null;
 
-  const { data: items, error: itemsError } = await supabase
-    .from("payroll_payrun_items")
-    .select(
-      "id, gross_pay, epf_employee, epf_employer, socso_employee, socso_employer, eis_employee, eis_employer, pcb, hrdf_employer, net_pay, requires_resolution, employees(employee_number, full_name, email), branches(name)",
-    )
-    .eq("payrun_id", payrunId)
-    .eq("organization_id", organizationId)
-    .order("created_at");
+  const [
+    { data: items, error: itemsError, count: itemCount },
+    { data: totalRows, error: totalsError },
+    { count: flaggedCount },
+  ] = await Promise.all([
+    supabase
+      .from("payroll_payrun_items")
+      .select(
+        "id, gross_pay, epf_employee, epf_employer, socso_employee, socso_employer, eis_employee, eis_employer, pcb, hrdf_employer, net_pay, requires_resolution, employees(employee_number, full_name, email), branches(name)",
+        { count: "exact" },
+      )
+      .eq("payrun_id", payrunId)
+      .eq("organization_id", organizationId)
+      .order("created_at")
+      .range(from, to),
+    supabase
+      .from("payroll_payrun_items")
+      .select(
+        "gross_pay, epf_employee, epf_employer, socso_employee, socso_employer, eis_employee, eis_employer, pcb, hrdf_employer, net_pay",
+      )
+      .eq("payrun_id", payrunId)
+      .eq("organization_id", organizationId),
+    supabase
+      .from("payroll_payrun_items")
+      .select("id", { count: "exact", head: true })
+      .eq("payrun_id", payrunId)
+      .eq("organization_id", organizationId)
+      .eq("requires_resolution", true),
+  ]);
 
   if (itemsError) throw new Error(itemsError.message);
+  if (totalsError) throw new Error(totalsError.message);
 
   const itemIds = (items ?? []).map((row) => row.id);
   const basicByItem = new Map<string, string>();
@@ -221,18 +253,18 @@ export async function getPayrunDetail(payrunId: string): Promise<PayrunDetail | 
     };
   });
 
-  const totals = mappedItems.reduce(
+  const totals = (totalRows ?? []).reduce(
     (acc, item) => ({
-      gross: acc.gross + Number(item.grossPay),
-      epfEmployee: acc.epfEmployee + Number(item.epfEmployee),
-      epfEmployer: acc.epfEmployer + Number(item.epfEmployer),
-      socsoEmployee: acc.socsoEmployee + Number(item.socsoEmployee),
-      socsoEmployer: acc.socsoEmployer + Number(item.socsoEmployer),
-      eisEmployee: acc.eisEmployee + Number(item.eisEmployee),
-      eisEmployer: acc.eisEmployer + Number(item.eisEmployer),
+      gross: acc.gross + Number(item.gross_pay),
+      epfEmployee: acc.epfEmployee + Number(item.epf_employee),
+      epfEmployer: acc.epfEmployer + Number(item.epf_employer),
+      socsoEmployee: acc.socsoEmployee + Number(item.socso_employee),
+      socsoEmployer: acc.socsoEmployer + Number(item.socso_employer),
+      eisEmployee: acc.eisEmployee + Number(item.eis_employee),
+      eisEmployer: acc.eisEmployer + Number(item.eis_employer),
       pcb: acc.pcb + Number(item.pcb),
-      hrdfEmployer: acc.hrdfEmployer + Number(item.hrdfEmployer),
-      net: acc.net + Number(item.netPay),
+      hrdfEmployer: acc.hrdfEmployer + Number(item.hrdf_employer),
+      net: acc.net + Number(item.net_pay),
     }),
     {
       gross: 0,
@@ -262,7 +294,10 @@ export async function getPayrunDetail(payrunId: string): Promise<PayrunDetail | 
     payrunType: payrun.payrun_type,
     payGroupName: (payGroup as { name?: string } | null)?.name ?? null,
     lockedAt: payrun.locked_at,
-    flaggedCount: mappedItems.filter((item) => item.requiresResolution).length,
+    flaggedCount: flaggedCount ?? 0,
+    itemTotal: itemCount ?? mappedItems.length,
+    page,
+    pageSize,
     totals,
     items: mappedItems,
   };

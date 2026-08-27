@@ -125,7 +125,14 @@ function matchesStatus(row: HrDocumentRow, status: DocumentLibraryFilters["statu
 
 export async function listDocumentLibrary(
   filters: DocumentLibraryFilters,
-): Promise<{ rows: HrDocumentRow[]; total: number; page: number; pageSize: number }> {
+): Promise<{
+  rows: HrDocumentRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  truncated: boolean;
+  fetchedCap: number;
+}> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
   const organizationId = getOrganizationId();
@@ -144,8 +151,11 @@ export async function listDocumentLibrary(
   if (filters.documentType) query = query.ilike("document_type", filters.documentType);
   if (filters.folderId) query = query.eq("folder_id", filters.folderId);
 
-  const { data, error } = await query.limit(500);
+  const { data, error, count } = await query.limit(500);
   if (error) throw new Error(error.message);
+
+  const fetchedCap = 500;
+  const truncated = (count ?? 0) > fetchedCap || (data?.length ?? 0) >= fetchedCap;
 
   let rows = (data ?? [])
     .map((row) => mapDocumentRow(row as RawDocumentRow))
@@ -168,7 +178,14 @@ export async function listDocumentLibrary(
   const start = (page - 1) * PAGE_SIZE;
   rows = rows.slice(start, start + PAGE_SIZE);
 
-  return { rows, total, page, pageSize: PAGE_SIZE };
+  return {
+    rows,
+    total,
+    page,
+    pageSize: PAGE_SIZE,
+    truncated,
+    fetchedCap,
+  };
 }
 
 export async function listEmployeeDocuments(): Promise<HrDocumentRow[]> {

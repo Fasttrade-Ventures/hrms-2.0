@@ -1,17 +1,17 @@
 # Branch Admin parity backlog
 
-Broken deep-links to `/hr/documents` and `/hr/calendar` were removed in the Aug 2026 audit remediation. Branch Admin currently has:
+Branch-scoped surfaces shipped in the Aug 2026 audit remediation follow-up:
 
-- `/branch-admin/dashboard`
-- `/branch-admin/employees` (read-oriented directory; may deep-link into HR employee routes that middleware still allows)
+| Feature | Route |
+| --- | --- |
+| Documents | `/branch-admin/documents` |
+| Calendar | `/branch-admin/calendar` |
+| Apply on behalf | `/branch-admin/apply-behalf` (+ `/new`) |
+| Reports | `/branch-admin/reports` (+ selected slugs) |
 
-## Suggested future surfaces (branch-scoped)
+## Remaining enhancements
 
-| Feature | Proposed route | Notes |
-| --- | --- | --- |
-| Documents | `/branch-admin/documents` | Filter `employees.branch_id` to admin’s branch(es); reuse HR document queries with branch scope |
-| Calendar | `/branch-admin/calendar` | Same calendar module; branch filter on events/employees |
-| Apply on behalf | `/branch-admin/apply-behalf` | Restrict employee picker to branch; reuse balance/blackout checks |
-| Reports | `/branch-admin/reports` | Branch-filtered leave/attendance summaries |
-
-Do not re-enable HR portal links until these pages exist with page-level `requireRole("branch_admin")` and branch filters.
+- Document upload / compliance matrix CRUD for branch admins
+- Branch report catalog subset UI (hide payroll/asset reports in hub)
+- Apply-behalf detail pages under `/branch-admin/apply-behalf/...`
+- Multi-branch admins (today: one `employees.branch_id` per account)

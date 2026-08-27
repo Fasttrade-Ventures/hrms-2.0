@@ -10,14 +10,18 @@ import { getPayrunDetail, listPayrunBranches } from "@/lib/payroll/queries";
 
 export default async function PayrunDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ payrunId: string }>;
+  searchParams: Promise<{ page?: string }>;
 }) {
   await requireModule("payroll");
   await requireRole("hr_administrator");
   const { payrunId } = await params;
+  const query = await searchParams;
+  const page = Number(query.page ?? "1") || 1;
   const [payrun, branches, entitlements, bukucloudSyncStatus, payoutBatch] = await Promise.all([
-    getPayrunDetail(payrunId),
+    getPayrunDetail(payrunId, { page, pageSize: 50 }),
     listPayrunBranches(payrunId).catch(() => []),
     getEntitlements(),
     getBukucloudSyncStatus(payrunId),

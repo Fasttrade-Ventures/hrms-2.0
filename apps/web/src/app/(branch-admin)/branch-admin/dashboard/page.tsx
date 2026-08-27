@@ -63,9 +63,21 @@ export default async function Page() {
           </Link>
           <Link
             className="rounded-[var(--radius-md)] border border-[var(--border-primary)] px-4 py-2 text-sm font-medium hover:bg-[var(--surface-muted)]"
-            href="/hr/documents"
+            href="/branch-admin/documents"
           >
-            Document compliance
+            Documents
+          </Link>
+          <Link
+            className="rounded-[var(--radius-md)] border border-[var(--border-primary)] px-4 py-2 text-sm font-medium hover:bg-[var(--surface-muted)]"
+            href="/branch-admin/apply-behalf"
+          >
+            Apply on behalf
+          </Link>
+          <Link
+            className="rounded-[var(--radius-md)] border border-[var(--border-primary)] px-4 py-2 text-sm font-medium hover:bg-[var(--surface-muted)]"
+            href="/branch-admin/reports"
+          >
+            Reports
           </Link>
         </div>
       </div>

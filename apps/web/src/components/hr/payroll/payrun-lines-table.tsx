@@ -190,13 +190,26 @@ export function PayrunLinesTable({
   items,
   editable = false,
   payrunId,
+  totalsOverride,
 }: {
   items: PayrunLineItem[];
   editable?: boolean;
   payrunId?: string;
+  totalsOverride?: {
+    gross: number;
+    epfEmployee: number;
+    epfEmployer: number;
+    socsoEmployee: number;
+    socsoEmployer: number;
+    eisEmployee: number;
+    eisEmployer: number;
+    pcb: number;
+    hrdfEmployer: number;
+    net: number;
+  };
 }) {
   const columns = getColumns(editable);
-  const totals = {
+  const totals = totalsOverride ?? {
     gross: sumField(items, "grossPay"),
     epfEmployee: sumField(items, "epfEmployee"),
     epfEmployer: sumField(items, "epfEmployer"),

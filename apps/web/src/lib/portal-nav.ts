@@ -316,6 +316,10 @@ export function getPortalNavSections(portal: string): PortalNavSection[] {
           items: [
             { href: "/branch-admin/dashboard", label: "Dashboard", icon: "dashboard" },
             { href: "/branch-admin/employees", label: "Employees", icon: "employees" },
+            { href: "/branch-admin/documents", label: "Documents", icon: "documents" },
+            { href: "/branch-admin/calendar", label: "Calendar", icon: "calendar" },
+            { href: "/branch-admin/apply-behalf", label: "Apply on behalf", icon: "apply-behalf" },
+            { href: "/branch-admin/reports", label: "Reports", icon: "reports" },
           ],
         },
       ];

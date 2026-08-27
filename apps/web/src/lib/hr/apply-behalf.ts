@@ -37,26 +37,32 @@ function normalizeTime(value: string): string {
   return trimmed.length === 5 ? `${trimmed}:00` : trimmed;
 }
 
-export async function listActiveEmployeesForBehalf(): Promise<
-  Array<{ id: string; full_name: string; employee_number: string }>
-> {
-  await requireRole("hr_administrator");
+export async function listActiveEmployeesForBehalf(options?: {
+  branchId?: string;
+}): Promise<Array<{ id: string; full_name: string; employee_number: string }>> {
+  await requireRole("hr_administrator", "branch_admin");
   const supabase = await createClient();
   const organizationId = getOrganizationId();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("employees")
     .select("id, full_name, employee_number")
     .eq("organization_id", organizationId)
     .eq("status", "active")
     .order("full_name");
 
+  if (options?.branchId) {
+    query = query.eq("branch_id", options.branchId);
+  }
+
+  const { data, error } = await query;
+
   if (error) throw new Error(error.message);
   return data ?? [];
 }
 
 export async function listLeaveTypesForBehalf(): Promise<Array<{ id: string; name: string }>> {
-  await requireRole("hr_administrator");
+  await requireRole("hr_administrator", "branch_admin");
   const supabase = await createClient();
   const organizationId = getOrganizationId();
 
@@ -72,14 +78,35 @@ export async function listLeaveTypesForBehalf(): Promise<Array<{ id: string; nam
 
 export async function listBehalfApplications(
   filters: ApplyBehalfListFilter,
+  options?: { branchId?: string },
 ): Promise<BehalfListData> {
-  await requireRole("hr_administrator");
+  await requireRole("hr_administrator", "branch_admin");
   const supabase = await createClient();
   const organizationId = getOrganizationId();
 
-  const [leaveResult, lateResult] = await Promise.all([
+  let branchEmployeeIds: string[] | null = null;
+  if (options?.branchId) {
+    const { data: branchEmployees, error: branchError } = await supabase
+      .from("employees")
+      .select("id")
+      .eq("organization_id", organizationId)
+      .eq("branch_id", options.branchId);
+    if (branchError) throw new Error(branchError.message);
+    branchEmployeeIds = (branchEmployees ?? []).map((row) => row.id);
+    if (branchEmployeeIds.length === 0) {
+      return {
+        rows: [],
+        total: 0,
+        page: filters.page,
+        pageSize: filters.pageSize,
+        stats: { total: 0, leaveCount: 0, lateCount: 0 },
+      };
+    }
+  }
+
+  const leaveBase =
     filters.type === "late"
-      ? Promise.resolve({ data: [], error: null })
+      ? null
       : supabase
           .from("leave_requests")
           .select(
@@ -88,9 +115,11 @@ export async function listBehalfApplications(
           .eq("organization_id", organizationId)
           .not("applied_on_behalf_by", "is", null)
           .order("created_at", { ascending: false })
-          .limit(100),
+          .limit(100);
+
+  const lateBase =
     filters.type === "leave"
-      ? Promise.resolve({ data: [], error: null })
+      ? null
       : supabase
           .from("late_requests")
           .select(
@@ -99,7 +128,19 @@ export async function listBehalfApplications(
           .eq("organization_id", organizationId)
           .not("applied_on_behalf_by", "is", null)
           .order("created_at", { ascending: false })
-          .limit(100),
+          .limit(100);
+
+  const [leaveResult, lateResult] = await Promise.all([
+    leaveBase
+      ? branchEmployeeIds
+        ? leaveBase.in("employee_id", branchEmployeeIds)
+        : leaveBase
+      : Promise.resolve({ data: [] as never[], error: null }),
+    lateBase
+      ? branchEmployeeIds
+        ? lateBase.in("employee_id", branchEmployeeIds)
+        : lateBase
+      : Promise.resolve({ data: [] as never[], error: null }),
   ]);
 
   if (leaveResult.error) throw new Error(leaveResult.error.message);
@@ -171,15 +212,16 @@ export async function listBehalfApplications(
 export async function createBehalfLeave(
   input: ApplyBehalfLeaveInput,
   actorUserId: string,
+  options?: { branchId?: string },
 ): Promise<string> {
-  await requireRole("hr_administrator");
+  await requireRole("hr_administrator", "branch_admin");
   const organizationId = getOrganizationId();
   const admin = createAdminClient();
   const days = calculateLeaveDays(input);
 
   const { data: employee, error: employeeError } = await admin
     .from("employees")
-    .select("id")
+    .select("id, branch_id")
     .eq("id", input.employeeId)
     .eq("organization_id", organizationId)
     .eq("status", "active")
@@ -187,6 +229,9 @@ export async function createBehalfLeave(
 
   if (employeeError) throw new Error(employeeError.message);
   if (!employee) throw new Error("Employee not found or inactive.");
+  if (options?.branchId && employee.branch_id !== options.branchId) {
+    throw new Error("Employee is outside your branch scope.");
+  }
 
   const { assertLeaveDatesAllowed } = await import("@/lib/leave/blackout");
   await assertLeaveDatesAllowed(organizationId, input.leaveTypeId, input.startDate, input.endDate);
@@ -240,14 +285,15 @@ export async function createBehalfLeave(
 export async function createBehalfLate(
   input: ApplyBehalfLateInput,
   actorUserId: string,
+  options?: { branchId?: string },
 ): Promise<string> {
-  await requireRole("hr_administrator");
+  await requireRole("hr_administrator", "branch_admin");
   const organizationId = getOrganizationId();
   const admin = createAdminClient();
 
   const { data: employee, error: employeeError } = await admin
     .from("employees")
-    .select("id")
+    .select("id, branch_id")
     .eq("id", input.employeeId)
     .eq("organization_id", organizationId)
     .eq("status", "active")
@@ -255,6 +301,9 @@ export async function createBehalfLate(
 
   if (employeeError) throw new Error(employeeError.message);
   if (!employee) throw new Error("Employee not found or inactive.");
+  if (options?.branchId && employee.branch_id !== options.branchId) {
+    throw new Error("Employee is outside your branch scope.");
+  }
 
   const { data, error } = await admin
     .from("late_requests")
