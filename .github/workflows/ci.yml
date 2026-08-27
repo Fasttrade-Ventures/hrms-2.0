@@ -81,6 +81,23 @@ jobs:
           MAIL_FROM: noreply@example.com
         run: pnpm exec playwright test tests/e2e/smoke.spec.ts --project=desktop
 
+      - name: Smoke e2e (SaaS register surface)
+        env:
+          CI: "true"
+          DEPLOYMENT_MODE: saas
+          PRODUCT_TIER: professional
+          BILLING_ENABLED: "false"
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+          SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+          R2_ACCOUNT_ID: local
+          R2_ACCESS_KEY_ID: local
+          R2_SECRET_ACCESS_KEY: local
+          R2_BUCKET: local
+          RESEND_API_KEY: re_local
+          MAIL_FROM: noreply@example.com
+        run: pnpm exec playwright test tests/e2e/smoke.spec.ts --project=desktop -g "SaaS register"
+
   payroll-integration:
     runs-on: ubuntu-latest
     steps:
@@ -134,4 +151,4 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
           NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
           SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
-        run: pnpm exec vitest run tests/unit/saas-provision-catalogs.test.ts tests/unit/seed-org-catalogs.test.ts tests/unit/membership-selection.test.ts tests/unit/billing-calculate-invoice.test.ts tests/unit/billplz-signature.test.ts
+        run: pnpm exec vitest run tests/unit/saas-provision-catalogs.test.ts tests/unit/seed-org-catalogs.test.ts tests/unit/membership-selection.test.ts tests/unit/billing-calculate-invoice.test.ts tests/unit/billplz-signature.test.ts tests/unit/subscription-gate.test.ts

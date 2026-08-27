@@ -5,7 +5,7 @@ import { logEmployeeEvent } from "@/lib/audit/log-employee-event";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { getNextEmployeeNumber } from "./organization";
-import { requireOrganizationId } from "@/lib/auth/organization-context";
+import { requireOrganizationIdForWrite } from "@/lib/auth/organization-context";
 
 export type CreateEmployeeResult = {
   employeeId: string;
@@ -25,7 +25,7 @@ export async function createEmployeeRecord(
   actorUserId: string,
 ): Promise<CreateEmployeeResult> {
   const admin = createAdminClient();
-  const organizationId = await requireOrganizationId();
+  const organizationId = await requireOrganizationIdForWrite();
   const employeeNumber = input.employeeNumber?.trim() || (await getNextEmployeeNumber(organizationId));
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
@@ -243,7 +243,7 @@ export async function createEmployeeRecord(
 
 export async function resendEmployeeActivationEmail(employeeId: string, actorUserId: string) {
   const admin = createAdminClient();
-  const organizationId = await requireOrganizationId();
+  const organizationId = await requireOrganizationIdForWrite();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
   const { data: employee, error } = await admin

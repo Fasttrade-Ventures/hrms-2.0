@@ -1,69 +1,67 @@
 # SaaS-lens master-prompt gap analysis — findings
 
-**Date:** 2026-08-27 (updated)  
-**Status:** Dual-mode remediation complete for non-FUTURE clusters — see [dual-mode plan](../plans/2026-08-27-dual-mode-saas-standalone-plan.md)  
+**Date:** 2026-08-27 · **Re-audit:** 2026-08-28 · **Remediation:** 2026-08-28  
+**Status:** Partial clusters remediated (write gate, cron, API register, health, e2e, RLS checks)  
 **Design:** [2026-08-27-saas-lens-gap-analysis-design.md](./2026-08-27-saas-lens-gap-analysis-design.md)  
 **Lens:** SaaS-first (option C · hybrid depth)  
 **Complements:** Standalone findings (~9/10 KEEP)
 
-**Verdict:** Standalone ~**9/10** pilot-ready. SaaS multi-tenant isolation ~**7–8/10** for app-layer GA (no billing/marketing). Both modes share one codebase via `DEPLOYMENT_MODE`.
+**Verdict:** Standalone ~**9/10**. SaaS isolation ~**8.5–9/10**. Billplz billing ~**8/10** with `BILLING_ENABLED` (trial-first + write gate + scheduled renewal). JWT active-org claim intentionally deferred (cookie+RLS; better Edge perf).
 
 ---
 
-## Scorecard (18 clusters · updated)
+## Scorecard (18 clusters · post-remediation 2026-08-28)
 
 | # | Cluster | Class | Status | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Product identity & modes | REFACTOR | **Done** | Mode gates UI; domain uses session org |
-| 2 | Identity & authentication | REFACTOR | **Done** | Register → sign-in + active org; shared membership picker |
-| 3 | Tenancy & organization | REFACTOR | **Done** | `requireOrganizationId()` across domain libs |
-| 4 | Roles & permissions | KEEP | **Done** | Active-org cookie drives role set + switcher |
-| 5 | Core HR domain | REFACTOR | **Done** | Session org, not env DEFAULT |
-| 6 | Payroll (Malaysia) | REFACTOR | **Done** | Same; checklist updated |
-| 7 | Entitlements & gating | KEEP | **Done** | DB tier; Platform can change tenant tier |
-| 8 | Billing & payments | FUTURE | **Spec ready** | [Billplz SaaS billing design](./2026-08-27-billplz-saas-billing-design.md) — SaaS only |
+| 1 | Product identity & modes | REFACTOR | **Done** | `DEPLOYMENT_MODE` gates UI |
+| 2 | Identity & authentication | REFACTOR | **Done** | UI + `/api/register` create subscription |
+| 3 | Tenancy & organization | REFACTOR | **Done** | `requireOrganizationId()` |
+| 4 | Roles & permissions | KEEP | **Done** | Active-org cookie |
+| 5 | Core HR domain | REFACTOR | **Done** | Session org |
+| 6 | Payroll (Malaysia) | REFACTOR | **Done** | Multi-org cron + write gate |
+| 7 | Entitlements & gating | KEEP | **Done** | DB tier + platform |
+| 8 | Billing & payments | REFACTOR | **Done*** | Write gate + Billplz; pay-first FUTURE |
 | 9 | Notifications & email | REFACTOR | **Done** | Multi-org crons |
-| 10 | Files & media | REFACTOR | **Done** | Callers pass session org to R2 writers |
-| 11 | Reporting / search / import | REFACTOR | **Done** | Runners use session org; global search defer |
-| 12 | Audit & platform admin | REFACTOR | **Done** | Impersonation honored in middleware + data |
-| 13 | UX systems | REFACTOR | **Done** | Org switcher; register flow |
-| 14 | Security & API hardening | KEEP | **Defer** | RLS + cookie OK; JWT active-org claim optional |
-| 15 | Jobs / cron / observability | REFACTOR | **Done** | Health: DEFAULT optional in SaaS |
-| 16 | Testing & CI | REFACTOR | **Partial** | Unit SaaS + membership tests; e2e soak optional |
-| 17 | Docs & ops readiness | REFACTOR | **Done** | `docs/saas-ops-notes.md` + dual-mode plan |
-| 18 | Public site / SEO / GEO | FUTURE | **Skip** | Login-only entry — intentional |
+| 10 | Files & media | REFACTOR | **Done** | Org-scoped R2 |
+| 11 | Reporting / search / import | REFACTOR | **Done** | Session org; global search still deferred |
+| 12 | Audit & platform admin | REFACTOR | **Done** | Impersonation + tenants |
+| 13 | UX systems | REFACTOR | **Done** | Switcher + plan picker |
+| 14 | Security & API hardening | KEEP | **Defer** | JWT claim skipped for Edge perf |
+| 15 | Jobs / cron / observability | REFACTOR | **Done** | `billing-renewal` in `vercel.json`; Billplz health when billing on |
+| 16 | Testing & CI | REFACTOR | **Done** | Gate unit + SaaS register e2e step + billing RLS structural |
+| 17 | Docs & ops readiness | REFACTOR | **Done** | Ops notes + this findings pass |
+| 18 | Public site / SEO / GEO | FUTURE | **Skip** | Intentional |
 
-**Summary:** 10 Done · 2 KEEP/Defer · 2 FUTURE · 1 Partial (e2e soak)
+\*Done for trial-first GA path; pay-first / marketing / seat hard limits remain FUTURE.
 
----
-
-## Standalone vs SaaS (current)
-
-| Concern | Standalone | SaaS |
-| --- | --- | --- |
-| Sellable pilot | ~9/10 | ~7–8/10 app isolation |
-| Payment | Offline invoice | FUTURE in-app |
-| Org resolution | `DEFAULT_ORGANIZATION_ID` | Session + active-org cookie |
-| Register | Disabled | Provision + sign-in |
-| Platform Admin | Health ops | Tenants + tier + impersonation |
-| Owner tier change | Owner settings | Platform admin only |
+**Summary:** 15 Done · 1 Done\* · 1 Defer · 1 FUTURE/Skip · **0 Partial**
 
 ---
 
-## Ranked work packages (final)
+## Performance notes (intentional)
 
-| Rank | Package | Status |
-| --- | --- | --- |
-| 1–6 | Critical+High isolation | **Done** |
-| 7 | Platform post-provision tier ops | **Done** |
-| 8–9 | Ops runbook + health | **Done** |
-| 10–12 | Billing / marketing / metering | Billing **spec ready** (Billplz); marketing/metering FUTURE |
-| — | Phase 3: SaaS e2e soak, JWT claim, module-flag ops | Optional later |
+| Choice | Why |
+| --- | --- |
+| No JWT active-org claim | Cookie validated against memberships; avoids Edge middleware crypto/JWT rewrite cost |
+| Write gate only on mutations | Reads use `requireOrganizationId()` — no billing DB hit on dashboards |
+| React `cache()` on status fetch | At most one lightweight `status/trial/period` select per request |
+| `BILLING_ENABLED≠true` short-circuit | Zero subscription queries in standalone / billing-off SaaS |
+| Impersonation bypass | Platform support without extra round-trips failing |
+
+---
+
+## FUTURE (unchanged)
+
+- Public marketing / pricing page  
+- Pay-first signup  
+- Usage metering / hard seat limits  
+- JWT active-org claim (optional later)
 
 ---
 
 ## Plans
 
-- Phase 1 (Critical+High): [2026-08-27-saas-critical-high-remediation.md](../plans/2026-08-27-saas-critical-high-remediation.md) ✅  
-- Phase 2 (Dual-mode polish): [2026-08-27-dual-mode-saas-standalone-plan.md](../plans/2026-08-27-dual-mode-saas-standalone-plan.md) ✅  
+- [2026-08-28-saas-partial-gap-remediation.md](../plans/2026-08-28-saas-partial-gap-remediation.md)  
+- Billing design: [2026-08-27-billplz-saas-billing-design.md](./2026-08-27-billplz-saas-billing-design.md)  
 - Ops: [docs/saas-ops-notes.md](../../saas-ops-notes.md)

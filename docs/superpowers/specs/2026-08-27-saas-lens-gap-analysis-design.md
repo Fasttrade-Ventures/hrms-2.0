@@ -1,7 +1,7 @@
 # SaaS-lens master-prompt gap analysis — design
 
 **Date:** 2026-08-27  
-**Status:** Approved (option C) · Findings published 2026-08-27  
+**Status:** Approved (option C) · Findings published 2026-08-27 · **Re-audit published 2026-08-28**  
 **Source:** Ultimate Standalone SaaS System Master Prompt  
 **Lens:** SaaS-first commercial readiness (hybrid depth)  
 **Relation:** Complements standalone findings in `2026-08-27-saas-master-prompt-gap-analysis-findings.md`

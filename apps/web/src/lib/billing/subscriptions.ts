@@ -365,29 +365,8 @@ export function isBillingRequired(): boolean {
   return billingEnabled();
 }
 
-export async function requireActiveSubscription(organizationId: string): Promise<void> {
-  if (!billingEnabled()) return;
-
-  const admin = createAdminClient();
-  const subscription = await getOrganizationSubscription(admin, organizationId);
-  if (!subscription) return;
-
-  if (subscription.status === "trialing") {
-    if (subscription.trial_ends_at && new Date(subscription.trial_ends_at) >= new Date()) {
-      return;
-    }
-  }
-
-  if (subscription.status === "active") return;
-
-  const graceDays = Number(process.env.BILLING_PAST_DUE_GRACE_DAYS ?? "7");
-  if (subscription.status === "past_due" && subscription.current_period_end) {
-    const graceEnds = addDays(new Date(subscription.current_period_end), graceDays);
-    if (graceEnds >= new Date()) return;
-  }
-
-  throw new Error("Subscription inactive. Update billing at /owner/billing.");
-}
+/** @deprecated Prefer importing from `@/lib/billing/subscription-gate` — kept for callers. */
+export { requireActiveSubscription } from "@/lib/billing/subscription-gate";
 
 export async function createCheckoutInvoiceForOrganization(organizationId: string): Promise<string> {
   const admin = createAdminClient();

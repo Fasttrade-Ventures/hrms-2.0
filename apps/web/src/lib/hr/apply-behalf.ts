@@ -9,7 +9,10 @@ import { calculateLeaveDays } from "@/lib/employee/leave";
 import { requireRole } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { requireOrganizationId } from "@/lib/auth/organization-context";
+import {
+  requireOrganizationId,
+  requireOrganizationIdForWrite,
+} from "@/lib/auth/organization-context";
 
 export type {
   BehalfApplicationDetail,
@@ -233,7 +236,7 @@ export async function createBehalfLeave(
 ): Promise<string> {
   const session = await requireRole("hr_administrator", "branch_admin");
   const isHr = session.membership.roles.includes("hr_administrator");
-  const organizationId = await requireOrganizationId();
+  const organizationId = await requireOrganizationIdForWrite();
   const admin = createAdminClient();
 
   const { loadLeaveHolidayDates } = await import("@/lib/leave/holidays");
@@ -309,7 +312,7 @@ export async function createBehalfLate(
   options?: { branchId?: string; branchIds?: string[] },
 ): Promise<string> {
   await requireRole("hr_administrator", "branch_admin");
-  const organizationId = await requireOrganizationId();
+  const organizationId = await requireOrganizationIdForWrite();
   const admin = createAdminClient();
 
   const { data: employee, error: employeeError } = await admin

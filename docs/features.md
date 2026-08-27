@@ -4,6 +4,8 @@ Complete product feature inventory for engineering and stakeholders.
 Cross-check UI screens in [ui-design-inventory.md](./ui-design-inventory.md).  
 Build order and rules in [developer-brief.md](./developer-brief.md).
 
+**Last codebase audit:** 2026-08-28 — statuses below reflect implemented routes/libs/schema in `apps/web`, not Pencil alone.
+
 **Legend**
 
 | Tag | Meaning |
@@ -11,9 +13,10 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | **Core** | Included in base HRMS |
 | **Pro** | Professional tier / automation |
 | **Ent** | Enterprise tier |
-| **UI ✅** | Designed in Pencil |
-| **UI 🟡** | Partial design |
-| **UI ⬜** | Not designed yet |
+| **UI ✅** | Designed + implemented (or implemented without Pencil gap noted) |
+| **UI 🟡** | Partial design and/or partial implementation |
+| **UI ⬜** | Not designed / not implemented yet |
+| **—** | Backend / ops capability; no dedicated UI screen |
 
 ---
 
@@ -22,21 +25,25 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Feature | Tier | UI | Notes |
 |---------|------|-----|--------|
 | Standalone deployment mode | Core | — | One org, own Supabase + R2 |
-| SaaS multi-tenant mode | Core | ✅ Auth/Register | Shared DB + RLS; app-layer org resolution + switcher shipped — billing/marketing still FUTURE |
+| SaaS multi-tenant mode | Core | ✅ Auth/Register | Shared DB + RLS; app-layer org resolution + switcher shipped |
+| SaaS billing (Billplz) | SaaS | ✅ Owner | `/owner/billing` — plans, invoices, webhook; renewal cron in `vercel.json`; write gate on payroll/HR mutations |
+| SaaS marketing site | SaaS | ⬜ | Still FUTURE / out of app |
 | Login (standalone / SaaS) | Core | ✅ | Desktop + mobile login frames |
 | Forgot / reset password | Core | ✅ | |
 | Account activation (set password) | Core | ✅ | After HR creates employee |
 | Organization registration (SaaS) | Core | ✅ | Hidden in standalone |
-| Role-based access (7 roles) | Core | — | Employee, Manager, Branch Admin, HR Admin, Director, Org Owner, Platform Admin |
-| Scoped permissions | Core | — | Team / branch / org |
-| Specialist permissions | Core | — | Payroll, auditor, asset manager, etc. |
-| Module entitlements (Core/Pro/Ent) | Core | — | Server-enforced |
-| Audit log | Core | 🟡 HR Audit | Immutable events |
-| In-app + email notifications | Core | ✅ Emp/Mgr | Outbox pattern |
-| Scheduled jobs (Vercel cron + notification outbox) | Core | — | Idempotent outbox; in-memory platform ledger deprecated |
-| Private file storage (R2) | Core | — | Signed downloads |
-| CSV / print exports | Core | 🟡 | Per module |
-| Legacy MySQL + files migration | Core | — | One-time cutover |
+| Role-based access (7+ roles) | Core | — | Employee, Manager, Branch Admin, HR Admin, Director, Org Owner, Platform Admin (+ Auditor portal) |
+| Scoped permissions | Core | — | Team / branch / org; multi-branch via `organization_membership_branches` |
+| Specialist permissions | Core | 🟡 | Wired: payroll_processor, payroll_approver, auditor; deferred: recruiter, document_custodian, asset_manager, etc. |
+| Module entitlements (Core/Pro/Ent) | Core | ✅ Owner | Server-enforced + Owner settings + nav filter |
+| Audit log | Core | ✅ | `/hr/audit`, `/auditor/audit`; archive + SIEM crons |
+| In-app + email notifications | Core | ✅ Emp/Mgr/HR | Outbox pattern; `/api/cron/notifications` |
+| Scheduled jobs (Vercel cron + outbox) | Core | — | Idempotent outbox; see `apps/web/vercel.json` |
+| Private file storage (R2) | Core | — | Signed downloads `/api/files/[fileId]/download` |
+| CSV / print exports | Core | ✅ | Reports hub + module exports (audit, performance, assets, payroll bank/statutory) |
+| Rate limiting | Core | — | `rate_limit_buckets` + RPC |
+| Platform impersonation | SaaS / ops | — | Platform admin ops helper |
+| Legacy MySQL + files migration | Core | — | CLI `scripts/legacy-import` (one-time cutover) |
 
 ---
 
@@ -45,15 +52,15 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Feature | Tier | UI | Notes |
 |---------|------|-----|--------|
 | Organizations | Core | — | |
-| Branches | Core | ✅ HR Org | CRUD under `/hr/organization/branches` |
+| Branches | Core | ✅ HR Org | CRUD under `/hr/organization/branches` (+ geofence fields) |
 | Departments | Core | ✅ HR Org | CRUD under `/hr/organization/departments` |
-| Positions / job titles | Core | 🟡 HR Org | Free-text `job_title` on employees for now |
-| Shifts | Core | ✅ HR Org | CRUD under `/hr/organization/shifts` |
+| Positions / job titles | Core | 🟡 HR Org | Free-text `job_title` on employees — **no positions catalog/CRUD yet** |
+| Shifts | Core | ✅ HR Org | CRUD under `/hr/organization/shifts` (`grace_minutes` stored) |
 | Public holidays / observed holidays | Core | ✅ HR Org | Managed under `/hr/organization/holidays`; Calendar consumes |
-| Reporting relationships (manager → team) | Core | — | Drives manager scope |
+| Reporting relationships (manager → team) | Core | ✅ | `manager_employee_id` on create/edit; drives manager scope |
 | **HR create employee** | Core | ✅ | `/hr/employees/create` — optional activation email |
 | Employee CSV bulk create | Core | ✅ | `/hr/employees/import` |
-| Employee directory (HR) | Core | ✅ | Polished list |
+| Employee directory (HR) | Core | ✅ | Polished list + status filters |
 | Employee profile — Personal | Core | ✅ Emp + HR | |
 | Employee profile — Address | Core | ✅ Emp + HR | |
 | Employee profile — Emergency contact | Core | ✅ Emp + HR | |
@@ -62,7 +69,7 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Employee profile — Security | Core | ✅ | Change / reset password |
 | Family / dependents data | Core | ✅ | Create/edit employee + payroll tax categories |
 | Compensation / salary profile | Core | ✅ | HR employee payroll section → feeds payroll |
-| Deactivate / employment status | Core | 🟡 | On employment tab |
+| Deactivate / employment status | Core | ✅ | `active` / `inactive` / `terminated`; deactivate action + directory filters |
 
 ---
 
@@ -73,21 +80,21 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Leave types & entitlements | Core | ✅ HR Org | CRUD under `/hr/organization/leave-types` |
 | Apply leave | Core | ✅ Employee | Half-day / multi-day |
 | Working-day calculation | Core | — | Weekends + holidays by branch |
-| Leave attachments | Core | — | e.g. MC |
-| Leave request detail + timeline | Core | ✅ | Cancel pending |
-| Leave balances | Core | ✅ | On dashboards / apply |
+| Leave attachments | Core | ✅ | Upload on apply; download on detail |
+| Leave request detail + timeline | Core | ✅ | |
+| Leave balances | Core | ✅ | On dashboards / apply; carry-forward field used in balance math |
 | Manager leave approval | Core | ✅ | Detail + confirm |
 | HR apply leave on behalf | Core | ✅ Apply Behalf | Auto-approved |
-| Leave cancel / revoke | Core | — | |
+| Leave cancel / revoke | Core | ⬜ | Domain state machine supports it; **no UI/service wired on leave detail** |
 | My Calendar (approved leave + holidays) | Core | ✅ | Month / list at `/employee/calendar` |
 | Team leave (manager) | Core | ✅ + empty | |
 | Team calendar (manager) | Core | ✅ | Month / list at `/manager/team-calendar` |
-| Long-leave escalation | Core | — | |
-| Replacement-credit balance on leave | Core | — | Linked to §6 |
-| Prorating / carry-forward / expiry | Pro | — | |
-| Accrual & reminders | Pro | — | |
+| Long-leave escalation | Core | ⬜ | Not implemented |
+| Replacement-credit balance on leave | Core | 🟡 | Heuristic leave-type name only — **not linked to `replacement_credits` ledger** |
+| Prorating / carry-forward / expiry automation | Pro | 🟡 | Manual carry-forward field; **no accrual/expiry jobs** |
+| Accrual & reminders | Pro | ⬜ | |
 | Blackout periods | Pro | ✅ HR Org | `leave_blackout_periods` + apply/behalf enforcement |
-| Configurable multi-level approvals | Pro | — | |
+| Configurable multi-level approvals | Pro | ⬜ | Schema allows steps; runtime always single manager step |
 
 ---
 
@@ -102,13 +109,13 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Manual attendance request | Core | ✅ | Approval flow |
 | Report late | Core | ✅ | Same-day + history |
 | Attendance timesheet (month grid / PDF) | Core | ✅ | Codes: hours, AL, MC, HOL, absent, HD |
-| Shift-based lateness rules | Core | — | |
+| Shift-based lateness rules | Core | 🟡 | `grace_minutes` on shifts; clock “Late” badge still hardcoded (~09:00) |
 | HR apply attendance on behalf | Core | ✅ Apply Behalf | Late reports auto-approved |
-| GPS / geofencing | Pro | 🟡 overlays designed | |
-| Rosters / work schedules | Pro | ⬜ | |
-| Overnight shifts | Pro | — | |
-| Tardiness alerts | Pro | — | |
-| Auto clock-out (idempotent) | Pro | — | |
+| GPS / geofencing | Pro | ✅ | Branch geofence + outside action; clock enforcement |
+| Rosters / work schedules | Pro | ✅ | `/hr/organization/rosters` + `/employee/schedule` |
+| Overnight shifts | Pro | ⬜ | Times stored; no cross-midnight session logic |
+| Tardiness alerts | Pro | ⬜ | No notification/cron |
+| Auto clock-out (idempotent) | Pro | ⬜ | No job |
 
 ---
 
@@ -120,10 +127,11 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Claim history + filters | Core | ✅ + empty | |
 | Claim detail + timeline | Core | ✅ | Cancel pending |
 | Manager claim approval | Core | ✅ | |
-| Payroll payout eligibility | Core | — | After approval |
-| Policy limits / mileage / rates | Pro | — | |
-| Conditional approval routing | Pro | — | |
-| Auto payroll inclusion | Pro | — | |
+| Payroll payout eligibility | Core | ✅ | `payroll_treatment` on claim types → payrun feed |
+| Policy limits (max amount) | Pro | ✅ | Enforced vs `claim_types.max_amount` |
+| Mileage / rates engine | Pro | ⬜ | Not implemented |
+| Conditional approval routing | Pro | ⬜ | |
+| Auto payroll inclusion | Pro | ✅ | Via claim → payroll feed |
 
 ---
 
@@ -131,12 +139,12 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 
 | Feature | Tier | UI | Notes |
 |---------|------|-----|--------|
-| Apply OT | Core | ✅ | Date, hours, reason |
+| Apply OT | Core | ✅ | Date, hours, reason, rate multiplier |
 | OT history | Core | ✅ | |
 | OT request detail | Core | ✅ | |
 | Manager OT approval | Core | ✅ | |
-| OT payout summary → payroll | Core | — | |
-| Employee-specific OT rates | Pro | — | |
+| OT payout summary → payroll | Core | ✅ | Feed uses request `rate_type` (1.5 / 2.0 / 3.0) |
+| Employee-specific OT rates | Pro | ⬜ | Per-request multiplier only |
 
 ---
 
@@ -147,8 +155,8 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Claim credit for weekend / PH work | Core | ✅ | Typically 1.0 day |
 | Credit history + empty state | Core | ✅ | |
 | Manager approval | Core | ✅ | |
-| Balance on leave surfaces | Core | — | |
-| Accounting invariants (consume once) | Core | — | |
+| Balance on leave surfaces | Core | 🟡 | Not properly linked to leave balances |
+| Accounting invariants (consume once) | Core | ⬜ | No `consumed_at` / consume-once ledger |
 
 ---
 
@@ -172,9 +180,11 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | HRD Corp levy | Core | ✅ | Per-branch toggle |
 | YTD rules | Core | ✅ | Updated on lock + TP3 opening |
 | Exact decimal arithmetic | Core | ✅ | `decimal.js` in domain |
-| Scheduled payslip delivery | Pro | ✅ | `pnpm payroll:payslip-email` |
-| Payroll anomaly checks | Pro | — | |
-| Segregation of payroll duties | Ent | — | |
+| Scheduled payslip delivery | Pro | ✅ | Cron + `pnpm payroll:payslip-email` |
+| Payroll anomaly checks | Pro | ✅ | Flags on payrun items (`detectAnomalies`); limited set / thin review UX |
+| Segregation of payroll duties | Ent | ✅ | Org flag + lock checks; Owner settings toggle |
+| Payout batches / reconciliation | Ent | ✅ | Enterprise payout tables + payrun payout panel |
+| Year-end / EA forms | Core | ✅ | `/hr/payroll/year-end` + PDF generation |
 
 ---
 
@@ -186,8 +196,8 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Required document types | Core | ✅ HR | CRUD at `/hr/documents/required`; seeded defaults |
 | HR document library | Core | ✅ HR | Hub, library, folders, compliance matrix at `/hr/documents/*` |
 | Manager team documents (view-only) | Core | ✅ Mgr | `/manager/team-documents`; download direct reports |
-| Document expiry notifications | Pro | — | Daily cron + outbox email to HR and employee |
-| Generated documents | Pro | — | |
+| Document expiry notifications | Pro | ✅ | Daily `/api/cron/document-compliance` → outbox (Pro+; skips Core tier) |
+| Generated documents | Pro | 🟡 | Employee dossier PDF, payslips, EA/year-end — **not** a general template engine |
 
 ---
 
@@ -198,7 +208,7 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Employee announcement list | Core | ✅ + empty | |
 | Announcement detail + attachment | Core | ✅ | |
 | Dashboard latest-N widget | Core | ✅ | |
-| HR create / edit / schedule | Core | 🟡 list / ⬜ editor | |
+| HR create / edit / schedule | Core | ✅ | `/hr/announcements` compose + schedule + audience; `/api/cron/announcements` |
 
 ---
 
@@ -221,8 +231,9 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Self-appraisal history | Core | ✅ | |
 | Manager team performance list | Core | ✅ | |
 | Manager review detail / rating | Core | ✅ | |
-| HR appraisal templates / cycles | Core | ⬜ | |
-| Advanced KPI cycles | Pro | — | |
+| HR appraisal cycles | Core | ✅ | `/hr/performance` — create, launch, close, CSV export |
+| Reusable appraisal templates | Core | ⬜ | Cycles only — **no template catalog table/UI** |
+| Advanced KPI cycles | Pro | ⬜ | |
 
 ---
 
@@ -235,70 +246,125 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Bulk approve / confirm | Core | ✅ | |
 | Approval detail per type | Core | ✅ | Leave, Claim, OT, Late, Replacement |
 | Request info / reject / send back | Core | ✅ | Where designed |
-| Multi-level / escalation | Pro | — | |
-| Custom workflow builder | Ent | — | |
+| Multi-level / escalation | Pro | ⬜ | Always single manager step today |
+| Custom workflow builder | Ent | ⬜ | |
 
 ---
 
-## 14. Reports & calendar (org)
+## 14. Reports, calendar & analytics
 
 | Feature | Tier | UI | Notes |
 |---------|------|-----|--------|
 | Employee personal calendar | Core | ✅ | `/employee/calendar` |
 | HR / org calendar & holiday admin | Core | ✅ | `/hr/calendar` + holidays at `/hr/organization/holidays` |
 | HR reports hub | Core | ✅ | `/hr/reports` — 9 reports, CSV/print, auditor access |
-| Scheduled reports | Pro | — | |
-| HQ / branch analytics | Ent | — | |
+| Scheduled reports | Pro | ✅ | `report_subscriptions` + `/api/cron/report-subscriptions` |
+| HQ / branch analytics | Ent | ✅ | `/hr/analytics`, `/director/analytics` |
 
 ---
 
-## 15. Role portals (shell)
+## 15. Recruitment (Enterprise)
+
+| Feature | Tier | UI | Notes |
+|---------|------|-----|--------|
+| Job requisitions | Ent | ✅ | `/hr/recruitment` |
+| Candidates / applications pipeline | Ent | ✅ | `/hr/recruitment/[requisitionId]` |
+| Offers + offer PDF | Ent | ✅ | Schema + HR flow |
+
+---
+
+## 16. Integrations (Enterprise)
+
+| Feature | Tier | UI | Notes |
+|---------|------|-----|--------|
+| Integrations hub | Ent | ✅ | `/hr/integrations` |
+| External API keys + OpenAPI `/api/v1` | Ent | ✅ | `/hr/integrations/api` |
+| Outbound webhooks | Ent | ✅ | `/hr/integrations/webhooks` |
+| BukuCloud payroll sync | Ent | ✅ | `/hr/integrations/bukucloud` |
+| SSO (SAML / OIDC) | Ent | ⬜ | Not implemented |
+
+---
+
+## 17. Role portals (shell)
 
 | Portal | Tier | UI | Key capabilities |
 |--------|------|-----|------------------|
-| Employee | Core | ✅ | Self-service modules above |
+| Employee | Core | ✅ | Self-service modules above (+ schedule, notifications) |
 | Manager | Core | ✅ | Team + approvals |
-| HR Administrator | Core | 🟡 | People, org, payroll ops, assets, audit, news |
-| Branch Admin | Core | ✅ | Documents, compliance, calendar, apply-behalf, employees, reports (`/branch-admin/*`); multi-branch via membership branches |
-| Director | Core | 🟡 | Org read + approve; Reports at `/director/reports` |
-| Organization Owner | Core | ✅ | Settings, modules/tier packaging (`/owner/*`) |
+| HR Administrator | Core | ✅ | People, org, payroll, docs, news, assets, audit, performance, recruitment, integrations, analytics, reports |
+| Branch Admin | Core | ✅ | Documents, compliance, calendar, apply-behalf, employees, reports (`/branch-admin/*`); multi-branch membership |
+| Director | Core | ✅ | Dashboard, analytics, reports, payroll read (`/director/*`) — thinner than Manager (no full approvals inbox) |
+| Organization Owner | Core | ✅ | Settings, modules/tier packaging, **billing** (`/owner/*`) |
 | Platform Admin | SaaS / ops | ✅ | Dashboard health + outbox depths (`/platform/dashboard`); tenants/provision SaaS-only |
+| Auditor | Core | ✅ | `/auditor/audit` (specialist permission) |
 
 ---
 
-## 16. Professional & Enterprise add-ons (summary)
+## 18. Professional & Enterprise add-ons (summary)
 
-### Professional
-- Leave accrual, carry-forward, blackouts, reminders, multi-level approvals  
-- Attendance rosters, GPS/geofence hardening, overnight shifts, tardiness alerts, auto clock-out  
-- Claim/OT policy automation and payroll inclusion  
-- Document expiry, onboarding/offboarding checklists  
-- Advanced appraisal cycles, scheduled reminders  
-- Payroll automation, payslip delivery, anomaly checks  
+### Professional — status
+| Capability | Status |
+|------------|--------|
+| Leave blackouts | ✅ Done |
+| Leave accrual / carry-forward automation / reminders | 🟡 / ⬜ Partial field only |
+| Multi-level leave approvals | ⬜ |
+| Attendance rosters + employee schedule | ✅ Done |
+| GPS / geofence | ✅ Done |
+| Overnight shifts / tardiness alerts / auto clock-out | ⬜ |
+| Claim max-amount policy + payroll inclusion | ✅ Done |
+| Mileage / richer claim policy | ⬜ |
+| Document expiry notifications | ✅ Done |
+| Onboarding / offboarding checklists | ⬜ |
+| Advanced appraisal / KPI cycles | ⬜ |
+| Scheduled payslip delivery | ✅ Done |
+| Payroll anomaly flags | ✅ Done |
+| Scheduled report subscriptions | ✅ Done |
 
-### Enterprise
-- HQ/branch analytics dashboards  
-- Recruitment  
-- Custom workflow builder  
-- SSO  
-- External APIs / integrations  
-- Advanced retention & compliance controls  
-- Payroll duty segregation  
+### Enterprise — status
+| Capability | Status |
+|------------|--------|
+| HQ / branch analytics | ✅ Done |
+| Recruitment pipeline | ✅ Done |
+| External APIs / webhooks / BukuCloud | ✅ Done |
+| Payroll duty segregation | ✅ Done |
+| Payout batches / reconciliation | ✅ Done |
+| Custom workflow builder | ⬜ |
+| SSO | ⬜ |
+| Advanced retention & compliance controls | 🟡 Audit archive/SIEM only |
 
 ---
 
-## 17. Feature count (approximate)
+## 19. Still pending (open backlog)
 
-| Area | Core features (listed rows) |
-|------|------------------------------|
-| Platform & access | ~18 |
+Highest-signal gaps still open in code:
+
+1. **Positions catalog** — free-text `job_title` only  
+2. **Leave cancel / revoke** — no UI/service  
+3. **Replacement credit ↔ leave** consume-once accounting  
+4. **Shift-based lateness enforcement** — grace unused on clock  
+5. **Overnight shifts, auto clock-out, tardiness alerts**  
+6. **Multi-level / custom approval workflows**  
+7. **Leave accrual / expiry automation**  
+8. **Appraisal templates** (cycles exist)  
+9. **Mileage / employee-specific OT rates**  
+10. **SSO + marketing site**  
+11. **Pay-first signup / seat hard limits** — still FUTURE  
+
+---
+
+## 20. Feature count (approximate)
+
+| Area | Core / Pro / Ent rows |
+|------|------------------------|
+| Platform & access | ~20 |
 | Org & people | ~20 |
-| Leave | ~15 (+ Pro) |
-| Attendance | ~12 (+ Pro) |
-| Claims / OT / Credit | ~18 (+ Pro) |
-| Payroll MY | ~20 (+ Pro/Ent) |
-| Docs / News / Assets / Perf | ~15 (+ Pro) |
-| Approvals / Reports / Portals | ~15 |
-| **Core product surface** | **~130+ capability lines** |
+| Leave / Attendance | ~30 |
+| Claims / OT / Credit | ~18 |
+| Payroll MY | ~22 |
+| Docs / News / Assets / Perf | ~18 |
+| Approvals / Reports / Analytics | ~12 |
+| Recruitment / Integrations | ~8 |
+| Portals | 8 |
+| **Product surface** | **~150+ capability lines** |
 
-Use this list for backlog grooming; split into tickets per phase in the developer brief.
+Use this list for backlog grooming; prioritize §19 for remaining Core/Pro polish.

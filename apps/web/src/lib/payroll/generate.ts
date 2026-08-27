@@ -12,7 +12,7 @@ import { buildPayrunItemComponentRows } from "@/lib/payroll/item-components";
 import { assertStatutoryRulesAvailable, loadStatutoryRulePacks } from "@/lib/payroll/rules";
 import { ensurePayrollComponents } from "@/lib/payroll/seed";
 import { createClient } from "@/lib/supabase/server";
-import { requireOrganizationId } from "@/lib/auth/organization-context";
+import { requireOrganizationIdForWrite } from "@/lib/auth/organization-context";
 
 
 function mapPayFrequency(cycle: string | null | undefined): PayFrequency {
@@ -27,7 +27,7 @@ export async function generateDraftPayrun(input: CreatePayrunInput): Promise<str
   await assertStatutoryRulesAvailable(input.earningPeriodEnd);
   const statutoryRules = await loadStatutoryRulePacks(input.earningPeriodEnd);
 
-  const organizationId = await requireOrganizationId();
+  const organizationId = await requireOrganizationIdForWrite();
   const supabase = await createClient();
 
   if (input.scope === "pay_group" && !input.payGroupId) {
