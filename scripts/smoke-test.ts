@@ -60,14 +60,14 @@ async function runHttpChecks(baseUrl: string) {
   else fail(phase, "GET /auth/forgot-password returns 200", `status ${forgot.status}`);
 
   const logoutPost = await fetchStatus(`${baseUrl}/api/auth/logout`, { method: "POST" });
-  if (logoutPost.status === 307 && logoutPost.location?.includes("/auth/login")) {
+  if (logoutPost.status === 303 && logoutPost.location?.includes("/auth/login")) {
     pass(phase, "POST /api/auth/logout redirects to login");
   } else {
     fail(phase, "POST /api/auth/logout redirects to login", `status ${logoutPost.status} loc ${logoutPost.location}`);
   }
 
   const logoutGet = await fetchStatus(`${baseUrl}/api/auth/logout`);
-  if (logoutGet.status === 307 && logoutGet.location?.includes("/auth/login")) {
+  if (logoutGet.status === 303 && logoutGet.location?.includes("/auth/login")) {
     pass(phase, "GET /api/auth/logout redirects to login");
   } else {
     fail(phase, "GET /api/auth/logout redirects to login", `status ${logoutGet.status}`);
