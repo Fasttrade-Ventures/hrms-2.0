@@ -7,7 +7,9 @@ import { logAuthEvent } from "@/lib/audit/log-auth-event";
 export async function POST(request: Request) {
   const cookieStore = await cookies();
   const loginUrl = new URL("/auth/login", request.url);
-  const response = NextResponse.redirect(loginUrl);
+  // 303 See Other: after POST logout, the browser must GET /auth/login.
+  // Default 307 preserves POST, which Next.js pages reject with HTTP 405.
+  const response = NextResponse.redirect(loginUrl, 303);
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
