@@ -4,6 +4,13 @@ export type ServiceHealth = {
   detail?: Record<string, unknown>;
 };
 
+export type OpsSnapshot = {
+  ok: boolean;
+  message?: string;
+  notificationOutboxPending: number | null;
+  webhookOutboxPending: number | null;
+};
+
 export type HealthReport = {
   ok: boolean;
   timestamp: string;
@@ -17,6 +24,8 @@ export type HealthReport = {
     r2: ServiceHealth;
     resend: ServiceHealth;
   };
+  /** Queue depths for ops dashboards — does not fail the overall health check. */
+  ops: OpsSnapshot;
 };
 
 function envPresent(name: string): boolean {
@@ -25,9 +34,12 @@ function envPresent(name: string): boolean {
 }
 
 export async function runHealthChecks(): Promise<HealthReport> {
+  const deploymentMode = process.env.DEPLOYMENT_MODE ?? "standalone";
   const env = {
     DEPLOYMENT_MODE: envPresent("DEPLOYMENT_MODE"),
-    DEFAULT_ORGANIZATION_ID: envPresent("DEFAULT_ORGANIZATION_ID"),
+    // Required only for standalone single-tenant installs.
+    DEFAULT_ORGANIZATION_ID:
+      deploymentMode === "standalone" ? envPresent("DEFAULT_ORGANIZATION_ID") : true,
     NEXT_PUBLIC_SUPABASE_URL: envPresent("NEXT_PUBLIC_SUPABASE_URL"),
     NEXT_PUBLIC_SUPABASE_ANON_KEY: envPresent("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
     SUPABASE_SERVICE_ROLE_KEY: envPresent("SUPABASE_SERVICE_ROLE_KEY"),
@@ -40,10 +52,11 @@ export async function runHealthChecks(): Promise<HealthReport> {
     PRODUCT_TIER: envPresent("PRODUCT_TIER"),
   };
 
-  const [supabase, r2, resend] = await Promise.all([
+  const [supabase, r2, resend, ops] = await Promise.all([
     checkSupabase(),
     checkR2(),
     checkResend(),
+    checkOpsQueues(),
   ]);
 
   const ok =
@@ -58,6 +71,7 @@ export async function runHealthChecks(): Promise<HealthReport> {
     },
     env,
     services: { supabase, r2, resend },
+    ops,
   };
 }
 
@@ -91,6 +105,60 @@ async function checkSupabase(): Promise<ServiceHealth> {
     return {
       ok: false,
       message: error instanceof Error ? error.message : "Supabase check failed",
+    };
+  }
+}
+
+async function checkOpsQueues(): Promise<OpsSnapshot> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !serviceKey) {
+    return {
+      ok: false,
+      message: "Missing Supabase credentials for queue snapshot",
+      notificationOutboxPending: null,
+      webhookOutboxPending: null,
+    };
+  }
+
+  try {
+    const { createClient } = await import("@supabase/supabase-js");
+    const client = createClient(url, serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    const [notification, webhook] = await Promise.all([
+      client
+        .from("notification_outbox")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending"),
+      client
+        .from("webhook_outbox")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending"),
+    ]);
+
+    if (notification.error || webhook.error) {
+      return {
+        ok: false,
+        message: notification.error?.message ?? webhook.error?.message,
+        notificationOutboxPending: null,
+        webhookOutboxPending: null,
+      };
+    }
+
+    return {
+      ok: true,
+      notificationOutboxPending: notification.count ?? 0,
+      webhookOutboxPending: webhook.count ?? 0,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "Ops queue snapshot failed",
+      notificationOutboxPending: null,
+      webhookOutboxPending: null,
     };
   }
 }

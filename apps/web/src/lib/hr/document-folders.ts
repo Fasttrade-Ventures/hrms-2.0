@@ -1,12 +1,8 @@
 import { requireRole } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import type { DocumentFolderInput } from "@hrms/validation";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export type DocumentFolderRow = {
   id: string;
@@ -18,9 +14,9 @@ export type DocumentFolderRow = {
 };
 
 export async function listDocumentFolders(): Promise<DocumentFolderRow[]> {
-  await requireRole("hr_administrator");
+  await requireRole("hr_administrator", "branch_admin");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data, error } = await supabase
     .from("document_folders")
@@ -45,7 +41,7 @@ export async function listDocumentFolders(): Promise<DocumentFolderRow[]> {
 export async function createDocumentFolder(input: DocumentFolderInput): Promise<void> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   if (input.parentId) {
     const { data: parent } = await supabase
@@ -77,7 +73,7 @@ export async function updateDocumentFolder(
 ): Promise<void> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   if (input.parentId) {
     if (input.parentId === folderId) throw new Error("A folder cannot be its own parent.");
@@ -111,7 +107,7 @@ export async function updateDocumentFolder(
 export async function deleteDocumentFolder(folderId: string): Promise<void> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { count, error: childError } = await supabase
     .from("document_folders")

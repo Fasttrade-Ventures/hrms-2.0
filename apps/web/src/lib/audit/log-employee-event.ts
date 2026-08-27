@@ -9,7 +9,11 @@ type EmployeeAuditInput = {
 };
 
 export async function logEmployeeEvent(input: EmployeeAuditInput): Promise<void> {
-  const organizationId = input.organizationId ?? process.env.DEFAULT_ORGANIZATION_ID;
+  const organizationId =
+    input.organizationId ??
+    ((process.env.DEPLOYMENT_MODE ?? "standalone") === "standalone"
+      ? process.env.DEFAULT_ORGANIZATION_ID
+      : undefined);
 
   if (!organizationId) {
     return;

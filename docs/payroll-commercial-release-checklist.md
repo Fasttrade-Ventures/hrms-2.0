@@ -17,9 +17,9 @@ Status snapshot after QA phases 1–7 (Jul 2026). Use this before selling payrol
 | Weekly / bi-weekly | **Ready** | `period_week` in payrun wizard |
 | Rule packs (DB) | **Ready** | Runtime loader wired into generate pipeline (Phase 7) |
 | Live DB integration tests | **Ready** | `pnpm test:payroll-integration` (CI + Supabase local) |
-| Multi-org SaaS | **Not ready** | `DEFAULT_ORGANIZATION_ID` single-tenant pattern |
+| Multi-org SaaS | **Ready** | Session-aware `requireOrganizationId()` + active-org cookie |
 
-**Verdict:** Ready for **commercial GA pilot** on monthly/weekly payroll with HR-validated exports. Multi-tenant SaaS remains the main platform gap.
+**Verdict:** Ready for **commercial GA pilot** on monthly/weekly payroll with HR-validated exports. Multi-tenant SaaS app-layer isolation shipped (see `docs/saas-ops-notes.md`); billing remains FUTURE.
 
 ---
 

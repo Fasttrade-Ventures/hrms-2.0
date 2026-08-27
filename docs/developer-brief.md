@@ -76,13 +76,13 @@ Authorization = **Role + Scope + Permission**.
 |------|--------|----------------|
 | **Employee** | Self | Leave, attendance, claims, OT, payslips, profile, docs, news |
 | **Manager** | Direct reports / team | Approvals, team leave/attendance/calendar/performance |
-| **Branch Admin** | One branch | Branch-scoped ops (design pending) |
+| **Branch Admin** | One or more branches | Branch-scoped ops (`/branch-admin/*`: docs, compliance, calendar, apply-behalf, employees, reports) |
 | **HR Administrator** | Whole organization | People, org structure, apply-on-behalf, payroll views, assets, audit, announcements |
-| **Director** | Organization | Read + approve at org level (design pending) |
-| **Organization Owner** | Whole organization | Full org control, modules, billing (design pending) |
-| **Platform Administrator** | SaaS only | Tenant ops — **not** in standalone |
+| **Director** | Organization | Read + approve at org level (`/director/*`) |
+| **Organization Owner** | Whole organization | Full org control, modules/tier settings (`/owner/*`); billing is FUTURE |
+| **Platform Administrator** | SaaS only | Tenant ops — **not** required for standalone |
 
-Specialist capabilities are **permissions**, not roles: payroll processor/approver, recruiter, document custodian, asset manager, auditor, exporter, integration manager.
+Specialist capabilities are **permissions**, not roles. **Wired today:** payroll processor/approver, auditor. **Deferred (catalog only):** recruiter, document custodian, asset manager, exporter, integration manager.
 
 ### Auth model rules (non-negotiable)
 
@@ -186,8 +186,9 @@ Preserve intended business rules; **do not** preserve insecure auth patterns.
 
 - Bidirectional sync with PHP during development
 - Scraping or calling Payroll.my in production payroll
-- Building Branch Admin / Director / Owner / Platform Admin UI before Pencil designs exist
 - Treating JWT claims as the authorization source of truth
+- Wiring deferred specialist permissions (recruiter, document_custodian, asset_manager, exporter, integration_manager) before product duty-segregation needs them
+- Payment billing / public marketing site (FUTURE SaaS packaging)
 
 ---
 

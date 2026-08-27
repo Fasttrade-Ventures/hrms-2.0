@@ -7,6 +7,7 @@ import type { ModuleKey, ProductTier } from "@hrms/platform";
 import { requireRole } from "@/lib/auth/session";
 import {
   updateOwnerModuleFlag,
+  updateOwnerPayrollDutySegregation,
   updateOwnerProductTier,
 } from "@/lib/owner/entitlements";
 
@@ -28,5 +29,12 @@ export async function updateProductTierFormAction(formData: FormData): Promise<v
   const session = await requireRole("organization_owner");
   await updateOwnerProductTier(tier, session.user.id);
   revalidatePath("/owner/dashboard");
+  revalidatePath("/owner/settings");
+}
+
+export async function updatePayrollDutySegregationFormAction(formData: FormData): Promise<void> {
+  const session = await requireRole("organization_owner");
+  const enabled = String(formData.get("enabled") ?? "") === "true";
+  await updateOwnerPayrollDutySegregation(enabled, session.user.id);
   revalidatePath("/owner/settings");
 }

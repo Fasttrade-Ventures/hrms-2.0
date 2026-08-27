@@ -7,16 +7,12 @@ import { PortalIcon } from "@/components/portal/portal-icons";
 import { greetingForHour } from "@/lib/employees/self";
 import { getOwnerDashboardData } from "@/lib/owner/dashboard";
 import { requireRole } from "@/lib/auth/session";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export default async function Page() {
   await requireRole("organization_owner");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const data = await getOwnerDashboardData(organizationId);
   const hour = new Date().getHours();
 

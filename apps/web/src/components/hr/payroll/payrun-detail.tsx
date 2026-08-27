@@ -10,6 +10,7 @@ import { PayrunLinesTable } from "@/components/hr/payroll/payrun-lines-table";
 import { PayrunTotalsSummary } from "@/components/hr/payroll/payrun-totals-summary";
 import { PayrunCalculatorCompare } from "@/components/hr/payroll/payrun-calculator-compare";
 import { DeletePayrunButton } from "@/components/hr/payroll/delete-payrun-button";
+import { HrPagination } from "@/components/hr/hr-ui.client";
 import type { BukucloudSyncStatus } from "@/lib/integrations/bukucloud/sync";
 import type { PayrunDetail } from "@/lib/payroll/queries";
 
@@ -17,6 +18,7 @@ export function PayrunDetailView({
   payrun,
   branches = [],
   readOnly = false,
+  approveOnly = false,
   backHref = "/hr/payroll",
   bukucloudSyncStatus,
   integrationsEnabled = false,
@@ -26,6 +28,8 @@ export function PayrunDetailView({
   payrun: PayrunDetail;
   branches?: Array<{ id: string; name: string }>;
   readOnly?: boolean;
+  /** Show approve action only (Director). */
+  approveOnly?: boolean;
   backHref?: string;
   bukucloudSyncStatus?: BukucloudSyncStatus;
   integrationsEnabled?: boolean;
@@ -53,6 +57,12 @@ export function PayrunDetailView({
   } | null;
 }) {
   const periodLabel = `${payrun.periodYear}-${String(payrun.periodMonth).padStart(2, "0")}`;
+  const totalPages = Math.max(1, Math.ceil(payrun.itemTotal / payrun.pageSize));
+  const pageLinks = Array.from({ length: totalPages }, (_, index) => {
+    const pageNumber = index + 1;
+    const href = `${backHref}/${payrun.id}?page=${pageNumber}`;
+    return { page: pageNumber, href, current: pageNumber === payrun.page };
+  });
 
   return (
     <div className="space-y-6">
@@ -81,25 +91,55 @@ export function PayrunDetailView({
         </div>
       ) : null}
 
-      {readOnly ? null : (
+      {readOnly && !approveOnly ? null : (
         <div className="flex flex-wrap items-center gap-3">
-          <PayrunWorkflowActions payrunId={payrun.id} status={payrun.status} />
-          <DeletePayrunButton
-            label="Delete payrun"
+          <PayrunWorkflowActions
+            mode={approveOnly ? "approve-only" : "full"}
             payrunId={payrun.id}
-            periodLabel={periodLabel}
             status={payrun.status}
           />
+          {approveOnly ? null : (
+            <DeletePayrunButton
+              label="Delete payrun"
+              payrunId={payrun.id}
+              periodLabel={periodLabel}
+              status={payrun.status}
+            />
+          )}
         </div>
       )}
 
-      <PayrunTotalsSummary employeeCount={payrun.items.length} totals={payrun.totals} />
+      <PayrunTotalsSummary employeeCount={payrun.itemTotal} totals={payrun.totals} />
 
-      {readOnly || payrun.items.length === 0 ? null : (
+      {readOnly || payrun.itemTotal === 0 ? null : (
         <PayrunCalculatorCompare payrunId={payrun.id} />
       )}
 
-      <PayrunLinesTable editable={!readOnly && payrun.status === "draft"} items={payrun.items} payrunId={payrun.id} />
+      <PayrunLinesTable
+        editable={!readOnly && payrun.status === "draft"}
+        items={payrun.items}
+        payrunId={payrun.id}
+        totalsOverride={payrun.totals}
+      />
+
+      {payrun.itemTotal > 0 ? (
+        <HrPagination
+          from={(payrun.page - 1) * payrun.pageSize + 1}
+          itemLabel="lines"
+          nextHref={
+            payrun.page < totalPages
+              ? `${backHref}/${payrun.id}?page=${payrun.page + 1}`
+              : undefined
+          }
+          page={payrun.page}
+          pageLinks={pageLinks.map(({ page, href }) => ({ page, href }))}
+          prevHref={
+            payrun.page > 1 ? `${backHref}/${payrun.id}?page=${payrun.page - 1}` : undefined
+          }
+          to={Math.min(payrun.page * payrun.pageSize, payrun.itemTotal)}
+          total={payrun.itemTotal}
+        />
+      ) : null}
 
       {readOnly ? null : <PayrunExportPanel branches={branches} payrunId={payrun.id} status={payrun.status} />}
 

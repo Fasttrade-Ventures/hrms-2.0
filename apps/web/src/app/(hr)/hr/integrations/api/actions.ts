@@ -5,12 +5,8 @@ import { revalidatePath } from "next/cache";
 import { createApiKey, listApiKeys, revokeApiKey } from "@/lib/api/keys";
 import { requireRole } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export async function createApiKeyAction(
   _prev: { error?: string; secret?: string; success?: string },
@@ -23,7 +19,7 @@ export async function createApiKeyAction(
     if (!name) return { error: "Name is required." };
 
     const created = await createApiKey({
-      organizationId: getOrganizationId(),
+      organizationId: await requireOrganizationId(),
       name,
       createdByUserId: session.user.id,
     });
@@ -38,12 +34,12 @@ export async function createApiKeyAction(
 export async function revokeApiKeyAction(keyId: string): Promise<void> {
   await requireModule("api");
   await requireRole("hr_administrator", "organization_owner");
-  await revokeApiKey(getOrganizationId(), keyId);
+  await revokeApiKey(await requireOrganizationId(), keyId);
   revalidatePath("/hr/integrations/api");
 }
 
 export async function loadApiKeys() {
   await requireModule("api");
   await requireRole("hr_administrator", "organization_owner");
-  return listApiKeys(getOrganizationId());
+  return listApiKeys(await requireOrganizationId());
 }

@@ -3,5 +3,9 @@ import type { ReactNode } from "react";
 import { PortalLayout } from "@/components/portal-layout";
 
 export default function HrLayout({ children }: { children: ReactNode }) {
-  return <PortalLayout portal="HR Administrator">{children}</PortalLayout>;
+  return (
+    <PortalLayout portal="HR Administrator" requiredRoles={["hr_administrator", "organization_owner"]}>
+      {children}
+    </PortalLayout>
+  );
 }

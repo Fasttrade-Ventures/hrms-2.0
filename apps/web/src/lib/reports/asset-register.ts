@@ -2,12 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 
 import { paginateRows } from "./context";
 import type { ReportFilters } from "./types";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export type AssetRegisterReportRow = Record<string, string | number | null>;
 
@@ -17,7 +13,7 @@ export async function listAssetRegisterRows(filters: ReportFilters): Promise<{
   total: number;
 }> {
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   let query = supabase
     .from("assets")
@@ -29,7 +25,11 @@ export async function listAssetRegisterRows(filters: ReportFilters): Promise<{
 
   if (filters.assetStatus) query = query.eq("status", filters.assetStatus);
   if (filters.assetCategoryId) query = query.eq("category_id", filters.assetCategoryId);
-  if (filters.branchId) query = query.eq("branch_id", filters.branchId);
+  if (filters.branchIds && filters.branchIds.length > 0) {
+    query = query.in("branch_id", filters.branchIds);
+  } else if (filters.branchId) {
+    query = query.eq("branch_id", filters.branchId);
+  }
 
   const { data: assets, error } = await query.limit(5000);
   if (error) throw new Error(error.message);

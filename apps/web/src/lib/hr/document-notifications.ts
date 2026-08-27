@@ -1,18 +1,14 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildComplianceMatrix } from "@/lib/hr/documents";
 import { queueDocumentComplianceNotice } from "@/lib/hr/document-notification-queue";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export async function queueDocumentComplianceNotifications(input: {
   employeeId: string;
   documentType: string;
 }): Promise<void> {
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const matrix = await buildComplianceMatrix();
   const employeeRow = matrix.find((row) => row.employeeId === input.employeeId);
   if (!employeeRow) return;

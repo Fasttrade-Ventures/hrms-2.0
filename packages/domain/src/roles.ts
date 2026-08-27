@@ -32,3 +32,21 @@ export const SPECIALIST_PERMISSIONS = [
 ] as const;
 
 export type SpecialistPermission = (typeof SPECIALIST_PERMISSIONS)[number];
+
+/**
+ * Wired in app authz today (`canAccessPath` and/or `requireRoleOrPermission`).
+ * Deferred specialists stay catalog-only until duty-segregation UI is productized.
+ */
+export const WIRED_SPECIALIST_PERMISSIONS = [
+  "payroll_processor",
+  "payroll_approver",
+  "auditor",
+] as const satisfies readonly SpecialistPermission[];
+
+export const DEFERRED_SPECIALIST_PERMISSIONS = [
+  "recruiter",
+  "document_custodian",
+  "asset_manager",
+  "exporter",
+  "integration_manager",
+] as const satisfies readonly SpecialistPermission[];

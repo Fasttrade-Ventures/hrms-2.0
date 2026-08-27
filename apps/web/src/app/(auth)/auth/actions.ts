@@ -1,11 +1,15 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { logAuthEvent } from "@/lib/audit/log-auth-event";
+import { getClientIp } from "@/lib/auth/client-ip";
+import { selectMembershipRow, type MembershipRow } from "@/lib/auth/membership-selection";
 import { resolvePostLoginPath } from "@/lib/auth/redirect";
 import { canAccessPortal, isSafeInternalPath } from "@/lib/auth/routes";
 import { getMembershipRoles } from "@/lib/auth/session";
+import { checkRateLimitDurable } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 
 export type LoginState = {
@@ -38,6 +42,12 @@ export async function login(
 
   if (!email || !password) {
     return { error: "Email and password are required." };
+  }
+
+  const ip = await getClientIp();
+  const rateLimit = await checkRateLimitDurable(`login:${ip}:${email.toLowerCase()}`, 10, 600_000, 2000);
+  if (!rateLimit.allowed) {
+    return { error: `Too many login attempts. Try again in ${rateLimit.retryAfterSeconds} seconds.` };
   }
 
   const supabase = await createClient();
@@ -82,6 +92,12 @@ export async function requestPasswordReset(
     return { error: "Email is required." };
   }
 
+  const ip = await getClientIp();
+  const rateLimit = await checkRateLimitDurable(`reset:${ip}:${email.toLowerCase()}`, 5, 600_000, 5000);
+  if (!rateLimit.allowed) {
+    return { error: `Too many reset requests. Try again in ${rateLimit.retryAfterSeconds} seconds.` };
+  }
+
   const supabase = await createClient();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
@@ -121,6 +137,13 @@ export async function updatePassword(
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  if (user?.id) {
+    const rateLimit = await checkRateLimitDurable(`password-change:${user.id}`, 5, 600_000, 3000);
+    if (!rateLimit.allowed) {
+      return { error: `Too many attempts. Try again in ${rateLimit.retryAfterSeconds} seconds.` };
+    }
+  }
 
   const { error } = await supabase.auth.updateUser({ password });
 
@@ -164,6 +187,11 @@ export async function activateAccount(
     return { error: "Your activation link has expired. Ask HR to resend the invitation." };
   }
 
+  const rateLimit = await checkRateLimitDurable(`activate:${user.id}`, 5, 600_000, 3000);
+  if (!rateLimit.allowed) {
+    return { error: `Too many attempts. Try again in ${rateLimit.retryAfterSeconds} seconds.` };
+  }
+
   const { error } = await supabase.auth.updateUser({
     password,
     data: fullName ? { full_name: fullName } : undefined,
@@ -174,13 +202,20 @@ export async function activateAccount(
   }
 
   // Reactivate employee record in database if status is inactive
-  const { data: membership } = await supabase
+  const { data: memberships } = await supabase
     .from("organization_memberships")
-    .select("employee_id, organization_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
+    .select("employee_id, organization_id, roles, permissions")
+    .eq("user_id", user.id);
 
-  if (membership) {
+  const cookieStore = await cookies();
+  const activeOrgId = cookieStore.get("hrms_active_org_id")?.value ?? null;
+  const membership = selectMembershipRow((memberships ?? []) as MembershipRow[], {
+    deploymentMode: process.env.DEPLOYMENT_MODE ?? "standalone",
+    defaultOrgId: process.env.DEFAULT_ORGANIZATION_ID,
+    activeOrgId,
+  });
+
+  if (membership?.employee_id) {
     await supabase
       .from("employees")
       .update({ status: "active" })

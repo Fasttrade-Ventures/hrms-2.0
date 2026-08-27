@@ -54,19 +54,22 @@ function formatAppliedAt(value: string) {
   });
 }
 
-function buildListHref(params: {
-  type?: string;
-  dateFrom?: string;
-  dateTo?: string;
-  page?: number;
-}) {
+function buildListHref(
+  basePath: string,
+  params: {
+    type?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    page?: number;
+  },
+) {
   const query = new URLSearchParams();
   if (params.type && params.type !== "all") query.set("type", params.type);
   if (params.dateFrom) query.set("dateFrom", params.dateFrom);
   if (params.dateTo) query.set("dateTo", params.dateTo);
   if (params.page && params.page > 1) query.set("page", String(params.page));
   const qs = query.toString();
-  return qs ? `/hr/apply-behalf?${qs}` : "/hr/apply-behalf";
+  return qs ? `${basePath}?${qs}` : basePath;
 }
 
 export function ApplyBehalfList({
@@ -78,6 +81,7 @@ export function ApplyBehalfList({
   pageSize,
   total,
   banner,
+  basePath = "/hr/apply-behalf",
 }: {
   data: BehalfListData;
   type: "all" | "leave" | "late";
@@ -87,6 +91,7 @@ export function ApplyBehalfList({
   pageSize: number;
   total: number;
   banner?: string;
+  basePath?: string;
 }) {
   const listParams = { type, dateFrom, dateTo };
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
@@ -102,7 +107,7 @@ export function ApplyBehalfList({
   return (
     <div className="space-y-6">
       <PortalPageHeader
-        actions={<HrLinkButton href="/hr/apply-behalf/new">New application</HrLinkButton>}
+        actions={<HrLinkButton href={`${basePath}/new`}>New application</HrLinkButton>}
         description="Submit leave or late for any employee · auto-approved"
         title="Apply on behalf"
       />
@@ -117,7 +122,7 @@ export function ApplyBehalfList({
         ]}
       />
 
-      <ApplyBehalfFilters dateFrom={dateFrom} dateTo={dateTo} type={type} />
+      <ApplyBehalfFilters basePath={basePath} dateFrom={dateFrom} dateTo={dateTo} type={type} />
 
       <HrTableCard>
         <div
@@ -148,7 +153,7 @@ export function ApplyBehalfList({
         ) : (
           <div className="divide-y divide-border">
             {data.rows.map((row) => (
-              <BehalfRow key={`${row.type}-${row.id}`} row={row} />
+              <BehalfRow basePath={basePath} key={`${row.type}-${row.id}`} row={row} />
             ))}
           </div>
         )}
@@ -158,14 +163,14 @@ export function ApplyBehalfList({
         from={from}
         itemLabel="applications"
         nextHref={
-          page < pageCount ? buildListHref({ ...listParams, page: page + 1 }) : undefined
+          page < pageCount ? buildListHref(basePath, { ...listParams, page: page + 1 }) : undefined
         }
         page={page}
         pageLinks={pages.map((pageNumber) => ({
           page: pageNumber,
-          href: buildListHref({ ...listParams, page: pageNumber }),
+          href: buildListHref(basePath, { ...listParams, page: pageNumber }),
         }))}
-        prevHref={page > 1 ? buildListHref({ ...listParams, page: page - 1 }) : undefined}
+        prevHref={page > 1 ? buildListHref(basePath, { ...listParams, page: page - 1 }) : undefined}
         to={to}
         total={total}
       />
@@ -173,7 +178,7 @@ export function ApplyBehalfList({
   );
 }
 
-function BehalfRow({ row }: { row: BehalfApplicationRow }) {
+function BehalfRow({ row, basePath }: { row: BehalfApplicationRow; basePath: string }) {
   return (
     <div className={BEHALF_TABLE_ROW}>
       <div className="flex w-fit items-center justify-self-start">
@@ -195,7 +200,11 @@ function BehalfRow({ row }: { row: BehalfApplicationRow }) {
         </Badge>
       </div>
       <div className="flex items-center justify-self-start">
-        <HrLinkButton href={getBehalfApplicationPath(row.type, row.id)} size="sm" variant="outline">
+        <HrLinkButton
+          href={getBehalfApplicationPath(row.type, row.id, basePath)}
+          size="sm"
+          variant="outline"
+        >
           View
         </HrLinkButton>
       </div>
@@ -220,14 +229,20 @@ function DetailField({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function ApplyBehalfDetail({ application }: { application: BehalfApplicationDetail }) {
+export function ApplyBehalfDetail({
+  application,
+  listHref = "/hr/apply-behalf",
+}: {
+  application: BehalfApplicationDetail;
+  listHref?: string;
+}) {
   const isLeave = application.type === "leave";
 
   return (
     <div className="space-y-6">
       <PortalPageHeader
         actions={
-          <HrLinkButton href="/hr/apply-behalf" variant="outline">
+          <HrLinkButton href={listHref} variant="outline">
             Back to list
           </HrLinkButton>
         }
@@ -296,13 +311,19 @@ const initialState: ApplyBehalfActionState = {};
 export function ApplyBehalfForm({
   employees,
   leaveTypes,
+  leaveAction = submitBehalfLeave,
+  lateAction = submitBehalfLate,
+  listHref = "/hr/apply-behalf",
 }: {
   employees: Array<{ id: string; full_name: string; employee_number: string }>;
   leaveTypes: Array<{ id: string; name: string }>;
+  leaveAction?: typeof submitBehalfLeave;
+  lateAction?: typeof submitBehalfLate;
+  listHref?: string;
 }) {
   const [kind, setKind] = useState<"leave" | "late">("leave");
-  const [leaveState, leaveAction, leavePending] = useActionState(submitBehalfLeave, initialState);
-  const [lateState, lateAction, latePending] = useActionState(submitBehalfLate, initialState);
+  const [leaveState, leaveFormAction, leavePending] = useActionState(leaveAction, initialState);
+  const [lateState, lateFormAction, latePending] = useActionState(lateAction, initialState);
   const today = new Date().toISOString().slice(0, 10);
   const pending = kind === "leave" ? leavePending : latePending;
   const state = kind === "leave" ? leaveState : lateState;
@@ -311,7 +332,7 @@ export function ApplyBehalfForm({
     <div className="space-y-6">
       <PortalPageHeader
         actions={
-          <HrLinkButton href="/hr/apply-behalf" variant="outline">
+          <HrLinkButton href={listHref} variant="outline">
             Back to list
           </HrLinkButton>
         }
@@ -328,7 +349,7 @@ export function ApplyBehalfForm({
           <Button
             aria-label="Close"
             className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
-            render={<Link href="/hr/apply-behalf" />}
+            render={<Link href={listHref} />}
             size="icon-sm"
             variant="ghost"
           >
@@ -354,7 +375,7 @@ export function ApplyBehalfForm({
             </ToggleGroupItem>
           </ToggleGroup>
 
-          <form action={kind === "leave" ? leaveAction : lateAction} className="space-y-5">
+          <form action={kind === "leave" ? leaveFormAction : lateFormAction} className="space-y-5">
             <HrField id="employeeId" label="Employee">
               <HrSelect defaultValue="" id="employeeId" name="employeeId" required>
                 <option value="">-- Select employee --</option>
@@ -390,6 +411,17 @@ export function ApplyBehalfForm({
                 <HrField id="reason" label="Reason">
                   <HrTextInput id="reason" name="reason" placeholder="Optional" />
                 </HrField>
+                <HrField
+                  id="overrideReason"
+                  label="Balance override reason"
+                  hint="Required only when the request exceeds remaining leave balance."
+                >
+                  <HrTextInput
+                    id="overrideReason"
+                    name="overrideReason"
+                    placeholder="Optional unless over balance"
+                  />
+                </HrField>
               </>
             ) : (
               <>
@@ -416,7 +448,7 @@ export function ApplyBehalfForm({
             <HrFormMessage error={state.error} success={state.success} />
 
             <div className="flex justify-end gap-2 border-t pt-4">
-              <HrLinkButton href="/hr/apply-behalf" variant="outline">
+              <HrLinkButton href={listHref} variant="outline">
                 Cancel
               </HrLinkButton>
               <HrPrimaryButton disabled={pending} type="submit">

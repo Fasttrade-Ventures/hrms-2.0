@@ -62,6 +62,13 @@ export function LeaveApplyForm({
   };
 
   const workingDays = calculateWorkingDays(startDate, endDate, durationMode !== "full");
+  const selectedBalance = balances.find((b) => b.leaveTypeId === selectedLeaveTypeId);
+  const overBalance =
+    Boolean(selectedLeaveTypeId) &&
+    !selectedType?.isUnpaid &&
+    workingDays > 0 &&
+    selectedBalance != null &&
+    workingDays > selectedBalance.remainingDays;
 
   return (
     <div className="space-y-6">
@@ -211,10 +218,16 @@ export function LeaveApplyForm({
           </div>
         )}
 
+        {overBalance ? (
+          <p className="text-xs font-medium text-destructive">
+            Insufficient balance. Remaining: {selectedBalance?.remainingDays ?? 0} day(s).
+          </p>
+        ) : null}
+
         <HrFormMessage error={state.error} success={state.success} />
 
         <div className="flex gap-3">
-          <HrPrimaryButton disabled={pending} type="submit">
+          <HrPrimaryButton disabled={pending || overBalance} type="submit">
             {pending ? "Submitting..." : "Submit Leave Request"}
           </HrPrimaryButton>
           <HrGhostButton

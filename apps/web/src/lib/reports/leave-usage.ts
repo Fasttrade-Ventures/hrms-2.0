@@ -11,7 +11,7 @@ export async function listLeaveUsageRows(filters: ReportFilters): Promise<{
   total: number;
 }> {
   const supabase = await createClient();
-  const organizationId = getOrganizationIdForReports();
+  const organizationId = await getOrganizationIdForReports();
   const employees = await listReportEmployees(filters);
   const employeeIds = new Set(employees.map((employee) => employee.id));
   const employeeById = new Map(employees.map((employee) => [employee.id, employee]));

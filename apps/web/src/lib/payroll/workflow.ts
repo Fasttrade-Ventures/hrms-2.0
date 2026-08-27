@@ -1,11 +1,7 @@
 import { requireRoleOrPermission } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 async function transitionPayrun(
   payrunId: string,
@@ -13,7 +9,7 @@ async function transitionPayrun(
   fromStatuses: string[],
   toStatus: string,
 ): Promise<void> {
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const { data: payrun, error } = await supabase
@@ -72,12 +68,19 @@ async function transitionPayrun(
 
 export async function submitPayrunForReview(payrunId: string, actorUserId: string): Promise<void> {
   await requireRoleOrPermission(["hr_administrator"], ["payroll_processor"]);
+  const organizationId = await requireOrganizationId();
+  const supabase = await createClient();
+  await supabase
+    .from("payroll_payruns")
+    .update({ last_edited_by: actorUserId })
+    .eq("id", payrunId)
+    .eq("organization_id", organizationId);
   await transitionPayrun(payrunId, actorUserId, ["draft"], "in_review");
 }
 
 export async function approvePayrun(payrunId: string, actorUserId: string): Promise<void> {
   await requireRoleOrPermission(["hr_administrator", "director"], ["payroll_approver"]);
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const { data: org } = await supabase
@@ -111,7 +114,7 @@ export async function approvePayrun(payrunId: string, actorUserId: string): Prom
 
 export async function deletePayrun(payrunId: string, actorUserId: string): Promise<void> {
   await requireRoleOrPermission(["hr_administrator"], ["payroll_processor"]);
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const { data: payrun, error } = await supabase

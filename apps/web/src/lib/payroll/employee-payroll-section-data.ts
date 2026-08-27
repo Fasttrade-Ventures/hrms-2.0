@@ -24,10 +24,9 @@ export async function getEmployeePayrollSectionData(
   employee: EmployeeDetail,
 ): Promise<EmployeePayrollSectionData> {
   const supabase = await createClient();
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (organizationId) {
-    await ensurePayrollComponents(supabase, organizationId).catch(() => null);
-  }
+  const { requireOrganizationId } = await import("@/lib/auth/organization-context");
+  const organizationId = await requireOrganizationId();
+  await ensurePayrollComponents(supabase, organizationId).catch(() => null);
 
   await ensureEmployeeTaxProfile(employee.id).catch(() => null);
 

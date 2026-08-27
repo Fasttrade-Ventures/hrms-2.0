@@ -5,6 +5,7 @@ import { logEmployeeEvent } from "@/lib/audit/log-employee-event";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { getNextEmployeeNumber } from "./organization";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
 export type CreateEmployeeResult = {
   employeeId: string;
@@ -13,15 +14,6 @@ export type CreateEmployeeResult = {
   activationEmailError?: string;
 };
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-
-  if (!organizationId) {
-    throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  }
-
-  return organizationId;
-}
 
 async function getOrganizationName(admin: ReturnType<typeof createAdminClient>, organizationId: string) {
   const { data } = await admin.from("organizations").select("name").eq("id", organizationId).maybeSingle();
@@ -33,7 +25,7 @@ export async function createEmployeeRecord(
   actorUserId: string,
 ): Promise<CreateEmployeeResult> {
   const admin = createAdminClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const employeeNumber = input.employeeNumber?.trim() || (await getNextEmployeeNumber(organizationId));
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
@@ -251,7 +243,7 @@ export async function createEmployeeRecord(
 
 export async function resendEmployeeActivationEmail(employeeId: string, actorUserId: string) {
   const admin = createAdminClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
   const { data: employee, error } = await admin

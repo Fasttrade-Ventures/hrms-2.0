@@ -10,29 +10,34 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
-function buildListHref(params: {
-  type?: string;
-  dateFrom?: string;
-  dateTo?: string;
-  page?: number;
-}) {
+function buildListHref(
+  basePath: string,
+  params: {
+    type?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    page?: number;
+  },
+) {
   const query = new URLSearchParams();
   if (params.type && params.type !== "all") query.set("type", params.type);
   if (params.dateFrom) query.set("dateFrom", params.dateFrom);
   if (params.dateTo) query.set("dateTo", params.dateTo);
   if (params.page && params.page > 1) query.set("page", String(params.page));
   const qs = query.toString();
-  return qs ? `/hr/apply-behalf?${qs}` : "/hr/apply-behalf";
+  return qs ? `${basePath}?${qs}` : basePath;
 }
 
 export function ApplyBehalfFilters({
   type,
   dateFrom,
   dateTo,
+  basePath = "/hr/apply-behalf",
 }: {
   type: "all" | "leave" | "late";
   dateFrom?: string;
   dateTo?: string;
+  basePath?: string;
 }) {
   const router = useRouter();
   const hasFilters = Boolean(dateFrom || dateTo || type !== "all");
@@ -46,7 +51,7 @@ export function ApplyBehalfFilters({
             onValueChange={(values) => {
               const next = values.at(-1) as "all" | "leave" | "late" | undefined;
               if (!next || next === type) return;
-              router.push(buildListHref({ type: next, dateFrom, dateTo, page: 1 }));
+              router.push(buildListHref(basePath, { type: next, dateFrom, dateTo, page: 1 }));
             }}
             spacing={0}
             value={[type]}
@@ -67,7 +72,7 @@ export function ApplyBehalfFilters({
         <Separator className="hidden lg:block lg:h-10" orientation="vertical" />
 
         <form
-          action="/hr/apply-behalf"
+          action={basePath}
           className="flex flex-1 flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end"
           method="get"
         >
@@ -94,7 +99,7 @@ export function ApplyBehalfFilters({
               Filter
             </Button>
             {hasFilters ? (
-              <Button render={<Link href="/hr/apply-behalf" />} size="sm" variant="outline">
+              <Button render={<Link href={basePath} />} size="sm" variant="outline">
                 Clear
               </Button>
             ) : null}

@@ -1,12 +1,8 @@
 import { requireRole } from "@/lib/auth/session";
 import { logAuditEvent } from "@/lib/audit/log-event";
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export type ReviewCycleRow = {
   id: string;
@@ -32,7 +28,7 @@ export type CycleAppraisalExportRow = {
 export async function listReviewCycles(): Promise<ReviewCycleRow[]> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data: cycles, error } = await supabase
     .from("review_cycles")
@@ -80,7 +76,7 @@ export async function createReviewCycle(input: {
 }): Promise<string> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data, error } = await supabase
     .from("review_cycles")
@@ -101,7 +97,7 @@ export async function createReviewCycle(input: {
 export async function launchAppraisalsForCycle(cycleId: string, actorUserId?: string | null): Promise<number> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data: cycle, error: cycleError } = await supabase
     .from("review_cycles")
@@ -161,7 +157,7 @@ export async function launchAppraisalsForCycle(cycleId: string, actorUserId?: st
 export async function closeReviewCycle(cycleId: string, actorUserId?: string | null): Promise<void> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data: cycle, error: cycleError } = await supabase
     .from("review_cycles")
@@ -194,7 +190,7 @@ export async function closeReviewCycle(cycleId: string, actorUserId?: string | n
 export async function listCycleAppraisalsForExport(cycleId: string): Promise<CycleAppraisalExportRow[]> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data, error } = await supabase
     .from("performance_appraisals")

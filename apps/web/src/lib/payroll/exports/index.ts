@@ -12,17 +12,13 @@ import {
   mapStatutoryRows,
 } from "./statutory";
 import { loadPayrunBranchItems } from "./store";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 import {
   validateEpfFileContent,
   validateSocsoFileContent,
   validateStatutoryExportRows,
 } from "./validate";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 async function assertExportablePayrun(payrunId: string) {
   const { createClient } = await import("@/lib/supabase/server");
@@ -31,7 +27,7 @@ async function assertExportablePayrun(payrunId: string) {
     .from("payroll_payruns")
     .select("status, period_year, period_month")
     .eq("id", payrunId)
-    .eq("organization_id", getOrganizationId())
+    .eq("organization_id", await requireOrganizationId())
     .maybeSingle();
 
   if (!data) throw new Error("Payrun not found.");

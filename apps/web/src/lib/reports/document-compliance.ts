@@ -16,7 +16,7 @@ export async function listDocumentComplianceRows(filters: ReportFilters): Promis
   total: number;
 }> {
   const supabase = await createClient();
-  const organizationId = getOrganizationIdForReports();
+  const organizationId = await getOrganizationIdForReports();
   const today = new Date().toISOString().slice(0, 10);
   const employees = await listReportEmployees(filters);
   const employeeIds = employees.map((employee) => employee.id);

@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/card";
 import { REPORT_CATALOG } from "@/lib/reports/catalog";
 
+const BRANCH_ADMIN_EXCLUDED = new Set(["asset-register", "performance-snapshot"]);
+
 const QUICK_EXPORTS = [
   {
     id: "calendar",
@@ -40,10 +42,15 @@ export function ReportsHub({
   portal,
   basePath,
 }: {
-  portal: "hr" | "director";
+  portal: "hr" | "director" | "branch-admin";
   basePath: string;
 }) {
   const payrollHref = portal === "hr" ? "/hr/payroll" : undefined;
+  const showQuickExports = portal === "hr";
+  const catalog =
+    portal === "branch-admin"
+      ? REPORT_CATALOG.filter((report) => !BRANCH_ADMIN_EXCLUDED.has(report.slug))
+      : REPORT_CATALOG;
 
   return (
     <div className="space-y-6">
@@ -55,7 +62,7 @@ export function ReportsHub({
           </p>
         </div>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {REPORT_CATALOG.map((report) => (
+          {catalog.map((report) => (
             <Card className="flex flex-col" key={report.slug} size="sm">
               <CardHeader className="pb-2">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-primary">
@@ -81,39 +88,41 @@ export function ReportsHub({
         </div>
       </section>
 
-      <section className="space-y-3">
-        <div>
-          <h2 className="text-sm font-semibold">Quick exports</h2>
-          <p className="text-sm text-muted-foreground">
-            Jump to module pages with native export actions.
-          </p>
-        </div>
-        <div className="grid gap-3 md:grid-cols-3">
-          {QUICK_EXPORTS.map((item) => (
-            <Card className="flex flex-col" key={item.id} size="sm">
-              <CardHeader className="pb-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-primary">
-                  <PortalIcon name={item.icon} />
-                </div>
-              </CardHeader>
-              <CardContent className="flex flex-1 flex-col gap-1 pb-2">
-                <CardTitle className="text-sm">{item.title}</CardTitle>
-                <CardDescription>{item.subtitle}</CardDescription>
-              </CardContent>
-              <CardFooter className="border-t-0 bg-transparent pt-0">
-                <Button
-                  className="w-full"
-                  render={<Link href={item.href} />}
-                  size="sm"
-                  variant="outline"
-                >
-                  Go to module
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      </section>
+      {showQuickExports ? (
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-sm font-semibold">Quick exports</h2>
+            <p className="text-sm text-muted-foreground">
+              Jump to module pages with native export actions.
+            </p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            {QUICK_EXPORTS.map((item) => (
+              <Card className="flex flex-col" key={item.id} size="sm">
+                <CardHeader className="pb-2">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-primary">
+                    <PortalIcon name={item.icon} />
+                  </div>
+                </CardHeader>
+                <CardContent className="flex flex-1 flex-col gap-1 pb-2">
+                  <CardTitle className="text-sm">{item.title}</CardTitle>
+                  <CardDescription>{item.subtitle}</CardDescription>
+                </CardContent>
+                <CardFooter className="border-t-0 bg-transparent pt-0">
+                  <Button
+                    className="w-full"
+                    render={<Link href={item.href} />}
+                    size="sm"
+                    variant="outline"
+                  >
+                    Go to module
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {payrollHref ? (
         <Card size="sm">

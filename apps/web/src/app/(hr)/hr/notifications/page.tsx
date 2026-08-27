@@ -27,7 +27,9 @@ export default async function HrNotificationsPage({ searchParams }: PageProps) {
         notifications={notificationsResult.notifications}
         page={page}
         pageSize={5}
-        placeholderNotifications={getPlaceholderNotifications("hr")}
+        placeholderNotifications={
+          process.env.NODE_ENV === "development" ? getPlaceholderNotifications("hr") : []
+        }
         portal="hr"
         tabCounts={counts}
         total={notificationsResult.total}

@@ -22,7 +22,7 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Feature | Tier | UI | Notes |
 |---------|------|-----|--------|
 | Standalone deployment mode | Core | — | One org, own Supabase + R2 |
-| SaaS multi-tenant mode | Core | ✅ Auth/Register | Shared DB, `organization_id` + RLS |
+| SaaS multi-tenant mode | Core | ✅ Auth/Register | Shared DB + RLS; app-layer org resolution + switcher shipped — billing/marketing still FUTURE |
 | Login (standalone / SaaS) | Core | ✅ | Desktop + mobile login frames |
 | Forgot / reset password | Core | ✅ | |
 | Account activation (set password) | Core | ✅ | After HR creates employee |
@@ -33,7 +33,7 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Module entitlements (Core/Pro/Ent) | Core | — | Server-enforced |
 | Audit log | Core | 🟡 HR Audit | Immutable events |
 | In-app + email notifications | Core | ✅ Emp/Mgr | Outbox pattern |
-| Scheduled jobs ledger | Core | — | Idempotent |
+| Scheduled jobs (Vercel cron + notification outbox) | Core | — | Idempotent outbox; in-memory platform ledger deprecated |
 | Private file storage (R2) | Core | — | Signed downloads |
 | CSV / print exports | Core | 🟡 | Per module |
 | Legacy MySQL + files migration | Core | — | One-time cutover |
@@ -51,8 +51,8 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Shifts | Core | ✅ HR Org | CRUD under `/hr/organization/shifts` |
 | Public holidays / observed holidays | Core | ✅ HR Org | Managed under `/hr/organization/holidays`; Calendar consumes |
 | Reporting relationships (manager → team) | Core | — | Drives manager scope |
-| **HR create employee** | Core | ⬜ | Not invite; optional activation email |
-| Employee CSV bulk create | Core | ⬜ | |
+| **HR create employee** | Core | ✅ | `/hr/employees/create` — optional activation email |
+| Employee CSV bulk create | Core | ✅ | `/hr/employees/import` |
 | Employee directory (HR) | Core | ✅ | Polished list |
 | Employee profile — Personal | Core | ✅ Emp + HR | |
 | Employee profile — Address | Core | ✅ Emp + HR | |
@@ -60,8 +60,8 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Employee profile — Employment | Core | ✅ Emp (RO) / HR (edit) | Role, branch, status, join date |
 | Employee profile — Bank & statutory | Core | ✅ Emp (RO) / HR (edit) | EPF, SOCSO, tax, bank |
 | Employee profile — Security | Core | ✅ | Change / reset password |
-| Family / dependents data | Core | ⬜ | For payroll tax categories |
-| Compensation / salary profile | Core | ⬜ | Feeds payroll |
+| Family / dependents data | Core | ✅ | Create/edit employee + payroll tax categories |
+| Compensation / salary profile | Core | ✅ | HR employee payroll section → feeds payroll |
 | Deactivate / employment status | Core | 🟡 | On employment tab |
 
 ---
@@ -86,7 +86,7 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Replacement-credit balance on leave | Core | — | Linked to §6 |
 | Prorating / carry-forward / expiry | Pro | — | |
 | Accrual & reminders | Pro | — | |
-| Blackout periods | Pro | — | |
+| Blackout periods | Pro | ✅ HR Org | `leave_blackout_periods` + apply/behalf enforcement |
 | Configurable multi-level approvals | Pro | — | |
 
 ---
@@ -259,10 +259,10 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Employee | Core | ✅ | Self-service modules above |
 | Manager | Core | ✅ | Team + approvals |
 | HR Administrator | Core | 🟡 | People, org, payroll ops, assets, audit, news |
-| Branch Admin | Core | ⬜ | Branch-scoped ops |
+| Branch Admin | Core | ✅ | Documents, compliance, calendar, apply-behalf, employees, reports (`/branch-admin/*`); multi-branch via membership branches |
 | Director | Core | 🟡 | Org read + approve; Reports at `/director/reports` |
-| Organization Owner | Core | ⬜ | Full org, modules, settings |
-| Platform Admin | SaaS | ⬜ | Tenant operations only |
+| Organization Owner | Core | ✅ | Settings, modules/tier packaging (`/owner/*`) |
+| Platform Admin | SaaS / ops | ✅ | Dashboard health + outbox depths (`/platform/dashboard`); tenants/provision SaaS-only |
 
 ---
 

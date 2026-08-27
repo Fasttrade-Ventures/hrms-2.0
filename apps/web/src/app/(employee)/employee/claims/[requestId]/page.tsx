@@ -12,12 +12,14 @@ import {
 } from "@/components/employee/employee-shared";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { getClaim, getApprovalTimeline } from "@/lib/employee/requests";
+import { requireModule } from "@/lib/entitlements";
 
 export default async function ClaimDetailPage({
   params,
 }: {
   params: Promise<{ requestId: string }>;
 }) {
+  await requireModule("claims");
   const { requestId } = await params;
   const request = await getClaim(requestId);
 

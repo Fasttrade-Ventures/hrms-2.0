@@ -143,7 +143,7 @@ Status legend: ✅ designed · 🟡 partial / needs polish · ⬜ not designed
 | Branch Admin | Not designed |
 | Director | Not designed |
 | Organization Owner | Not designed |
-| Platform Admin (SaaS) | Not designed |
+| Platform Admin (SaaS + standalone ops) | Shipped thin — dashboard health; tenants SaaS-only |
 
 ---
 

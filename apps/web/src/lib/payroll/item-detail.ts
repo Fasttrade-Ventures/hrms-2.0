@@ -12,8 +12,13 @@ export async function listPayrunItemComponents(
 ): Promise<PayrunItemComponentRow[]> {
   const { createClient } = await import("@/lib/supabase/server");
   const supabase = await createClient();
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) return [];
+  const { requireOrganizationId } = await import("@/lib/auth/organization-context");
+  let organizationId: string;
+  try {
+    organizationId = await requireOrganizationId();
+  } catch {
+    return [];
+  }
 
   const { data, error } = await supabase
     .from("payroll_item_components")

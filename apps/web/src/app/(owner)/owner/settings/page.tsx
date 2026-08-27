@@ -1,11 +1,12 @@
 import Link from "next/link";
 
 import { StatusPill } from "@hrms/ui";
+import { isSaasMode } from "@hrms/platform";
 
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { updateModuleFlagFormAction, updateProductTierFormAction } from "@/app/(owner)/owner/actions";
+import { updateModuleFlagFormAction, updatePayrollDutySegregationFormAction, updateProductTierFormAction } from "@/app/(owner)/owner/actions";
 import { getOwnerEntitlementSettings, type OwnerModuleSetting } from "@/lib/owner/entitlements";
 import { requireRole } from "@/lib/auth/session";
 
@@ -56,6 +57,7 @@ function ModuleTable({ modules }: { modules: OwnerModuleSetting[] }) {
 export default async function Page() {
   await requireRole("organization_owner");
   const settings = await getOwnerEntitlementSettings();
+  const canEditTier = !isSaasMode();
 
   const coreModules = settings.modules.filter((module) => module.tier === "Core");
   const professionalModules = settings.modules.filter((module) => module.tier === "Professional");
@@ -73,17 +75,51 @@ export default async function Page() {
           <CardTitle>Product tier</CardTitle>
           <CardDescription>
             Current tier: <span className="font-medium capitalize">{settings.productTier}</span>
+            {!canEditTier
+              ? " — tier changes are managed by Platform in SaaS mode."
+              : " — standalone packaging uses PRODUCT_TIER / module flags, not a payment subscription."}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
-          {(["core", "professional", "enterprise"] as const).map((tier) => (
-            <form action={updateProductTierFormAction} key={tier}>
-              <input name="tier" type="hidden" value={tier} />
-              <Button type="submit" variant={settings.productTier === tier ? "default" : "outline"}>
-                {tier}
+          {canEditTier
+            ? (["core", "professional", "enterprise"] as const).map((tier) => (
+                <form action={updateProductTierFormAction} key={tier}>
+                  <input name="tier" type="hidden" value={tier} />
+                  <Button type="submit" variant={settings.productTier === tier ? "default" : "outline"}>
+                    {tier}
+                  </Button>
+                </form>
+              ))
+            : (
+              <StatusPill label={settings.productTier} tone="neutral" />
+            )}
+        </CardContent>
+      </Card>
+
+      <Card size="sm">
+        <CardHeader>
+          <CardTitle>Payroll duty segregation</CardTitle>
+          <CardDescription>
+            When enabled, the user who generates or submits a payrun cannot approve or lock it.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={updatePayrollDutySegregationFormAction}>
+            <input
+              name="enabled"
+              type="hidden"
+              value={settings.payrollDutySegregation ? "false" : "true"}
+            />
+            <div className="flex flex-wrap items-center gap-3">
+              <StatusPill
+                label={settings.payrollDutySegregation ? "Enabled" : "Disabled"}
+                tone={settings.payrollDutySegregation ? "success" : "neutral"}
+              />
+              <Button size="sm" type="submit" variant="outline">
+                {settings.payrollDutySegregation ? "Disable" : "Enable"}
               </Button>
-            </form>
-          ))}
+            </div>
+          </form>
         </CardContent>
       </Card>
 

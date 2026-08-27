@@ -5,12 +5,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { postBukucloudPayroll } from "./client";
 import { getBukucloudConnectionConfig } from "./config";
 import { buildBukucloudReference, mapPayrunToBukucloudPayload } from "./mapper";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export type BukucloudSyncStatus = {
   status: "not_configured" | "pending" | "sent" | "failed" | "not_synced";
@@ -28,7 +24,7 @@ export async function getBukucloudSyncStatus(payrunId: string): Promise<Bukuclou
   const { data } = await admin
     .from("payroll_integration_syncs")
     .select("status, reference_number, external_journal_id, last_error, synced_at")
-    .eq("organization_id", getOrganizationId())
+    .eq("organization_id", await requireOrganizationId())
     .eq("payrun_id", payrunId)
     .eq("provider", "bukucloud")
     .maybeSingle();
@@ -49,7 +45,7 @@ export async function syncPayrunToBukucloud(input: {
   actorUserId: string | null;
   force?: boolean;
 }): Promise<BukucloudSyncStatus> {
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const config = await getBukucloudConnectionConfig(organizationId);
   if (!config) {
     throw new Error("BukuCloud integration is not configured.");

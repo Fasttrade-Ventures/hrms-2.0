@@ -5,6 +5,7 @@ import { useState, type ReactNode } from "react";
 
 import { EmployeeMobileNav } from "@/components/employee/employee-mobile-nav";
 import { ManagerMobileNav } from "@/components/manager/manager-mobile-nav";
+import { OrganizationSwitcher, type OrgSwitcherOption } from "@/components/portal/organization-switcher";
 import { PortalAccountMenu } from "@/components/portal/portal-account-menu";
 import { CloseIcon, MenuIcon } from "@/components/portal/portal-icons";
 import { PortalNavGroup } from "@/components/portal/portal-nav-group";
@@ -44,6 +45,7 @@ export function PortalShell({
   navSections,
   enabledModules,
   integrationsHref,
+  orgSwitcher,
   children,
 }: {
   portal: string;
@@ -56,6 +58,10 @@ export function PortalShell({
   navSections?: PortalNavSection[];
   enabledModules?: ModuleKey[];
   integrationsHref?: string;
+  orgSwitcher?: {
+    options: OrgSwitcherOption[];
+    activeOrganizationId: string;
+  } | null;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -165,6 +171,12 @@ export function PortalShell({
             )}
           </div>
           <div className="flex items-center gap-3 sm:gap-4">
+            {orgSwitcher ? (
+              <OrganizationSwitcher
+                activeOrganizationId={orgSwitcher.activeOrganizationId}
+                options={orgSwitcher.options}
+              />
+            ) : null}
             <p className="hidden text-[13px] text-[var(--foreground-muted)] md:block">{todayLabel}</p>
             <PortalBellButton href={notificationsHref(portal)} unreadCount={unreadNotificationCount} />
             <PortalAccountMenu
@@ -186,7 +198,7 @@ export function PortalShell({
           </div>
         </main>
         {portal === "Employee" ? <EmployeeMobileNav enabledModules={enabledModules} /> : null}
-        {portal === "Manager" ? <ManagerMobileNav /> : null}
+        {portal === "Manager" ? <ManagerMobileNav enabledModules={enabledModules} /> : null}
       </div>
     </div>
   );

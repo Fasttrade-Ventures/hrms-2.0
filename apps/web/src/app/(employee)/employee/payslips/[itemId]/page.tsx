@@ -6,12 +6,14 @@ import { StatCard } from "@hrms/ui";
 import { formatCurrency } from "@/components/employee/employee-shared";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { getPayslip } from "@/lib/employee/payslips";
+import { requireModule } from "@/lib/entitlements";
 
 export default async function PayslipDetailPage({
   params,
 }: {
   params: Promise<{ itemId: string }>;
 }) {
+  await requireModule("payroll");
   const { itemId } = await params;
   const payslip = await getPayslip(itemId);
 

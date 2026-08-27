@@ -57,6 +57,10 @@ export type BehalfListData = {
   };
 };
 
-export function getBehalfApplicationPath(type: "leave" | "late", id: string) {
-  return `/hr/apply-behalf/${type}/${id}`;
+export function getBehalfApplicationPath(
+  type: "leave" | "late",
+  id: string,
+  basePath = "/hr/apply-behalf",
+) {
+  return `${basePath}/${type}/${id}`;
 }

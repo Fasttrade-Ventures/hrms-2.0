@@ -1,14 +1,10 @@
 import type { ModuleKey, ProductTier } from "@hrms/platform";
-import { CORE_MODULES, ENTERPRISE_MODULES, PROFESSIONAL_MODULES } from "@hrms/platform";
+import { CORE_MODULES, ENTERPRISE_MODULES, PROFESSIONAL_MODULES, isSaasMode } from "@hrms/platform";
 
 import { logAuditEvent } from "@/lib/audit/log-event";
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export type OwnerModuleSetting = {
   key: ModuleKey;
@@ -54,13 +50,14 @@ function defaultEnabledForTier(tier: ProductTier, key: ModuleKey): boolean {
 export async function getOwnerEntitlementSettings(): Promise<{
   productTier: ProductTier;
   modules: OwnerModuleSetting[];
+  payrollDutySegregation: boolean;
 }> {
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data, error } = await supabase
     .from("organizations")
-    .select("product_tier, module_flags")
+    .select("product_tier, module_flags, payroll_duty_segregation")
     .eq("id", organizationId)
     .maybeSingle();
 
@@ -81,7 +78,37 @@ export async function getOwnerEntitlementSettings(): Promise<{
     };
   });
 
-  return { productTier: data.product_tier, modules };
+  return {
+    productTier: data.product_tier,
+    modules,
+    payrollDutySegregation: Boolean(data.payroll_duty_segregation),
+  };
+}
+
+export async function updateOwnerPayrollDutySegregation(
+  enabled: boolean,
+  actorUserId?: string | null,
+): Promise<void> {
+  const supabase = await createClient();
+  const organizationId = await requireOrganizationId();
+
+  const { error } = await supabase
+    .from("organizations")
+    .update({
+      payroll_duty_segregation: enabled,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", organizationId);
+
+  if (error) throw new Error(error.message);
+
+  await logAuditEvent({
+    actorUserId: actorUserId ?? null,
+    action: "organization.payroll_duty_segregation_updated",
+    resourceType: "organization",
+    resourceId: organizationId,
+    metadata: { enabled },
+  });
 }
 
 export async function updateOwnerModuleFlag(
@@ -89,8 +116,12 @@ export async function updateOwnerModuleFlag(
   enabled: boolean,
   actorUserId?: string | null,
 ): Promise<void> {
+  if (isSaasMode()) {
+    throw new Error("Module flags can only be changed by Platform in SaaS mode.");
+  }
+
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data, error } = await supabase
     .from("organizations")
@@ -125,8 +156,12 @@ export async function updateOwnerProductTier(
   tier: ProductTier,
   actorUserId?: string | null,
 ): Promise<void> {
+  if (isSaasMode()) {
+    throw new Error("Product tier can only be changed by Platform in SaaS mode.");
+  }
+
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { error } = await supabase
     .from("organizations")

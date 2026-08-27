@@ -1,10 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export type HeadcountMetrics = {
   total: number;
@@ -31,14 +27,21 @@ export type RecruitmentMetrics = {
 };
 
 export async function getHeadcountMetrics(): Promise<HeadcountMetrics> {
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
-  const { data: employees, error } = await supabase
-    .from("employees")
-    .select("id, branch_id, department_id, branches(name), departments(name)")
-    .eq("organization_id", organizationId)
-    .eq("status", "active");
+  const [{ count: total }, { data: employees, error }] = await Promise.all([
+    supabase
+      .from("employees")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", organizationId)
+      .eq("status", "active"),
+    supabase
+      .from("employees")
+      .select("branch_id, department_id, branches(name), departments(name)")
+      .eq("organization_id", organizationId)
+      .eq("status", "active"),
+  ]);
 
   if (error) throw new Error(error.message);
 
@@ -63,42 +66,43 @@ export async function getHeadcountMetrics(): Promise<HeadcountMetrics> {
   }
 
   return {
-    total: employees?.length ?? 0,
+    total: total ?? employees?.length ?? 0,
     byBranch: [...branchMap.values()].sort((a, b) => b.count - a.count),
     byDepartment: [...deptMap.values()].sort((a, b) => b.count - a.count),
   };
 }
 
 export async function getLeaveLiabilityMetrics(): Promise<LeaveLiabilityMetrics> {
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
-  const [{ data: employees }, { data: types }, { data: requests }] = await Promise.all([
+  const [{ data: employees }, { data: requests }] = await Promise.all([
     supabase
       .from("employees")
       .select("id, annual_leave_entitlement, employee_profiles(basic_salary, working_days_per_month)")
       .eq("organization_id", organizationId)
       .eq("status", "active"),
-    supabase.from("leave_types").select("id, entitlement_days").eq("organization_id", organizationId),
     supabase
       .from("leave_requests")
-      .select("employee_id, days, status")
+      .select("employee_id, days")
       .eq("organization_id", organizationId)
       .in("status", ["pending", "approved"]),
   ]);
 
-  const annualEntitlement =
-    types?.find((t) => t.id)?.entitlement_days ??
-    Number(employees?.[0]?.annual_leave_entitlement ?? 14);
+  const usedByEmployee = new Map<string, number>();
+  for (const row of requests ?? []) {
+    usedByEmployee.set(
+      row.employee_id,
+      (usedByEmployee.get(row.employee_id) ?? 0) + Number(row.days ?? 0),
+    );
+  }
 
   let totalRemainingDays = 0;
   let estimatedLiabilityRm = 0;
 
   for (const employee of employees ?? []) {
-    const usedAndPending = (requests ?? [])
-      .filter((r) => r.employee_id === employee.id)
-      .reduce((sum, r) => sum + Number(r.days ?? 0), 0);
-    const entitlement = Number(employee.annual_leave_entitlement ?? annualEntitlement ?? 14);
+    const usedAndPending = usedByEmployee.get(employee.id) ?? 0;
+    const entitlement = Number(employee.annual_leave_entitlement ?? 14);
     const remaining = Math.max(0, entitlement - usedAndPending);
     totalRemainingDays += remaining;
 
@@ -114,7 +118,7 @@ export async function getLeaveLiabilityMetrics(): Promise<LeaveLiabilityMetrics>
 }
 
 export async function getPayrollCostMetrics(): Promise<PayrollCostMetrics> {
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
   const year = new Date().getFullYear();
 
@@ -168,7 +172,7 @@ export async function getPayrollCostMetrics(): Promise<PayrollCostMetrics> {
 }
 
 export async function getRecruitmentMetrics(): Promise<RecruitmentMetrics> {
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const [{ count: openRequisitions }, { count: activeCandidates }] = await Promise.all([

@@ -4,23 +4,19 @@ import { redirect } from "next/navigation";
 import { isSaasMode } from "@hrms/platform";
 
 import { logAuditEvent } from "@/lib/audit/log-event";
-import { requireRole } from "@/lib/auth/session";
+import { requireAuth, requireRole } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export const IMPERSONATION_COOKIE = "hrms_impersonate_org_id";
+import { getImpersonationOrgId, IMPERSONATION_COOKIE } from "./impersonation-cookie";
 
-export async function getImpersonationOrgId(): Promise<string | null> {
-  const cookieStore = await cookies();
-  return cookieStore.get(IMPERSONATION_COOKIE)?.value ?? null;
-}
+export { IMPERSONATION_COOKIE, getImpersonationOrgId } from "./impersonation-cookie";
 
 export async function getImpersonationState(session: {
-  membership: { roles: string[] };
+  membership: { roles: string[]; permissions: string[] };
 }): Promise<{ organizationId: string; organizationName: string } | null> {
-  if (!session.membership.roles.includes("platform_administrator")) return null;
-
   const organizationId = await getImpersonationOrgId();
   if (!organizationId) return null;
+  if (!session.membership.permissions.includes("platform_impersonating")) return null;
 
   const admin = createAdminClient();
   const { data, error } = await admin
@@ -72,21 +68,23 @@ export async function startImpersonation(organizationId: string): Promise<void> 
 }
 
 export async function stopImpersonation(): Promise<void> {
-  const session = await requireRole("platform_administrator");
+  const session = await requireAuth();
   const organizationId = await getImpersonationOrgId();
 
-  const cookieStore = await cookies();
-  cookieStore.delete(IMPERSONATION_COOKIE);
-
-  if (organizationId) {
-    await logAuditEvent({
-      organizationId,
-      actorUserId: session.user.id,
-      action: "platform.impersonation_ended",
-      resourceType: "organization",
-      resourceId: organizationId,
-    });
+  if (!organizationId || !session.membership.permissions.includes("platform_impersonating")) {
+    redirect("/unauthorized");
   }
+
+  const cookieStore = await cookies();
+  cookieStore.delete({ name: IMPERSONATION_COOKIE, path: "/" });
+
+  await logAuditEvent({
+    organizationId,
+    actorUserId: session.user.id,
+    action: "platform.impersonation_ended",
+    resourceType: "organization",
+    resourceId: organizationId,
+  });
 
   redirect("/platform/tenants");
 }

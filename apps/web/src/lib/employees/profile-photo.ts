@@ -1,17 +1,11 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
 export const EMPLOYEE_PHOTOS_BUCKET = "employee-photos";
 
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_BYTES = 2 * 1024 * 1024;
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) {
-    throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  }
-  return organizationId;
-}
 
 function extensionForContentType(contentType: string): string {
   if (contentType === "image/png") return "png";
@@ -47,7 +41,7 @@ export async function uploadEmployeeProfilePhoto(
     throw new Error(validationError);
   }
 
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const admin = createAdminClient();
   const extension = extensionForContentType(file.type);
   const path = `${organizationId}/${employeeId}/avatar.${extension}`;
@@ -80,7 +74,7 @@ export async function setEmployeeProfilePhotoPath(
   path: string | null,
 ): Promise<void> {
   const admin = createAdminClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { error } = await admin
     .from("employee_profiles")

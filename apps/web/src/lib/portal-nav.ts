@@ -1,5 +1,6 @@
 import type { PortalIconName } from "@/components/portal/portal-icons";
 import type { ModuleKey, ProductTier } from "@hrms/platform";
+import { isSaasMode } from "@hrms/platform";
 
 export type PortalNavItem = {
   href: string;
@@ -37,9 +38,16 @@ const NAV_MODULE_RULES = [
   { prefix: "/hr/payroll", module: "payroll" },
   { prefix: "/director/analytics", module: "analytics" },
   { prefix: "/director/payroll", module: "payroll" },
+  { prefix: "/manager/announcements", module: "announcements" },
+  { prefix: "/manager/team-calendar", module: "calendar" },
+  { prefix: "/manager/team-documents", module: "documents" },
+  { prefix: "/manager/team-performance", module: "performance" },
 ] as const satisfies ReadonlyArray<{ prefix: string; module: ModuleKey }>;
 
-const PRO_ONLY_NAV_PREFIXES = ["/hr/organization/leave-blackouts"];
+const PRO_ONLY_NAV_PREFIXES = [
+  "/hr/organization/leave-blackouts",
+  "/hr/organization/rosters",
+];
 
 export function moduleForNavHref(href: string): ModuleKey | null {
   const sorted = [...NAV_MODULE_RULES].sort((a, b) => b.prefix.length - a.prefix.length);
@@ -109,7 +117,18 @@ export function getPortalNavSectionsForEntitlements(
     tier: ProductTier;
   },
 ): PortalNavSection[] {
-  return filterPortalNavSections(getPortalNavSections(portal), options);
+  let sections = filterPortalNavSections(getPortalNavSections(portal), options);
+
+  if (portal === "Platform Admin" && !isSaasMode()) {
+    sections = sections
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) => item.href !== "/platform/tenants"),
+      }))
+      .filter((section) => section.items.length > 0);
+  }
+
+  return sections;
 }
 
 const employeeNav: PortalNavSection[] = [
@@ -304,8 +323,10 @@ export function getPortalNavSections(portal: string): PortalNavSection[] {
           items: [
             { href: "/branch-admin/dashboard", label: "Dashboard", icon: "dashboard" },
             { href: "/branch-admin/employees", label: "Employees", icon: "employees" },
-            { href: "/hr/documents", label: "Documents", icon: "documents" },
-            { href: "/hr/calendar", label: "Calendar", icon: "calendar" },
+            { href: "/branch-admin/documents", label: "Documents", icon: "documents" },
+            { href: "/branch-admin/calendar", label: "Calendar", icon: "calendar" },
+            { href: "/branch-admin/apply-behalf", label: "Apply on behalf", icon: "apply-behalf" },
+            { href: "/branch-admin/reports", label: "Reports", icon: "reports" },
           ],
         },
       ];
@@ -326,10 +347,10 @@ export function getPortalNavSections(portal: string): PortalNavSection[] {
           items: [
             { href: "/owner/dashboard", label: "Dashboard", icon: "dashboard" },
             { href: "/hr/analytics", label: "Analytics", icon: "reports" },
+            ...(isSaasMode()
+              ? [{ href: "/owner/billing", label: "Billing", icon: "payroll" as const }]
+              : []),
             { href: "/owner/settings", label: "Module settings", icon: "organization" },
-            { href: "/hr/payroll", label: "Payroll", icon: "payroll" },
-            { href: "/hr/reports", label: "Reports", icon: "reports" },
-            { href: "/hr/audit", label: "Audit", icon: "audit" },
           ],
         },
       ];

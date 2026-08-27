@@ -6,8 +6,10 @@ import { formatCurrency } from "@/components/employee/employee-shared";
 import { PortalIcon } from "@/components/portal/portal-icons";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { listPayslips } from "@/lib/employee/payslips";
+import { requireModule } from "@/lib/entitlements";
 
 export default async function Page() {
+  await requireModule("payroll");
   const payslips = await listPayslips();
 
   return (

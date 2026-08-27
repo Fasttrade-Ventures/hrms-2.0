@@ -3,19 +3,15 @@ import type { CompanyEventFormInput } from "@hrms/validation";
 import { logAuditEvent } from "@/lib/audit/log-event";
 import { requireRole } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export async function createCompanyEvent(input: {
   form: CompanyEventFormInput;
   actorUserId: string;
 }): Promise<void> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -51,7 +47,7 @@ export async function updateCompanyEvent(input: {
   actorUserId: string;
 }): Promise<void> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const { error } = await supabase
@@ -85,7 +81,7 @@ export async function deleteCompanyEvent(input: {
   actorUserId: string;
 }): Promise<void> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const { error } = await supabase

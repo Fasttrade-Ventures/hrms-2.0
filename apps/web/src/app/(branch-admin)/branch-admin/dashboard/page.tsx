@@ -10,7 +10,7 @@ import { greetingForHour } from "@/lib/employees/self";
 
 export default async function Page() {
   const context = await requireBranchAdminContext();
-  const data = await getBranchDashboardData(context.organizationId, context.branchId);
+  const data = await getBranchDashboardData(context.organizationId, context.branchIds);
   const hour = new Date().getHours();
   const firstName = context.fullName?.split(/\s+/)[0] ?? "Admin";
 
@@ -63,9 +63,21 @@ export default async function Page() {
           </Link>
           <Link
             className="rounded-[var(--radius-md)] border border-[var(--border-primary)] px-4 py-2 text-sm font-medium hover:bg-[var(--surface-muted)]"
-            href="/hr/documents"
+            href="/branch-admin/documents"
           >
-            Document compliance
+            Documents
+          </Link>
+          <Link
+            className="rounded-[var(--radius-md)] border border-[var(--border-primary)] px-4 py-2 text-sm font-medium hover:bg-[var(--surface-muted)]"
+            href="/branch-admin/apply-behalf"
+          >
+            Apply on behalf
+          </Link>
+          <Link
+            className="rounded-[var(--radius-md)] border border-[var(--border-primary)] px-4 py-2 text-sm font-medium hover:bg-[var(--surface-muted)]"
+            href="/branch-admin/reports"
+          >
+            Reports
           </Link>
         </div>
       </div>

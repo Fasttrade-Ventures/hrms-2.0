@@ -9,8 +9,9 @@ import { clockIn, clockOut } from "@/lib/employee/attendance";
 import { createLeaveRequest } from "@/lib/employee/leave";
 import { requireEmployeeContext } from "@/lib/employee/leave";
 import { submitEmployeeRequest } from "@/lib/employee/submit-request";
+import { requireModule } from "@/lib/entitlements";
 import { createClient } from "@/lib/supabase/server";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRateLimitDurable } from "@/lib/rate-limit";
 
 export type EmployeeActionState = {
   error?: string;
@@ -31,7 +32,7 @@ export async function applyLeave(
 
     const { organizationId, session, employeeId } = await requireEmployeeContext();
 
-    const rateLimit = checkRateLimit(`leave:${employeeId}`, 5, 60000, 3000);
+    const rateLimit = await checkRateLimitDurable(`leave:${employeeId}`, 5, 60000, 3000);
     if (!rateLimit.allowed) {
       return { error: `Too many requests. Please try again in ${rateLimit.retryAfterSeconds} seconds.` };
     }
@@ -107,13 +108,31 @@ export async function submitClaim(
   }
 
   try {
+    await requireModule("claims");
     const { employeeId, organizationId } = await requireEmployeeContext();
 
-    const rateLimit = checkRateLimit(`claim:${employeeId}`, 15, 60000, 2000);
+    const rateLimit = await checkRateLimitDurable(`claim:${employeeId}`, 15, 60000, 2000);
     if (!rateLimit.allowed) {
       return { error: `Too many requests. Please try again in ${rateLimit.retryAfterSeconds} seconds.` };
     }
     const supabase = await createClient();
+
+    const { data: claimType, error: claimTypeError } = await supabase
+      .from("claim_types")
+      .select("id, name, max_amount")
+      .eq("id", parsed.data.claimTypeId)
+      .eq("organization_id", organizationId)
+      .maybeSingle();
+
+    if (claimTypeError) throw new Error(claimTypeError.message);
+    if (!claimType) return { error: "Claim type not found." };
+
+    const amount = Number(parsed.data.amount);
+    if (claimType.max_amount != null && amount > Number(claimType.max_amount)) {
+      return {
+        error: `Amount exceeds maximum allowed (RM ${Number(claimType.max_amount).toFixed(2)}).`,
+      };
+    }
 
     const { data, error } = await supabase
       .from("claims")
@@ -136,7 +155,7 @@ export async function submitClaim(
       sourceTable: "claims",
       sourceId: data.id,
       payload: {
-        claimTypeName: (data.claim_types as { name?: string } | null)?.name ?? "Claim",
+        claimTypeName: claimType.name ?? "Claim",
         amount: parsed.data.amount,
         receiptDate: parsed.data.receiptDate,
       },
@@ -164,6 +183,7 @@ export async function submitOvertime(
   }
 
   try {
+    await requireModule("ot");
     const { employeeId, organizationId } = await requireEmployeeContext();
     const supabase = await createClient();
 
@@ -211,6 +231,7 @@ export async function submitReplacementCredit(
   }
 
   try {
+    await requireModule("replacement");
     const { employeeId, organizationId } = await requireEmployeeContext();
     const supabase = await createClient();
 
@@ -345,7 +366,7 @@ export async function submitManualAttendance(
 export async function employeeClockIn(formData?: FormData): Promise<EmployeeActionState> {
   try {
     const { employeeId } = await requireEmployeeContext();
-    const rateLimit = checkRateLimit(`clock_in:${employeeId}`, 5, 60000, 3000);
+    const rateLimit = await checkRateLimitDurable(`clock_in:${employeeId}`, 5, 60000, 3000);
     if (!rateLimit.allowed) {
       return { error: `Too many requests. Please try again in ${rateLimit.retryAfterSeconds} seconds.` };
     }
@@ -374,7 +395,7 @@ export async function employeeClockIn(formData?: FormData): Promise<EmployeeActi
 export async function employeeClockOut(): Promise<EmployeeActionState> {
   try {
     const { employeeId } = await requireEmployeeContext();
-    const rateLimit = checkRateLimit(`clock_out:${employeeId}`, 5, 60000, 3000);
+    const rateLimit = await checkRateLimitDurable(`clock_out:${employeeId}`, 5, 60000, 3000);
     if (!rateLimit.allowed) {
       return { error: `Too many requests. Please try again in ${rateLimit.retryAfterSeconds} seconds.` };
     }

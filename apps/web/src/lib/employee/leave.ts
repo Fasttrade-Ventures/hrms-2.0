@@ -4,12 +4,8 @@ import { countWorkingDays } from "@hrms/domain";
 import { submitForApproval } from "@/lib/approvals/service";
 import { requireAuth } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export type LeaveTypeOption = {
   id: string;
@@ -54,7 +50,7 @@ export async function requireEmployeeContext() {
   return {
     session,
     employeeId,
-    organizationId: getOrganizationId(),
+    organizationId: await requireOrganizationId(),
   };
 }
 
@@ -70,6 +66,7 @@ export async function listLeaveTypes(): Promise<LeaveTypeOption[]> {
 
   const allowedIds = (allowedData ?? []).map((row) => row.leave_type_id);
 
+  // Intentional policy: empty allow-list means all org leave types are available.
   const query = supabase
     .from("leave_types")
     .select("id, name, entitlement_days, is_unpaid, requires_attachment")
@@ -101,7 +98,8 @@ export async function listLeaveRequests(): Promise<LeaveRequestRow[]> {
     .select("id, start_date, end_date, half_day, days, reason, status, created_at, leave_types(name), approval_request_id")
     .eq("organization_id", organizationId)
     .eq("employee_id", employeeId)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(200);
 
   if (error) throw new Error(error.message);
 
@@ -218,7 +216,10 @@ export async function getLeaveBalances(): Promise<LeaveBalanceRow[]> {
   });
 }
 
-export function calculateLeaveDays(input: LeaveRequestInput): number {
+export function calculateLeaveDays(
+  input: LeaveRequestInput,
+  options?: { holidays?: string[] },
+): number {
   const start = new Date(`${input.startDate}T00:00:00`);
   const end = new Date(`${input.endDate}T00:00:00`);
 
@@ -229,17 +230,40 @@ export function calculateLeaveDays(input: LeaveRequestInput): number {
   return countWorkingDays(start, end, {
     weekendMode: "sat_sun",
     halfDay: input.halfDay,
+    holidays: options?.holidays,
   });
 }
 
 export async function createLeaveRequest(input: LeaveRequestInput): Promise<string> {
   const session = await requireAuth();
   const { employeeId, organizationId } = await requireEmployeeContext();
-  const days = calculateLeaveDays(input);
   const supabase = await createClient();
+
+  const { assertLeaveTypeAllowed } = await import("@/lib/leave/allowlist");
+  await assertLeaveTypeAllowed({ organizationId, employeeId, leaveTypeId: input.leaveTypeId });
+
+  const { assertNoOverlappingLeave } = await import("@/lib/leave/overlap");
+  await assertNoOverlappingLeave({
+    organizationId,
+    employeeId,
+    startDate: input.startDate,
+    endDate: input.endDate,
+  });
+
+  const { loadLeaveHolidayDates } = await import("@/lib/leave/holidays");
+  const holidays = await loadLeaveHolidayDates(organizationId);
+  const days = calculateLeaveDays(input, { holidays });
 
   const { assertLeaveDatesAllowed } = await import("@/lib/leave/blackout");
   await assertLeaveDatesAllowed(organizationId, input.leaveTypeId, input.startDate, input.endDate);
+
+  const { assertLeaveBalance } = await import("@/lib/leave/balance");
+  await assertLeaveBalance({
+    organizationId,
+    employeeId,
+    leaveTypeId: input.leaveTypeId,
+    days,
+  });
 
   const { data: leaveType } = await supabase
     .from("leave_types")

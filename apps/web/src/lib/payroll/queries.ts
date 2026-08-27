@@ -1,11 +1,7 @@
 import { requireRole } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export type PayrunListItem = {
   id: string;
@@ -52,6 +48,9 @@ export type PayrunDetail = {
   payGroupName: string | null;
   lockedAt: string | null;
   flaggedCount: number;
+  itemTotal: number;
+  page: number;
+  pageSize: number;
   totals: {
     gross: number;
     epfEmployee: number;
@@ -76,7 +75,7 @@ export type PayGroupOption = {
 
 export async function listPayrunBranches(payrunId: string): Promise<Array<{ id: string; name: string }>> {
   await requireRole("hr_administrator", "director");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const { data: items, error } = await supabase
@@ -104,9 +103,10 @@ export async function listPayruns(): Promise<PayrunListItem[]> {
     .select(
       "id, period_year, period_month, status, earning_period_start, earning_period_end, pay_date, scope, payrun_type, pay_groups(name)",
     )
-    .eq("organization_id", getOrganizationId())
+    .eq("organization_id", await requireOrganizationId())
     .order("period_year", { ascending: false })
-    .order("period_month", { ascending: false });
+    .order("period_month", { ascending: false })
+    .limit(100);
 
   if (error) throw new Error(error.message);
 
@@ -134,7 +134,7 @@ export async function listPayGroups(): Promise<PayGroupOption[]> {
   const { data, error } = await supabase
     .from("pay_groups")
     .select("id, name, cycle, cutoff_day")
-    .eq("organization_id", getOrganizationId())
+    .eq("organization_id", await requireOrganizationId())
     .order("name");
 
   if (error) throw new Error(error.message);
@@ -147,10 +147,17 @@ export async function listPayGroups(): Promise<PayGroupOption[]> {
   }));
 }
 
-export async function getPayrunDetail(payrunId: string): Promise<PayrunDetail | null> {
+export async function getPayrunDetail(
+  payrunId: string,
+  opts?: { page?: number; pageSize?: number },
+): Promise<PayrunDetail | null> {
   await requireRole("hr_administrator", "director");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
+  const pageSize = Math.min(Math.max(opts?.pageSize ?? 50, 10), 200);
+  const page = Math.max(opts?.page ?? 1, 1);
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
 
   const { data: payrun, error } = await supabase
     .from("payroll_payruns")
@@ -164,16 +171,31 @@ export async function getPayrunDetail(payrunId: string): Promise<PayrunDetail | 
   if (error) throw new Error(error.message);
   if (!payrun) return null;
 
-  const { data: items, error: itemsError } = await supabase
-    .from("payroll_payrun_items")
-    .select(
-      "id, gross_pay, epf_employee, epf_employer, socso_employee, socso_employer, eis_employee, eis_employer, pcb, hrdf_employer, net_pay, requires_resolution, employees(employee_number, full_name, email), branches(name)",
-    )
-    .eq("payrun_id", payrunId)
-    .eq("organization_id", organizationId)
-    .order("created_at");
+  const [
+    { data: items, error: itemsError, count: itemCount },
+    { data: totalsRow, error: totalsError },
+  ] = await Promise.all([
+    supabase
+      .from("payroll_payrun_items")
+      .select(
+        "id, gross_pay, epf_employee, epf_employer, socso_employee, socso_employer, eis_employee, eis_employer, pcb, hrdf_employer, net_pay, requires_resolution, employees(employee_number, full_name, email), branches(name)",
+        { count: "exact" },
+      )
+      .eq("payrun_id", payrunId)
+      .eq("organization_id", organizationId)
+      .order("created_at")
+      .range(from, to),
+    supabase.rpc("payrun_item_totals", {
+      p_organization_id: organizationId,
+      p_payrun_id: payrunId,
+    }),
+  ]);
 
   if (itemsError) throw new Error(itemsError.message);
+  if (totalsError) throw new Error(totalsError.message);
+
+  const totalsSource = Array.isArray(totalsRow) ? totalsRow[0] : totalsRow;
+  const flaggedCount = Number(totalsSource?.flagged_count ?? 0);
 
   const itemIds = (items ?? []).map((row) => row.id);
   const basicByItem = new Map<string, string>();
@@ -221,32 +243,18 @@ export async function getPayrunDetail(payrunId: string): Promise<PayrunDetail | 
     };
   });
 
-  const totals = mappedItems.reduce(
-    (acc, item) => ({
-      gross: acc.gross + Number(item.grossPay),
-      epfEmployee: acc.epfEmployee + Number(item.epfEmployee),
-      epfEmployer: acc.epfEmployer + Number(item.epfEmployer),
-      socsoEmployee: acc.socsoEmployee + Number(item.socsoEmployee),
-      socsoEmployer: acc.socsoEmployer + Number(item.socsoEmployer),
-      eisEmployee: acc.eisEmployee + Number(item.eisEmployee),
-      eisEmployer: acc.eisEmployer + Number(item.eisEmployer),
-      pcb: acc.pcb + Number(item.pcb),
-      hrdfEmployer: acc.hrdfEmployer + Number(item.hrdfEmployer),
-      net: acc.net + Number(item.netPay),
-    }),
-    {
-      gross: 0,
-      epfEmployee: 0,
-      epfEmployer: 0,
-      socsoEmployee: 0,
-      socsoEmployer: 0,
-      eisEmployee: 0,
-      eisEmployer: 0,
-      pcb: 0,
-      hrdfEmployer: 0,
-      net: 0,
-    },
-  );
+  const totals = {
+    gross: Number(totalsSource?.gross_pay ?? 0),
+    epfEmployee: Number(totalsSource?.epf_employee ?? 0),
+    epfEmployer: Number(totalsSource?.epf_employer ?? 0),
+    socsoEmployee: Number(totalsSource?.socso_employee ?? 0),
+    socsoEmployer: Number(totalsSource?.socso_employer ?? 0),
+    eisEmployee: Number(totalsSource?.eis_employee ?? 0),
+    eisEmployer: Number(totalsSource?.eis_employer ?? 0),
+    pcb: Number(totalsSource?.pcb ?? 0),
+    hrdfEmployer: Number(totalsSource?.hrdf_employer ?? 0),
+    net: Number(totalsSource?.net_pay ?? 0),
+  };
 
   const payGroup = Array.isArray(payrun.pay_groups) ? payrun.pay_groups[0] : payrun.pay_groups;
 
@@ -262,7 +270,10 @@ export async function getPayrunDetail(payrunId: string): Promise<PayrunDetail | 
     payrunType: payrun.payrun_type,
     payGroupName: (payGroup as { name?: string } | null)?.name ?? null,
     lockedAt: payrun.locked_at,
-    flaggedCount: mappedItems.filter((item) => item.requiresResolution).length,
+    flaggedCount: flaggedCount ?? 0,
+    itemTotal: itemCount ?? mappedItems.length,
+    page,
+    pageSize,
     totals,
     items: mappedItems,
   };

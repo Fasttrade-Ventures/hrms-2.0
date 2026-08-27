@@ -12,12 +12,8 @@ import { buildPayrunItemComponentRows } from "@/lib/payroll/item-components";
 import { assertStatutoryRulesAvailable, loadStatutoryRulePacks } from "@/lib/payroll/rules";
 import { ensurePayrollComponents } from "@/lib/payroll/seed";
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 function mapPayFrequency(cycle: string | null | undefined): PayFrequency {
   if (cycle === "weekly") return "weekly";
@@ -31,7 +27,7 @@ export async function generateDraftPayrun(input: CreatePayrunInput): Promise<str
   await assertStatutoryRulesAvailable(input.earningPeriodEnd);
   const statutoryRules = await loadStatutoryRulePacks(input.earningPeriodEnd);
 
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   if (input.scope === "pay_group" && !input.payGroupId) {
@@ -52,6 +48,10 @@ export async function generateDraftPayrun(input: CreatePayrunInput): Promise<str
   const frequency = mapPayFrequency(payGroupCycle);
   const periodMonth = input.periodMonth ?? new Date(input.earningPeriodEnd).getMonth() + 1;
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   const { data: payrun, error } = await supabase
     .from("payroll_payruns")
     .insert({
@@ -66,6 +66,7 @@ export async function generateDraftPayrun(input: CreatePayrunInput): Promise<str
       status: "draft",
       scope: input.scope,
       payrun_type: input.payrunType,
+      last_edited_by: user?.id ?? null,
     })
     .select("id")
     .single();
@@ -73,9 +74,6 @@ export async function generateDraftPayrun(input: CreatePayrunInput): Promise<str
   if (error || !payrun) throw new Error(error?.message ?? "Failed to create payrun.");
 
   const { logAuditEvent } = await import("@/lib/audit/log-event");
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   await logAuditEvent({
     organizationId,
     actorUserId: user?.id ?? null,

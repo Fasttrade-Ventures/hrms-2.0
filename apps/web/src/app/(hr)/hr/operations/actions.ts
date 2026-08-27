@@ -5,30 +5,29 @@ import { redirect } from "next/navigation";
 
 import { actOnApproval } from "@/lib/approvals/service";
 import { requireRole } from "@/lib/auth/session";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
 export type HrOperationsActionState = {
   error?: string;
   success?: string;
 };
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export async function approveRequestAsHr(
   _prev: HrOperationsActionState,
   formData: FormData,
 ): Promise<HrOperationsActionState> {
   const stepId = String(formData.get("stepId") ?? "");
-  const comment = String(formData.get("comment") ?? "").trim() || undefined;
+  const comment = String(formData.get("comment") ?? "").trim();
 
   if (!stepId) return { error: "Missing approval step." };
+  if (comment.length < 3) {
+    return { error: "Override comment is required (min 3 characters)." };
+  }
 
   try {
     const session = await requireRole("hr_administrator");
-    const organizationId = getOrganizationId();
+    const organizationId = await requireOrganizationId();
     await actOnApproval({
       stepId,
       actorEmployeeId: session.membership.employeeId,
@@ -37,6 +36,16 @@ export async function approveRequestAsHr(
       event: "approve",
       comment,
       hrOverride: true,
+    });
+
+    const { logAuditEvent } = await import("@/lib/audit/log-event");
+    await logAuditEvent({
+      organizationId,
+      actorUserId: session.user.id,
+      action: "hr.operations.override_approve",
+      resourceType: "approval_step",
+      resourceId: stepId,
+      metadata: { comment },
     });
 
     revalidatePath("/hr/operations");
@@ -53,13 +62,16 @@ export async function rejectRequestAsHr(
   formData: FormData,
 ): Promise<HrOperationsActionState> {
   const stepId = String(formData.get("stepId") ?? "");
-  const comment = String(formData.get("comment") ?? "").trim() || undefined;
+  const comment = String(formData.get("comment") ?? "").trim();
 
   if (!stepId) return { error: "Missing approval step." };
+  if (comment.length < 3) {
+    return { error: "Override comment is required (min 3 characters)." };
+  }
 
   try {
     const session = await requireRole("hr_administrator");
-    const organizationId = getOrganizationId();
+    const organizationId = await requireOrganizationId();
     await actOnApproval({
       stepId,
       actorEmployeeId: session.membership.employeeId,
@@ -68,6 +80,16 @@ export async function rejectRequestAsHr(
       event: "reject",
       comment,
       hrOverride: true,
+    });
+
+    const { logAuditEvent } = await import("@/lib/audit/log-event");
+    await logAuditEvent({
+      organizationId,
+      actorUserId: session.user.id,
+      action: "hr.operations.override_reject",
+      resourceType: "approval_step",
+      resourceId: stepId,
+      metadata: { comment },
     });
 
     revalidatePath("/hr/operations");

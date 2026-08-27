@@ -13,6 +13,8 @@ export type TenantListItem = {
   productTier: ProductTier;
   createdAt: string;
   employeeCount: number;
+  subscriptionStatus: string | null;
+  billingInterval: string | null;
 };
 
 export async function listTenants(): Promise<TenantListItem[]> {
@@ -38,6 +40,22 @@ export async function listTenants(): Promise<TenantListItem[]> {
     counts.set(row.organization_id, (counts.get(row.organization_id) ?? 0) + 1);
   }
 
+  const { data: subscriptions, error: subError } = await admin
+    .from("organization_billing_subscriptions")
+    .select("organization_id, status, billing_interval");
+
+  if (subError && subError.code !== "42P01") {
+    throw new Error(subError.message);
+  }
+
+  const subByOrg = new Map<string, { status: string; billing_interval: string }>();
+  for (const row of subscriptions ?? []) {
+    subByOrg.set(row.organization_id, {
+      status: row.status as string,
+      billing_interval: row.billing_interval as string,
+    });
+  }
+
   return (organizations ?? []).map((row) => ({
     id: row.id,
     name: row.name,
@@ -45,6 +63,8 @@ export async function listTenants(): Promise<TenantListItem[]> {
     productTier: row.product_tier as ProductTier,
     createdAt: row.created_at,
     employeeCount: counts.get(row.id) ?? 0,
+    subscriptionStatus: subByOrg.get(row.id)?.status ?? null,
+    billingInterval: subByOrg.get(row.id)?.billing_interval ?? null,
   }));
 }
 
@@ -65,4 +85,33 @@ export async function getTenantById(tenantId: string): Promise<{ id: string; nam
   const { data, error } = await admin.from("organizations").select("id, name").eq("id", tenantId).maybeSingle();
   if (error) throw new Error(error.message);
   return data;
+}
+
+export async function updateTenantProductTier(
+  tenantId: string,
+  tier: ProductTier,
+  actorUserId: string,
+): Promise<void> {
+  await requireRole("platform_administrator");
+  if (!isSaasMode()) {
+    throw new Error("Tenant tier changes are only available in SaaS deployment mode.");
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("organizations")
+    .update({ product_tier: tier, updated_at: new Date().toISOString() })
+    .eq("id", tenantId);
+
+  if (error) throw new Error(error.message);
+
+  const { logAuditEvent } = await import("@/lib/audit/log-event");
+  await logAuditEvent({
+    organizationId: tenantId,
+    actorUserId,
+    action: "platform.tenant.tier_updated",
+    resourceType: "organization",
+    resourceId: tenantId,
+    metadata: { tier },
+  });
 }

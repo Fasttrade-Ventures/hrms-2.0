@@ -19,12 +19,8 @@ import { logAuditEvent } from "@/lib/audit/log-event";
 import { requireRole } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export type HrAnnouncementRow = {
   id: string;
@@ -127,7 +123,7 @@ function resolvePublishFields(input: AnnouncementFormInput, wasDraft: boolean, e
 
 export async function listHrAnnouncements(): Promise<HrAnnouncementRow[]> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
 
@@ -224,7 +220,7 @@ export async function createAnnouncement(input: {
   attachments?: File[];
 }): Promise<string> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const publishFields = resolvePublishFields(input.form, true, null);
@@ -312,7 +308,7 @@ export async function updateAnnouncement(input: {
   attachments?: File[];
 }): Promise<void> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
   const admin = createAdminClient();
 
@@ -419,7 +415,7 @@ export async function updateAnnouncement(input: {
 
 export async function deleteAnnouncement(announcementId: string, actorUserId?: string | null): Promise<void> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const admin = createAdminClient();
 
   const { data: existing, error: existingError } = await admin

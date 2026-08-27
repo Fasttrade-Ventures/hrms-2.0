@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
 export type LeaveBlackoutRow = {
   id: string;
@@ -9,18 +10,13 @@ export type LeaveBlackoutRow = {
   leaveTypeNames: string[];
 };
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 function datesOverlap(startA: string, endA: string, startB: string, endB: string): boolean {
   return startA <= endB && endA >= startB;
 }
 
 export async function listLeaveBlackouts(): Promise<LeaveBlackoutRow[]> {
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const [blackoutsRes, typesRes] = await Promise.all([

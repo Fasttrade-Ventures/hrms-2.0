@@ -10,12 +10,8 @@ import {
 import { createClient } from "@/lib/supabase/server";
 
 import type { CompanyEventRow, EmployeeBranchContext, HrCalendarFilters } from "./types";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 type LeaveRow = {
   id: string;
@@ -124,6 +120,7 @@ async function fetchHolidays(input: {
   rangeStart: string;
   rangeEnd: string;
   branchId?: string | null;
+  branchIds?: string[] | null;
   allBranches?: boolean;
 }): Promise<CalendarDayEvent[]> {
   const supabase = await createClient();
@@ -134,8 +131,18 @@ async function fetchHolidays(input: {
     .gte("holiday_date", input.rangeStart)
     .lte("holiday_date", input.rangeEnd);
 
-  if (!input.allBranches && input.branchId) {
-    query = query.or(`branch_id.is.null,branch_id.eq.${input.branchId}`);
+  if (!input.allBranches) {
+    const scopeIds =
+      input.branchIds && input.branchIds.length > 0
+        ? input.branchIds
+        : input.branchId
+          ? [input.branchId]
+          : null;
+    if (scopeIds && scopeIds.length === 1) {
+      query = query.or(`branch_id.is.null,branch_id.eq.${scopeIds[0]}`);
+    } else if (scopeIds && scopeIds.length > 1) {
+      query = query.or(`branch_id.is.null,branch_id.in.(${scopeIds.join(",")})`);
+    }
   }
 
   const { data, error } = await query.order("holiday_date");
@@ -184,7 +191,13 @@ async function fetchLeaveRows(input: {
 
   let rows = (data ?? []) as LeaveRow[];
 
-  if (input.filters?.branchId) {
+  if (input.filters?.branchIds && input.filters.branchIds.length > 0) {
+    const scope = new Set(input.filters.branchIds);
+    rows = rows.filter((row) => {
+      const branchId = first(row.employees)?.branch_id;
+      return branchId != null && scope.has(branchId);
+    });
+  } else if (input.filters?.branchId) {
     rows = rows.filter((row) => first(row.employees)?.branch_id === input.filters?.branchId);
   }
 
@@ -378,6 +391,7 @@ export async function listHrCalendarDays(input: {
       rangeStart: gridStart,
       rangeEnd: gridEnd,
       branchId: filters.allBranches ? null : filters.branchId,
+      branchIds: filters.allBranches ? null : filters.branchIds,
       allBranches: filters.allBranches,
     }),
     fetchCompanyEvents({
@@ -415,7 +429,7 @@ export async function listHrCalendarDays(input: {
 }
 
 export async function listCompanyEventsForHr(): Promise<CompanyEventRow[]> {
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("company_events")

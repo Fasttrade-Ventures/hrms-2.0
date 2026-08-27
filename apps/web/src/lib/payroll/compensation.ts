@@ -1,11 +1,7 @@
 import { requireRole } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export type EmployeeCompensation = {
   payBasis: "monthly" | "hourly" | "daily";
@@ -50,7 +46,7 @@ export type EmployeeTaxProfile = {
 
 export async function listAllowanceComponents(): Promise<AllowanceComponentOption[]> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -68,7 +64,7 @@ export async function listAllowanceComponents(): Promise<AllowanceComponentOptio
 
 export async function getEmployeeCompensation(employeeId: string): Promise<EmployeeCompensation | null> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const { data: employee } = await supabase
@@ -107,7 +103,7 @@ export async function getEmployeeCompensation(employeeId: string): Promise<Emplo
 
 export async function listRecurringAllowances(employeeId: string): Promise<RecurringAllowance[]> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -143,7 +139,7 @@ export async function upsertEmployeeCompensation(
   input: EmployeeCompensation,
 ): Promise<void> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const { error } = await supabase.from("employee_compensation").upsert({
@@ -183,7 +179,7 @@ export async function upsertRecurringAllowance(
   },
 ): Promise<void> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const row = {
@@ -207,7 +203,7 @@ export async function upsertRecurringAllowance(
 
 export async function deleteRecurringAllowance(allowanceId: string): Promise<void> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const { error } = await supabase
@@ -221,7 +217,7 @@ export async function deleteRecurringAllowance(allowanceId: string): Promise<voi
 
 export async function ensureEmployeeTaxProfile(employeeId: string): Promise<void> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const { data: existing } = await supabase
@@ -262,7 +258,7 @@ export async function ensureEmployeeTaxProfile(employeeId: string): Promise<void
 
 export async function getEmployeeTaxProfile(employeeId: string): Promise<EmployeeTaxProfile | null> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
   const year = new Date().getFullYear();
 
@@ -321,7 +317,7 @@ export async function upsertEmployeeTaxProfile(
   },
 ): Promise<void> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const { error } = await supabase.from("employee_tax_profiles").upsert({
@@ -344,7 +340,7 @@ export async function setYtdOpeningBalance(
   balances: { gross: number; epf: number; pcb: number },
 ): Promise<void> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const { error } = await supabase.from("payroll_ytd_balances").upsert(

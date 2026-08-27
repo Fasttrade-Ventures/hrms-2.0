@@ -67,6 +67,12 @@ export default async function DocumentLibraryPage({
         folders={folders}
         requiredTypes={requiredTypes}
       />
+      {library.truncated ? (
+        <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-900">
+          Showing first {library.fetchedCap} matching documents from the database. Narrow filters if you
+          need older records.
+        </p>
+      ) : null}
       <DocumentLibrary
         defaultEmployeeId={filters.employeeId}
         employees={employees}

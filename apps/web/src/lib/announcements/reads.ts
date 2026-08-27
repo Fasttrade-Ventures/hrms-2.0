@@ -1,16 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export async function markAnnouncementRead(input: {
   announcementId: string;
   userId: string;
 }): Promise<void> {
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const { error } = await supabase.from("announcement_reads").upsert(
@@ -27,7 +23,7 @@ export async function markAnnouncementRead(input: {
 }
 
 export async function getReadAnnouncementIds(userId: string): Promise<Set<string>> {
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const { data, error } = await supabase

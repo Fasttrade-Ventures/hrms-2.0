@@ -1,14 +1,14 @@
 import { ListCard } from "@hrms/ui";
 
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
+import { orgLocalDateString } from "@/lib/datetime/org-timezone";
 import { listEmployeeRosterSchedule, addDays } from "@/lib/hr/rosters";
 
 export default async function EmployeeSchedulePage() {
   const daysToShow = 14;
   const entries = await listEmployeeRosterSchedule(daysToShow);
 
-  // Generate 14 days starting from today in YYYY-MM-DD format
-  const start = new Date().toISOString().slice(0, 10);
+  const start = orgLocalDateString();
   const dates: string[] = [];
   let current = start;
   for (let i = 0; i < daysToShow; i++) {

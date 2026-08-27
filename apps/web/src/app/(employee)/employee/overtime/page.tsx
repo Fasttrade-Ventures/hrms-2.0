@@ -11,8 +11,10 @@ import { formatDate, RequestStatusPill } from "@/components/employee/employee-sh
 import { PortalIcon } from "@/components/portal/portal-icons";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { listOvertimeRequests } from "@/lib/employee/requests";
+import { requireModule } from "@/lib/entitlements";
 
 export default async function Page() {
+  await requireModule("ot");
   const today = new Date().toISOString().slice(0, 10);
   const requests = await listOvertimeRequests();
 

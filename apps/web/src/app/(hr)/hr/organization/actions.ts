@@ -128,7 +128,7 @@ export async function createBranch(
   formData: FormData,
 ): Promise<OrgActionState> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await getOrganizationId();
 
   const parsed = createBranchSchema.safeParse(readBranchForm(formData));
 
@@ -154,7 +154,7 @@ export async function updateBranch(
   formData: FormData,
 ): Promise<OrgActionState> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await getOrganizationId();
 
   const parsed = updateBranchSchema.safeParse(readBranchForm(formData));
 
@@ -177,7 +177,7 @@ export async function updateBranch(
 
 export async function deleteBranch(branchId: string): Promise<OrgActionState> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await getOrganizationId();
   const supabase = await createClient();
 
   const { count, error: countError } = await supabase
@@ -208,7 +208,7 @@ export async function createDepartment(
   formData: FormData,
 ): Promise<OrgActionState> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await getOrganizationId();
 
   const parsed = createDepartmentSchema.safeParse({
     name: String(formData.get("name") ?? "").trim(),
@@ -238,7 +238,7 @@ export async function updateDepartment(
   formData: FormData,
 ): Promise<OrgActionState> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await getOrganizationId();
 
   const parsed = updateDepartmentSchema.safeParse({
     name: String(formData.get("name") ?? "").trim(),
@@ -270,7 +270,7 @@ export async function updateDepartment(
 
 export async function deleteDepartment(departmentId: string): Promise<OrgActionState> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await getOrganizationId();
   const supabase = await createClient();
 
   const { count, error: countError } = await supabase
@@ -301,7 +301,7 @@ export async function createShift(
   formData: FormData,
 ): Promise<OrgActionState> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await getOrganizationId();
 
   const parsed = createShiftSchema.safeParse({
     name: String(formData.get("name") ?? "").trim(),
@@ -335,7 +335,7 @@ export async function updateShift(
   formData: FormData,
 ): Promise<OrgActionState> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await getOrganizationId();
 
   const parsed = updateShiftSchema.safeParse({
     name: String(formData.get("name") ?? "").trim(),
@@ -368,7 +368,7 @@ export async function updateShift(
 
 export async function deleteShift(shiftId: string): Promise<OrgActionState> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await getOrganizationId();
   const supabase = await createClient();
 
   const { count, error: countError } = await supabase
@@ -399,7 +399,7 @@ export async function createHoliday(
   formData: FormData,
 ): Promise<OrgActionState> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await getOrganizationId();
 
   const parsed = createHolidaySchema.safeParse({
     name: String(formData.get("name") ?? "").trim(),
@@ -431,7 +431,7 @@ export async function updateHoliday(
   formData: FormData,
 ): Promise<OrgActionState> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await getOrganizationId();
 
   const parsed = updateHolidaySchema.safeParse({
     name: String(formData.get("name") ?? "").trim(),
@@ -462,7 +462,7 @@ export async function updateHoliday(
 
 export async function deleteHoliday(holidayId: string): Promise<OrgActionState> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await getOrganizationId();
   const supabase = await createClient();
 
   const { error } = await supabase
@@ -482,7 +482,7 @@ export async function importHolidays(input: {
   year: number;
 }): Promise<ImportHolidaysResult> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await getOrganizationId();
 
   const parsed = importHolidaysSchema.safeParse(input);
   if (!parsed.success) {
@@ -651,7 +651,7 @@ export async function createLeaveType(
   formData: FormData,
 ): Promise<OrgActionState> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await getOrganizationId();
 
   const parsed = createLeaveTypeSchema.safeParse({
     name: String(formData.get("name") ?? "").trim(),
@@ -690,7 +690,7 @@ export async function updateLeaveType(
   formData: FormData,
 ): Promise<OrgActionState> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await getOrganizationId();
 
   const parsed = updateLeaveTypeSchema.safeParse({
     name: String(formData.get("name") ?? "").trim(),
@@ -731,7 +731,7 @@ export async function updateLeaveType(
 
 export async function deleteLeaveType(leaveTypeId: string): Promise<OrgActionState> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await getOrganizationId();
   const supabase = await createClient();
 
   const { count, error: countError } = await supabase
@@ -831,7 +831,7 @@ export async function upsertRosterEntryAction(
   formData: FormData,
 ): Promise<OrgActionState> {
   await requireRole("hr_administrator");
-  const organizationId = getOrganizationId();
+  const organizationId = await getOrganizationId();
 
   const parsed = createRosterEntrySchema.safeParse({
     employeeId: String(formData.get("employeeId") ?? ""),
@@ -873,7 +873,7 @@ export async function createLeaveBlackout(
   const { requireProfessionalTier } = await import("@/lib/entitlements");
   await requireProfessionalTier();
 
-  const organizationId = getOrganizationId();
+  const organizationId = await getOrganizationId();
   const name = String(formData.get("name") ?? "").trim();
   const startDate = String(formData.get("startDate") ?? "").trim();
   const endDate = String(formData.get("endDate") ?? "").trim();
@@ -906,7 +906,7 @@ export async function deleteLeaveBlackout(blackoutId: string): Promise<OrgAction
   const { requireProfessionalTier } = await import("@/lib/entitlements");
   await requireProfessionalTier();
 
-  const organizationId = getOrganizationId();
+  const organizationId = await getOrganizationId();
   const supabase = await createClient();
   const { error } = await supabase
     .from("leave_blackout_periods")

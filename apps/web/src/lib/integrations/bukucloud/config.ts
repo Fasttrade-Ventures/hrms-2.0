@@ -1,14 +1,10 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import type { BukucloudConnectionConfig } from "./types";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
 const PROVIDER = "bukucloud";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 function parseConfig(raw: Record<string, unknown>): BukucloudConnectionConfig | null {
   const baseUrl = typeof raw.baseUrl === "string" ? raw.baseUrl.trim() : "";
@@ -55,13 +51,14 @@ export async function getBukucloudSettings(): Promise<BukucloudSettingsView> {
 }
 
 export async function getBukucloudConnectionConfig(
-  organizationId = getOrganizationId(),
+  organizationId?: string,
 ): Promise<BukucloudConnectionConfig | null> {
+  const resolvedOrganizationId = organizationId ?? (await requireOrganizationId());
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("integration_connections")
     .select("config, status")
-    .eq("organization_id", organizationId)
+    .eq("organization_id", resolvedOrganizationId)
     .eq("provider", PROVIDER)
     .eq("status", "active")
     .maybeSingle();
@@ -81,7 +78,7 @@ export async function upsertBukucloudConnection(input: {
   autoSyncOnLock: boolean;
   enabled: boolean;
 }): Promise<void> {
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const admin = createAdminClient();
 
   const { data: existing } = await admin

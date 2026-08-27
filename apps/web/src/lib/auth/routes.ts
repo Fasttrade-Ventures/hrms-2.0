@@ -96,17 +96,6 @@ export function canAccessPath(
     if (roles.includes("organization_owner")) {
       return true;
     }
-    if (
-      roles.includes("branch_admin") &&
-      (pathname === "/hr/employees" ||
-        pathname.startsWith("/hr/employees/") ||
-        pathname === "/hr/documents" ||
-        pathname.startsWith("/hr/documents/") ||
-        pathname === "/hr/calendar" ||
-        pathname.startsWith("/hr/calendar"))
-    ) {
-      return true;
-    }
     return false;
   }
 

@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 
 import { assignAsset } from "./assignments";
 import { logAssetEvent } from "./audit";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 import type {
   AssetAssignmentRow,
   AssetDetail,
@@ -19,11 +20,6 @@ import type {
   MyAssetRow,
 } from "./types";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 function mapAssignment(row: {
   id: string;
@@ -50,7 +46,7 @@ function mapAssignment(row: {
 export async function listAssets(filters: AssetRegisterFilters = {}): Promise<AssetListRow[]> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   let query = supabase
     .from("assets")
@@ -128,7 +124,7 @@ export async function listAssets(filters: AssetRegisterFilters = {}): Promise<As
 export async function getAssetDetail(assetId: string): Promise<AssetDetail | null> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data: row, error } = await supabase
     .from("assets")
@@ -218,7 +214,7 @@ export async function createAssetRecord(input: {
 }): Promise<string> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data: category, error: categoryError } = await supabase
     .from("asset_categories")
@@ -277,7 +273,7 @@ export async function updateAssetRecord(
 ): Promise<void> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data: category, error: categoryError } = await supabase
     .from("asset_categories")
@@ -404,7 +400,7 @@ export async function listActiveAssignmentsForEmployee(
 ): Promise<EmployeeAssetAssignmentRow[]> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data, error } = await supabase
     .from("asset_assignments")
@@ -441,7 +437,7 @@ export async function listActiveAssignmentsForEmployee(
 export async function listAssetAssignments(assetId: string): Promise<AssetAssignmentRow[]> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
 
   const { data, error } = await supabase
     .from("asset_assignments")

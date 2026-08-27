@@ -2,6 +2,7 @@ import { buildSimplePdf } from "@/lib/files/simple-pdf";
 
 import type { StatutoryExportRow } from "./store";
 import { storePayrollExport } from "./store";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
 export function buildEaPdfLines(input: {
   employerName: string;
@@ -104,8 +105,7 @@ export async function generateEaPdfForEmployee(
   actorUserId: string,
 ): Promise<{ exportId: string; downloadPath: string; fileName: string }> {
   const { createClient } = await import("@/lib/supabase/server");
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const { data: ytd } = await supabase
@@ -157,8 +157,7 @@ export async function generateEaPdfBulk(
   branchId?: string | null,
 ) {
   const { createClient } = await import("@/lib/supabase/server");
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const { data: ytdRows, error: ytdError } = await supabase
@@ -222,8 +221,7 @@ export async function generateCp8dExport(
   branchId?: string | null,
 ) {
   const { createClient } = await import("@/lib/supabase/server");
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const { data: ytdRows, error: ytdError } = await supabase

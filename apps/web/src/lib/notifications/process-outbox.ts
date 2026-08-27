@@ -10,12 +10,22 @@ import {
 import { generatePayslipPdf } from "@/lib/payroll/pdf";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+function allowR2Stub(): boolean {
+  if (process.env.ALLOW_R2_STUB === "1") return true;
+  return process.env.NODE_ENV !== "production" && process.env.ALLOW_R2_STUB !== "0";
+}
+
 function getStorageAdapter(): R2StorageAdapter {
   try {
     return new S3R2StorageAdapter();
   } catch (err) {
-    console.warn("R2 storage not configured, using StubR2StorageAdapter:", err);
-    return new StubR2StorageAdapter();
+    if (allowR2Stub()) {
+      console.warn("R2 storage not configured; ALLOW_R2_STUB/local fallback active:", err);
+      return new StubR2StorageAdapter();
+    }
+    throw err instanceof Error
+      ? err
+      : new Error("R2 storage is not configured. Set R2_* env vars or ALLOW_R2_STUB=1 for local only.");
   }
 }
 
@@ -124,7 +134,14 @@ export async function processNotificationOutbox(limit = 25): Promise<{
           });
 
           const adapter = getStorageAdapter();
-          const organizationId = String(payload.organizationId ?? process.env.DEFAULT_ORGANIZATION_ID);
+          const fallbackOrgId =
+            (process.env.DEPLOYMENT_MODE ?? "standalone") === "standalone"
+              ? process.env.DEFAULT_ORGANIZATION_ID
+              : undefined;
+          const organizationId = String(payload.organizationId ?? fallbackOrgId ?? "");
+          if (!organizationId) {
+            throw new Error("Payslip email missing organizationId");
+          }
           try {
             const ref = await adapter.putObject({
               organizationId,

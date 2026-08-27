@@ -1,6 +1,11 @@
 import type { EntitlementProvider, ModuleKey, ProductTier } from "./types";
 import { CORE_MODULES, ENTERPRISE_MODULES, PROFESSIONAL_MODULES } from "./types";
 
+/**
+ * Standalone commercial default: unset PRODUCT_TIER → enterprise (all modules).
+ * Set PRODUCT_TIER=core|professional to package a narrower standalone deploy.
+ * SaaS should prefer DB org product_tier via createDbEntitlementProvider.
+ */
 function parseTier(): ProductTier {
   const raw = process.env.PRODUCT_TIER?.toLowerCase();
   if (raw === "core") return "core";

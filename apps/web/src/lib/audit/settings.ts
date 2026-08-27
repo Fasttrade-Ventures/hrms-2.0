@@ -2,12 +2,8 @@ import { requireRole } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
 import { getSiemWebhookConfig, upsertSiemWebhookConfig } from "@/lib/audit/webhooks";
 import { createClient } from "@/lib/supabase/server";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-function getOrganizationId(): string {
-  const organizationId = process.env.DEFAULT_ORGANIZATION_ID;
-  if (!organizationId) throw new Error("DEFAULT_ORGANIZATION_ID is not configured.");
-  return organizationId;
-}
 
 export type AuditSettings = {
   retentionDays: number;
@@ -32,7 +28,7 @@ export async function getAuditSettings(): Promise<AuditSettings> {
   await requireRole("hr_administrator");
   await requireModule("audit");
 
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
   const [{ data: org }, siem, { data: archives }] = await Promise.all([
@@ -89,7 +85,7 @@ export async function updateAuditRetentionSettings(input: {
       audit_archive_enabled: input.archiveEnabled,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", getOrganizationId());
+    .eq("id", await requireOrganizationId());
 
   if (error) throw new Error(error.message);
 }
@@ -109,7 +105,7 @@ export async function updateSiemWebhookSettings(input: {
     .map((value) => value.trim())
     .filter(Boolean);
 
-  const organizationId = getOrganizationId();
+  const organizationId = await requireOrganizationId();
   const existing = await getSiemWebhookConfig(organizationId);
   const secret =
     input.secret && input.secret !== "••••••••"

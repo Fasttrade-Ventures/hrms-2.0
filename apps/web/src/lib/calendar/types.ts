@@ -4,6 +4,7 @@ export type CalendarPortalMode = "employee" | "manager" | "hr";
 
 export type HrCalendarFilters = {
   branchId?: string | null;
+  branchIds?: string[] | null;
   departmentId?: string | null;
   statuses?: Array<"pending" | "approved">;
   leaveTypeId?: string | null;

@@ -5,8 +5,10 @@ import {
   HrTextInput,
 } from "@/components/employee/employee-request-form";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
+import { requireModule } from "@/lib/entitlements";
 
 export default async function Page() {
+  await requireModule("replacement");
   const today = new Date().toISOString().slice(0, 10);
 
   return (
