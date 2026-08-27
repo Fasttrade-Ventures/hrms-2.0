@@ -48,10 +48,23 @@ Health checks treat `DEFAULT_ORGANIZATION_ID` as required only when standalone.
 - Pay-first signup (`BILLING_SIGNUP_MODE=pay_first`)
 - Usage metering / hard seat limits
 
+## Known billing ops gaps (re-audit 2026-08-28) — remediated
+
+- ~~`requireActiveSubscription` unused~~ → `requireOrganizationIdForWrite()` on payroll generate/workflow, create employee, leave apply, apply-behalf creates.
+- ~~`billing-renewal` missing from vercel.json~~ → scheduled `0 1 * * *` UTC.
+- ~~`/api/register` without subscription~~ → creates trial subscription when `BILLING_ENABLED`.
+- ~~Health ignores Billplz~~ → requires Billplz env keys when `BILLING_ENABLED=true`.
+
+## Performance
+
+- Billing checks run only on write paths and only when `BILLING_ENABLED=true`.
+- Status query is cached per request (`react` `cache`) and selects three columns only.
+- JWT active-org claim remains deferred (cookie + RLS).
+
 ## Verify locally
 
 ```bash
-DEPLOYMENT_MODE=saas pnpm exec vitest run tests/unit/saas-provision-catalogs.test.ts tests/unit/seed-org-catalogs.test.ts
+DEPLOYMENT_MODE=saas pnpm exec vitest run tests/unit/saas-provision-catalogs.test.ts tests/unit/seed-org-catalogs.test.ts tests/unit/membership-selection.test.ts tests/unit/billing-calculate-invoice.test.ts tests/unit/billplz-signature.test.ts tests/unit/subscription-gate.test.ts
 pnpm --filter @hrms/web typecheck
 pnpm test
 ```

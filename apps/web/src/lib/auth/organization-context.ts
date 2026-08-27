@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 
+import { requireActiveSubscription } from "@/lib/billing/subscription-gate";
 import { getImpersonationOrgId } from "@/lib/platform/impersonation-cookie";
 import { getSession } from "@/lib/auth/session";
 
@@ -65,5 +66,15 @@ export async function requireOrganizationId(): Promise<string> {
         : "DEFAULT_ORGANIZATION_ID is not configured.",
     );
   }
+  return organizationId;
+}
+
+/**
+ * Org id for mutating HR/payroll paths. Enforces SaaS subscription when billing is on.
+ * Read paths should keep using `requireOrganizationId()` (no billing query).
+ */
+export async function requireOrganizationIdForWrite(): Promise<string> {
+  const organizationId = await requireOrganizationId();
+  await requireActiveSubscription(organizationId);
   return organizationId;
 }

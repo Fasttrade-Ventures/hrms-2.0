@@ -1,6 +1,6 @@
 import { requireRoleOrPermission } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import { requireOrganizationId } from "@/lib/auth/organization-context";
+import { requireOrganizationIdForWrite } from "@/lib/auth/organization-context";
 
 
 async function transitionPayrun(
@@ -9,7 +9,7 @@ async function transitionPayrun(
   fromStatuses: string[],
   toStatus: string,
 ): Promise<void> {
-  const organizationId = await requireOrganizationId();
+  const organizationId = await requireOrganizationIdForWrite();
   const supabase = await createClient();
 
   const { data: payrun, error } = await supabase
@@ -68,7 +68,7 @@ async function transitionPayrun(
 
 export async function submitPayrunForReview(payrunId: string, actorUserId: string): Promise<void> {
   await requireRoleOrPermission(["hr_administrator"], ["payroll_processor"]);
-  const organizationId = await requireOrganizationId();
+  const organizationId = await requireOrganizationIdForWrite();
   const supabase = await createClient();
   await supabase
     .from("payroll_payruns")
@@ -80,7 +80,7 @@ export async function submitPayrunForReview(payrunId: string, actorUserId: strin
 
 export async function approvePayrun(payrunId: string, actorUserId: string): Promise<void> {
   await requireRoleOrPermission(["hr_administrator", "director"], ["payroll_approver"]);
-  const organizationId = await requireOrganizationId();
+  const organizationId = await requireOrganizationIdForWrite();
   const supabase = await createClient();
 
   const { data: org } = await supabase
@@ -114,7 +114,7 @@ export async function approvePayrun(payrunId: string, actorUserId: string): Prom
 
 export async function deletePayrun(payrunId: string, actorUserId: string): Promise<void> {
   await requireRoleOrPermission(["hr_administrator"], ["payroll_processor"]);
-  const organizationId = await requireOrganizationId();
+  const organizationId = await requireOrganizationIdForWrite();
   const supabase = await createClient();
 
   const { data: payrun, error } = await supabase

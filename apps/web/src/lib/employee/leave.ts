@@ -4,7 +4,7 @@ import { countWorkingDays } from "@hrms/domain";
 import { submitForApproval } from "@/lib/approvals/service";
 import { requireAuth } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import { requireOrganizationId } from "@/lib/auth/organization-context";
+import { requireOrganizationIdForWrite } from "@/lib/auth/organization-context";
 
 
 export type LeaveTypeOption = {
@@ -50,7 +50,7 @@ export async function requireEmployeeContext() {
   return {
     session,
     employeeId,
-    organizationId: await requireOrganizationId(),
+    organizationId: await requireOrganizationIdForWrite(),
   };
 }
 

@@ -17,6 +17,7 @@ export type HealthReport = {
   deployment: {
     mode: string | null;
     productTier: string | null;
+    billingEnabled: boolean;
   };
   env: Record<string, boolean>;
   services: {
@@ -35,7 +36,9 @@ function envPresent(name: string): boolean {
 
 export async function runHealthChecks(): Promise<HealthReport> {
   const deploymentMode = process.env.DEPLOYMENT_MODE ?? "standalone";
-  const env = {
+  const billingEnabled = deploymentMode === "saas" && process.env.BILLING_ENABLED === "true";
+
+  const env: Record<string, boolean> = {
     DEPLOYMENT_MODE: envPresent("DEPLOYMENT_MODE"),
     // Required only for standalone single-tenant installs.
     DEFAULT_ORGANIZATION_ID:
@@ -51,6 +54,12 @@ export async function runHealthChecks(): Promise<HealthReport> {
     MAIL_FROM: envPresent("MAIL_FROM"),
     PRODUCT_TIER: envPresent("PRODUCT_TIER"),
   };
+
+  if (billingEnabled) {
+    env.BILLPLZ_API_KEY = envPresent("BILLPLZ_API_KEY");
+    env.BILLPLZ_X_SIGNATURE_KEY = envPresent("BILLPLZ_X_SIGNATURE_KEY");
+    env.BILLPLZ_COLLECTION_PROFESSIONAL = envPresent("BILLPLZ_COLLECTION_PROFESSIONAL");
+  }
 
   const [supabase, r2, resend, ops] = await Promise.all([
     checkSupabase(),
@@ -68,6 +77,7 @@ export async function runHealthChecks(): Promise<HealthReport> {
     deployment: {
       mode: process.env.DEPLOYMENT_MODE ?? null,
       productTier: process.env.PRODUCT_TIER ?? null,
+      billingEnabled,
     },
     env,
     services: { supabase, r2, resend },

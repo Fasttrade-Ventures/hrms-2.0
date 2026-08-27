@@ -3,7 +3,7 @@
 
 begin;
 
-select plan(9);
+select plan(12);
 
 select ok(
   exists(select 1 from pg_proc where proname = 'current_user_org_ids'),
@@ -143,6 +143,26 @@ begin
     raise exception 'RLS over-deny: org A user cannot see own org employees';
   end if;
 end $$;
+
+select ok(
+  (select relrowsecurity from pg_class where relname = 'organization_billing_subscriptions'),
+  'organization_billing_subscriptions has RLS enabled'
+);
+
+select ok(
+  (select relrowsecurity from pg_class where relname = 'subscription_invoices'),
+  'subscription_invoices has RLS enabled'
+);
+
+select ok(
+  exists(
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'organization_billing_subscriptions'
+      and coalesce(qual, '') ilike '%current_user_owner_org_ids%'
+  ),
+  'billing subscriptions policy uses current_user_owner_org_ids'
+);
 
 select ok(
   true,
