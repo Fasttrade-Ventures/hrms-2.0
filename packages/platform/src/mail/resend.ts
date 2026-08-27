@@ -99,7 +99,12 @@ export async function sendPayslipAvailableEmail(input: {
   secureLink?: string;
   attachment?: { filename: string; content: string };
 }): Promise<SendResult> {
-  const origin = (input.appOrigin ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
+  const origin = (
+    input.appOrigin ??
+    process.env.NEXT_PUBLIC_APP_URL ??
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    ""
+  ).replace(/\/$/, "");
   const payslipUrl = origin ? `${origin}${input.payslipPath}` : input.payslipPath;
   const { subject, html, text } = buildPayslipAvailableEmail({
     periodLabel: input.periodLabel,
