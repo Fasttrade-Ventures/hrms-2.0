@@ -4,7 +4,8 @@ Complete product feature inventory for engineering and stakeholders.
 Cross-check UI screens in [ui-design-inventory.md](./ui-design-inventory.md).  
 Build order and rules in [developer-brief.md](./developer-brief.md).
 
-**Last codebase audit:** 2026-08-28 — statuses below reflect implemented routes/libs/schema in `apps/web`, not Pencil alone.
+**Last codebase audit:** 2026-08-28 — statuses below reflect implemented routes/libs/schema in `apps/web`, not Pencil alone.  
+**Roadmap:** §19–§21 = new planned features (not in code yet). **Competitive:** §22 vs MySyarikat.
 
 **Legend**
 
@@ -334,10 +335,88 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 
 ---
 
-## 19. Still pending (open backlog)
+## 19. Malaysia ops & compliance (roadmap — NEW)
 
-Highest-signal gaps still open in code:
+Differentiator for Malaysian SMEs. **Not implemented yet** (planned).
 
+| Feature | Tier | UI | Notes |
+|---------|------|-----|--------|
+| Bahasa Malaysia / English UI toggle | Core | ⬜ | Locale switch; PDPA + SME adoption |
+| Foreign worker / work permit & passport expiry | Pro | ⬜ | Track expiry + HR/employee alerts |
+| Probation → confirmation workflow | Core | ⬜ | Probation end date, reminder, confirmation letter |
+| Disciplinary / warning letters (NTE, PIP) | Pro | ⬜ | Generate PDF + employee acknowledgment |
+| Policy / handbook acknowledgment | Core | ⬜ | Versioned policies; signed read receipt |
+| State public-holiday auto-sync (by negeri) | Core | ⬜ | Seed/sync MY calendar into holidays |
+| Salary advance / staff loan + payroll deduction | Pro | ⬜ | Schedule deductions into payrun |
+| Zakat payroll option | Pro | ⬜ | Competitive parity (MY payroll) |
+| Selfie / face-capture attendance option | Pro | ⬜ | Anti buddy-punch; optional beside GPS |
+| Training / HRDC academy module | Ent | ⬜ | Courses, attendance, claimable training records |
+
+---
+
+## 20. Modern employee experience (roadmap — NEW)
+
+| Feature | Tier | UI | Notes |
+|---------|------|-----|--------|
+| PWA / mobile-first clock | Core | ⬜ | Installable web app; offline-tolerant clock UX |
+| Native mobile apps (iOS / Android) | Pro | ⬜ | Competitive parity with MySyarikat App Store / Play / Huawei |
+| Push notifications for approvals | Pro | ⬜ | Web push and/or native push |
+| WhatsApp notifications | Pro | ⬜ | Approvals, payslip ready (MY channel) |
+| Shift swap (employee ↔ employee) | Pro | ⬜ | Manager confirm |
+| Org chart visual | Core | ⬜ | From `manager_employee_id` reporting lines |
+| Birthday / work anniversary digests | Core | ⬜ | In-app + email/WhatsApp digest |
+| Employee pulse / eNPS mini surveys | Pro | ⬜ | Periodic engagement pulse |
+| Goal & task tracking | Pro | ⬜ | Lightweight OKR/tasks beside appraisals |
+
+---
+
+## 21. Growth & SaaS moat (roadmap — NEW)
+
+| Feature | Tier | UI | Notes |
+|---------|------|-----|--------|
+| E-signature on offers / contracts | Ent | ⬜ | Sign + store on recruitment offers / HR letters |
+| AI HR letter generator | Pro | ⬜ | Draft → approve → sign → archive (NTE, confirm, warning) |
+| Manager AI insights | Pro | ⬜ | Explain patterns (“3 late 4× this week”) — assist, don’t replace |
+| Partner / reseller multi-tenant | SaaS | ⬜ | Agencies manage multiple client orgs |
+| Public careers / jobs portal | Ent | ⬜ | Brand careers site fed from recruitment |
+| Earn-wage / Shariah-compliant advance (GajiNow-class) | Pro | ⬜ | Optional advance product; compliance review required |
+
+---
+
+## 22. Competitive lens — MySyarikat (what they have that we don’t)
+
+Public positioning (2026). Use to prioritize roadmap above — not a claim of full feature parity.
+
+| MySyarikat capability | Our status | Roadmap home |
+|----------------------|------------|--------------|
+| Native **mobile apps** (iOS / Android / Huawei) | ❌ No native app; web/PWA only | §20 |
+| **AI Letter Generator** (create, approve, sign, track HR letters) | ❌ | §21 + §19 disciplinary |
+| **GajiNow** — Shariah-compliant earn wage / advance salary | ❌ | §19 salary advance + §21 earn-wage |
+| **Training Academy** / HRDC claimable programs | ❌ | §19 Training / HRDC |
+| **Public recruitment / jobs portal** | 🟡 Internal recruitment only | §21 Public careers |
+| **Smart Attendance** with selfie / swafoto | 🟡 GPS/geofence only | §19 Selfie attendance |
+| **LHDN + Zakat** called out in payroll marketing | 🟡 PCB/EPF/SOCSO/EIS/HRDF done; zakat thin/absent | §19 Zakat |
+| **Accounting software sync** (marketing) | 🟡 BukuCloud + API/webhooks | Improve integrations |
+| **Goal & task tracking** | ❌ | §20 |
+| **Weekly product updates** / strong SME GTM + demo motion | 🟡 Product strong; marketing site FUTURE | SaaS marketing |
+| BM-first SME UX / local support narrative | 🟡 EN-first today | §19 BM/EN toggle |
+
+**Where we already match or lead (keep sharpening):** MY statutory payroll engine, dual-mode SaaS/standalone, Billplz billing, branch admin, assets, documents compliance, analytics, external API/OpenAPI, audit/SIEM, multi-role portals.
+
+**Beat-them strategy (short):** ship BM/EN + mobile (PWA→native) + HR letters/e-sign + salary advance + selfie attendance — then Training Academy and public jobs portal.
+
+Sources (competitive research, Aug 2026):
+- [MySyarikat homepage](https://mysyarikat.com/)
+- [MySyarikat HRMS](https://mysyarikat.com/hrms)
+- [MySyarikat App Store](https://apps.apple.com/my/app/mysyarikat/id1509750467)
+- [GajiNow helpdesk](https://help.mysyarikat.com/en/article/version-20-gajinow-function-in-mysyarikat-website-dtz1qn/)
+- [Attendance / OT BM article](https://mysyarikat.com/mysyarikat-kemudahan-pengurusan-kehadiran-dan-ot-pilihan-hr/)
+
+---
+
+## 23. Still pending (open backlog)
+
+### A — Existing product gaps (in code / features above)
 1. **Positions catalog** — free-text `job_title` only  
 2. **Leave cancel / revoke** — no UI/service  
 3. **Replacement credit ↔ leave** consume-once accounting  
@@ -350,12 +429,23 @@ Highest-signal gaps still open in code:
 10. **SSO + marketing site**  
 11. **Pay-first signup / seat hard limits** — still FUTURE  
 
+### B — New roadmap (beat MySyarikat) — all ⬜
+See §19–§21. Suggested build order:
+1. BM/EN + probation/confirmation + policy acknowledgment  
+2. PWA clock + WhatsApp/push approvals  
+3. Disciplinary letters + e-sign  
+4. Salary advance → payroll deduction  
+5. Permit/passport expiry + state holiday sync  
+6. Selfie attendance + org chart + shift swap  
+7. AI letters + manager insights  
+8. Training/HRDC + public careers + partner/reseller  
+
 ---
 
-## 20. Feature count (approximate)
+## 24. Feature count (approximate)
 
-| Area | Core / Pro / Ent rows |
-|------|------------------------|
+| Area | Rows |
+|------|------|
 | Platform & access | ~20 |
 | Org & people | ~20 |
 | Leave / Attendance | ~30 |
@@ -365,6 +455,9 @@ Highest-signal gaps still open in code:
 | Approvals / Reports / Analytics | ~12 |
 | Recruitment / Integrations | ~8 |
 | Portals | 8 |
-| **Product surface** | **~150+ capability lines** |
+| Malaysia ops roadmap (§19) | ~10 |
+| Employee experience roadmap (§20) | ~9 |
+| Growth / SaaS moat (§21) | ~6 |
+| **Product + roadmap surface** | **~180+ capability lines** |
 
-Use this list for backlog grooming; prioritize §19 for remaining Core/Pro polish.
+Use §22–§23 for competitive backlog grooming; ship §19 first for MY SME differentiation.
