@@ -1,8 +1,7 @@
 import Link from "next/link";
 
 import { LeaveApplyForm } from "@/components/employee/leave-apply-form";
-import { formatDate, RequestStatusPill } from "@/components/employee/employee-shared";
-
+import { RecentLeaveCard } from "@/components/employee/recent-leave-card";
 import { PortalIcon } from "@/components/portal/portal-icons";
 import {
   getLeaveBalances,
@@ -13,7 +12,7 @@ import {
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ startDate?: string; endDate?: string }>;
+  searchParams: Promise<{ startDate?: string; endDate?: string; view?: string }>;
 }) {
   const query = await searchParams;
   const today = new Date().toISOString().slice(0, 10);
@@ -56,43 +55,13 @@ export default async function Page({
             defaultEndDate={defaultEndDate}
             defaultStartDate={defaultStartDate}
             leaveTypes={leaveTypes}
+            existingRequests={requests}
           />
         </div>
 
         {/* Side/Right Column (1/3 width) */}
         <div className="space-y-4">
-          <div className="rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-card)] shadow-[var(--shadow-card)] p-[18px] flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-[var(--foreground-primary)]">Recent Leave</h3>
-              <Link href="/employee/leave" className="text-xs font-semibold text-[var(--accent-primary)] hover:underline">
-                View All
-              </Link>
-            </div>
-            
-            <div className="divide-y divide-[var(--border-primary)]">
-              {requests.slice(0, 5).map((req) => (
-                <div key={req.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0 gap-3">
-                  <div className="flex flex-col gap-1 min-w-0">
-                    <Link
-                      className="text-xs font-semibold text-[var(--foreground-primary)] hover:text-[var(--accent-primary)] truncate"
-                      href={`/employee/leave/${req.id}`}
-                    >
-                      {req.leaveTypeName}
-                    </Link>
-                    <span className="text-[10px] text-[var(--foreground-muted)] font-medium">
-                      {formatDate(req.startDate)}
-                      {req.endDate !== req.startDate ? ` – ${formatDate(req.endDate)}` : ""}
-                      {` · ${req.days} Day${req.days > 1 ? "s" : ""}`}
-                    </span>
-                  </div>
-                  <RequestStatusPill status={req.status} />
-                </div>
-              ))}
-              {!requests.length && (
-                <p className="text-xs text-[var(--foreground-muted)] py-4 text-center">No Recent Leave.</p>
-              )}
-            </div>
-          </div>
+          <RecentLeaveCard requests={requests} initialViewAll={query.view === "all"} />
         </div>
       </div>
     </div>

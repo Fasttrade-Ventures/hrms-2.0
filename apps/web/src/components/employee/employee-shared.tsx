@@ -6,7 +6,7 @@ export function RequestStatusPill({ status }: { status: string }) {
       ? "success"
       : status === "pending"
         ? "warning"
-        : status === "rejected" || status === "cancelled"
+        : status === "rejected" || status === "cancelled" || status === "revoked"
           ? "danger"
           : "neutral";
 

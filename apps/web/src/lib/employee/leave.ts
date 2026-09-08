@@ -1,10 +1,13 @@
 import type { LeaveRequestInput } from "@hrms/validation";
-import { countWorkingDays } from "@hrms/domain";
+import { countWorkingDays, transition } from "@hrms/domain";
 
-import { submitForApproval } from "@/lib/approvals/service";
+import { submitForApproval, resolveUserIdForEmployee } from "@/lib/approvals/service";
+import { logAuditEvent } from "@/lib/audit/log-event";
 import { requireAuth } from "@/lib/auth/session";
+import { queueNotification } from "@/lib/notifications/queue";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizationIdForWrite } from "@/lib/auth/organization-context";
+import { expireOverduePendingLeaves } from "@/lib/leave/expiry";
 
 
 export type LeaveTypeOption = {
@@ -91,6 +94,7 @@ export async function listLeaveTypes(): Promise<LeaveTypeOption[]> {
 
 export async function listLeaveRequests(): Promise<LeaveRequestRow[]> {
   const { employeeId, organizationId } = await requireEmployeeContext();
+  await expireOverduePendingLeaves({ organizationId, employeeId }).catch(console.error);
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -119,6 +123,7 @@ export async function listLeaveRequests(): Promise<LeaveRequestRow[]> {
 
 export async function getLeaveRequest(requestId: string): Promise<LeaveRequestRow | null> {
   const { employeeId, organizationId } = await requireEmployeeContext();
+  await expireOverduePendingLeaves({ organizationId, employeeId }).catch(console.error);
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -152,6 +157,7 @@ export async function getLeaveRequest(requestId: string): Promise<LeaveRequestRo
 
 export async function getLeaveBalances(): Promise<LeaveBalanceRow[]> {
   const { employeeId, organizationId } = await requireEmployeeContext();
+  await expireOverduePendingLeaves({ organizationId, employeeId }).catch(console.error);
   const supabase = await createClient();
 
   const { data: allowedData } = await supabase
@@ -332,3 +338,237 @@ export async function createLeaveRequest(input: LeaveRequestInput): Promise<stri
 
   return data.id;
 }
+
+export async function cancelLeaveRequest(requestId: string, reason?: string): Promise<void> {
+  const { employeeId, organizationId, session } = await requireEmployeeContext();
+  const supabase = await createClient();
+
+  const { data: request, error: fetchError } = await supabase
+    .from("leave_requests")
+    .select("id, status, approval_request_id, start_date, end_date, days")
+    .eq("id", requestId)
+    .eq("employee_id", employeeId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  if (fetchError) throw new Error(fetchError.message);
+  if (!request) throw new Error("Leave request not found.");
+
+  if (request.status !== "pending" && request.status !== "draft") {
+    throw new Error(`Cannot cancel a leave request with status "${request.status}". Only pending requests can be cancelled.`);
+  }
+
+  const nextStatus = transition(request.status as "pending" | "draft", "cancel");
+  const now = new Date().toISOString();
+
+  const { error: updateError } = await supabase
+    .from("leave_requests")
+    .update({
+      status: nextStatus,
+      updated_at: now,
+    })
+    .eq("id", requestId)
+    .eq("organization_id", organizationId);
+
+  if (updateError) throw new Error(updateError.message);
+
+  let approverEmployeeId: string | null = null;
+  if (request.approval_request_id) {
+    const { data: appReq } = await supabase
+      .from("approval_requests")
+      .select("id, payload")
+      .eq("id", request.approval_request_id)
+      .eq("organization_id", organizationId)
+      .maybeSingle();
+
+    await supabase
+      .from("approval_requests")
+      .update({
+        status: nextStatus,
+        resolved_at: now,
+        payload: {
+          ...(typeof appReq?.payload === "object" && appReq?.payload !== null ? appReq.payload : {}),
+          cancellationReason: reason ?? null,
+          cancelledByUserId: session.user.id,
+          cancelledAt: now,
+        },
+      })
+      .eq("id", request.approval_request_id)
+      .eq("organization_id", organizationId);
+
+    const { data: pendingStep } = await supabase
+      .from("approval_steps")
+      .select("id, approver_employee_id")
+      .eq("approval_request_id", request.approval_request_id)
+      .eq("organization_id", organizationId)
+      .eq("status", "pending")
+      .maybeSingle();
+
+    if (pendingStep) {
+      approverEmployeeId = pendingStep.approver_employee_id;
+      await supabase
+        .from("approval_steps")
+        .update({
+          status: nextStatus,
+          acted_at: now,
+          comment: reason ? `Cancelled by employee: ${reason}` : "Cancelled by employee",
+        })
+        .eq("id", pendingStep.id);
+    }
+  }
+
+  await logAuditEvent({
+    organizationId,
+    actorUserId: session.user.id,
+    action: "leave.cancelled",
+    resourceType: "leave",
+    resourceId: requestId,
+    metadata: { reason: reason ?? null, days: request.days },
+  });
+
+  if (approverEmployeeId) {
+    const managerUserId = await resolveUserIdForEmployee(organizationId, approverEmployeeId);
+    if (managerUserId) {
+      await queueNotification({
+        organizationId,
+        recipientUserId: managerUserId,
+        channel: "in_app",
+        template: "approval.cancel",
+        payload: {
+          requestId: request.approval_request_id,
+          requestType: "leave",
+          sourceId: requestId,
+          actorName: session.user.fullName || session.user.email || "Employee",
+          reason: reason ?? null,
+          href: `/employee/leave/${requestId}`,
+        },
+        idempotencyKey: `leave-cancelled-${requestId}`,
+      });
+    }
+  }
+
+  const { emitLeaveWebhook } = await import("@/lib/integrations/webhooks/emit");
+  await emitLeaveWebhook(
+    organizationId,
+    "leave.cancelled",
+    { requestId, employeeId, days: request.days, reason: reason ?? null },
+    `leave-cancelled:${requestId}`,
+  );
+}
+
+export async function revokeLeaveRequest(requestId: string, reason?: string): Promise<void> {
+  const { employeeId, organizationId, session } = await requireEmployeeContext();
+  const supabase = await createClient();
+
+  const { data: request, error: fetchError } = await supabase
+    .from("leave_requests")
+    .select("id, status, approval_request_id, start_date, end_date, days")
+    .eq("id", requestId)
+    .eq("employee_id", employeeId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  if (fetchError) throw new Error(fetchError.message);
+  if (!request) throw new Error("Leave request not found.");
+
+  if (request.status !== "approved") {
+    throw new Error(`Cannot revoke a leave request with status "${request.status}". Only approved requests can be revoked.`);
+  }
+
+  const nextStatus = transition("approved", "revoke");
+  const now = new Date().toISOString();
+
+  const { error: updateError } = await supabase
+    .from("leave_requests")
+    .update({
+      status: nextStatus,
+      updated_at: now,
+    })
+    .eq("id", requestId)
+    .eq("organization_id", organizationId);
+
+  if (updateError) throw new Error(updateError.message);
+
+  let approverEmployeeId: string | null = null;
+  if (request.approval_request_id) {
+    const { data: appReq } = await supabase
+      .from("approval_requests")
+      .select("id, payload")
+      .eq("id", request.approval_request_id)
+      .eq("organization_id", organizationId)
+      .maybeSingle();
+
+    await supabase
+      .from("approval_requests")
+      .update({
+        status: nextStatus,
+        resolved_at: now,
+        payload: {
+          ...(typeof appReq?.payload === "object" && appReq?.payload !== null ? appReq.payload : {}),
+          revokeReason: reason ?? null,
+          revokedByUserId: session.user.id,
+          revokedAt: now,
+        },
+      })
+      .eq("id", request.approval_request_id)
+      .eq("organization_id", organizationId);
+
+    const { data: lastStep } = await supabase
+      .from("approval_steps")
+      .select("id, approver_employee_id")
+      .eq("approval_request_id", request.approval_request_id)
+      .eq("organization_id", organizationId)
+      .order("step_order", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (lastStep) {
+      approverEmployeeId = lastStep.approver_employee_id;
+      await supabase
+        .from("approval_steps")
+        .update({
+          comment: reason ? `Revoked by employee: ${reason}` : "Revoked by employee",
+        })
+        .eq("id", lastStep.id);
+    }
+  }
+
+  await logAuditEvent({
+    organizationId,
+    actorUserId: session.user.id,
+    action: "leave.revoked",
+    resourceType: "leave",
+    resourceId: requestId,
+    metadata: { reason: reason ?? null, days: request.days },
+  });
+
+  if (approverEmployeeId) {
+    const managerUserId = await resolveUserIdForEmployee(organizationId, approverEmployeeId);
+    if (managerUserId) {
+      await queueNotification({
+        organizationId,
+        recipientUserId: managerUserId,
+        channel: "in_app",
+        template: "approval.revoke",
+        payload: {
+          requestId: request.approval_request_id,
+          requestType: "leave",
+          sourceId: requestId,
+          actorName: session.user.fullName || session.user.email || "Employee",
+          reason: reason ?? null,
+          href: `/employee/leave/${requestId}`,
+        },
+        idempotencyKey: `leave-revoked-${requestId}`,
+      });
+    }
+  }
+
+  const { emitLeaveWebhook } = await import("@/lib/integrations/webhooks/emit");
+  await emitLeaveWebhook(
+    organizationId,
+    "leave.revoked",
+    { requestId, employeeId, days: request.days, reason: reason ?? null },
+    `leave-revoked:${requestId}`,
+  );
+}
+

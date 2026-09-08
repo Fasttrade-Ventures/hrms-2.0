@@ -22,8 +22,21 @@ export async function getLeaveBalanceForType(
   employeeId: string,
   leaveTypeId: string,
   client?: BalanceClient,
+  options?: { excludeRequestId?: string },
 ): Promise<LeaveBalanceSnapshot> {
   const supabase = client ?? (await createClient());
+
+  let requestsQuery = supabase
+    .from("leave_requests")
+    .select("id, days, status")
+    .eq("organization_id", organizationId)
+    .eq("employee_id", employeeId)
+    .eq("leave_type_id", leaveTypeId)
+    .in("status", ["pending", "approved"]);
+
+  if (options?.excludeRequestId) {
+    requestsQuery = requestsQuery.neq("id", options.excludeRequestId);
+  }
 
   const [typeResult, employeeResult, requestsResult] = await Promise.all([
     supabase
@@ -38,13 +51,7 @@ export async function getLeaveBalanceForType(
       .eq("organization_id", organizationId)
       .eq("id", employeeId)
       .maybeSingle(),
-    supabase
-      .from("leave_requests")
-      .select("days, status")
-      .eq("organization_id", organizationId)
-      .eq("employee_id", employeeId)
-      .eq("leave_type_id", leaveTypeId)
-      .in("status", ["pending", "approved"]),
+    requestsQuery,
   ]);
 
   if (typeResult.error) throw new Error(typeResult.error.message);
@@ -90,12 +97,14 @@ export async function assertLeaveBalance(params: {
   allowOverride?: boolean;
   overrideReason?: string | null;
   client?: BalanceClient;
+  excludeRequestId?: string;
 }): Promise<LeaveBalanceSnapshot> {
   const balance = await getLeaveBalanceForType(
     params.organizationId,
     params.employeeId,
     params.leaveTypeId,
     params.client,
+    { excludeRequestId: params.excludeRequestId },
   );
 
   if (balance.isUnpaid) {
