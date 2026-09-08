@@ -16,7 +16,7 @@ export async function emitEmployeeWebhook(
 
 export async function emitLeaveWebhook(
   organizationId: string,
-  event: "leave.submitted" | "leave.approved" | "leave.rejected",
+  event: "leave.submitted" | "leave.approved" | "leave.rejected" | "leave.cancelled" | "leave.revoked",
   data: Record<string, unknown>,
   idempotencyKey: string,
 ): Promise<void> {
