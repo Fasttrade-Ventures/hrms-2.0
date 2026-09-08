@@ -12,7 +12,7 @@ import {
   HrSelect,
   HrTextInput,
 } from "@/components/hr/employees/form-fields";
-import { LeaveCalendarPicker } from "@/components/employee/leave-calendar-picker";
+import { countWorkingDays } from "@hrms/domain";
 import { findOverlappingLeave, type LeaveDateSpan } from "@/lib/leave/overlap-utils";
 import type { LeaveBalanceRow, LeaveTypeOption } from "@/lib/employee/leave";
 
@@ -26,12 +26,14 @@ export function LeaveApplyForm({
   defaultStartDate,
   defaultEndDate,
   existingRequests = [],
+  holidays = [],
 }: {
   leaveTypes: LeaveTypeOption[];
   balances: LeaveBalanceRow[];
   defaultStartDate: string;
   defaultEndDate: string;
   existingRequests?: LeaveDateSpan[];
+  holidays?: string[];
 }) {
   const [state, formAction, pending] = useActionState(applyLeave, initialState);
   const [selectedLeaveTypeId, setSelectedLeaveTypeId] = useState("");
@@ -50,23 +52,18 @@ export function LeaveApplyForm({
   // Check if selected dates overlap with any active leave request
   const overlappingRequest = findOverlappingLeave(startDate, endDate, existingRequests);
 
-  // Calculates working days excluding Saturday & Sunday
+  // Calculates working days excluding Saturday & Sunday, and observed public holidays
   const calculateWorkingDays = (start: string, end: string, isHalfDay: boolean) => {
     if (!start || !end) return 0;
-    const sDate = new Date(start);
-    const eDate = new Date(end);
+    const sDate = new Date(`${start}T00:00:00`);
+    const eDate = new Date(`${end}T00:00:00`);
     if (sDate > eDate) return 0;
 
-    let count = 0;
-    const cur = new Date(sDate);
-    while (cur <= eDate) {
-      const day = cur.getDay();
-      if (day !== 0 && day !== 6) {
-        count++;
-      }
-      cur.setDate(cur.getDate() + 1);
-    }
-    return isHalfDay ? count * 0.5 : count;
+    return countWorkingDays(sDate, eDate, {
+      weekendMode: "sat_sun",
+      halfDay: isHalfDay,
+      holidays,
+    });
   };
 
   const workingDays = calculateWorkingDays(startDate, endDate, durationMode !== "full");
@@ -208,26 +205,11 @@ export function LeaveApplyForm({
           </HrField>
         </div>
 
-        {/* Interactive Calendar with Booked Dates Disabled */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[13px] font-semibold text-[var(--foreground-secondary)]">Calendar Overview</span>
-            <span className="text-xs text-[var(--foreground-muted)]">Booked dates are disabled</span>
-          </div>
-          <LeaveCalendarPicker
-            startDate={startDate}
-            endDate={endDate}
-            onRangeChange={(newStart, newEnd) => {
-              setStartDate(newStart);
-              if (durationMode !== "full") {
-                setEndDate(newStart);
-              } else {
-                setEndDate(newEnd);
-              }
-            }}
-            existingRequests={existingRequests}
-          />
-        </div>
+        {startDate && endDate && workingDays === 0 && (
+          <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+            Selected dates fall entirely on non-working days (weekends or observed public holidays).
+          </p>
+        )}
 
         {requiresAttachment && (
           <HrField id="file" label="Supporting Document (Medical Certificate, etc.)">

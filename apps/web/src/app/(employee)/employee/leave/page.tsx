@@ -7,7 +7,9 @@ import {
   getLeaveBalances,
   listLeaveRequests,
   listLeaveTypes,
+  requireEmployeeContext,
 } from "@/lib/employee/leave";
+import { loadLeaveHolidayDates } from "@/lib/leave/holidays";
 
 export default async function Page({
   searchParams,
@@ -18,6 +20,15 @@ export default async function Page({
   const today = new Date().toISOString().slice(0, 10);
   const defaultStartDate = query.startDate ?? today;
   const defaultEndDate = query.endDate ?? query.startDate ?? today;
+
+  let holidays: string[] = [];
+  try {
+    const { organizationId } = await requireEmployeeContext();
+    holidays = await loadLeaveHolidayDates(organizationId);
+  } catch {
+    holidays = [];
+  }
+
   const [leaveTypes, requests, balances] = await Promise.all([
     listLeaveTypes(),
     listLeaveRequests(),
@@ -56,6 +67,7 @@ export default async function Page({
             defaultStartDate={defaultStartDate}
             leaveTypes={leaveTypes}
             existingRequests={requests}
+            holidays={holidays}
           />
         </div>
 
