@@ -44,8 +44,16 @@ export default async function Page({ params }: { params: Promise<{ stepId: strin
       <PortalSectionCard
         action={
           <StatusPill
-            label={detail.status.charAt(0).toUpperCase() + detail.status.slice(1)}
-            tone={detail.status === "pending" ? "warning" : detail.status === "approved" ? "success" : "danger"}
+            label={detail.status === "expired" ? "Expired" : detail.status.charAt(0).toUpperCase() + detail.status.slice(1)}
+            tone={
+              detail.status === "pending"
+                ? "warning"
+                : detail.status === "approved"
+                  ? "success"
+                  : detail.status === "rejected"
+                    ? "danger"
+                    : "neutral"
+            }
           />
         }
         description={detail.summary}
@@ -80,7 +88,69 @@ export default async function Page({ params }: { params: Promise<{ stepId: strin
         )}
       </PortalSectionCard>
 
-      <ApprovalActions stepId={detail.stepId} />
+      {/* Resolution Banners vs Decision Form */}
+      {detail.status === "pending" ? (
+        <ApprovalActions stepId={detail.stepId} />
+      ) : detail.status === "expired" ? (
+        <div className="rounded-[var(--radius-xl)] border border-amber-500/30 bg-amber-500/10 p-4 sm:p-5">
+          <div className="flex items-start gap-3">
+            <span className="text-xl">⏰</span>
+            <div>
+              <h3 className="text-sm font-semibold text-[var(--foreground-primary)]">Request Expired</h3>
+              <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+                This request expired because the scheduled dates passed without approval.
+                Any reserved leave days have been restored to the employee&apos;s balance.
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : detail.status === "approved" ? (
+        <div className="rounded-[var(--radius-xl)] border border-emerald-500/30 bg-emerald-500/10 p-4 sm:p-5">
+          <div className="flex items-start gap-3">
+            <span className="text-xl">✓</span>
+            <div>
+              <h3 className="text-sm font-semibold text-[var(--foreground-primary)]">Request Approved</h3>
+              <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+                This request was approved and processed.
+              </p>
+              {detail.comment && (
+                <p className="mt-2 text-xs italic text-[var(--foreground-secondary)]">
+                  Note: &ldquo;{detail.comment}&rdquo;
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : detail.status === "rejected" ? (
+        <div className="rounded-[var(--radius-xl)] border border-red-500/30 bg-red-500/10 p-4 sm:p-5">
+          <div className="flex items-start gap-3">
+            <span className="text-xl">✕</span>
+            <div>
+              <h3 className="text-sm font-semibold text-[var(--foreground-primary)]">Request Rejected</h3>
+              <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+                This request was rejected.
+              </p>
+              {detail.comment && (
+                <p className="mt-2 text-xs italic text-[var(--foreground-secondary)]">
+                  Reason: &ldquo;{detail.comment}&rdquo;
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-muted)] p-4 sm:p-5">
+          <div className="flex items-start gap-3">
+            <span className="text-xl">⊘</span>
+            <div>
+              <h3 className="text-sm font-semibold text-[var(--foreground-primary)]">Request Cancelled</h3>
+              <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+                This request was cancelled by the requester.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

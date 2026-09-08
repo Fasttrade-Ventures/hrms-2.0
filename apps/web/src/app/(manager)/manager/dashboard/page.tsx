@@ -103,7 +103,17 @@ export default async function Page() {
             title="Approval queue empty"
           />
         }
-        header={<p className="text-sm font-medium text-[var(--foreground-primary)]">Approval queue</p>}
+        header={
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-[var(--foreground-primary)]">Approval queue</p>
+            <Link
+              className="text-xs font-semibold text-[var(--accent-primary)] hover:underline whitespace-nowrap"
+              href="/manager/approvals"
+            >
+              View all →
+            </Link>
+          </div>
+        }
         rows={queue.slice(0, 5).map((row) => ({
           id: row.stepId,
           cells: {
@@ -123,8 +133,16 @@ export default async function Page() {
             ),
             status: (
               <StatusPill
-                label={row.status.charAt(0).toUpperCase() + row.status.slice(1)}
-                tone={row.status === "pending" ? "warning" : row.status === "approved" ? "success" : "danger"}
+                label={row.status === "expired" ? "Expired" : row.status.charAt(0).toUpperCase() + row.status.slice(1)}
+                tone={
+                  row.status === "pending"
+                    ? "warning"
+                    : row.status === "approved"
+                      ? "success"
+                      : row.status === "rejected"
+                        ? "danger"
+                        : "neutral"
+                }
               />
             ),
           },
