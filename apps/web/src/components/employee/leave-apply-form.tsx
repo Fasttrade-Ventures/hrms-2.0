@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useEffect, useState } from "react";
 
 import { applyLeave, type EmployeeActionState } from "@/app/(employee)/employee/actions";
@@ -11,6 +12,8 @@ import {
   HrSelect,
   HrTextInput,
 } from "@/components/hr/employees/form-fields";
+import { LeaveCalendarPicker } from "@/components/employee/leave-calendar-picker";
+import { findOverlappingLeave, type LeaveDateSpan } from "@/lib/leave/overlap-utils";
 import type { LeaveBalanceRow, LeaveTypeOption } from "@/lib/employee/leave";
 
 const initialState: EmployeeActionState = {};
@@ -22,11 +25,13 @@ export function LeaveApplyForm({
   balances,
   defaultStartDate,
   defaultEndDate,
+  existingRequests = [],
 }: {
   leaveTypes: LeaveTypeOption[];
   balances: LeaveBalanceRow[];
   defaultStartDate: string;
   defaultEndDate: string;
+  existingRequests?: LeaveDateSpan[];
 }) {
   const [state, formAction, pending] = useActionState(applyLeave, initialState);
   const [selectedLeaveTypeId, setSelectedLeaveTypeId] = useState("");
@@ -41,6 +46,9 @@ export function LeaveApplyForm({
 
   const selectedType = leaveTypes.find((t) => t.id === selectedLeaveTypeId);
   const requiresAttachment = selectedType?.requiresAttachment ?? false;
+
+  // Check if selected dates overlap with any active leave request
+  const overlappingRequest = findOverlappingLeave(startDate, endDate, existingRequests);
 
   // Calculates working days excluding Saturday & Sunday
   const calculateWorkingDays = (start: string, end: string, isHalfDay: boolean) => {
@@ -172,7 +180,12 @@ export function LeaveApplyForm({
           <HrField id="startDate" label="From">
             <HrTextInput
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              onChange={(e) => {
+                setStartDate(e.target.value);
+                if (durationMode !== "full") {
+                  setEndDate(e.target.value);
+                }
+              }}
               id="startDate"
               name="startDate"
               required
@@ -190,8 +203,30 @@ export function LeaveApplyForm({
               required
               type="date"
               min={startDate || todayStr || undefined}
+              disabled={durationMode !== "full"}
             />
           </HrField>
+        </div>
+
+        {/* Interactive Calendar with Booked Dates Disabled */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[13px] font-semibold text-[var(--foreground-secondary)]">Calendar Overview</span>
+            <span className="text-xs text-[var(--foreground-muted)]">Booked dates are disabled</span>
+          </div>
+          <LeaveCalendarPicker
+            startDate={startDate}
+            endDate={endDate}
+            onRangeChange={(newStart, newEnd) => {
+              setStartDate(newStart);
+              if (durationMode !== "full") {
+                setEndDate(newStart);
+              } else {
+                setEndDate(newEnd);
+              }
+            }}
+            existingRequests={existingRequests}
+          />
         </div>
 
         {requiresAttachment && (
@@ -218,6 +253,34 @@ export function LeaveApplyForm({
           </div>
         )}
 
+        {/* Overlap Conflict Notice */}
+        {overlappingRequest && (
+          <div className="rounded-[var(--radius-lg)] border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-[var(--foreground-primary)]">
+            <div className="flex items-start gap-3">
+              <span className="text-lg">⚠️</span>
+              <div className="space-y-1">
+                <p className="font-semibold text-amber-600 dark:text-amber-400">
+                  Date Conflict: Leave already requested
+                </p>
+                <p className="text-[var(--foreground-secondary)]">
+                  You already have an active <span className="font-medium capitalize">{overlappingRequest.status}</span> {overlappingRequest.leaveTypeName ?? "leave"} request covering {overlappingRequest.startDate} to {overlappingRequest.endDate}.
+                  You must cancel that leave request first before you can apply for these dates again.
+                </p>
+                {overlappingRequest.id && (
+                  <div className="pt-1.5">
+                    <Link
+                      href={`/employee/leave/${overlappingRequest.id}`}
+                      className="font-semibold text-[var(--accent-primary)] hover:underline inline-flex items-center gap-1"
+                    >
+                      View or cancel existing request →
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {overBalance ? (
           <p className="text-xs font-medium text-destructive">
             Insufficient balance. Remaining: {selectedBalance?.remainingDays ?? 0} day(s).
@@ -227,7 +290,7 @@ export function LeaveApplyForm({
         <HrFormMessage error={state.error} success={state.success} />
 
         <div className="flex gap-3">
-          <HrPrimaryButton disabled={pending || overBalance} type="submit">
+          <HrPrimaryButton disabled={pending || overBalance || Boolean(overlappingRequest)} type="submit">
             {pending ? "Submitting..." : "Submit Leave Request"}
           </HrPrimaryButton>
           <HrGhostButton
