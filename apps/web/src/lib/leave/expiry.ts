@@ -61,6 +61,13 @@ export async function expireOverduePendingLeaves(options?: {
 
     expiredRequestIds.push(req.id);
 
+    const { restoreReplacementCredits } = await import("@/lib/leave/replacement-credit");
+    await restoreReplacementCredits({
+      organizationId: req.organization_id,
+      leaveRequestId: req.id,
+      client: admin,
+    });
+
     // 2. Mark approval_requests & steps if linked
     if (req.approval_request_id) {
       const { data: appReq } = await admin

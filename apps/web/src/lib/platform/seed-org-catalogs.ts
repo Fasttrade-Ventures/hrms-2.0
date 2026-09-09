@@ -6,6 +6,7 @@ const LEAVE_TYPES = [
   { name: "Medical Leave", entitlement_days: 14, requires_attachment: true, is_unpaid: false },
   { name: "Hospitalization Leave", entitlement_days: 60, requires_attachment: true, is_unpaid: false },
   { name: "Unpaid Leave", entitlement_days: 0, requires_attachment: false, is_unpaid: true },
+  { name: "Replacement Leave", entitlement_days: 0, requires_attachment: false, is_unpaid: false },
 ] as const;
 
 const CLAIM_TYPES = [

@@ -24,6 +24,16 @@ export async function assertLeaveTypeAllowed(params: {
   if (allowedIds.length === 0) return;
 
   if (!allowedIds.includes(params.leaveTypeId)) {
+    const { data: targetType } = await supabase
+      .from("leave_types")
+      .select("name")
+      .eq("id", params.leaveTypeId)
+      .maybeSingle();
+
+    if (targetType?.name?.toLowerCase().includes("replacement")) {
+      return;
+    }
+
     throw new Error("This leave type is not available for your account.");
   }
 }
