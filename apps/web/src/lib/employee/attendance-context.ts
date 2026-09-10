@@ -1,20 +1,31 @@
 import type { GeofenceConfig } from "@/lib/attendance/geofence";
+import type { EmployeeShift } from "@/lib/attendance/shift";
+import { resolveEmployeeShift } from "@/lib/attendance/shift";
+import { orgLocalDateString } from "@/lib/datetime/org-timezone";
 import { requireEmployeeContext } from "@/lib/employee/leave";
 import { getEntitlements } from "@/lib/entitlements";
 import { createClient } from "@/lib/supabase/server";
 
-export async function getEmployeeAttendanceContext(): Promise<{
+export type EmployeeAttendanceContext = {
   geofence: GeofenceConfig | null;
   locationModuleEnabled: boolean;
-}> {
-  const entitlements = await getEntitlements();
-  const locationModuleEnabled = entitlements.hasModule("location");
-  if (!locationModuleEnabled) {
-    return { geofence: null, locationModuleEnabled: false };
-  }
+  shift: EmployeeShift | null;
+};
 
+export async function getEmployeeAttendanceContext(): Promise<EmployeeAttendanceContext> {
   const { employeeId, organizationId } = await requireEmployeeContext();
   const supabase = await createClient();
+  const todayDate = orgLocalDateString();
+
+  const [entitlements, shift] = await Promise.all([
+    getEntitlements(),
+    resolveEmployeeShift(supabase, organizationId, employeeId, todayDate),
+  ]);
+
+  const locationModuleEnabled = entitlements.hasModule("location");
+  if (!locationModuleEnabled) {
+    return { geofence: null, locationModuleEnabled: false, shift };
+  }
 
   const { data: employee } = await supabase
     .from("employees")
@@ -24,7 +35,7 @@ export async function getEmployeeAttendanceContext(): Promise<{
     .maybeSingle();
 
   if (!employee?.branch_id) {
-    return { geofence: null, locationModuleEnabled: true };
+    return { geofence: null, locationModuleEnabled: true, shift };
   }
 
   const { data: branch } = await supabase
@@ -35,11 +46,12 @@ export async function getEmployeeAttendanceContext(): Promise<{
     .maybeSingle();
 
   if (!branch?.geofence_enabled || branch.latitude == null || branch.longitude == null) {
-    return { geofence: null, locationModuleEnabled: true };
+    return { geofence: null, locationModuleEnabled: true, shift };
   }
 
   return {
     locationModuleEnabled: true,
+    shift,
     geofence: {
       enabled: true,
       branchName: branch.name,
