@@ -78,7 +78,7 @@ export function EditEmployeeForm({
   const [departmentId, setDepartmentId] = useState(employee.departmentId ?? "");
   const [managerEmployeeId, setManagerEmployeeId] = useState(employee.managerEmployeeId ?? "");
   const [payGroupId, setPayGroupId] = useState(employee.payGroupId ?? "");
-  const [employmentType, setEmploymentType] = useState(employee.employmentType ?? "full_time");
+  const [employmentType, setEmploymentType] = useState<string>(employee.employmentType ?? "full_time");
 
   const portalRole =
     employee.membership?.roles.find((role) =>
@@ -161,7 +161,7 @@ export function EditEmployeeForm({
                 <HrSelect
                   id="employmentType"
                   name="employmentType"
-                  onChange={(e) => setEmploymentType(e.target.value as any)}
+                  onChange={(e) => setEmploymentType(e.target.value)}
                   value={employmentType}
                 >
                   <option value="full_time">Full-time</option>

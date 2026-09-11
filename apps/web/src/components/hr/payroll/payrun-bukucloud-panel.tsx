@@ -7,7 +7,7 @@ import {
   type BukucloudActionState,
 } from "@/app/(hr)/hr/integrations/bukucloud/actions";
 import { HrGhostButton, HrPrimaryButton } from "@/components/hr/employees/form-fields";
-import { formatDate, formatDateTime } from "@/components/employee/employee-shared";
+import { formatDateTime } from "@/components/employee/employee-shared";
 import { PortalSectionCard } from "@/components/portal/portal-section";
 import { StatusPill } from "@hrms/ui";
 import type { BukucloudSyncStatus } from "@/lib/integrations/bukucloud/sync";
