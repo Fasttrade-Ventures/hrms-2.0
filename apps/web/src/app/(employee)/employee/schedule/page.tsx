@@ -23,12 +23,13 @@ export default async function EmployeeSchedulePage() {
 
   const rows = dates.map((date) => {
     const entry = entries.find((e) => e.workDate === date);
-    const dateLabel = new Date(`${date}T00:00:00`).toLocaleDateString("en-MY", {
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
+    const [year, month, day] = date.split("T")[0]?.split("-") ?? [];
+    let dateLabel = date;
+    if (year && month && day) {
+      const d = new Date(`${year}-${month}-${day}T12:00:00`);
+      const weekday = d.toLocaleDateString("en-MY", { weekday: "short" });
+      dateLabel = `${weekday}, ${day.padStart(2, "0")}/${month.padStart(2, "0")}/${year}`;
+    }
 
     if (entry) {
       return {

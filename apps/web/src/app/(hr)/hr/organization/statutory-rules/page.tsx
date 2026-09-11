@@ -1,5 +1,6 @@
 import { ListCard } from "@hrms/ui";
 
+import { formatDate } from "@/components/employee/employee-shared";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { requireRole } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
@@ -27,8 +28,8 @@ export default async function StatutoryRulesPage() {
           id: rule.id,
           cells: {
             rule: rule.rule_set,
-            from: rule.effective_from,
-            to: rule.effective_to ?? "—",
+            from: formatDate(rule.effective_from),
+            to: rule.effective_to ? formatDate(rule.effective_to) : "—",
           },
         }))}
       />

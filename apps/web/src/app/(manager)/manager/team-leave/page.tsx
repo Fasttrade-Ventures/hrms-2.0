@@ -1,5 +1,6 @@
 import { EmptyState, ListCard, StatusPill } from "@hrms/ui";
 
+import { formatDate } from "@/components/employee/employee-shared";
 import { TeamDocumentsLink } from "@/components/manager/team-documents-link";
 import { PortalIcon } from "@/components/portal/portal-icons";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
@@ -36,7 +37,7 @@ export default async function Page() {
           id: row.id,
           cells: {
             employee: row.employeeName,
-            details: `${row.leaveTypeName} · ${row.startDate} → ${row.endDate} · ${row.days} day(s)`,
+            details: `${row.leaveTypeName} · ${formatDate(row.startDate)} → ${formatDate(row.endDate)} · ${row.days} day(s)`,
             status: (
               <StatusPill
                 label={row.status.charAt(0).toUpperCase() + row.status.slice(1)}

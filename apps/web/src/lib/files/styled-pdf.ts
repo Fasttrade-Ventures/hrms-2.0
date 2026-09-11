@@ -180,11 +180,8 @@ class PdfPageBuilder {
     this.push(fillRect(0, PAGE_HEIGHT - 5, PAGE_WIDTH, 5, COLORS.accent));
     this.push(textBlock(MARGIN_X, this.y, this.options.brandTitle.toUpperCase(), "/F2", 8, COLORS.accent));
 
-    const generated = new Date().toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+    const genDate = new Date();
+    const generated = `${String(genDate.getDate()).padStart(2, "0")}/${String(genDate.getMonth() + 1).padStart(2, "0")}/${genDate.getFullYear()}`;
     this.push(textBlock(PAGE_WIDTH - MARGIN_X - 68, this.y, generated, "/F1", 7, COLORS.muted));
 
     this.y -= layout.headerTopGap;

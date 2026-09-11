@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { StatusPill } from "@hrms/ui";
 
+import { formatDate, formatDateTime } from "@/components/employee/employee-shared";
 import { PayrunBukucloudPanel } from "@/components/hr/payroll/payrun-bukucloud-panel";
 import { PayrunExportPanel } from "@/components/hr/payroll/payrun-export-panel";
 import { PayrunPayoutPanel } from "@/components/hr/payroll/payrun-payout-panel";
@@ -162,8 +163,8 @@ export function PayrunDetailView({
       )}
 
       <p className="text-xs text-muted-foreground">
-        Period {periodLabel} · {payrun.earningPeriodStart} → {payrun.earningPeriodEnd}
-        {payrun.lockedAt ? ` · Locked ${new Date(payrun.lockedAt).toLocaleString()}` : ""}
+        Period {periodLabel} · {formatDate(payrun.earningPeriodStart)} → {formatDate(payrun.earningPeriodEnd)}
+        {payrun.lockedAt ? ` · Locked ${formatDateTime(payrun.lockedAt)}` : ""}
       </p>
     </div>
   );

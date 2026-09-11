@@ -18,21 +18,36 @@ export function RequestStatusPill({ status }: { status: string }) {
   return <StatusPill label={label} tone={tone} />;
 }
 
-export function formatDateTime(value: string | null): string {
+export function formatDateTime(value: string | null | undefined): string {
   if (!value) return "—";
 
-  return new Date(value).toLocaleString("en-MY", {
-    dateStyle: "medium",
-    timeStyle: "short",
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  const time = d.toLocaleTimeString("en-MY", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
   });
+  return `${day}/${month}/${year}, ${time}`;
 }
 
-export function formatDate(value: string): string {
-  return new Date(`${value}T00:00:00`).toLocaleDateString("en-MY", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+export function formatDate(value: string | null | undefined): string {
+  if (!value) return "—";
+
+  const [year, month, day] = value.split("T")[0]?.split("-") ?? [];
+  if (year && month && day) {
+    return `${day.padStart(2, "0")}/${month.padStart(2, "0")}/${year}`;
+  }
+
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  const dayStr = String(d.getDate()).padStart(2, "0");
+  const monthStr = String(d.getMonth() + 1).padStart(2, "0");
+  const yearNum = d.getFullYear();
+  return `${dayStr}/${monthStr}/${yearNum}`;
 }
 
 export function formatCurrency(amount: number): string {

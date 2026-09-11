@@ -162,7 +162,13 @@ export function buildEmployeeDossierPdf(employee: EmployeeDetail): Uint8Array {
       { label: "Employment", value: formatEmploymentType(employee.employmentType) },
     ],
     sections: buildEmployeeDossierSections(employee),
-    footer: `Generated ${new Date().toLocaleString("en-GB")} · HRMS Employee Dossier`,
+    footer: (() => {
+      const g = new Date();
+      const gd = String(g.getDate()).padStart(2, "0");
+      const gm = String(g.getMonth() + 1).padStart(2, "0");
+      const gt = g.toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit", hour12: true });
+      return `Generated ${gd}/${gm}/${g.getFullYear()}, ${gt} · HRMS Employee Dossier`;
+    })(),
     compact: true,
   });
 }

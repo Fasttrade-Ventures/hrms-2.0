@@ -7,6 +7,7 @@ import {
   type BukucloudActionState,
 } from "@/app/(hr)/hr/integrations/bukucloud/actions";
 import { HrGhostButton, HrPrimaryButton } from "@/components/hr/employees/form-fields";
+import { formatDate, formatDateTime } from "@/components/employee/employee-shared";
 import { PortalSectionCard } from "@/components/portal/portal-section";
 import { StatusPill } from "@hrms/ui";
 import type { BukucloudSyncStatus } from "@/lib/integrations/bukucloud/sync";
@@ -86,7 +87,7 @@ export function PayrunBukucloudPanel({
         ) : null}
         {syncStatus.syncedAt ? (
           <span className="text-sm text-muted-foreground">
-            {new Date(syncStatus.syncedAt).toLocaleString()}
+            {formatDateTime(syncStatus.syncedAt)}
           </span>
         ) : null}
       </div>

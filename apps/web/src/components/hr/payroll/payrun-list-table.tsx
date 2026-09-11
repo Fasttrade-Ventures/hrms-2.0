@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { StatusPill } from "@hrms/ui";
 
+import { formatDate } from "@/components/employee/employee-shared";
 import { DeletePayrunButton } from "@/components/hr/payroll/delete-payrun-button";
 import type { PayrunListItem } from "@/lib/payroll/queries";
 
@@ -33,7 +34,7 @@ export function PayrunListTable({ payruns }: { payruns: PayrunListItem[] }) {
                     </Link>
                   </div>
                   <div className="min-w-[200px] flex-1 text-sm text-[var(--foreground-secondary)]">
-                    {payrun.earningPeriodStart} → {payrun.earningPeriodEnd}
+                    {formatDate(payrun.earningPeriodStart)} → {formatDate(payrun.earningPeriodEnd)}
                   </div>
                   <div className="w-36 shrink-0 text-sm text-[var(--foreground-secondary)]">
                     {payrun.scope === "pay_group" ? (payrun.payGroupName ?? "Pay group") : "Organisation"}

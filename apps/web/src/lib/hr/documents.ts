@@ -614,11 +614,12 @@ export async function getComplianceWatchRows(): Promise<{
       rows.push({
         id: `${employee.employeeId}-${cell.requiredDocumentId}`,
         dateLabel: cell.expiresAt
-          ? new Date(cell.expiresAt).toLocaleDateString("en-MY", {
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-            })
+          ? (() => {
+              const d = new Date(cell.expiresAt);
+              const day = String(d.getDate()).padStart(2, "0");
+              const month = String(d.getMonth() + 1).padStart(2, "0");
+              return `${day}/${month}/${d.getFullYear()}`;
+            })()
           : "—",
         title: `${employee.employeeName} — ${cell.requiredDocumentName}`,
         subtitle: statusLabel,

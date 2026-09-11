@@ -114,7 +114,7 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | HR apply attendance on behalf | Core | ✅ Apply Behalf | Late reports auto-approved |
 | GPS / geofencing | Pro | ✅ | Branch geofence + outside action; clock enforcement |
 | Rosters / work schedules | Pro | ✅ | `/hr/organization/rosters` + `/employee/schedule` |
-| Overnight shifts | Pro | ⬜ | Times stored; no cross-midnight session logic |
+| Overnight shifts | Pro | ✅ | Cross-midnight sessions; clock-out after midnight stays on the same work date |
 | Tardiness alerts | Pro | ⬜ | No notification/cron |
 | Auto clock-out (idempotent) | Pro | ⬜ | No job |
 
@@ -421,7 +421,7 @@ Sources (competitive research, Aug 2026):
 2. **Leave cancel / revoke** — no UI/service  
 3. ~~**Replacement credit ↔ leave** consume-once accounting~~ (✅ Implemented via `replacement_credit_usages` ledger)
 4. ~~**Shift-based lateness enforcement** — grace unused on clock~~ (✅ Implemented dynamic late detection from shift + grace minutes)  
-5. **Overnight shifts, auto clock-out, tardiness alerts**  
+5. ~~**Overnight shifts**~~ (✅ Cross-midnight sessions stay on shift work date), auto clock-out, tardiness alerts  
 6. **Multi-level / custom approval workflows**  
 7. **Leave accrual / expiry automation**  
 8. **Appraisal templates** (cycles exist)  
