@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(),
@@ -26,12 +26,18 @@ describe("overnight shifts attendance service", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-11T02:00:00+08:00"));
 
     vi.mocked(requireEmployeeContext).mockResolvedValue({
       organizationId: mockOrgId,
       employeeId: mockEmpId,
       session: { user: { id: "user-123" } } as any,
     });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("getTodayAttendance returns active session from yesterday when crossing midnight", async () => {

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { DEFAULT_ORG_TIMEZONE } from "@/lib/datetime/org-timezone";
+import { DEFAULT_ORG_TIMEZONE, combineDateAndLocalTime } from "@/lib/datetime/org-timezone";
 
 export type EmployeeShift = {
   id: string;
@@ -27,6 +27,33 @@ export function getPreviousDateString(dateStr: string): string {
   const d = parts[2] ?? 1;
   const dt = new Date(Date.UTC(y, m - 1, d - 1));
   return dt.toISOString().slice(0, 10);
+}
+
+export function getNextDateString(dateStr: string): string {
+  const parts = dateStr.split("-").map(Number);
+  const y = parts[0] ?? 1970;
+  const m = parts[1] ?? 1;
+  const d = parts[2] ?? 1;
+  const dt = new Date(Date.UTC(y, m - 1, d + 1));
+  return dt.toISOString().slice(0, 10);
+}
+
+/**
+ * Calculates the exact shift end ISO timestamp (UTC) for a given work date and shift.
+ * If the shift is overnight (startTime > endTime), the shift ends on the following calendar day.
+ * Defaults to "18:00" end time if no shift is assigned.
+ */
+export function getShiftEndTimestamp(options: {
+  workDate: string;
+  shift?: { startTime: string; endTime: string } | null;
+  timeZone?: string;
+}): string {
+  const { workDate, shift, timeZone = DEFAULT_ORG_TIMEZONE } = options;
+  const startTime = shift?.startTime || "09:00";
+  const endTime = shift?.endTime || "18:00";
+  const isOvernight = isOvernightShift({ startTime, endTime });
+  const endDate = isOvernight ? getNextDateString(workDate) : workDate;
+  return combineDateAndLocalTime(endDate, endTime, timeZone);
 }
 
 /**

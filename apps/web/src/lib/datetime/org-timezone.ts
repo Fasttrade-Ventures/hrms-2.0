@@ -13,7 +13,7 @@ export function combineDateAndLocalTime(
   timeZone = DEFAULT_ORG_TIMEZONE,
 ): string {
   const normalized = time.trim().length === 5 ? `${time.trim()}:00` : time.trim();
-  const probe = new Date(`${date}T${normalized}`);
+  const probe = new Date(`${date}T${normalized}Z`);
   if (Number.isNaN(probe.getTime())) {
     throw new Error("Invalid date/time for attendance record.");
   }

@@ -21,10 +21,10 @@ export default async function Page() {
 
       <ListCard
         columns={[
-          { key: "employee", label: "Employee", className: "min-w-0 flex-1 font-semibold" },
-          { key: "date", label: "Date", className: "hidden sm:block w-28" },
-          { key: "clockIn", label: "Clock in", className: "w-40 text-right sm:text-left" },
-          { key: "clockOut", label: "Clock out", className: "hidden md:block w-40" },
+          { key: "employee", label: "Employee", className: "min-w-[160px] flex-1 font-semibold text-[var(--foreground-primary)]" },
+          { key: "date", label: "Date", className: "hidden sm:block w-32" },
+          { key: "clockIn", label: "Clock in", className: "w-48 sm:w-52 text-left" },
+          { key: "clockOut", label: "Clock out", className: "hidden md:block w-64" },
         ]}
         empty={
           <EmptyState
@@ -38,9 +38,27 @@ export default async function Page() {
           id: row.id,
           cells: {
             employee: row.employeeName,
-            date: formatDate(row.workDate),
-            clockIn: row.clockInAt ? formatDateTime(row.clockInAt) : "—",
-            clockOut: row.clockOutAt ? formatDateTime(row.clockOutAt) : "—",
+            date: <span className="whitespace-nowrap">{formatDate(row.workDate)}</span>,
+            clockIn: (
+              <span className="whitespace-nowrap">
+                {row.clockInAt ? formatDateTime(row.clockInAt) : "—"}
+              </span>
+            ),
+            clockOut: row.clockOutAt ? (
+              <div className="flex items-center gap-2 whitespace-nowrap">
+                <span>{formatDateTime(row.clockOutAt)}</span>
+                {row.isAutoClockOut && (
+                  <span
+                    title="Auto clocked out at shift end"
+                    className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 uppercase tracking-tight shrink-0 select-none"
+                  >
+                    Auto
+                  </span>
+                )}
+              </div>
+            ) : (
+              "—"
+            ),
           },
         }))}
       />
