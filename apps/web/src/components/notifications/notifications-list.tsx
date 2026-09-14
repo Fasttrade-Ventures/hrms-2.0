@@ -10,7 +10,8 @@ import {
   Bell, 
   Info, 
   Check,
-  CheckSquare
+  CheckSquare,
+  Clock
 } from "lucide-react";
 
 import { EmptyState } from "@hrms/ui";
@@ -104,6 +105,15 @@ function getNotificationText(row: NotificationRow): { title: string; message: st
       message: periodStr ? `${periodStr} payslip is available.` : "Your payslip is ready."
     };
   }
+  if (row.template === "attendance.tardy") {
+    const shiftStart = String(row.payload.shiftStart ?? "09:00");
+    const graceMinutes = Number(row.payload.graceMinutes ?? 0);
+    const graceText = graceMinutes > 0 ? ` (grace ended after ${graceMinutes}m)` : "";
+    return {
+      title: "Shift tardiness alert",
+      message: `You haven't clocked in for today's shift starting at ${shiftStart}${graceText}. Please clock in or submit a late report.`
+    };
+  }
   return {
     title: "Notification",
     message: formatNotificationMessage(row)
@@ -132,6 +142,9 @@ function getNotificationGroup(row: NotificationRow): string {
   if (row.template === "announcement.published") {
     return "announcement";
   }
+  if (row.template.startsWith("attendance.")) {
+    return "attendance";
+  }
   return "other";
 }
 
@@ -147,6 +160,8 @@ function getGroupIcon(group: string) {
       return <Info className="h-4 w-4 text-blue-600" />;
     case "announcement":
       return <Megaphone className="h-4 w-4 text-purple-600" />;
+    case "attendance":
+      return <Clock className="h-4 w-4 text-amber-600" />;
     default:
       return <Bell className="h-4 w-4 text-[var(--foreground-muted)]" />;
   }

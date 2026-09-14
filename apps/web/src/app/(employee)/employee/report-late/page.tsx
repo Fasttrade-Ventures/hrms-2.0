@@ -25,11 +25,11 @@ export default async function Page() {
         title="New report"
       >
         <div className="grid gap-5 md:grid-cols-2">
-          <HrField id="workDate" label="Date">
-            <HrTextInput defaultValue={today} id="workDate" name="workDate" required type="date" />
+          <HrField id="requestDate" label="Date">
+            <HrTextInput defaultValue={today} id="requestDate" name="requestDate" required type="date" />
           </HrField>
-          <HrField id="arrivalTime" label="Arrival time">
-            <HrTextInput defaultValue="09:30" id="arrivalTime" name="arrivalTime" required />
+          <HrField id="actualArrivalTime" label="Arrival time">
+            <HrTextInput defaultValue="09:30" id="actualArrivalTime" name="actualArrivalTime" required type="time" />
           </HrField>
           <HrField id="reason" label="Reason">
             <HrTextInput id="reason" name="reason" placeholder="Optional" />

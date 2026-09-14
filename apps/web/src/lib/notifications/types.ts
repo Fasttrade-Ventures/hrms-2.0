@@ -63,5 +63,11 @@ export function formatNotificationMessage(row: NotificationRow): string {
     if (year && month) return `Your ${year}-${String(month).padStart(2, "0")} payslip is ready.`;
     return "Your payslip is ready.";
   }
+  if (row.template === "attendance.tardy") {
+    const shiftStart = String(row.payload.shiftStart ?? "09:00");
+    const graceMinutes = Number(row.payload.graceMinutes ?? 0);
+    const graceText = graceMinutes > 0 ? ` (grace ended after ${graceMinutes}m)` : "";
+    return `Tardiness alert: You have not clocked in for today's shift starting at ${shiftStart}${graceText}.`;
+  }
   return row.template;
 }

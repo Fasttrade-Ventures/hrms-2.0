@@ -1,8 +1,11 @@
+import Link from "next/link";
+import { AlertTriangle } from "lucide-react";
 import { ListCard } from "@hrms/ui";
 
 import { AttendanceClockPanel } from "@/components/employee/attendance-clock-panel";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
-import { isClockInLate } from "@/lib/attendance/shift";
+import { isClockInLate, isPastGraceCutoff } from "@/lib/attendance/shift";
+import { orgLocalDateString } from "@/lib/datetime/org-timezone";
 import { getEmployeeAttendanceContext } from "@/lib/employee/attendance-context";
 import { getTodayAttendance, listRecentAttendance } from "@/lib/employee/attendance";
 
@@ -34,8 +37,16 @@ function getStatusBadge(
   clockInAt: string | null,
   status?: string | null,
   shift?: { startTime: string; graceMinutes?: number | null } | null,
+  isTardy?: boolean,
 ) {
   if (!clockInAt) {
+    if (isTardy) {
+      return (
+        <span className="bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold px-2.5 py-0.5 rounded-full text-[10px] uppercase tracking-wide inline-flex items-center gap-1">
+          Unclocked (Tardy)
+        </span>
+      );
+    }
     return (
       <span className="bg-slate-500/10 text-slate-600 dark:text-slate-400 font-bold px-2.5 py-0.5 rounded-full text-[10px] uppercase tracking-wide inline-flex items-center gap-1">
         Not Clocked
@@ -67,6 +78,15 @@ export default async function Page() {
     getEmployeeAttendanceContext(today?.workDate),
   ]);
 
+  const todayWorkDate = today?.workDate || orgLocalDateString();
+  const isTardy =
+    !today?.clockInAt &&
+    Boolean(attendanceContext.shift) &&
+    isPastGraceCutoff({
+      workDate: todayWorkDate,
+      shift: attendanceContext.shift,
+    });
+
   const headerDescription = attendanceContext.shift
     ? `Clock in and out · Shift ${attendanceContext.shift.name} (${attendanceContext.shift.startTime}–${attendanceContext.shift.endTime}${attendanceContext.shift.graceMinutes > 0 ? ` · Grace ${attendanceContext.shift.graceMinutes}m` : ""})`
     : "Clock in and out for today's shift.";
@@ -74,6 +94,33 @@ export default async function Page() {
   return (
     <div className="space-y-8">
       <PortalPageHeader description={headerDescription} title="Attendance" />
+
+      {isTardy && attendanceContext.shift ? (
+        <div
+          role="alert"
+          className="rounded-[var(--radius-xl)] border border-amber-500/30 bg-amber-500/10 p-4 text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+        >
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-sm">Shift Tardiness Alert</p>
+              <p className="text-xs text-amber-800 dark:text-amber-300 mt-0.5">
+                Your shift started at {attendanceContext.shift.startTime}
+                {attendanceContext.shift.graceMinutes > 0
+                  ? ` (grace period of ${attendanceContext.shift.graceMinutes}m has passed)`
+                  : ""}
+                . You haven't clocked in yet. Please clock in immediately or submit a late report.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/employee/report-late"
+            className="text-xs font-semibold px-3 py-1.5 rounded-[var(--radius-md)] bg-amber-600 hover:bg-amber-700 text-white dark:bg-amber-500 dark:hover:bg-amber-600 dark:text-slate-900 transition-colors shrink-0"
+          >
+            Report Late
+          </Link>
+        </div>
+      ) : null}
 
       <AttendanceClockPanel
         geofence={attendanceContext.geofence}
@@ -135,7 +182,12 @@ export default async function Page() {
               in: formatTimeOnly(row.clock_in_at),
               out: clockOutNode,
               duration: durationStr,
-              status: getStatusBadge(row.clock_in_at, row.status, row.shift),
+              status: getStatusBadge(
+                row.clock_in_at,
+                row.status,
+                row.shift,
+                row.work_date === todayWorkDate && isTardy,
+              ),
               location: locationNode,
             },
           };

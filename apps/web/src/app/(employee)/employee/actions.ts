@@ -271,8 +271,10 @@ export async function submitLateReport(
   _prev: EmployeeActionState,
   formData: FormData,
 ): Promise<EmployeeActionState> {
-  const requestDate = String(formData.get("requestDate") ?? "");
-  const actualArrivalTime = String(formData.get("actualArrivalTime") ?? "");
+  const requestDate = String(formData.get("requestDate") || formData.get("workDate") || "");
+  const actualArrivalTime = String(
+    formData.get("actualArrivalTime") || formData.get("arrivalTime") || "",
+  );
   const reason = String(formData.get("reason") ?? "").trim() || undefined;
 
   if (!requestDate || !actualArrivalTime) {
