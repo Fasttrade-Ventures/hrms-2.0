@@ -2,11 +2,11 @@
   "crons": [
     {
       "path": "/api/cron/notifications",
-      "schedule": "0 9 * * *"
+      "schedule": "0 1 * * *"
     },
     {
       "path": "/api/cron/document-compliance",
-      "schedule": "0 8 * * *"
+      "schedule": "0 0 * * *"
     },
     {
       "path": "/api/cron/payslip-email",
@@ -14,31 +14,31 @@
     },
     {
       "path": "/api/cron/announcements",
-      "schedule": "0 7 * * *"
+      "schedule": "0 23 * * *"
     },
     {
       "path": "/api/cron/audit-archive",
-      "schedule": "0 2 * * 0"
+      "schedule": "0 18 * * 6"
     },
     {
       "path": "/api/cron/audit-siem",
-      "schedule": "0 10 * * *"
+      "schedule": "0 2 * * *"
     },
     {
       "path": "/api/cron/report-subscriptions",
-      "schedule": "0 6 * * *"
+      "schedule": "0 22 * * *"
     },
     {
       "path": "/api/cron/billing-renewal",
-      "schedule": "0 1 * * *"
+      "schedule": "0 17 * * *"
     },
     {
       "path": "/api/cron/leave-expiry",
-      "schedule": "0 0 * * *"
+      "schedule": "0 16 * * *"
     },
     {
       "path": "/api/cron/auto-clock-out",
-      "schedule": "0 * * * *"
+      "schedule": "0 20 * * *"
     }
   ]
 }
