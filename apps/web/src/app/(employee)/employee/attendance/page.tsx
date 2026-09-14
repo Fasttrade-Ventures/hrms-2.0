@@ -109,7 +109,7 @@ export default async function Page() {
                 {attendanceContext.shift.graceMinutes > 0
                   ? ` (grace period of ${attendanceContext.shift.graceMinutes}m has passed)`
                   : ""}
-                . You haven't clocked in yet. Please clock in immediately or submit a late report.
+                . You haven&apos;t clocked in yet. Please clock in immediately or submit a late report.
               </p>
             </div>
           </div>
