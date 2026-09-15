@@ -290,6 +290,31 @@ export async function createBehalfLeave(
 
   if (error || !data) throw new Error(error?.message ?? "Failed to create leave on behalf.");
 
+  const { data: leaveType } = await admin
+    .from("leave_types")
+    .select("name")
+    .eq("id", input.leaveTypeId)
+    .maybeSingle();
+
+  const { isReplacementLeaveType, consumeReplacementCredits } = await import(
+    "@/lib/leave/replacement-credit"
+  );
+  if (isReplacementLeaveType(leaveType?.name)) {
+    try {
+      await consumeReplacementCredits({
+        organizationId,
+        employeeId: input.employeeId,
+        leaveRequestId: data.id,
+        days,
+        actorUserId,
+        client: admin,
+      });
+    } catch (err) {
+      await admin.from("leave_requests").delete().eq("id", data.id);
+      throw err;
+    }
+  }
+
   await logEmployeeEvent({
     action: "hr.apply_behalf",
     actorUserId,

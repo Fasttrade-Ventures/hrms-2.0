@@ -248,6 +248,18 @@ export async function actOnApproval(input: ActOnApprovalInput): Promise<void> {
       );
       await applyApprovedAttendanceRequest(input.organizationId, sourceId);
     }
+
+    if (sourceTable === "leave_requests" && nextStatus === "rejected") {
+      const { restoreReplacementCredits } = await import(
+        "@/lib/leave/replacement-credit"
+      );
+      await restoreReplacementCredits({
+        organizationId: input.organizationId,
+        leaveRequestId: sourceId,
+        actorUserId: input.actorUserId,
+        client: supabase,
+      });
+    }
   }
 
   const requesterUserId = await resolveUserIdForEmployee(

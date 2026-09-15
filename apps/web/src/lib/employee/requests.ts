@@ -313,3 +313,85 @@ export async function getAttendanceCorrection(id: string) {
     approvalRequestId: data.approval_request_id,
   };
 }
+
+export async function listReplacementCredits() {
+  const { employeeId, organizationId } = await requireEmployeeContext();
+  const supabase = await createClient();
+
+  const { data: credits, error: creditsError } = await supabase
+    .from("replacement_credits")
+    .select("id, work_date, credit_days, description, status, created_at, approval_request_id")
+    .eq("organization_id", organizationId)
+    .eq("employee_id", employeeId)
+    .order("work_date", { ascending: false });
+
+  if (creditsError) throw new Error(creditsError.message);
+
+  const { data: usages, error: usagesError } = await supabase
+    .from("replacement_credit_usages")
+    .select("replacement_credit_id, days, leave_requests!inner(id, status, start_date, end_date)")
+    .eq("organization_id", organizationId)
+    .eq("employee_id", employeeId);
+
+  if (usagesError) throw new Error(usagesError.message);
+
+  const consumedMap = new Map<string, number>();
+  for (const usage of usages ?? []) {
+    const leaveReq = Array.isArray(usage.leave_requests)
+      ? usage.leave_requests[0]
+      : usage.leave_requests;
+    if (leaveReq?.status === "approved" || leaveReq?.status === "pending") {
+      const prev = consumedMap.get(usage.replacement_credit_id) ?? 0;
+      consumedMap.set(usage.replacement_credit_id, prev + Number(usage.days));
+    }
+  }
+
+  return (credits ?? []).map((row) => {
+    const totalDays = Number(row.credit_days);
+    const consumed = consumedMap.get(row.id) ?? 0;
+    const remaining = Math.max(0, Number((totalDays - consumed).toFixed(2)));
+    return {
+      id: row.id,
+      workDate: row.work_date,
+      creditDays: totalDays,
+      consumedDays: consumed,
+      remainingDays: remaining,
+      isConsumed: consumed >= totalDays && row.status === "approved",
+      description: row.description,
+      status: row.status,
+      createdAt: row.created_at,
+      approvalRequestId: row.approval_request_id,
+    };
+  });
+}
+
+export async function getReplacementCreditStats() {
+  const list = await listReplacementCredits();
+  const currentYear = new Date().getFullYear().toString();
+
+  let available = 0;
+  let pending = 0;
+  let approvedYtd = 0;
+  let rejected = 0;
+
+  for (const row of list) {
+    if (row.status === "approved") {
+      available += row.remainingDays;
+      if (row.workDate.startsWith(currentYear) || row.createdAt.startsWith(currentYear)) {
+        approvedYtd += row.creditDays;
+      }
+    } else if (row.status === "pending" || row.status === "draft") {
+      pending += row.creditDays;
+    } else if (row.status === "rejected") {
+      rejected += row.creditDays;
+    }
+  }
+
+  return {
+    available: Number(available.toFixed(1)),
+    pending: Number(pending.toFixed(1)),
+    approvedYtd: Number(approvedYtd.toFixed(1)),
+    rejected: Number(rejected.toFixed(1)),
+  };
+}
+

@@ -11,8 +11,12 @@ import {
 } from "@/components/employee/employee-shared";
 import { LeaveActionControls } from "@/components/employee/leave-action-controls";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
-import { getLeaveRequest } from "@/lib/employee/leave";
+import { getLeaveRequest, requireEmployeeContext } from "@/lib/employee/leave";
 import { getApprovalTimeline } from "@/lib/employee/requests";
+import {
+  getLinkedReplacementCredits,
+  isReplacementLeaveType,
+} from "@/lib/leave/replacement-credit";
 
 export default async function LeaveDetailPage({
   params,
@@ -23,15 +27,21 @@ export default async function LeaveDetailPage({
 }) {
   const { requestId } = await params;
   const query = await searchParams;
+  const { organizationId } = await requireEmployeeContext();
   const request = await getLeaveRequest(requestId);
 
   if (!request) {
     notFound();
   }
 
-  const timeline = request.approvalRequestId
-    ? await getApprovalTimeline(request.approvalRequestId).catch(() => [])
-    : [];
+  const [timeline, linkedCredits] = await Promise.all([
+    request.approvalRequestId
+      ? getApprovalTimeline(request.approvalRequestId).catch(() => [])
+      : Promise.resolve([]),
+    isReplacementLeaveType(request.leaveTypeName)
+      ? getLinkedReplacementCredits(organizationId, requestId).catch(() => [])
+      : Promise.resolve([]),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -91,6 +101,39 @@ export default async function LeaveDetailPage({
 
         <LeaveActionControls requestId={request.id} status={request.status} />
       </section>
+
+      {linkedCredits.length > 0 && (
+        <section className="space-y-3 border border-[var(--border-primary)] bg-[var(--surface-card)] p-6">
+          <h2 className="text-base font-semibold text-[var(--foreground-primary)]">
+            Linked Replacement Credits
+          </h2>
+          <div className="space-y-2">
+            {linkedCredits.map((lc) => (
+              <div
+                key={lc.id}
+                className="flex items-center justify-between rounded-lg bg-[var(--surface-muted)] p-3 text-sm"
+              >
+                <div>
+                  <p className="font-medium text-[var(--foreground-primary)]">
+                    Work Date: {formatDate(lc.workDate)}
+                  </p>
+                  {lc.description ? (
+                    <p className="text-xs text-[var(--foreground-muted)]">{lc.description}</p>
+                  ) : null}
+                </div>
+                <div className="text-right">
+                  <span className="font-semibold text-[var(--foreground-primary)]">
+                    {lc.consumedDays.toFixed(1)} day(s) consumed
+                  </span>
+                  <p className="text-xs text-[var(--foreground-muted)]">
+                    of {lc.creditDays.toFixed(1)} day credit
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {request.attachmentFileId && (
         <section className="space-y-3 border border-[var(--border-primary)] bg-[var(--surface-card)] p-6">

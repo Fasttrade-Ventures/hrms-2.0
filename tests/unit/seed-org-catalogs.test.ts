@@ -39,7 +39,7 @@ describe("seedOrgCatalogs", () => {
     const { client, inserts, upserts } = createAdminMock();
     const result = await seedOrgCatalogs(client as never, "org-1");
 
-    expect(result.leaveTypes).toBe(4);
+    expect(result.leaveTypes).toBe(5);
     expect(result.claimTypes).toBe(4);
     expect(upserts.some((row) => row.table === "leave_types")).toBe(true);
     expect(upserts.some((row) => row.table === "claim_types")).toBe(true);
@@ -64,7 +64,7 @@ describe("seedOrgCatalogs", () => {
     }) as typeof client.from;
 
     await expect(seedOrgCatalogs(client as never, "org-1")).resolves.toMatchObject({
-      leaveTypes: 4,
+      leaveTypes: 5,
       claimTypes: 4,
     });
   });

@@ -1,7 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
+import {
+  AlertCircle,
+  Briefcase,
+  Building2,
+  Calendar,
+  Check,
+  Clock,
+  FileMinus,
+  HeartPulse,
+} from "lucide-react";
 
 import { applyLeave, type EmployeeActionState } from "@/app/(employee)/employee/actions";
 import {
@@ -19,6 +29,44 @@ import type { LeaveBalanceRow, LeaveTypeOption } from "@/lib/employee/leave";
 const initialState: EmployeeActionState = {};
 
 type DurationMode = "full" | "half_am" | "half_pm";
+
+function formatLeaveLabel(name: string): string {
+  const lower = name.toLowerCase();
+  if (lower.includes("annual")) return "Annual";
+  if (lower.includes("medical") || lower.includes("mc")) return "Medical";
+  if (lower.includes("hospital")) return "Hospitalization";
+  if (lower.includes("replacement")) return "Replacement";
+  if (lower.includes("emergency")) return "Emergency";
+  if (lower.includes("unpaid")) return "Unpaid";
+  if (lower.includes("maternity")) return "Maternity";
+  if (lower.includes("paternity")) return "Paternity";
+  if (lower.includes("compassionate")) return "Compassionate";
+  if (lower.includes("marriage")) return "Marriage";
+  const cleaned = name.replace(/\s*leave\b/gi, "").trim();
+  return cleaned || name;
+}
+
+function getLeaveIcon(name: string) {
+  const lower = name.toLowerCase();
+  if (lower.includes("annual")) return Calendar;
+  if (lower.includes("medical") || lower.includes("mc")) return HeartPulse;
+  if (lower.includes("hospital")) return Building2;
+  if (lower.includes("replacement")) return Clock;
+  if (lower.includes("emergency")) return AlertCircle;
+  if (lower.includes("unpaid")) return FileMinus;
+  return Briefcase;
+}
+
+function getLeaveTypePriority(name: string): number {
+  const lower = name.toLowerCase();
+  if (lower.includes("annual")) return 1;
+  if (lower.includes("medical") || lower.includes("mc")) return 2;
+  if (lower.includes("hospital")) return 3;
+  if (lower.includes("replacement")) return 4;
+  if (lower.includes("emergency")) return 5;
+  if (lower.includes("unpaid")) return 99;
+  return 50;
+}
 
 export function LeaveApplyForm({
   leaveTypes,
@@ -75,43 +123,101 @@ export function LeaveApplyForm({
     selectedBalance != null &&
     workingDays > selectedBalance.remainingDays;
 
+  const entitlementBalances = useMemo(() => {
+    return balances
+      .filter((b) => {
+        const matchingType = leaveTypes.find((t) => t.id === b.leaveTypeId);
+        return !matchingType?.isUnpaid && !b.leaveTypeName.toLowerCase().includes("unpaid");
+      })
+      .sort(
+        (a, b) => getLeaveTypePriority(a.leaveTypeName) - getLeaveTypePriority(b.leaveTypeName),
+      );
+  }, [balances, leaveTypes]);
+
+  const gridColsClass =
+    entitlementBalances.length <= 2
+      ? "grid-cols-1 sm:grid-cols-2"
+      : entitlementBalances.length === 3
+      ? "grid-cols-1 sm:grid-cols-3"
+      : entitlementBalances.length === 4
+      ? "grid-cols-2 md:grid-cols-4"
+      : entitlementBalances.length === 5
+      ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5"
+      : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6";
+
   return (
     <div className="space-y-6">
       {/* Balance Chips Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {balances.map((balance) => {
+      <div className={`grid ${gridColsClass} gap-3`}>
+        {entitlementBalances.map((balance, idx) => {
           const isSelected = selectedLeaveTypeId === balance.leaveTypeId;
-          // Determine friendly label
-          let label = "Other";
-          const lowerName = balance.leaveTypeName.toLowerCase();
-          if (lowerName.includes("annual")) label = "Annual";
-          else if (lowerName.includes("medical")) label = "Medical";
-          else if (lowerName.includes("emergency")) label = "Emergency";
-          else if (lowerName.includes("replacement")) label = "Replacement";
+          const label = formatLeaveLabel(balance.leaveTypeName);
+          const Icon = getLeaveIcon(balance.leaveTypeName);
+          const isLastAndOdd =
+            idx === entitlementBalances.length - 1 && entitlementBalances.length % 2 !== 0;
 
           return (
             <button
               key={balance.leaveTypeId}
               type="button"
-              onClick={() => setSelectedLeaveTypeId(balance.leaveTypeId)}
-              className={`flex flex-col justify-between rounded-[var(--radius-xl)] p-3 px-3.5 gap-1 text-left transition shadow-[var(--shadow-card)] border ${
+              onClick={() => setSelectedLeaveTypeId(isSelected ? "" : balance.leaveTypeId)}
+              aria-pressed={isSelected}
+              className={`group relative flex flex-col justify-between rounded-[var(--radius-xl)] p-3.5 text-left transition-all duration-200 cursor-pointer border ${
                 isSelected
-                  ? "bg-gradient-to-br from-emerald-700 to-emerald-900 border-transparent text-white"
-                  : "bg-[var(--surface-card)] border-[var(--border-primary)] text-[var(--foreground-primary)] hover:bg-[var(--surface-muted)]"
-              }`}
+                  ? "bg-gradient-to-br from-[#1b3a28] via-[#234a2e] to-[#2d5e3a] border-transparent text-white shadow-md shadow-[#1b3a28]/20 ring-2 ring-[var(--accent-primary)] ring-offset-2 ring-offset-[var(--surface-primary)]"
+                  : "bg-[var(--surface-card)] border-[var(--border-primary)] text-[var(--foreground-primary)] shadow-[var(--shadow-card)] hover:border-[var(--border-focus)]/50 hover:-translate-y-0.5 hover:shadow-md"
+              } ${isLastAndOdd ? "col-span-2 sm:col-span-1 lg:col-span-1" : ""}`}
             >
-              <span
-                className={`text-[11px] font-semibold uppercase tracking-wider ${
-                  isSelected ? "text-emerald-200" : "text-[var(--foreground-secondary)]"
-                }`}
-              >
-                {label}
-              </span>
-              <div className="flex items-baseline gap-1 mt-1">
-                <span className="text-xl font-bold">{balance.remainingDays}</span>
-                <span className={`text-[11px] ${isSelected ? "text-emerald-200" : "text-[var(--foreground-muted)]"}`}>
-                  Days
+              {/* Top Row: Category Label & Icon / Check indicator */}
+              <div className="flex items-center justify-between gap-1 w-full">
+                <span
+                  className={`text-[11px] font-bold uppercase tracking-wider truncate ${
+                    isSelected ? "text-emerald-200" : "text-[var(--foreground-secondary)]"
+                  }`}
+                  title={label}
+                >
+                  {label}
                 </span>
+                <div className="flex items-center shrink-0">
+                  {isSelected ? (
+                    <span className="flex items-center justify-center h-4 w-4 rounded-full bg-white/20 text-emerald-100">
+                      <Check className="h-2.5 w-2.5 stroke-[3]" />
+                    </span>
+                  ) : (
+                    <Icon className="h-3.5 w-3.5 text-[var(--foreground-muted)] group-hover:text-[var(--foreground-secondary)] transition-colors" />
+                  )}
+                </div>
+              </div>
+
+              {/* Center: Main numeric value */}
+              <div className="flex items-baseline gap-1.5 mt-2">
+                <span className="text-2xl sm:text-3xl font-bold tracking-tight">
+                  {balance.remainingDays}
+                </span>
+                <span
+                  className={`text-xs font-medium ${
+                    isSelected ? "text-emerald-200/90" : "text-[var(--foreground-muted)]"
+                  }`}
+                >
+                  days
+                </span>
+              </div>
+
+              {/* Bottom: Context info */}
+              <div className="mt-1 flex items-center justify-between text-[10px] w-full">
+                {balance.pendingDays > 0 ? (
+                  <span className={isSelected ? "text-amber-300 font-medium" : "text-amber-600 font-medium"}>
+                    {balance.pendingDays} pending
+                  </span>
+                ) : balance.entitlementDays > 0 ? (
+                  <span className={isSelected ? "text-emerald-200/70" : "text-[var(--foreground-muted)]"}>
+                    of {balance.entitlementDays} total
+                  </span>
+                ) : (
+                  <span className={isSelected ? "text-emerald-200/70" : "text-[var(--foreground-muted)]"}>
+                    Earned credit
+                  </span>
+                )}
               </div>
             </button>
           );

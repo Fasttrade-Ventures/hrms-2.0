@@ -8,6 +8,7 @@ import { queueNotification } from "@/lib/notifications/queue";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizationIdForWrite } from "@/lib/auth/organization-context";
 import { expireOverduePendingLeaves } from "@/lib/leave/expiry";
+import { isReplacementLeaveType } from "@/lib/leave/replacement-credit";
 
 
 export type LeaveTypeOption = {
@@ -69,14 +70,22 @@ export async function listLeaveTypes(): Promise<LeaveTypeOption[]> {
 
   const allowedIds = (allowedData ?? []).map((row) => row.leave_type_id);
 
+  const { data: repRows } = await supabase
+    .from("leave_types")
+    .select("id")
+    .eq("organization_id", organizationId)
+    .ilike("name", "%replacement%");
+  const repIds = (repRows ?? []).map((r) => r.id);
+
   // Intentional policy: empty allow-list means all org leave types are available.
+  // Replacement leave is always available if the organization has created/earned it.
   const query = supabase
     .from("leave_types")
     .select("id, name, entitlement_days, is_unpaid, requires_attachment")
     .eq("organization_id", organizationId);
 
   if (allowedIds.length > 0) {
-    query.in("id", allowedIds);
+    query.in("id", Array.from(new Set([...allowedIds, ...repIds])));
   }
 
   const { data, error } = await query.order("name");
@@ -168,13 +177,20 @@ export async function getLeaveBalances(): Promise<LeaveBalanceRow[]> {
 
   const allowedIds = (allowedData ?? []).map((row) => row.leave_type_id);
 
+  const { data: repRows } = await supabase
+    .from("leave_types")
+    .select("id")
+    .eq("organization_id", organizationId)
+    .ilike("name", "%replacement%");
+  const repIds = (repRows ?? []).map((r) => r.id);
+
   const typesQuery = supabase
     .from("leave_types")
     .select("id, name, entitlement_days")
     .eq("organization_id", organizationId);
 
   if (allowedIds.length > 0) {
-    typesQuery.in("id", allowedIds);
+    typesQuery.in("id", Array.from(new Set([...allowedIds, ...repIds])));
   }
 
   const [employeeResult, typesResult, requestsResult] = await Promise.all([
@@ -196,7 +212,24 @@ export async function getLeaveBalances(): Promise<LeaveBalanceRow[]> {
   if (typesResult.error) throw new Error(typesResult.error.message);
   if (requestsResult.error) throw new Error(requestsResult.error.message);
 
+  const hasReplacement = (typesResult.data ?? []).some((t) => isReplacementLeaveType(t.name));
+  const { getReplacementCreditBalance } = await import("@/lib/leave/replacement-credit");
+  const repBal = hasReplacement
+    ? await getReplacementCreditBalance(organizationId, employeeId, supabase)
+    : null;
+
   return (typesResult.data ?? []).map((type) => {
+    if (isReplacementLeaveType(type.name) && repBal) {
+      return {
+        leaveTypeId: type.id,
+        leaveTypeName: type.name,
+        entitlementDays: repBal.totalApprovedCredits,
+        usedDays: repBal.usedDays,
+        pendingDays: repBal.pendingDays,
+        remainingDays: repBal.remainingDays,
+      };
+    }
+
     const matching = (requestsResult.data ?? []).filter((row) => row.leave_type_id === type.id);
     const usedDays = matching
       .filter((row) => row.status === "approved")
@@ -310,6 +343,23 @@ export async function createLeaveRequest(input: LeaveRequestInput): Promise<stri
     throw new Error(error?.message ?? "Failed to create leave request.");
   }
 
+  if (isReplacementLeaveType(leaveType?.name)) {
+    try {
+      const { consumeReplacementCredits } = await import("@/lib/leave/replacement-credit");
+      await consumeReplacementCredits({
+        organizationId,
+        employeeId,
+        leaveRequestId: data.id,
+        days,
+        actorUserId: session.user.id,
+        client: supabase,
+      });
+    } catch (err) {
+      await supabase.from("leave_requests").delete().eq("id", data.id);
+      throw err;
+    }
+  }
+
   await submitForApproval({
     organizationId,
     requesterEmployeeId: employeeId,
@@ -371,6 +421,14 @@ export async function cancelLeaveRequest(requestId: string, reason?: string): Pr
     .eq("organization_id", organizationId);
 
   if (updateError) throw new Error(updateError.message);
+
+  const { restoreReplacementCredits } = await import("@/lib/leave/replacement-credit");
+  await restoreReplacementCredits({
+    organizationId,
+    leaveRequestId: requestId,
+    actorUserId: session.user.id,
+    client: supabase,
+  });
 
   let approverEmployeeId: string | null = null;
   if (request.approval_request_id) {
@@ -488,6 +546,14 @@ export async function revokeLeaveRequest(requestId: string, reason?: string): Pr
     .eq("organization_id", organizationId);
 
   if (updateError) throw new Error(updateError.message);
+
+  const { restoreReplacementCredits } = await import("@/lib/leave/replacement-credit");
+  await restoreReplacementCredits({
+    organizationId,
+    leaveRequestId: requestId,
+    actorUserId: session.user.id,
+    client: supabase,
+  });
 
   let approverEmployeeId: string | null = null;
   if (request.approval_request_id) {

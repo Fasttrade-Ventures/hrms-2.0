@@ -1,5 +1,9 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import {
+  getReplacementCreditBalance,
+  isReplacementLeaveType,
+} from "@/lib/leave/replacement-credit";
 
 export type LeaveBalanceSnapshot = {
   leaveTypeId: string;
@@ -59,6 +63,25 @@ export async function getLeaveBalanceForType(
   if (requestsResult.error) throw new Error(requestsResult.error.message);
 
   const type = typeResult.data;
+
+  if (isReplacementLeaveType(type.name)) {
+    const repBal = await getReplacementCreditBalance(
+      organizationId,
+      employeeId,
+      supabase,
+      { excludeLeaveRequestId: options?.excludeRequestId },
+    );
+    return {
+      leaveTypeId: type.id,
+      leaveTypeName: type.name,
+      isUnpaid: Boolean(type.is_unpaid),
+      entitlementDays: repBal.totalApprovedCredits,
+      usedDays: repBal.usedDays,
+      pendingDays: repBal.pendingDays,
+      remainingDays: repBal.remainingDays,
+    };
+  }
+
   const matching = requestsResult.data ?? [];
   const usedDays = matching
     .filter((row) => row.status === "approved")
