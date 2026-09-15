@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useEffect, useState } from "react";
 
 import { applyLeave, type EmployeeActionState } from "@/app/(employee)/employee/actions";
@@ -11,6 +12,8 @@ import {
   HrSelect,
   HrTextInput,
 } from "@/components/hr/employees/form-fields";
+import { countWorkingDays } from "@hrms/domain";
+import { findOverlappingLeave, type LeaveDateSpan } from "@/lib/leave/overlap-utils";
 import type { LeaveBalanceRow, LeaveTypeOption } from "@/lib/employee/leave";
 
 const initialState: EmployeeActionState = {};
@@ -22,11 +25,15 @@ export function LeaveApplyForm({
   balances,
   defaultStartDate,
   defaultEndDate,
+  existingRequests = [],
+  holidays = [],
 }: {
   leaveTypes: LeaveTypeOption[];
   balances: LeaveBalanceRow[];
   defaultStartDate: string;
   defaultEndDate: string;
+  existingRequests?: LeaveDateSpan[];
+  holidays?: string[];
 }) {
   const [state, formAction, pending] = useActionState(applyLeave, initialState);
   const [selectedLeaveTypeId, setSelectedLeaveTypeId] = useState("");
@@ -42,23 +49,21 @@ export function LeaveApplyForm({
   const selectedType = leaveTypes.find((t) => t.id === selectedLeaveTypeId);
   const requiresAttachment = selectedType?.requiresAttachment ?? false;
 
-  // Calculates working days excluding Saturday & Sunday
+  // Check if selected dates overlap with any active leave request
+  const overlappingRequest = findOverlappingLeave(startDate, endDate, existingRequests);
+
+  // Calculates working days excluding Saturday & Sunday, and observed public holidays
   const calculateWorkingDays = (start: string, end: string, isHalfDay: boolean) => {
     if (!start || !end) return 0;
-    const sDate = new Date(start);
-    const eDate = new Date(end);
+    const sDate = new Date(`${start}T00:00:00`);
+    const eDate = new Date(`${end}T00:00:00`);
     if (sDate > eDate) return 0;
 
-    let count = 0;
-    const cur = new Date(sDate);
-    while (cur <= eDate) {
-      const day = cur.getDay();
-      if (day !== 0 && day !== 6) {
-        count++;
-      }
-      cur.setDate(cur.getDate() + 1);
-    }
-    return isHalfDay ? count * 0.5 : count;
+    return countWorkingDays(sDate, eDate, {
+      weekendMode: "sat_sun",
+      halfDay: isHalfDay,
+      holidays,
+    });
   };
 
   const workingDays = calculateWorkingDays(startDate, endDate, durationMode !== "full");
@@ -172,7 +177,12 @@ export function LeaveApplyForm({
           <HrField id="startDate" label="From">
             <HrTextInput
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              onChange={(e) => {
+                setStartDate(e.target.value);
+                if (durationMode !== "full") {
+                  setEndDate(e.target.value);
+                }
+              }}
               id="startDate"
               name="startDate"
               required
@@ -190,9 +200,16 @@ export function LeaveApplyForm({
               required
               type="date"
               min={startDate || todayStr || undefined}
+              disabled={durationMode !== "full"}
             />
           </HrField>
         </div>
+
+        {startDate && endDate && workingDays === 0 && (
+          <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+            Selected dates fall entirely on non-working days (weekends or observed public holidays).
+          </p>
+        )}
 
         {requiresAttachment && (
           <HrField id="file" label="Supporting Document (Medical Certificate, etc.)">
@@ -218,6 +235,34 @@ export function LeaveApplyForm({
           </div>
         )}
 
+        {/* Overlap Conflict Notice */}
+        {overlappingRequest && (
+          <div className="rounded-[var(--radius-lg)] border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-[var(--foreground-primary)]">
+            <div className="flex items-start gap-3">
+              <span className="text-lg">⚠️</span>
+              <div className="space-y-1">
+                <p className="font-semibold text-amber-600 dark:text-amber-400">
+                  Date Conflict: Leave already requested
+                </p>
+                <p className="text-[var(--foreground-secondary)]">
+                  You already have an active <span className="font-medium capitalize">{overlappingRequest.status}</span> {overlappingRequest.leaveTypeName ?? "leave"} request covering {overlappingRequest.startDate} to {overlappingRequest.endDate}.
+                  You must cancel that leave request first before you can apply for these dates again.
+                </p>
+                {overlappingRequest.id && (
+                  <div className="pt-1.5">
+                    <Link
+                      href={`/employee/leave/${overlappingRequest.id}`}
+                      className="font-semibold text-[var(--accent-primary)] hover:underline inline-flex items-center gap-1"
+                    >
+                      View or cancel existing request →
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {overBalance ? (
           <p className="text-xs font-medium text-destructive">
             Insufficient balance. Remaining: {selectedBalance?.remainingDays ?? 0} day(s).
@@ -227,7 +272,7 @@ export function LeaveApplyForm({
         <HrFormMessage error={state.error} success={state.success} />
 
         <div className="flex gap-3">
-          <HrPrimaryButton disabled={pending || overBalance} type="submit">
+          <HrPrimaryButton disabled={pending || overBalance || Boolean(overlappingRequest)} type="submit">
             {pending ? "Submitting..." : "Submit Leave Request"}
           </HrPrimaryButton>
           <HrGhostButton

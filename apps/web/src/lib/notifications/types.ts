@@ -27,6 +27,24 @@ export function formatNotificationMessage(row: NotificationRow): string {
       REQUEST_TYPE_LABELS[requestType as keyof typeof REQUEST_TYPE_LABELS] ?? "Request";
     return `Your ${label.toLowerCase()} request was rejected.`;
   }
+  if (row.template === "approval.cancel") {
+    const requestType = String(row.payload.requestType ?? "");
+    const label =
+      REQUEST_TYPE_LABELS[requestType as keyof typeof REQUEST_TYPE_LABELS] ?? "Request";
+    const actorName = row.payload.actorName ? String(row.payload.actorName) : null;
+    return actorName
+      ? `${actorName} cancelled their ${label.toLowerCase()} request.`
+      : `Your ${label.toLowerCase()} request was cancelled.`;
+  }
+  if (row.template === "approval.revoke") {
+    const requestType = String(row.payload.requestType ?? "");
+    const label =
+      REQUEST_TYPE_LABELS[requestType as keyof typeof REQUEST_TYPE_LABELS] ?? "Request";
+    const actorName = row.payload.actorName ? String(row.payload.actorName) : null;
+    return actorName
+      ? `${actorName} revoked their approved ${label.toLowerCase()} request.`
+      : `Your ${label.toLowerCase()} request was revoked.`;
+  }
   if (row.template === "announcement.published") return String(row.payload.title ?? "New announcement");
   if (row.template === "document_compliance_employee") {
     const documentType = String(row.payload.documentType ?? "document");

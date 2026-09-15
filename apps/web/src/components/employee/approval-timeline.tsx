@@ -13,7 +13,10 @@ export function ApprovalTimeline({ steps }: { steps: TimelineStep[] }) {
         {steps.map((step, idx) => {
           const isCompleted = step.status === "completed" || step.status === "approved";
           const isPending = step.status === "pending";
-          const isRejected = step.status === "rejected";
+          const isRejected =
+            step.status === "rejected" ||
+            step.status === "cancelled" ||
+            step.status === "revoked";
 
           // Determine dot color/style
           let dotColor = "bg-[var(--surface-muted)] border-[var(--border-primary)] text-[var(--foreground-muted)]";

@@ -86,7 +86,7 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Leave balances | Core | ✅ | On dashboards / apply; carry-forward field used in balance math |
 | Manager leave approval | Core | ✅ | Detail + confirm |
 | HR apply leave on behalf | Core | ✅ Apply Behalf | Auto-approved |
-| Leave cancel / revoke | Core | ⬜ | Domain state machine supports it; **no UI/service wired on leave detail** |
+| Leave cancel / revoke | Core | ✅ | Cancel pending requests & revoke approved leave on `/employee/leave/[id]` with balance restoration & audit logging |
 | My Calendar (approved leave + holidays) | Core | ✅ | Month / list at `/employee/calendar` |
 | Team leave (manager) | Core | ✅ + empty | |
 | Team calendar (manager) | Core | ✅ | Month / list at `/manager/team-calendar` |

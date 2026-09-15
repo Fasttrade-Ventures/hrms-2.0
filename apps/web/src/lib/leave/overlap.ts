@@ -1,6 +1,8 @@
 import type { BalanceClient } from "@/lib/leave/balance";
 import { createClient } from "@/lib/supabase/server";
 
+export { findOverlappingLeave, type LeaveDateSpan } from "./overlap-utils";
+
 export async function assertNoOverlappingLeave(params: {
   organizationId: string;
   employeeId: string;
@@ -28,6 +30,8 @@ export async function assertNoOverlappingLeave(params: {
   if (error) throw new Error(error.message);
 
   if (data && data.length > 0) {
-    throw new Error("Leave dates overlap with an existing pending or approved request.");
+    throw new Error(
+      "You already have an active leave request covering these dates. Please cancel your existing request first before applying again.",
+    );
   }
 }

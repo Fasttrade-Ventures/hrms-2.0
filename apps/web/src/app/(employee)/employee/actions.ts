@@ -429,3 +429,61 @@ export async function updateEmployeePayrollDeclarationsAction(
     };
   }
 }
+
+export async function cancelLeaveAction(
+  _prev: EmployeeActionState,
+  formData: FormData,
+): Promise<EmployeeActionState> {
+  try {
+    const requestId = String(formData.get("requestId") ?? "");
+    const reason = String(formData.get("reason") ?? "").trim() || undefined;
+
+    if (!requestId) {
+      return { error: "Request ID is required." };
+    }
+
+    const { cancelLeaveRequest } = await import("@/lib/employee/leave");
+    await cancelLeaveRequest(requestId, reason);
+
+    revalidatePath("/employee/leave");
+    revalidatePath(`/employee/leave/${requestId}`);
+    revalidatePath("/employee/dashboard");
+    revalidatePath("/employee/calendar");
+    revalidatePath("/manager/approvals");
+    revalidatePath("/manager/team-calendar");
+    revalidatePath("/manager/team-leave");
+
+    return { success: "Leave request cancelled." };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Failed to cancel leave request." };
+  }
+}
+
+export async function revokeLeaveAction(
+  _prev: EmployeeActionState,
+  formData: FormData,
+): Promise<EmployeeActionState> {
+  try {
+    const requestId = String(formData.get("requestId") ?? "");
+    const reason = String(formData.get("reason") ?? "").trim() || undefined;
+
+    if (!requestId) {
+      return { error: "Request ID is required." };
+    }
+
+    const { revokeLeaveRequest } = await import("@/lib/employee/leave");
+    await revokeLeaveRequest(requestId, reason);
+
+    revalidatePath("/employee/leave");
+    revalidatePath(`/employee/leave/${requestId}`);
+    revalidatePath("/employee/dashboard");
+    revalidatePath("/employee/calendar");
+    revalidatePath("/manager/team-calendar");
+    revalidatePath("/manager/team-leave");
+
+    return { success: "Approved leave revoked." };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Failed to revoke leave." };
+  }
+}
+

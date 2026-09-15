@@ -63,14 +63,21 @@ export function resolveNotificationHref(
     return null;
   }
 
-  if (row.template === "approval.approve" || row.template === "approval.reject") {
-    if (portal !== "employee") return null;
+  if (
+    row.template === "approval.approve" ||
+    row.template === "approval.reject" ||
+    row.template === "approval.cancel" ||
+    row.template === "approval.revoke"
+  ) {
     const sourceId = row.payload.sourceId;
     const requestType = String(row.payload.requestType ?? "");
-    if (typeof sourceId === "string") {
+    if (typeof sourceId === "string" && portal === "employee") {
       return employeeRequestDetailHref(requestType, sourceId);
     }
-    return "/employee/leave";
+    if (portal === "manager") {
+      return "/manager/team-calendar";
+    }
+    return portal === "employee" ? "/employee/leave" : null;
   }
 
   if (row.template === "document_compliance_employee") {

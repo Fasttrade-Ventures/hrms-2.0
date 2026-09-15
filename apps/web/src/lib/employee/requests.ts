@@ -84,10 +84,25 @@ export async function getApprovalTimeline(approvalRequestId: string): Promise<Ti
     });
   }
 
-  // Add final step if approved/rejected
-  if (request && (request.status === "approved" || request.status === "rejected")) {
+  // Add final step if approved/rejected/cancelled/revoked
+  if (
+    request &&
+    (request.status === "approved" ||
+      request.status === "rejected" ||
+      request.status === "cancelled" ||
+      request.status === "revoked")
+  ) {
+    const label =
+      request.status === "approved"
+        ? "Approved"
+        : request.status === "rejected"
+          ? "Rejected"
+          : request.status === "cancelled"
+            ? "Cancelled"
+            : "Revoked";
+
     timeline.push({
-      label: request.status === "approved" ? "Approved" : "Rejected",
+      label,
       status: request.status,
       actedAt: timeline[timeline.length - 1]?.actedAt ?? null,
       comment: null,

@@ -18,3 +18,7 @@ pencil-new.pen.bak*
 # Supabase local
 supabase/.branches
 supabase/.temp
+
+# Design specs
+docs/design-specs/
+

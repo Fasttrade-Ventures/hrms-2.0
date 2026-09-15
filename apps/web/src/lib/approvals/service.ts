@@ -44,7 +44,7 @@ async function resolveApproverEmployeeId(
   return data?.manager_employee_id ?? null;
 }
 
-async function resolveUserIdForEmployee(
+export async function resolveUserIdForEmployee(
   organizationId: string,
   employeeId: string,
 ): Promise<string | null> {
@@ -179,6 +179,35 @@ export async function actOnApproval(input: ActOnApprovalInput): Promise<void> {
   const nextStatus = transition(request.status as "pending", input.event);
   const now = new Date().toISOString();
 
+  const sourceTable = request.payload.sourceTable as ApprovalSourceTable | undefined;
+  const sourceId = request.payload.sourceId as string | undefined;
+
+  // Validate balance BEFORE updating any approval steps or source records
+  if (sourceTable === "leave_requests" && nextStatus === "approved" && input.event === "approve" && sourceId) {
+    const admin = createAdminClient();
+    const { data: leaveReq, error: leaveFetchError } = await admin
+      .from("leave_requests")
+      .select("employee_id, leave_type_id, days")
+      .eq("id", sourceId)
+      .eq("organization_id", input.organizationId)
+      .maybeSingle();
+
+    if (leaveFetchError) throw new Error(leaveFetchError.message);
+    if (leaveReq) {
+      const { assertLeaveBalance } = await import("@/lib/leave/balance");
+      await assertLeaveBalance({
+        organizationId: input.organizationId,
+        employeeId: leaveReq.employee_id,
+        leaveTypeId: leaveReq.leave_type_id,
+        days: Number(leaveReq.days),
+        allowOverride: input.hrOverride,
+        overrideReason: input.comment,
+        client: admin,
+        excludeRequestId: sourceId,
+      });
+    }
+  }
+
   const { error: updateStepError } = await supabase
     .from("approval_steps")
     .update({
@@ -200,9 +229,6 @@ export async function actOnApproval(input: ActOnApprovalInput): Promise<void> {
 
   if (updateRequestError) throw new Error(updateRequestError.message);
 
-  const sourceTable = request.payload.sourceTable as ApprovalSourceTable | undefined;
-  const sourceId = request.payload.sourceId as string | undefined;
-
   if (sourceTable && sourceId) {
     const { error: sourceError } = await supabase
       .from(sourceTable)
@@ -221,28 +247,6 @@ export async function actOnApproval(input: ActOnApprovalInput): Promise<void> {
         "@/lib/attendance/apply-approved-request"
       );
       await applyApprovedAttendanceRequest(input.organizationId, sourceId);
-    }
-
-    if (sourceTable === "leave_requests" && nextStatus === "approved" && input.event === "approve") {
-      const admin = createAdminClient();
-      const { data: leaveReq, error: leaveFetchError } = await admin
-        .from("leave_requests")
-        .select("employee_id, leave_type_id, days")
-        .eq("id", sourceId)
-        .eq("organization_id", input.organizationId)
-        .maybeSingle();
-
-      if (leaveFetchError) throw new Error(leaveFetchError.message);
-      if (leaveReq) {
-        const { assertLeaveBalance } = await import("@/lib/leave/balance");
-        await assertLeaveBalance({
-          organizationId: input.organizationId,
-          employeeId: leaveReq.employee_id,
-          leaveTypeId: leaveReq.leave_type_id,
-          days: Number(leaveReq.days),
-          client: admin,
-        });
-      }
     }
   }
 

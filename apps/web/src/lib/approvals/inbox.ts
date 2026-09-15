@@ -28,6 +28,23 @@ export function mapApprovalInboxRow(row: Record<string, unknown>): ApprovalInbox
   const requestType = request.request_type as ApprovalRequestType;
   const payload = (request.payload ?? {}) as Record<string, unknown>;
 
+  let status = String(row.status);
+  const comment = String((row as { comment?: string | null }).comment ?? "");
+  const cancellationReason = String(payload.cancellationReason ?? "");
+  const today = new Date().toISOString().slice(0, 10);
+
+  const isExpired =
+    comment.toLowerCase().includes("expired") ||
+    cancellationReason.toLowerCase().includes("expired") ||
+    (requestType === "leave" &&
+      typeof payload.endDate === "string" &&
+      payload.endDate < today &&
+      (status === "pending" || status === "cancelled"));
+
+  if (isExpired) {
+    status = "expired";
+  }
+
   return {
     stepId: String(row.id),
     requestId: String(request.id),
@@ -37,7 +54,7 @@ export function mapApprovalInboxRow(row: Record<string, unknown>): ApprovalInbox
     requesterEmployeeNumber: String(requester?.employee_number ?? "—"),
     submittedAt: String(request.submitted_at ?? request.created_at ?? ""),
     summary: summarizeApprovalPayload(requestType, payload),
-    status: String(row.status),
+    status,
   };
 }
 

@@ -9,6 +9,7 @@ import {
   formatDateTime,
   RequestStatusPill,
 } from "@/components/employee/employee-shared";
+import { LeaveActionControls } from "@/components/employee/leave-action-controls";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { getLeaveRequest } from "@/lib/employee/leave";
 import { getApprovalTimeline } from "@/lib/employee/requests";
@@ -53,6 +54,18 @@ export default async function LeaveDetailPage({
         </div>
       ) : null}
 
+      {request.status === "cancelled" ? (
+        <div className="border border-[var(--border-primary)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--foreground-muted)]">
+          This leave request has been cancelled.
+        </div>
+      ) : null}
+
+      {request.status === "revoked" ? (
+        <div className="border border-[var(--border-primary)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--foreground-muted)]">
+          This approved leave has been revoked and leave days have been restored to your balance.
+        </div>
+      ) : null}
+
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="border border-[var(--border-primary)] bg-[var(--surface-card)] p-5">
           <p className="text-[13px] font-medium text-[var(--foreground-muted)]">Status</p>
@@ -65,14 +78,18 @@ export default async function LeaveDetailPage({
         <StatCard label="End" value={formatDate(request.endDate)} />
       </div>
 
-      <section className="space-y-3 border border-[var(--border-primary)] bg-[var(--surface-card)] p-6">
-        <h2 className="text-base font-semibold text-[var(--foreground-primary)]">Details</h2>
-        <p className="text-sm text-[var(--foreground-secondary)]">
-          {request.halfDay ? "Includes a half-day on the last date." : "Full-day leave."}
-        </p>
-        <p className="text-sm text-[var(--foreground-primary)]">
-          {request.reason?.trim() || "No reason provided."}
-        </p>
+      <section className="space-y-4 border border-[var(--border-primary)] bg-[var(--surface-card)] p-6">
+        <div className="space-y-3">
+          <h2 className="text-base font-semibold text-[var(--foreground-primary)]">Details</h2>
+          <p className="text-sm text-[var(--foreground-secondary)]">
+            {request.halfDay ? "Includes a half-day on the last date." : "Full-day leave."}
+          </p>
+          <p className="text-sm text-[var(--foreground-primary)]">
+            {request.reason?.trim() || "No reason provided."}
+          </p>
+        </div>
+
+        <LeaveActionControls requestId={request.id} status={request.status} />
       </section>
 
       {request.attachmentFileId && (
