@@ -39,6 +39,10 @@
     {
       "path": "/api/cron/auto-clock-out",
       "schedule": "0 20 * * *"
+    },
+    {
+      "path": "/api/cron/attendance-tardiness",
+      "schedule": "0 2 * * *"
     }
   ]
 }

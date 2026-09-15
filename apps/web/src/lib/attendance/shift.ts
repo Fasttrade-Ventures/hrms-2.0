@@ -57,6 +57,50 @@ export function getShiftEndTimestamp(options: {
 }
 
 /**
+ * Calculates the exact shift start ISO timestamp (UTC) for a given work date and shift.
+ * Defaults to "09:00" start time if no shift is assigned.
+ */
+export function getShiftStartTimestamp(options: {
+  workDate: string;
+  shift?: { startTime?: string } | null;
+  timeZone?: string;
+}): string {
+  const { workDate, shift, timeZone = DEFAULT_ORG_TIMEZONE } = options;
+  const startTime = shift?.startTime || "09:00";
+  return combineDateAndLocalTime(workDate, startTime, timeZone);
+}
+
+/**
+ * Calculates the exact timestamp (UTC) when the grace period for a shift expires.
+ * Defaults to 0 grace minutes if not configured.
+ */
+export function getShiftGraceCutoffTimestamp(options: {
+  workDate: string;
+  shift?: { startTime?: string; graceMinutes?: number | null } | null;
+  timeZone?: string;
+}): string {
+  const { workDate, shift, timeZone = DEFAULT_ORG_TIMEZONE } = options;
+  const startTime = shift?.startTime || "09:00";
+  const graceMinutes = Number(shift?.graceMinutes ?? 0);
+  const startIso = combineDateAndLocalTime(workDate, startTime, timeZone);
+  return new Date(new Date(startIso).getTime() + graceMinutes * 60 * 1000).toISOString();
+}
+
+/**
+ * Determines whether an evaluation timestamp has passed the shift start + grace period.
+ */
+export function isPastGraceCutoff(options: {
+  asOf?: string | Date;
+  workDate: string;
+  shift?: { startTime?: string; graceMinutes?: number | null } | null;
+  timeZone?: string;
+}): boolean {
+  const asOfMs = (options.asOf ? new Date(options.asOf) : new Date()).getTime();
+  const cutoffIso = getShiftGraceCutoffTimestamp(options);
+  return asOfMs > new Date(cutoffIso).getTime();
+}
+
+/**
  * Calculates whether a clock-in timestamp is late relative to the shift start time + grace minutes.
  * Defaults to 09:00 start time and 0 grace minutes if no shift is assigned.
  * If workDate is provided and clock-in is on the following calendar day (e.g. past midnight on an
