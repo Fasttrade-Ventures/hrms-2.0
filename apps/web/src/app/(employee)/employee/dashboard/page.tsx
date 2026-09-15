@@ -77,7 +77,7 @@ export default async function Page() {
           .catch(() => ({ pinned: [], latest: [] }))
       : Promise.resolve({ pinned: [], latest: [] }),
     getMyDocumentComplianceSummary().catch(() => ({ missing: 0, expiring: 0, uploadableTypes: [] })),
-    getEmployeeAttendanceContext().catch(() => ({ geofence: null, locationModuleEnabled: false })),
+    getEmployeeAttendanceContext().catch(() => ({ geofence: null, locationModuleEnabled: false, shift: null })),
   ]);
 
   const announcementPinned = announcementFeed.pinned;

@@ -91,7 +91,7 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Team leave (manager) | Core | ✅ + empty | |
 | Team calendar (manager) | Core | ✅ | Month / list at `/manager/team-calendar` |
 | Long-leave escalation | Core | ⬜ | Not implemented |
-| Replacement-credit balance on leave | Core | 🟡 | Heuristic leave-type name only — **not linked to `replacement_credits` ledger** |
+| Replacement-credit balance on leave | Core | ✅ | Dynamic balance linked to `replacement_credits` and `replacement_credit_usages` ledgers |
 | Prorating / carry-forward / expiry automation | Pro | 🟡 | Manual carry-forward field; **no accrual/expiry jobs** |
 | Accrual & reminders | Pro | ⬜ | |
 | Blackout periods | Pro | ✅ HR Org | `leave_blackout_periods` + apply/behalf enforcement |
@@ -156,8 +156,8 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Claim credit for weekend / PH work | Core | ✅ | Typically 1.0 day |
 | Credit history + empty state | Core | ✅ | |
 | Manager approval | Core | ✅ | |
-| Balance on leave surfaces | Core | 🟡 | Not properly linked to leave balances |
-| Accounting invariants (consume once) | Core | ⬜ | No `consumed_at` / consume-once ledger |
+| Balance on leave surfaces | Core | ✅ | Linked dynamically to replacement credits ledger |
+| Accounting invariants (consume once) | Core | ✅ | `replacement_credit_usages` ledger with FIFO allocation & restore on cancel/revoke/reject |
 
 ---
 
@@ -419,8 +419,8 @@ Sources (competitive research, Aug 2026):
 ### A — Existing product gaps (in code / features above)
 1. **Positions catalog** — free-text `job_title` only  
 2. **Leave cancel / revoke** — no UI/service  
-3. **Replacement credit ↔ leave** consume-once accounting  
-4. **Shift-based lateness enforcement** — grace unused on clock  
+3. ~~**Replacement credit ↔ leave** consume-once accounting~~ (✅ Implemented via `replacement_credit_usages` ledger)
+4. ~~**Shift-based lateness enforcement** — grace unused on clock~~ (✅ Implemented dynamic late detection from shift + grace minutes)  
 5. **Overnight shifts, auto clock-out, tardiness alerts**  
 6. **Multi-level / custom approval workflows**  
 7. **Leave accrual / expiry automation**  

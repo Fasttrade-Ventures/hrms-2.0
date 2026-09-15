@@ -1,3 +1,4 @@
+import { isClockInLate, resolveEmployeeShiftsBatch, type EmployeeShift } from "@/lib/attendance/shift";
 import { orgLocalDateString } from "@/lib/datetime/org-timezone";
 import { requireEmployeeContext } from "@/lib/employee/leave";
 import { getEmployeeAttendanceContext } from "@/lib/employee/attendance-context";
@@ -79,7 +80,7 @@ export async function clockIn(input?: {
   ipAddress?: string | null;
 }): Promise<TodayAttendance> {
   const { employeeId, organizationId } = await requireEmployeeContext();
-  const { geofence } = await getEmployeeAttendanceContext();
+  const { geofence, shift } = await getEmployeeAttendanceContext();
   const validation = validateGeofenceClockIn({
     geofence,
     latitude: input?.latitude,
@@ -103,13 +104,21 @@ export async function clockIn(input?: {
 
   const nextSessionNum = existing ? existing.sessions.length + 1 : 1;
 
+  let recordStatus: string = validation.status;
+  if (nextSessionNum === 1) {
+    const isLate = isClockInLate(now, shift);
+    if (isLate) {
+      recordStatus = "late";
+    }
+  }
+
   const record = {
     organization_id: organizationId,
     employee_id: employeeId,
     work_date: workDate,
     session: nextSessionNum,
     clock_in_at: now,
-    status: validation.status,
+    status: recordStatus,
     latitude: input?.latitude ?? null,
     longitude: input?.longitude ?? null,
     ip_address: input?.ipAddress ?? null,
@@ -164,6 +173,7 @@ export interface DateGroup {
   latitude: number | null;
   longitude: number | null;
   ip_address: string | null;
+  shift?: EmployeeShift | null;
 }
 
 export async function listRecentAttendance(limit = 7) {
@@ -198,6 +208,10 @@ export async function listRecentAttendance(limit = 7) {
         longitude: row.longitude ? Number(row.longitude) : null,
         ip_address: row.ip_address ?? null,
       };
+    }
+
+    if (row.status === "late") {
+      groups[dateStr].status = "late";
     }
 
     // Earliest check-in time of the day (along with its location details if present)
@@ -235,6 +249,27 @@ export async function listRecentAttendance(limit = 7) {
       }
     }
   });
+
+  const uniqueDates = Object.keys(groups);
+  const shiftsByDate = await resolveEmployeeShiftsBatch(
+    supabase,
+    organizationId,
+    employeeId,
+    uniqueDates,
+  );
+
+  for (const dateStr of uniqueDates) {
+    const shift = shiftsByDate.get(dateStr) ?? null;
+    const group = groups[dateStr];
+    if (group) {
+      group.shift = shift;
+      if (group.status !== "late" && group.clock_in_at) {
+        if (isClockInLate(group.clock_in_at, shift)) {
+          group.status = "late";
+        }
+      }
+    }
+  }
 
   return Object.values(groups)
     .sort((a, b) => b.work_date.localeCompare(a.work_date))
