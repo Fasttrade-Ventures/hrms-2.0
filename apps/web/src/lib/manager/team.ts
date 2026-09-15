@@ -26,6 +26,7 @@ export type TeamAttendanceRow = {
   clockInAt: string | null;
   clockOutAt: string | null;
   status: string | null;
+  isAutoClockOut?: boolean;
 };
 
 async function listDirectReports(): Promise<TeamMemberRow[]> {
@@ -96,7 +97,7 @@ export async function listTeamAttendance(): Promise<TeamAttendanceRow[]> {
 
   const { data, error } = await supabase
     .from("attendance_records")
-    .select("id, employee_id, work_date, clock_in_at, clock_out_at, status")
+    .select("id, employee_id, work_date, clock_in_at, clock_out_at, status, is_auto_clock_out")
     .eq("organization_id", organizationId)
     .in("employee_id", reportIds)
     .order("work_date", { ascending: false })
@@ -111,6 +112,7 @@ export async function listTeamAttendance(): Promise<TeamAttendanceRow[]> {
     clockInAt: row.clock_in_at,
     clockOutAt: row.clock_out_at,
     status: row.status,
+    isAutoClockOut: Boolean(row.is_auto_clock_out),
   }));
 }
 

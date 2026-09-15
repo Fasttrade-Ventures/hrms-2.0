@@ -116,7 +116,7 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Rosters / work schedules | Pro | ✅ | `/hr/organization/rosters` + `/employee/schedule` |
 | Overnight shifts | Pro | ✅ | Cross-midnight sessions; clock-out after midnight stays on the same work date |
 | Tardiness alerts | Pro | ⬜ | No notification/cron |
-| Auto clock-out (idempotent) | Pro | ⬜ | No job |
+| Auto clock-out (idempotent) | Pro | ✅ | Scheduled cron (/api/cron/auto-clock-out) + JIT auto-close at shift end |
 
 ---
 
@@ -311,7 +311,7 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Multi-level leave approvals | ⬜ |
 | Attendance rosters + employee schedule | ✅ Done |
 | GPS / geofence | ✅ Done |
-| Overnight shifts / tardiness alerts / auto clock-out | ⬜ |
+| Overnight shifts / auto clock-out (✅ Done) / tardiness alerts | 🟡 |
 | Claim max-amount policy + payroll inclusion | ✅ Done |
 | Mileage / richer claim policy | ⬜ |
 | Document expiry notifications | ✅ Done |
@@ -421,7 +421,7 @@ Sources (competitive research, Aug 2026):
 2. **Leave cancel / revoke** — no UI/service  
 3. ~~**Replacement credit ↔ leave** consume-once accounting~~ (✅ Implemented via `replacement_credit_usages` ledger)
 4. ~~**Shift-based lateness enforcement** — grace unused on clock~~ (✅ Implemented dynamic late detection from shift + grace minutes)  
-5. ~~**Overnight shifts**~~ (✅ Cross-midnight sessions stay on shift work date), auto clock-out, tardiness alerts  
+5. ~~**Overnight shifts & auto clock-out**~~ (✅ Cross-midnight sessions stay on work date; idempotent auto-clock out at shift end), tardiness alerts  
 6. **Multi-level / custom approval workflows**  
 7. **Leave accrual / expiry automation**  
 8. **Appraisal templates** (cycles exist)  

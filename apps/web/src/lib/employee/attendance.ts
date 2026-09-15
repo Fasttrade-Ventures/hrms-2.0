@@ -2,6 +2,7 @@ import {
   isClockInLate,
   isOvernightShift,
   getPreviousDateString,
+  getShiftEndTimestamp,
   resolveEmployeeShift,
   resolveEmployeeShiftsBatch,
   type EmployeeShift,
@@ -18,11 +19,14 @@ export type TodayAttendance = {
   clockInAt: string | null;
   clockOutAt: string | null;
   status: string | null;
+  isAutoClockOut?: boolean;
   sessions: {
     id: string;
     session: number;
     clockInAt: string | null;
     clockOutAt: string | null;
+    status: string | null;
+    isAutoClockOut?: boolean;
   }[];
   accumulatedSeconds: number;
 };
@@ -35,6 +39,7 @@ function formatAttendanceRecords(
     clock_in_at: string | null;
     clock_out_at: string | null;
     status: string | null;
+    is_auto_clock_out?: boolean | null;
   }[],
   workDate: string,
 ): TodayAttendance | null {
@@ -46,6 +51,7 @@ function formatAttendanceRecords(
     clockInAt: item.clock_in_at,
     clockOutAt: item.clock_out_at,
     status: item.status,
+    isAutoClockOut: Boolean(item.is_auto_clock_out),
   }));
 
   const activeSession = sessions.find((s) => s.clockOutAt === null);
@@ -66,6 +72,7 @@ function formatAttendanceRecords(
   // Determine standard clockInAt and clockOutAt values
   const clockInAt = activeSession ? activeSession.clockInAt : (firstSession.clockInAt ?? null);
   const clockOutAt = activeSession ? null : (sessions[sessions.length - 1]?.clockOutAt ?? null);
+  const lastSession = sessions[sessions.length - 1];
 
   return {
     id: activeSession?.id ?? firstSession.id,
@@ -73,6 +80,7 @@ function formatAttendanceRecords(
     clockInAt,
     clockOutAt,
     status: activeSession?.status ?? firstSession.status ?? null,
+    isAutoClockOut: Boolean(activeSession ? activeSession.isAutoClockOut : lastSession?.isAutoClockOut),
     sessions,
     accumulatedSeconds,
   };
@@ -85,7 +93,7 @@ export async function getTodayAttendance(targetWorkDate?: string): Promise<Today
   if (targetWorkDate) {
     const { data, error } = await supabase
       .from("attendance_records")
-      .select("id, work_date, session, clock_in_at, clock_out_at, status")
+      .select("id, work_date, session, clock_in_at, clock_out_at, status, is_auto_clock_out")
       .eq("organization_id", organizationId)
       .eq("employee_id", employeeId)
       .eq("work_date", targetWorkDate)
@@ -101,7 +109,7 @@ export async function getTodayAttendance(targetWorkDate?: string): Promise<Today
 
   const { data, error } = await supabase
     .from("attendance_records")
-    .select("id, work_date, session, clock_in_at, clock_out_at, status")
+    .select("id, work_date, session, clock_in_at, clock_out_at, status, is_auto_clock_out")
     .eq("organization_id", organizationId)
     .eq("employee_id", employeeId)
     .in("work_date", [yesterdayDate, todayDate])
@@ -131,7 +139,8 @@ export async function getTodayAttendance(targetWorkDate?: string): Promise<Today
     return formatAttendanceRecords(todayRows, todayDate);
   }
 
-  // 4. If today has no records, check if yesterday had an overnight shift and current time is still within that shift window
+  // 4. If yesterday has records (completed or auto-closed), check if yesterday had an overnight shift
+  // and current time is still within that shift window
   if (yesterdayRows.length > 0) {
     const yesterdayShift = await resolveEmployeeShift(supabase, organizationId, employeeId, yesterdayDate);
     if (yesterdayShift && isOvernightShift(yesterdayShift)) {
@@ -172,6 +181,39 @@ export async function clockIn(input?: {
   const todayDate = orgLocalDateString();
   const yesterdayDate = getPreviousDateString(todayDate);
   const now = new Date().toISOString();
+
+  // Auto-close any unclosed stale sessions from past dates whose shift has ended
+  const { data: pastUnclosed } = await supabase
+    .from("attendance_records")
+    .select("id, work_date, clock_in_at")
+    .eq("organization_id", organizationId)
+    .eq("employee_id", employeeId)
+    .lt("work_date", todayDate)
+    .is("clock_out_at", null);
+
+  for (const past of pastUnclosed ?? []) {
+    const pastShift = await resolveEmployeeShift(supabase, organizationId, employeeId, past.work_date);
+    const pastShiftEnd = getShiftEndTimestamp({
+      workDate: past.work_date,
+      shift: pastShift,
+      timeZone: DEFAULT_ORG_TIMEZONE,
+    });
+    if (now >= pastShiftEnd) {
+      let targetClockOut = pastShiftEnd;
+      if (past.clock_in_at && pastShiftEnd < past.clock_in_at) {
+        targetClockOut = past.clock_in_at;
+      }
+      await supabase
+        .from("attendance_records")
+        .update({
+          clock_out_at: targetClockOut,
+          is_auto_clock_out: true,
+        })
+        .eq("id", past.id)
+        .is("clock_out_at", null);
+    }
+  }
+
   const existing = await getTodayAttendance();
 
   // If there is currently an active session, they cannot clock in again.
@@ -276,6 +318,7 @@ export interface DateGroup {
   longitude: number | null;
   ip_address: string | null;
   shift?: EmployeeShift | null;
+  isAutoClockOut?: boolean;
 }
 
 export async function listRecentAttendance(limit = 7) {
@@ -285,7 +328,7 @@ export async function listRecentAttendance(limit = 7) {
   // Fetch recent records (limit 50 to cover plenty of historical sessions per day)
   const { data, error } = await supabase
     .from("attendance_records")
-    .select("work_date, clock_in_at, clock_out_at, status, session, latitude, longitude, ip_address")
+    .select("work_date, clock_in_at, clock_out_at, status, session, latitude, longitude, ip_address, is_auto_clock_out")
     .eq("organization_id", organizationId)
     .eq("employee_id", employeeId)
     .order("work_date", { ascending: false })
@@ -309,7 +352,12 @@ export async function listRecentAttendance(limit = 7) {
         latitude: row.latitude ? Number(row.latitude) : null,
         longitude: row.longitude ? Number(row.longitude) : null,
         ip_address: row.ip_address ?? null,
+        isAutoClockOut: Boolean(row.is_auto_clock_out),
       };
+    }
+
+    if (row.is_auto_clock_out) {
+      groups[dateStr].isAutoClockOut = true;
     }
 
     if (row.status === "late") {

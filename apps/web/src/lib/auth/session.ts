@@ -57,31 +57,37 @@ async function loadMembership(userId: string): Promise<UserMembership | null> {
 }
 
 export async function getSession(): Promise<AuthSession | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
 
-  if (!user) {
+    if (error || !user) {
+      return null;
+    }
+
+    const membership = await loadMembership(user.id);
+
+    if (!membership) {
+      return null;
+    }
+
+    const metadata = user.user_metadata as { full_name?: string } | undefined;
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: metadata?.full_name,
+      },
+      membership,
+    };
+  } catch (err) {
+    console.warn("[session] Could not retrieve session from Supabase:", err instanceof Error ? err.message : err);
     return null;
   }
-
-  const membership = await loadMembership(user.id);
-
-  if (!membership) {
-    return null;
-  }
-
-  const metadata = user.user_metadata as { full_name?: string } | undefined;
-
-  return {
-    user: {
-      id: user.id,
-      email: user.email,
-      fullName: metadata?.full_name,
-    },
-    membership,
-  };
 }
 
 export async function requireAuth(): Promise<AuthSession> {

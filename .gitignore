@@ -25,3 +25,11 @@ docs/design-specs/
 # Test artifacts
 test-results/
 playwright-report/
+
+# Agent skills & configs
+.agents/
+AGENTS.md
+GEMINI.md
+
+# PR drafts
+pr-description*.md

@@ -112,12 +112,28 @@ export default async function Page() {
             </span>
           );
 
+          const clockOutNode = row.clock_out_at ? (
+            <span className="inline-flex items-center gap-2 whitespace-nowrap">
+              <span>{formatTimeOnly(row.clock_out_at)}</span>
+              {row.isAutoClockOut && (
+                <span
+                  title="Auto clocked out at shift end"
+                  className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 uppercase tracking-tight shrink-0 select-none"
+                >
+                  Auto
+                </span>
+              )}
+            </span>
+          ) : (
+            "—"
+          );
+
           return {
             id: row.work_date,
             cells: {
               date: formatDateLong(row.work_date),
               in: formatTimeOnly(row.clock_in_at),
-              out: formatTimeOnly(row.clock_out_at),
+              out: clockOutNode,
               duration: durationStr,
               status: getStatusBadge(row.clock_in_at, row.status, row.shift),
               location: locationNode,

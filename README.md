@@ -14,6 +14,7 @@ cp .env.example .env.local   # apps/web — copy manually when needed
 pnpm dev                     # starts @hrms/web on :3000
 pnpm build
 pnpm typecheck
+rm -rf apps/web/.next          # For fresh start
 ```
 
 ## Structure
