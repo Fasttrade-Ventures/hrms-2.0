@@ -1,12 +1,14 @@
 export function formatProfileDate(value: string | null | undefined): string {
   if (!value) return "—";
-  const date = new Date(`${value}T00:00:00`);
+  const [year, month, day] = value.split("T")[0]?.split("-") ?? [];
+  if (year && month && day) {
+    return `${day.padStart(2, "0")}/${month.padStart(2, "0")}/${year}`;
+  }
+  const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  const dayStr = String(date.getDate()).padStart(2, "0");
+  const monthStr = String(date.getMonth() + 1).padStart(2, "0");
+  return `${dayStr}/${monthStr}/${date.getFullYear()}`;
 }
 
 export function formatCurrency(value: number): string {

@@ -1,5 +1,6 @@
 import { StatusPill } from "@hrms/ui";
 
+import { formatDate } from "@/components/employee/employee-shared";
 import { BILLING_PLAN_OPTIONS, formatRinggitFromSen } from "@/lib/billing/plans";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,7 +52,7 @@ export function BillingPanel({
 
           {subscription.status === "trialing" && subscription.trial_ends_at ? (
             <p className="text-sm text-[var(--foreground-muted)]">
-              Trial ends {new Date(subscription.trial_ends_at).toLocaleDateString("en-MY")}. Professional
+              Trial ends {formatDate(subscription.trial_ends_at)}. Professional
               features are enabled during trial.
             </p>
           ) : null}
@@ -113,7 +114,7 @@ export function BillingPanel({
                   {invoices.map((invoice) => (
                     <tr className="border-t border-[var(--border-primary)]" key={invoice.id}>
                       <td className="px-4 py-3">
-                        {new Date(invoice.createdAt).toLocaleDateString("en-MY")}
+                        {formatDate(invoice.createdAt)}
                       </td>
                       <td className="px-4 py-3 capitalize">{invoice.invoiceType}</td>
                       <td className="px-4 py-3">{invoice.totalLabel}</td>

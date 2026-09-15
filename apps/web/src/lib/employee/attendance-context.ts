@@ -12,14 +12,14 @@ export type EmployeeAttendanceContext = {
   shift: EmployeeShift | null;
 };
 
-export async function getEmployeeAttendanceContext(): Promise<EmployeeAttendanceContext> {
+export async function getEmployeeAttendanceContext(targetWorkDate?: string): Promise<EmployeeAttendanceContext> {
   const { employeeId, organizationId } = await requireEmployeeContext();
   const supabase = await createClient();
-  const todayDate = orgLocalDateString();
+  const effectiveDate = targetWorkDate || orgLocalDateString();
 
   const [entitlements, shift] = await Promise.all([
     getEntitlements(),
-    resolveEmployeeShift(supabase, organizationId, employeeId, todayDate),
+    resolveEmployeeShift(supabase, organizationId, employeeId, effectiveDate),
   ]);
 
   const locationModuleEnabled = entitlements.hasModule("location");

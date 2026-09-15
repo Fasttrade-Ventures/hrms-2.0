@@ -4,7 +4,7 @@ import Link from "next/link";
 
 import type { CalendarDayEvent } from "@hrms/domain";
 
-import { formatDateTime } from "@/components/employee/employee-shared";
+import { formatDate } from "@/components/employee/employee-shared";
 import { CalendarEventChip } from "@/components/calendar/calendar-event-chip";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,7 +39,7 @@ export function CalendarDayDialog({
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{date ? formatDateTime(`${date}T00:00:00`) : "Day"}</DialogTitle>
+          <DialogTitle>{date ? formatDate(date) : "Day"}</DialogTitle>
         </DialogHeader>
 
         {isEmpty ? (

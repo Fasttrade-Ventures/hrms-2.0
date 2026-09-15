@@ -23,6 +23,7 @@ import {
   OrgTableStatus,
 } from "@/components/hr/organization/org-ui";
 import { HrLinkButton } from "@/components/hr/hr-ui.client";
+import { formatDate } from "@/components/employee/employee-shared";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import type { DepartmentRow } from "@/lib/hr/organization";
 
@@ -70,11 +71,7 @@ export function DepartmentsList({ departments }: { departments: DepartmentRow[] 
             <OrgTableCell>{department.branchName ?? "Org-wide"}</OrgTableCell>
             <OrgTableCell variant="muted">{department.employeeCount}</OrgTableCell>
             <OrgTableCell variant="muted">
-              {new Date(department.createdAt).toLocaleDateString("en-GB", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })}
+              {formatDate(department.createdAt)}
             </OrgTableCell>
             <OrgTableStatus />
             <OrgTableEditLink href={`/hr/organization/departments/${department.id}/edit`} />

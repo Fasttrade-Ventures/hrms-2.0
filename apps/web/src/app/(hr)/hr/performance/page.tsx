@@ -1,5 +1,6 @@
 import { EmptyState, ListCard, StatusPill } from "@hrms/ui";
 
+import { formatDate } from "@/components/employee/employee-shared";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -75,14 +76,14 @@ export default async function Page() {
               <div>
                 <p className="font-medium">{cycle.name}</p>
                 <p className="text-xs text-[var(--foreground-muted)]">
-                  Due {cycle.dueDate}
+                  Due {formatDate(cycle.dueDate)}
                   {cycle.closedAt ? " · Closed" : ""}
                 </p>
               </div>
             ),
             period: (
               <span className="text-sm text-[var(--foreground-secondary)]">
-                {cycle.periodStart} → {cycle.periodEnd}
+                {formatDate(cycle.periodStart)} → {formatDate(cycle.periodEnd)}
               </span>
             ),
             appraisals: (

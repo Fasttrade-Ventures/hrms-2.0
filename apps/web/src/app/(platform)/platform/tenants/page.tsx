@@ -3,6 +3,7 @@ import { isSaasMode } from "@hrms/platform";
 import { redirect } from "next/navigation";
 
 import { ImpersonateTenantButton } from "@/components/platform/impersonation-controls";
+import { formatDate } from "@/components/employee/employee-shared";
 import { ProvisionTenantForm } from "@/components/platform/provision-tenant-form";
 import { TenantTierSelect } from "@/components/platform/tenant-tier-select";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
@@ -62,7 +63,7 @@ export default async function Page() {
                     </td>
                     <td className="px-4 py-3">{tenant.employeeCount}</td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      {new Date(tenant.createdAt).toLocaleDateString("en-MY")}
+                      {formatDate(tenant.createdAt)}
                     </td>
                     <td className="px-4 py-3">
                       <ImpersonateTenantButton organizationId={tenant.id} />

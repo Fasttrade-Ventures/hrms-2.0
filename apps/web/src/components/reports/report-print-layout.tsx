@@ -1,3 +1,14 @@
+function formatReportCell(value: string | number | null | undefined): string | number {
+  if (value == null || value === "") return "";
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split("-");
+    if (year && month && day) {
+      return `${day}/${month}/${year}`;
+    }
+  }
+  return value;
+}
+
 export function ReportPrintLayout({
   title,
   filterSummary,
@@ -9,7 +20,8 @@ export function ReportPrintLayout({
   columns: { key: string; label: string }[];
   rows: Record<string, string | number | null>[];
 }) {
-  const generatedAt = new Date().toLocaleString("en-MY");
+  const now = new Date();
+  const generatedAt = `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}, ${now.toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit", hour12: true })}`;
 
   return (
     <div className="hidden print:block">
@@ -35,7 +47,7 @@ export function ReportPrintLayout({
             <tr key={index}>
               {columns.map((column) => (
                 <td className="border border-border px-2 py-1" key={column.key}>
-                  {row[column.key] ?? ""}
+                  {formatReportCell(row[column.key])}
                 </td>
               ))}
             </tr>

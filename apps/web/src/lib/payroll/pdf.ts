@@ -32,8 +32,9 @@ export function generatePayslipPdf(data: {
   // Details text
   stream += `BT\n/F2 9 Tf\n0.29 0.42 0.32 rg\n50 685 Td (Employee Name:) Tj\nET\nBT\n/F1 9 Tf\n0.11 0.23 0.16 rg\n150 685 Td (${data.employeeName}) Tj\nET\n`;
   stream += `BT\n/F2 9 Tf\n0.29 0.42 0.32 rg\n50 665 Td (Employee ID:) Tj\nET\nBT\n/F1 9 Tf\n0.11 0.23 0.16 rg\n150 665 Td (${data.employeeNumber}) Tj\nET\n`;
-  stream += `BT\n/F2 9 Tf\n0.29 0.42 0.32 rg\n320 685 Td (Statement Period:) Tj\nET\nBT\n/F1 9 Tf\n0.11 0.23 0.16 rg\n430 685 Td (${data.periodLabel}) Tj\nET\n`;
-  stream += `BT\n/F2 9 Tf\n0.29 0.42 0.32 rg\n320 665 Td (Payment Date:) Tj\nET\nBT\n/F1 9 Tf\n0.11 0.23 0.16 rg\n430 665 Td (${new Date().toLocaleDateString("en-MY")}) Tj\nET\n`;
+  const now = new Date();
+  const paymentDateStr = `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+  stream += `BT\n/F2 9 Tf\n0.29 0.42 0.32 rg\n320 665 Td (Payment Date:) Tj\nET\nBT\n/F1 9 Tf\n0.11 0.23 0.16 rg\n430 665 Td (${paymentDateStr}) Tj\nET\n`;
 
   // Horizontal divider (Warm Sand border: #d5d0c4)
   stream += "0.84 0.82 0.77 RG\n0.5 w\n50 645 m 545 645 l S\n";

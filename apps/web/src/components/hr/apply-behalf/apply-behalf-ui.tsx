@@ -39,6 +39,7 @@ import {
   type BehalfApplicationRow,
   type BehalfListData,
 } from "@/lib/hr/apply-behalf-shared";
+import { formatDate, formatDateTime } from "@/components/employee/employee-shared";
 
 const BEHALF_TABLE_GRID =
   "md:grid md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.15fr)_minmax(0,1.5fr)_minmax(0,1fr)_5rem_4.5rem] md:items-center md:gap-x-3";
@@ -46,12 +47,7 @@ const BEHALF_TABLE_GRID =
 const BEHALF_TABLE_ROW = `px-3.5 py-2.5 ${BEHALF_TABLE_GRID}`;
 
 function formatAppliedAt(value: string) {
-  return new Date(value).toLocaleString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatDateTime(value);
 }
 
 function buildListHref(
@@ -213,11 +209,7 @@ function BehalfRow({ row, basePath }: { row: BehalfApplicationRow; basePath: str
 }
 
 function formatDetailDate(value: string) {
-  return new Date(`${value}T00:00:00`).toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  return formatDate(value);
 }
 
 function DetailField({ label, value }: { label: string; value: string }) {

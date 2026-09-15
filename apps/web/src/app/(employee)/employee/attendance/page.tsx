@@ -7,12 +7,18 @@ import { getEmployeeAttendanceContext } from "@/lib/employee/attendance-context"
 import { getTodayAttendance, listRecentAttendance } from "@/lib/employee/attendance";
 
 function formatDateLong(dateStr: string): string {
+  const [year, month, day] = dateStr.split("T")[0]?.split("-") ?? [];
+  if (year && month && day) {
+    const d = new Date(`${year}-${month}-${day}T12:00:00`);
+    const weekday = d.toLocaleDateString("en-MY", { weekday: "short" });
+    return `${day.padStart(2, "0")}/${month.padStart(2, "0")}/${year} (${weekday})`;
+  }
   const d = new Date(dateStr);
-  const day = d.getDate();
-  const month = d.toLocaleDateString("en-US", { month: "short" });
-  const year = d.getFullYear();
-  const weekday = d.toLocaleDateString("en-US", { weekday: "short" });
-  return `${day} ${month} ${year} (${weekday})`;
+  const dayStr = String(d.getDate()).padStart(2, "0");
+  const monthStr = String(d.getMonth() + 1).padStart(2, "0");
+  const yearNum = d.getFullYear();
+  const weekday = d.toLocaleDateString("en-MY", { weekday: "short" });
+  return `${dayStr}/${monthStr}/${yearNum} (${weekday})`;
 }
 
 function formatTimeOnly(isoString: string | null): string {
@@ -55,10 +61,10 @@ function getStatusBadge(
 }
 
 export default async function Page() {
-  const [today, recent, attendanceContext] = await Promise.all([
-    getTodayAttendance(),
+  const today = await getTodayAttendance();
+  const [recent, attendanceContext] = await Promise.all([
     listRecentAttendance(),
-    getEmployeeAttendanceContext(),
+    getEmployeeAttendanceContext(today?.workDate),
   ]);
 
   const headerDescription = attendanceContext.shift

@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { EmptyState, ListCard, StatusPill } from "@hrms/ui";
 
+import { formatDate } from "@/components/employee/employee-shared";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { requireRole } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
@@ -37,7 +38,7 @@ export default async function DirectorPayrollPage() {
                   {payrun.periodYear}-{String(payrun.periodMonth).padStart(2, "0")}
                 </Link>
               ),
-              range: `${payrun.earningPeriodStart} → ${payrun.earningPeriodEnd}`,
+              range: `${formatDate(payrun.earningPeriodStart)} → ${formatDate(payrun.earningPeriodEnd)}`,
               status: (
                 <StatusPill
                   label={payrun.status.replace("_", " ")}

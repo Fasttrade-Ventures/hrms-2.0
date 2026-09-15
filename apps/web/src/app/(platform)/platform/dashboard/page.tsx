@@ -2,6 +2,7 @@ import { EmptyState, ListCard, StatCard } from "@hrms/ui";
 import { runHealthChecks } from "@hrms/platform";
 
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
+import { formatDate } from "@/components/employee/employee-shared";
 import { PortalIcon } from "@/components/portal/portal-icons";
 import { getPlatformDashboardData } from "@/lib/platform/dashboard";
 import { requireRole } from "@/lib/auth/session";
@@ -123,7 +124,7 @@ export default async function Page() {
               slug: <span className="text-sm text-[var(--foreground-secondary)]">{org.slug ?? "—"}</span>,
               created: (
                 <span className="text-sm text-[var(--foreground-muted)]">
-                  {new Date(org.createdAt).toLocaleDateString("en-MY")}
+                  {formatDate(org.createdAt)}
                 </span>
               ),
             },

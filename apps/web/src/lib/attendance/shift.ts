@@ -13,14 +13,33 @@ export function formatShiftTime(value: string): string {
   return value.slice(0, 5);
 }
 
+export function isOvernightShift(
+  shift?: { startTime: string; endTime: string } | null,
+): boolean {
+  if (!shift?.startTime || !shift?.endTime) return false;
+  return shift.startTime > shift.endTime;
+}
+
+export function getPreviousDateString(dateStr: string): string {
+  const parts = dateStr.split("-").map(Number);
+  const y = parts[0] ?? 1970;
+  const m = parts[1] ?? 1;
+  const d = parts[2] ?? 1;
+  const dt = new Date(Date.UTC(y, m - 1, d - 1));
+  return dt.toISOString().slice(0, 10);
+}
+
 /**
  * Calculates whether a clock-in timestamp is late relative to the shift start time + grace minutes.
  * Defaults to 09:00 start time and 0 grace minutes if no shift is assigned.
+ * If workDate is provided and clock-in is on the following calendar day (e.g. past midnight on an
+ * overnight shift), relative day offset is factored in.
  */
 export function isClockInLate(
   clockInAt: string | Date,
-  shift?: { startTime: string; graceMinutes?: number | null } | null,
+  shift?: { startTime: string; endTime?: string; graceMinutes?: number | null } | null,
   timeZone = DEFAULT_ORG_TIMEZONE,
+  workDate?: string,
 ): boolean {
   const startTime = shift?.startTime || "09:00";
   const graceMinutes = Number(shift?.graceMinutes ?? 0);
@@ -46,7 +65,17 @@ export function isClockInLate(
   const minute = Number(parts.find((p) => p.type === "minute")?.value ?? 0);
   const second = Number(parts.find((p) => p.type === "second")?.value ?? 0);
 
-  const clockInSeconds = normalizedHour * 3600 + minute * 60 + second;
+  let clockInSeconds = normalizedHour * 3600 + minute * 60 + second;
+
+  // If workDate is provided and the clock-in date is after workDate for an overnight shift,
+  // add 24 hours (86,400 seconds) to evaluate lateness past midnight relative to shift start.
+  if (workDate && shift?.endTime && isOvernightShift({ startTime, endTime: shift.endTime })) {
+    const clockInDateStr = new Intl.DateTimeFormat("en-CA", { timeZone }).format(date);
+    if (clockInDateStr > workDate) {
+      clockInSeconds += 86400;
+    }
+  }
+
   return clockInSeconds > thresholdSeconds;
 }
 

@@ -1,5 +1,12 @@
-import { isClockInLate, resolveEmployeeShiftsBatch, type EmployeeShift } from "@/lib/attendance/shift";
-import { orgLocalDateString } from "@/lib/datetime/org-timezone";
+import {
+  isClockInLate,
+  isOvernightShift,
+  getPreviousDateString,
+  resolveEmployeeShift,
+  resolveEmployeeShiftsBatch,
+  type EmployeeShift,
+} from "@/lib/attendance/shift";
+import { DEFAULT_ORG_TIMEZONE, orgLocalDateString } from "@/lib/datetime/org-timezone";
 import { requireEmployeeContext } from "@/lib/employee/leave";
 import { getEmployeeAttendanceContext } from "@/lib/employee/attendance-context";
 import { validateGeofenceClockIn } from "@/lib/attendance/geofence";
@@ -20,23 +27,20 @@ export type TodayAttendance = {
   accumulatedSeconds: number;
 };
 
-export async function getTodayAttendance(): Promise<TodayAttendance | null> {
-  const { employeeId, organizationId } = await requireEmployeeContext();
-  const supabase = await createClient();
-  const workDate = orgLocalDateString();
+function formatAttendanceRecords(
+  rows: {
+    id: string;
+    work_date: string;
+    session: number;
+    clock_in_at: string | null;
+    clock_out_at: string | null;
+    status: string | null;
+  }[],
+  workDate: string,
+): TodayAttendance | null {
+  if (!rows || rows.length === 0) return null;
 
-  const { data, error } = await supabase
-    .from("attendance_records")
-    .select("id, work_date, session, clock_in_at, clock_out_at, status")
-    .eq("organization_id", organizationId)
-    .eq("employee_id", employeeId)
-    .eq("work_date", workDate)
-    .order("session", { ascending: true });
-
-  if (error) throw new Error(error.message);
-  if (!data || data.length === 0) return null;
-
-  const sessions = data.map((item) => ({
+  const sessions = rows.map((item) => ({
     id: item.id,
     session: Number(item.session),
     clockInAt: item.clock_in_at,
@@ -51,7 +55,7 @@ export async function getTodayAttendance(): Promise<TodayAttendance | null> {
   sessions.forEach((s) => {
     if (s.clockInAt && s.clockOutAt) {
       accumulatedSeconds += Math.floor(
-        (new Date(s.clockOutAt).getTime() - new Date(s.clockInAt).getTime()) / 1000
+        (new Date(s.clockOutAt).getTime() - new Date(s.clockInAt).getTime()) / 1000,
       );
     }
   });
@@ -65,7 +69,7 @@ export async function getTodayAttendance(): Promise<TodayAttendance | null> {
 
   return {
     id: activeSession?.id ?? firstSession.id,
-    workDate: data[0]?.work_date ?? workDate,
+    workDate: rows[0]?.work_date ?? workDate,
     clockInAt,
     clockOutAt,
     status: activeSession?.status ?? firstSession.status ?? null,
@@ -74,13 +78,86 @@ export async function getTodayAttendance(): Promise<TodayAttendance | null> {
   };
 }
 
+export async function getTodayAttendance(targetWorkDate?: string): Promise<TodayAttendance | null> {
+  const { employeeId, organizationId } = await requireEmployeeContext();
+  const supabase = await createClient();
+
+  if (targetWorkDate) {
+    const { data, error } = await supabase
+      .from("attendance_records")
+      .select("id, work_date, session, clock_in_at, clock_out_at, status")
+      .eq("organization_id", organizationId)
+      .eq("employee_id", employeeId)
+      .eq("work_date", targetWorkDate)
+      .order("session", { ascending: true });
+
+    if (error) throw new Error(error.message);
+    if (!data || data.length === 0) return null;
+    return formatAttendanceRecords(data, targetWorkDate);
+  }
+
+  const todayDate = orgLocalDateString();
+  const yesterdayDate = getPreviousDateString(todayDate);
+
+  const { data, error } = await supabase
+    .from("attendance_records")
+    .select("id, work_date, session, clock_in_at, clock_out_at, status")
+    .eq("organization_id", organizationId)
+    .eq("employee_id", employeeId)
+    .in("work_date", [yesterdayDate, todayDate])
+    .order("work_date", { ascending: false })
+    .order("session", { ascending: true });
+
+  if (error) throw new Error(error.message);
+
+  const todayRows = (data ?? []).filter((r) => r.work_date === todayDate);
+  const yesterdayRows = (data ?? []).filter((r) => r.work_date === yesterdayDate);
+
+  // 1. If today has an active open session, that's current
+  const todayActive = todayRows.find((r) => r.clock_out_at === null);
+  if (todayActive) {
+    return formatAttendanceRecords(todayRows, todayDate);
+  }
+
+  // 2. If yesterday has an active open session (overnight shift in progress across midnight),
+  // return yesterday's attendance as active
+  const yesterdayActive = yesterdayRows.find((r) => r.clock_out_at === null);
+  if (yesterdayActive) {
+    return formatAttendanceRecords(yesterdayRows, yesterdayDate);
+  }
+
+  // 3. If today already has completed sessions, return today
+  if (todayRows.length > 0) {
+    return formatAttendanceRecords(todayRows, todayDate);
+  }
+
+  // 4. If today has no records, check if yesterday had an overnight shift and current time is still within that shift window
+  if (yesterdayRows.length > 0) {
+    const yesterdayShift = await resolveEmployeeShift(supabase, organizationId, employeeId, yesterdayDate);
+    if (yesterdayShift && isOvernightShift(yesterdayShift)) {
+      const nowFormatter = new Intl.DateTimeFormat("en-US", {
+        timeZone: DEFAULT_ORG_TIMEZONE,
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      const nowTimeHHMM = nowFormatter.format(new Date());
+      if (nowTimeHHMM < yesterdayShift.endTime) {
+        return formatAttendanceRecords(yesterdayRows, yesterdayDate);
+      }
+    }
+  }
+
+  return null;
+}
+
 export async function clockIn(input?: {
   latitude?: number | null;
   longitude?: number | null;
   ipAddress?: string | null;
 }): Promise<TodayAttendance> {
   const { employeeId, organizationId } = await requireEmployeeContext();
-  const { geofence, shift } = await getEmployeeAttendanceContext();
+  const { geofence } = await getEmployeeAttendanceContext();
   const validation = validateGeofenceClockIn({
     geofence,
     latitude: input?.latitude,
@@ -92,7 +169,8 @@ export async function clockIn(input?: {
   }
 
   const supabase = await createClient();
-  const workDate = orgLocalDateString();
+  const todayDate = orgLocalDateString();
+  const yesterdayDate = getPreviousDateString(todayDate);
   const now = new Date().toISOString();
   const existing = await getTodayAttendance();
 
@@ -102,11 +180,35 @@ export async function clockIn(input?: {
     throw new Error("You are already clocked in. Please clock out first.");
   }
 
-  const nextSessionNum = existing ? existing.sessions.length + 1 : 1;
+  // Determine target work date: check if this clock-in falls within yesterday's overnight shift
+  let targetWorkDate = todayDate;
+  let targetShift = await resolveEmployeeShift(supabase, organizationId, employeeId, todayDate);
+
+  const yesterdayShift = await resolveEmployeeShift(supabase, organizationId, employeeId, yesterdayDate);
+  if (yesterdayShift && isOvernightShift(yesterdayShift)) {
+    const nowFormatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: DEFAULT_ORG_TIMEZONE,
+      hour12: false,
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const nowTimeHHMM = nowFormatter.format(new Date());
+    if (nowTimeHHMM < yesterdayShift.endTime && (!existing || existing.workDate === yesterdayDate)) {
+      targetWorkDate = yesterdayDate;
+      targetShift = yesterdayShift;
+    }
+  }
+
+  const workDateAttendance =
+    existing && existing.workDate === targetWorkDate
+      ? existing
+      : await getTodayAttendance(targetWorkDate);
+
+  const nextSessionNum = workDateAttendance ? workDateAttendance.sessions.length + 1 : 1;
 
   let recordStatus: string = validation.status;
   if (nextSessionNum === 1) {
-    const isLate = isClockInLate(now, shift);
+    const isLate = isClockInLate(now, targetShift, DEFAULT_ORG_TIMEZONE, targetWorkDate);
     if (isLate) {
       recordStatus = "late";
     }
@@ -115,7 +217,7 @@ export async function clockIn(input?: {
   const record = {
     organization_id: organizationId,
     employee_id: employeeId,
-    work_date: workDate,
+    work_date: targetWorkDate,
     session: nextSessionNum,
     clock_in_at: now,
     status: recordStatus,
@@ -132,7 +234,7 @@ export async function clockIn(input?: {
 
   if (error || !data) throw new Error(error?.message ?? "Failed to clock in.");
 
-  const updated = await getTodayAttendance();
+  const updated = await getTodayAttendance(targetWorkDate);
   if (!updated) throw new Error("Failed to retrieve updated attendance.");
   return updated;
 }
@@ -159,7 +261,7 @@ export async function clockOut(): Promise<TodayAttendance> {
 
   if (error || !data) throw new Error(error?.message ?? "Failed to clock out.");
 
-  const updated = await getTodayAttendance();
+  const updated = await getTodayAttendance(data.work_date);
   if (!updated) throw new Error("Failed to retrieve updated attendance.");
   return updated;
 }

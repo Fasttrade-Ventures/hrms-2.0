@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { EmptyState, ListCard, StatusPill } from "@hrms/ui";
 
+import { formatDate } from "@/components/employee/employee-shared";
 import { PortalIcon } from "@/components/portal/portal-icons";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { listMyAppraisals } from "@/lib/employee/performance";
@@ -36,7 +37,7 @@ export default async function Page() {
           id: row.id,
           cells: {
             cycle: row.cycleName,
-            due: row.dueDate,
+            due: formatDate(row.dueDate),
             ratings: [
               row.selfRating != null ? `Self ${row.selfRating}/5` : null,
               row.managerRating != null ? `Manager ${row.managerRating}/5` : null,

@@ -71,12 +71,8 @@ export function PortalShell({
   const currentPage = resolvePortalNavLabel(portal, pathname, sections) ?? portalLabel;
   const showMobileNav = portal === "Employee" || portal === "Manager";
   const sidebarUserMuted = portal === "Manager" || portal === "HR Administrator";
-  const todayLabel = new Date().toLocaleDateString("en-GB", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  const today = new Date();
+  const todayLabel = `${today.toLocaleDateString("en-MY", { weekday: "short" })}, ${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()}`;
 
   return (
     <div className="portal-theme flex h-dvh overflow-hidden bg-[var(--surface-primary)]">

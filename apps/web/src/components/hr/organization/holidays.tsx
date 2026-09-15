@@ -41,11 +41,15 @@ type HolidaySort = "date" | "name" | "scope" | "created";
 type HolidayOrder = "asc" | "desc";
 
 function formatDate(value: string) {
-  return new Date(`${value}T00:00:00`).toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  const [year, month, day] = value.split("T")[0]?.split("-") ?? [];
+  if (year && month && day) {
+    return `${day.padStart(2, "0")}/${month.padStart(2, "0")}/${year}`;
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  const dayStr = String(date.getDate()).padStart(2, "0");
+  const monthStr = String(date.getMonth() + 1).padStart(2, "0");
+  return `${dayStr}/${monthStr}/${date.getFullYear()}`;
 }
 
 function buildHolidayHref({
@@ -234,10 +238,7 @@ export function HolidaysList({
             <OrgTableCell>{formatDate(holiday.holidayDate)}</OrgTableCell>
             <OrgTableCell variant="muted">{holiday.branchName ?? "Org-wide"}</OrgTableCell>
             <OrgTableCell variant="muted">
-              {new Date(holiday.createdAt).toLocaleDateString("en-GB", {
-                day: "2-digit",
-                month: "short",
-              })}
+              {formatDate(holiday.createdAt)}
             </OrgTableCell>
             <OrgTableStatus />
             <OrgTableEditLink href={`/hr/organization/holidays/${holiday.id}/edit`} />

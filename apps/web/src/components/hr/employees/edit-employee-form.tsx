@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useMemo, useState, useTransition } from "react";
+import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 
 import {
   resendActivation,
@@ -60,6 +61,7 @@ export function EditEmployeeForm({
   leaveTypes: Option[];
   banner?: string;
 }) {
+  const router = useRouter();
   const boundAction = useMemo(() => updateEmployeeFull.bind(null, employee.id), [employee.id]);
   const [state, formAction, pending] = useActionState(boundAction, initialState);
   const [tab, setTab] = useState<EmployeeFormTabId>("employment");
@@ -71,10 +73,52 @@ export function EditEmployeeForm({
   const [childCount, setChildCount] = useState(Math.max(children.length, 0));
   const [emergencyCount, setEmergencyCount] = useState(Math.max(employee.emergencyContacts.length, 1));
 
+  const [shiftId, setShiftId] = useState(employee.shiftId ?? "");
+  const [branchId, setBranchId] = useState(employee.branchId ?? "");
+  const [departmentId, setDepartmentId] = useState(employee.departmentId ?? "");
+  const [managerEmployeeId, setManagerEmployeeId] = useState(employee.managerEmployeeId ?? "");
+  const [payGroupId, setPayGroupId] = useState(employee.payGroupId ?? "");
+  const [employmentType, setEmploymentType] = useState<string>(employee.employmentType ?? "full_time");
+
   const portalRole =
     employee.membership?.roles.find((role) =>
       ["employee", "manager", "hr_administrator"].includes(role),
     ) ?? "employee";
+  const [currentPortalRole, setCurrentPortalRole] = useState(portalRole);
+
+  useEffect(() => {
+    setShiftId(employee.shiftId ?? "");
+  }, [employee.shiftId]);
+
+  useEffect(() => {
+    setBranchId(employee.branchId ?? "");
+  }, [employee.branchId]);
+
+  useEffect(() => {
+    setDepartmentId(employee.departmentId ?? "");
+  }, [employee.departmentId]);
+
+  useEffect(() => {
+    setManagerEmployeeId(employee.managerEmployeeId ?? "");
+  }, [employee.managerEmployeeId]);
+
+  useEffect(() => {
+    setPayGroupId(employee.payGroupId ?? "");
+  }, [employee.payGroupId]);
+
+  useEffect(() => {
+    setEmploymentType(employee.employmentType ?? "full_time");
+  }, [employee.employmentType]);
+
+  useEffect(() => {
+    setCurrentPortalRole(portalRole);
+  }, [portalRole]);
+
+  useEffect(() => {
+    if (state.success) {
+      router.refresh();
+    }
+  }, [state.success, router]);
 
   const allowedLeaveSet = new Set(employee.allowedLeaveTypeIds);
 
@@ -115,9 +159,10 @@ export function EditEmployeeForm({
               </HrField>
               <HrField id="employmentType" label="Emp. type">
                 <HrSelect
-                  defaultValue={employee.employmentType ?? "full_time"}
                   id="employmentType"
                   name="employmentType"
+                  onChange={(e) => setEmploymentType(e.target.value)}
+                  value={employmentType}
                 >
                   <option value="full_time">Full-time</option>
                   <option value="part_time">Part-time</option>
@@ -132,7 +177,12 @@ export function EditEmployeeForm({
                 <HrTextInput defaultValue={employee.jobTitle ?? ""} id="jobTitle" name="jobTitle" />
               </HrField>
               <HrField id="portalRole" label="Portal role">
-                <HrSelect defaultValue={portalRole} id="portalRole" name="portalRole">
+                <HrSelect
+                  id="portalRole"
+                  name="portalRole"
+                  onChange={(e) => setCurrentPortalRole(e.target.value)}
+                  value={currentPortalRole}
+                >
                   <option value="employee">Employee</option>
                   <option value="manager">Manager</option>
                   <option value="hr_administrator">HR Administrator</option>
@@ -142,7 +192,12 @@ export function EditEmployeeForm({
 
             <div className="grid gap-4 md:grid-cols-2">
               <HrField id="branchId" label="Branch">
-                <HrSelect defaultValue={employee.branchId ?? ""} id="branchId" name="branchId">
+                <HrSelect
+                  id="branchId"
+                  name="branchId"
+                  onChange={(e) => setBranchId(e.target.value)}
+                  value={branchId}
+                >
                   <option value="">-- Select --</option>
                   {branches.map((branch) => (
                     <option key={branch.id} value={branch.id}>
@@ -153,9 +208,10 @@ export function EditEmployeeForm({
               </HrField>
               <HrField id="departmentId" label="Department">
                 <HrSelect
-                  defaultValue={employee.departmentId ?? ""}
                   id="departmentId"
                   name="departmentId"
+                  onChange={(e) => setDepartmentId(e.target.value)}
+                  value={departmentId}
                 >
                   <option value="">-- Select --</option>
                   {departments.map((department) => (
@@ -173,7 +229,12 @@ export function EditEmployeeForm({
                 id="payGroupId"
                 label="Pay group"
               >
-                <HrSelect defaultValue={employee.payGroupId ?? ""} id="payGroupId" name="payGroupId">
+                <HrSelect
+                  id="payGroupId"
+                  name="payGroupId"
+                  onChange={(e) => setPayGroupId(e.target.value)}
+                  value={payGroupId}
+                >
                   <option value="">Default</option>
                   {payGroups.map((group) => (
                     <option key={group.id} value={group.id}>
@@ -184,9 +245,10 @@ export function EditEmployeeForm({
               </HrField>
               <HrField id="managerEmployeeId" label="Approving manager (PIC)">
                 <HrSelect
-                  defaultValue={employee.managerEmployeeId ?? ""}
                   id="managerEmployeeId"
                   name="managerEmployeeId"
+                  onChange={(e) => setManagerEmployeeId(e.target.value)}
+                  value={managerEmployeeId}
                 >
                   <option value="">-- Direct reporting --</option>
                   {managers.map((manager) => (
@@ -220,7 +282,12 @@ export function EditEmployeeForm({
             </div>
 
             <HrField id="shiftId" label="Assign attendance shift">
-              <HrSelect defaultValue={employee.shiftId ?? ""} id="shiftId" name="shiftId">
+              <HrSelect
+                id="shiftId"
+                name="shiftId"
+                onChange={(e) => setShiftId(e.target.value)}
+                value={shiftId}
+              >
                 <option value="">-- No shift assigned --</option>
                 {shifts.map((shift) => (
                   <option key={shift.id} value={shift.id}>

@@ -42,6 +42,7 @@ export async function updateEmployeeFullProfile(
       annual_leave_entitlement: input.annualLeaveEntitlement ?? 14,
       annual_leave_carry_forward: input.annualLeaveCarryForward ?? 0,
       join_date: input.joinDate,
+      updated_at: new Date().toISOString(),
     })
     .eq("id", employeeId)
     .eq("organization_id", organizationId);

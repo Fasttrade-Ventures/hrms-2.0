@@ -14,7 +14,8 @@ export async function BillingTrialBanner({ organizationId }: { organizationId: s
     return null;
   }
 
-  const trialEnd = new Date(subscription.trial_ends_at).toLocaleDateString("en-MY");
+  const td = new Date(subscription.trial_ends_at);
+  const trialEnd = `${String(td.getDate()).padStart(2, "0")}/${String(td.getMonth() + 1).padStart(2, "0")}/${td.getFullYear()}`;
 
   return (
     <div className="border-b border-[var(--status-info-border)] bg-[var(--status-info-bg)] px-4 py-2 text-center text-sm">

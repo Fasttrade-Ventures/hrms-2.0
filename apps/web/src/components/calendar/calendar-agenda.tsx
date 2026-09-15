@@ -4,7 +4,7 @@ import { useMemo } from "react";
 
 import type { CalendarDayEvent } from "@hrms/domain";
 
-import { formatDateTime } from "@/components/employee/employee-shared";
+import { formatDate } from "@/components/employee/employee-shared";
 import { CalendarEventChip } from "@/components/calendar/calendar-event-chip";
 
 export function CalendarAgenda({
@@ -39,7 +39,7 @@ export function CalendarAgenda({
       {grouped.map(([date, dayEvents]) => (
         <section className="rounded-lg border border-border" key={date}>
           <header className="border-b border-border bg-muted/30 px-4 py-2 text-sm font-medium">
-            {formatDateTime(`${date}T00:00:00`)}
+            {formatDate(date)}
           </header>
           <div className="space-y-2 p-3">
             {dayEvents.map((event) => (

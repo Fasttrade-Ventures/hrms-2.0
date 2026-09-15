@@ -22,3 +22,6 @@ supabase/.temp
 # Design specs
 docs/design-specs/
 
+# Test artifacts
+test-results/
+playwright-report/

@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 
 import { EmptyState, StatusPill } from "@hrms/ui";
 
+import { formatDate } from "@/components/employee/employee-shared";
 import { PortalIcon } from "@/components/portal/portal-icons";
 import type { ApprovalInboxRow } from "@/lib/approvals/types";
 
@@ -256,7 +257,7 @@ export function ManagerApprovalsView({
                           {row.summary}
                         </p>
                         <p className="mt-0.5 text-xs text-[var(--foreground-muted)]">
-                          Submitted: {row.submittedAt ? new Date(row.submittedAt).toLocaleDateString("en-MY", { day: "numeric", month: "short", year: "numeric" }) : "—"}
+                          Submitted: {formatDate(row.submittedAt)}
                         </p>
                       </td>
 

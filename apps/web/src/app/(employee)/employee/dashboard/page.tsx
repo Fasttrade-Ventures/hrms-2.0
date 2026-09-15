@@ -42,6 +42,8 @@ export default async function Page() {
 
   const employeeContext = employee ? await requireEmployeeContext().catch(() => null) : null;
 
+  const todayAttendance = await getTodayAttendance().catch(() => null);
+
   const [
     balances,
     leaveRequests,
@@ -49,7 +51,6 @@ export default async function Page() {
     otRequests,
     lateReports,
     attendanceRequests,
-    todayAttendance,
     announcementFeed,
     complianceSummary,
     attendanceContext
@@ -60,7 +61,6 @@ export default async function Page() {
     listOvertimeRequests().catch(() => []),
     listLateReports().catch(() => []),
     listAttendanceCorrections().catch(() => []),
-    getTodayAttendance().catch(() => null),
     employeeContext
       ? getAnnouncementViewer({
           organizationId: employeeContext.organizationId,
@@ -77,7 +77,7 @@ export default async function Page() {
           .catch(() => ({ pinned: [], latest: [] }))
       : Promise.resolve({ pinned: [], latest: [] }),
     getMyDocumentComplianceSummary().catch(() => ({ missing: 0, expiring: 0, uploadableTypes: [] })),
-    getEmployeeAttendanceContext().catch(() => ({ geofence: null, locationModuleEnabled: false, shift: null })),
+    getEmployeeAttendanceContext(todayAttendance?.workDate).catch(() => ({ geofence: null, locationModuleEnabled: false, shift: null })),
   ]);
 
   const announcementPinned = announcementFeed.pinned;
@@ -200,6 +200,8 @@ export default async function Page() {
     </div>
   );
 
+  const todayDateStr = `${now.toLocaleDateString("en-MY", { weekday: "short" })}, ${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+
   return (
     <div className="space-y-6">
       {/* Head */}
@@ -209,7 +211,7 @@ export default async function Page() {
             {greetingForHour(hour)}, {firstName}
           </h1>
           <p className="text-sm text-[var(--foreground-muted)]">
-            {new Date().toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+            {todayDateStr}
             {employee?.departmentName ? ` · ${employee.departmentName}` : ""}
             {employee?.shiftName ? ` · Shift ${employee.shiftName}` : ""}
           </p>

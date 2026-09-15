@@ -18,6 +18,17 @@ const EXPORT_ROW_CAP = 5000;
 
 export type ReportColumn = { key: string; label: string };
 
+function formatReportCell(value: string | number | null | undefined): string | number {
+  if (value == null || value === "") return "—";
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split("-");
+    if (year && month && day) {
+      return `${day}/${month}/${year}`;
+    }
+  }
+  return value;
+}
+
 export function ReportRunner({
   title,
   description,
@@ -126,7 +137,7 @@ export function ReportRunner({
                       <tr className="border-b" key={index}>
                         {columns.map((column) => (
                           <td className="px-4 py-3" key={column.key}>
-                            {row[column.key] ?? "—"}
+                            {formatReportCell(row[column.key])}
                           </td>
                         ))}
                       </tr>
