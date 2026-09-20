@@ -148,58 +148,64 @@ function getNotificationGroup(row: NotificationRow): string {
   return "other";
 }
 
-function getGroupIcon(group: string) {
+function getGroupIcon(group: string, isActive = false) {
+  const iconClass = `h-4 w-4 shrink-0 ${isActive ? "text-white" : ""}`;
   switch (group) {
     case "leave":
-      return <Calendar className="h-4 w-4 text-[var(--accent-primary)]" />;
+      return <Calendar className={`${iconClass} ${!isActive ? "text-emerald-600" : ""}`} />;
     case "claim":
-      return <DollarSign className="h-4 w-4 text-emerald-600" />;
+      return <DollarSign className={`${iconClass} ${!isActive ? "text-emerald-600" : ""}`} />;
     case "ot":
-      return <FileText className="h-4 w-4 text-amber-600" />;
+      return <FileText className={`${iconClass} ${!isActive ? "text-amber-600" : ""}`} />;
     case "document":
-      return <Info className="h-4 w-4 text-blue-600" />;
+      return <Info className={`${iconClass} ${!isActive ? "text-blue-600" : ""}`} />;
     case "announcement":
-      return <Megaphone className="h-4 w-4 text-purple-600" />;
+      return <Megaphone className={`${iconClass} ${!isActive ? "text-purple-600" : ""}`} />;
     case "attendance":
-      return <Clock className="h-4 w-4 text-amber-600" />;
+      return <Clock className={`${iconClass} ${!isActive ? "text-amber-600" : ""}`} />;
     default:
-      return <Bell className="h-4 w-4 text-[var(--foreground-muted)]" />;
+      return <Bell className={`${iconClass} ${!isActive ? "text-[var(--foreground-muted)]" : ""}`} />;
   }
 }
 
 export function NotificationsList({
   notifications,
   portal,
-  placeholderNotifications = [],
   page,
   pageSize,
   total,
   tabCounts,
   activeTab,
+  filter = "all",
 }: {
   notifications: NotificationRow[];
   portal: NotificationPortal;
-  placeholderNotifications?: NotificationRow[];
   page: number;
   pageSize: number;
   total: number;
   tabCounts: Record<string, number>;
   activeTab: string;
+  filter?: string;
 }) {
-  const showingPlaceholders = notifications.length === 0 && placeholderNotifications.length > 0;
-  const initialRows = showingPlaceholders ? placeholderNotifications : notifications;
-  
-  const [localNotifications, setLocalNotifications] = useState<NotificationRow[]>(initialRows);
+  const [localNotifications, setLocalNotifications] = useState<NotificationRow[]>(notifications);
+  const [localTabCounts, setLocalTabCounts] = useState<Record<string, number>>(tabCounts);
   const [isPending, setIsPending] = useState(false);
 
   // Sync state with parent props when they change
   useEffect(() => {
-    setLocalNotifications(showingPlaceholders ? placeholderNotifications : notifications);
-  }, [notifications, placeholderNotifications, showingPlaceholders]);
+    setLocalNotifications(notifications);
+  }, [notifications]);
 
-  const filteredRows = localNotifications;
+  useEffect(() => {
+    setLocalTabCounts(tabCounts);
+  }, [tabCounts]);
 
-  const hasUnread = localNotifications.some(n => n.status === "pending");
+  const isUnreadOnly = filter === "unread";
+  const filteredRows = isUnreadOnly
+    ? localNotifications.filter((n) => n.status === "pending")
+    : localNotifications;
+
+  const hasUnread = localNotifications.some((n) => n.status === "pending");
 
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, total);
@@ -210,48 +216,65 @@ export function NotificationsList({
     return start + index;
   });
 
+  const filterQuery = isUnreadOnly ? "&filter=unread" : "";
   const baseHref = `/${portal}/notifications`;
 
   const handleMarkAsRead = async (id: string) => {
-    if (showingPlaceholders) return;
-    
     // Optimistic update
-    setLocalNotifications(prev =>
-      prev.map(n => n.id === id ? { ...n, status: "sent" } : n)
+    setLocalNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, status: "sent" } : n))
     );
+    setLocalTabCounts((prev) => {
+      const target = localNotifications.find((n) => n.id === id);
+      if (!target || target.status !== "pending") return prev;
+      const group = getNotificationGroup(target);
+      return {
+        ...prev,
+        all: Math.max(0, (prev.all ?? 0) - 1),
+        [group]: Math.max(0, (prev[group] ?? 0) - 1),
+      };
+    });
 
     try {
       await markNotificationReadAction(id);
     } catch (err) {
       console.error("Failed to mark notification as read:", err);
       // Revert state on error
-      setLocalNotifications(showingPlaceholders ? placeholderNotifications : notifications);
+      setLocalNotifications(notifications);
+      setLocalTabCounts(tabCounts);
     }
   };
 
   const handleMarkAllAsRead = async () => {
-    if (showingPlaceholders || isPending) return;
+    if (isPending) return;
     setIsPending(true);
 
     // Optimistic update
-    setLocalNotifications(prev =>
-      prev.map(n => ({ ...n, status: "sent" }))
+    setLocalNotifications((prev) =>
+      prev.map((n) => ({ ...n, status: "sent" }))
     );
+    setLocalTabCounts({
+      all: 0,
+      leave: 0,
+      claim: 0,
+      ot: 0,
+      document: 0,
+      announcement: 0,
+    });
 
     try {
       await markAllNotificationsReadAction();
     } catch (err) {
       console.error("Failed to mark all notifications as read:", err);
       // Revert state on error
-      setLocalNotifications(showingPlaceholders ? placeholderNotifications : notifications);
+      setLocalNotifications(notifications);
+      setLocalTabCounts(tabCounts);
     } finally {
       setIsPending(false);
     }
   };
 
   const handleItemClick = async (e: React.MouseEvent, row: NotificationRow) => {
-    if (showingPlaceholders) return;
-
     if (row.status === "pending") {
       // Mark read optimistically
       await handleMarkAsRead(row.id);
@@ -275,25 +298,27 @@ export function NotificationsList({
       {/* Navigation Grouping Tabs */}
       <div className="flex flex-wrap items-center gap-1.5 border-b border-[var(--border-primary)] pb-1.5 overflow-x-auto select-none no-scrollbar">
         {GROUPS.map((group) => {
-          const count = showingPlaceholders ? localNotifications.length : tabCounts[group.id] ?? 0;
+          const count = localTabCounts[group.id] ?? 0;
           const isActive = activeTab === group.id;
           return (
             <Link
               key={group.id}
-              href={`${baseHref}?tab=${group.id}&page=1`}
+              href={`${baseHref}?tab=${group.id}&page=1${filterQuery}`}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 whitespace-nowrap ${
                 isActive
                   ? "bg-[var(--accent-primary)] text-white shadow-sm"
                   : "text-[var(--foreground-secondary)] hover:bg-[var(--surface-muted)]"
               }`}
             >
-              {group.id !== "all" && getGroupIcon(group.id)}
+              {group.id !== "all" && getGroupIcon(group.id, isActive)}
               <span>{group.label}</span>
-              <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] ${
-                isActive 
-                  ? "bg-white/20 text-white" 
-                  : "bg-[var(--surface-muted)] text-[var(--foreground-secondary)]"
-              }`}>
+              <span
+                className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] ${
+                  isActive
+                    ? "bg-white/20 text-white"
+                    : "bg-[var(--surface-muted)] text-[var(--foreground-secondary)]"
+                }`}
+              >
                 {count}
               </span>
             </Link>
@@ -303,19 +328,37 @@ export function NotificationsList({
 
       {/* Main Notifications Card */}
       <div className="overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-card)] shadow-[var(--shadow-card)]">
-        <div className="flex items-center justify-between border-b border-[var(--border-primary)] bg-[var(--surface-muted)] px-4 py-3 text-sm font-medium">
-          {showingPlaceholders ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-primary)] bg-[var(--surface-muted)] px-4 py-3 text-sm font-medium">
+          <div className="flex items-center gap-3">
             <span>
-              Sample notifications{" "}
-              <span className="font-normal text-[var(--foreground-muted)]">(shown until you receive real alerts)</span>
+              {activeTab === "all" ? "Recent" : GROUPS.find((g) => g.id === activeTab)?.label} ({filteredRows.length})
             </span>
-          ) : (
-            <span>
-              {activeTab === "all" ? "Recent" : GROUPS.find(g => g.id === activeTab)?.label} ({filteredRows.length})
-            </span>
-          )}
 
-          {hasUnread && !showingPlaceholders && (
+            <div className="inline-flex rounded-lg border border-[var(--border-primary)] bg-[var(--surface-card)] p-0.5 text-xs font-medium">
+              <Link
+                href={`${baseHref}?tab=${activeTab}&page=1&filter=all`}
+                className={`px-2.5 py-1 rounded-md transition-all ${
+                  !isUnreadOnly
+                    ? "bg-[var(--surface-accent-soft)] text-[var(--accent-primary)] font-semibold shadow-xs"
+                    : "text-[var(--foreground-muted)] hover:text-[var(--foreground-primary)]"
+                }`}
+              >
+                All
+              </Link>
+              <Link
+                href={`${baseHref}?tab=${activeTab}&page=1&filter=unread`}
+                className={`px-2.5 py-1 rounded-md transition-all ${
+                  isUnreadOnly
+                    ? "bg-[var(--surface-accent-soft)] text-[var(--accent-primary)] font-semibold shadow-xs"
+                    : "text-[var(--foreground-muted)] hover:text-[var(--foreground-primary)]"
+                }`}
+              >
+                Unread only
+              </Link>
+            </div>
+          </div>
+
+          {hasUnread && (
             <button
               onClick={handleMarkAllAsRead}
               disabled={isPending}
@@ -337,7 +380,7 @@ export function NotificationsList({
             />
           ) : (
             filteredRows.map((row) => {
-              const href = showingPlaceholders ? null : resolveNotificationHref(row, portal);
+              const href = resolveNotificationHref(row, portal);
               const isUnread = row.status === "pending";
               const group = getNotificationGroup(row);
               const { title, message } = getNotificationText(row);
@@ -346,22 +389,28 @@ export function NotificationsList({
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3.5 flex-1 min-w-0">
                     {/* Status Dot */}
-                    <div className={`h-2 w-2 rounded-full shrink-0 ${
-                      isUnread ? "bg-[var(--accent-primary)]" : "bg-zinc-200"
-                    }`} />
-                    
+                    <div
+                      className={`h-2 w-2 rounded-full shrink-0 ${
+                        isUnread ? "bg-[var(--accent-primary)]" : "bg-zinc-200"
+                      }`}
+                    />
+
                     {/* Icon wrapper */}
-                    <div className={`p-1.5 rounded-lg shrink-0 ${
-                      isUnread ? "bg-white" : "bg-[var(--surface-muted)]"
-                    }`}>
+                    <div
+                      className={`p-1.5 rounded-lg shrink-0 ${
+                        isUnread ? "bg-white" : "bg-[var(--surface-muted)]"
+                      }`}
+                    >
                       {getGroupIcon(group)}
                     </div>
 
                     {/* Text stack */}
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm text-[var(--foreground-primary)] leading-normal ${
-                        isUnread ? "font-semibold" : "font-medium"
-                      }`}>
+                      <p
+                        className={`text-sm text-[var(--foreground-primary)] leading-normal ${
+                          isUnread ? "font-semibold" : "font-medium"
+                        }`}
+                      >
                         {title}
                       </p>
                       <p className="text-xs text-[var(--foreground-muted)] leading-normal mt-0.5 break-words">
@@ -376,7 +425,7 @@ export function NotificationsList({
                       {formatRelativeTime(row.createdAt)}
                     </span>
 
-                    {isUnread && !showingPlaceholders && (
+                    {isUnread && (
                       <button
                         onClick={(e) => {
                           e.preventDefault();
@@ -397,8 +446,8 @@ export function NotificationsList({
                 return (
                   <Link
                     className={`block px-5 py-3 transition-colors ${
-                      isUnread 
-                        ? "bg-[var(--surface-accent-soft)] hover:bg-[var(--surface-accent-soft)]/80" 
+                      isUnread
+                        ? "bg-[var(--surface-accent-soft)] hover:bg-[var(--surface-accent-soft)]/80"
                         : "bg-[var(--surface-card)] hover:bg-[var(--surface-muted)]/40"
                     }`}
                     href={href}
@@ -413,11 +462,9 @@ export function NotificationsList({
               return (
                 <div
                   className={`px-5 py-3 transition-colors ${
-                    showingPlaceholders 
-                      ? "opacity-80" 
-                      : isUnread 
-                        ? "cursor-pointer bg-[var(--surface-accent-soft)] hover:bg-[var(--surface-accent-soft)]/80" 
-                        : ""
+                    isUnread
+                      ? "cursor-pointer bg-[var(--surface-accent-soft)] hover:bg-[var(--surface-accent-soft)]/80"
+                      : ""
                   }`}
                   key={row.id}
                   onClick={(e) => handleItemClick(e, row)}
@@ -430,20 +477,20 @@ export function NotificationsList({
         </div>
 
         {/* Pagination */}
-        {pageCount > 1 && !showingPlaceholders && (
+        {pageCount > 1 && (
           <div className="border-t border-[var(--border-primary)] bg-[var(--surface-muted)]/20 px-4 py-3">
             <HrPagination
               from={from}
               itemLabel="notifications"
               nextHref={
-                page < pageCount ? `${baseHref}?tab=${activeTab}&page=${page + 1}` : undefined
+                page < pageCount ? `${baseHref}?tab=${activeTab}&page=${page + 1}${filterQuery}` : undefined
               }
               page={page}
               pageLinks={pages.map((pageNumber) => ({
                 page: pageNumber,
-                href: `${baseHref}?tab=${activeTab}&page=${pageNumber}`,
+                href: `${baseHref}?tab=${activeTab}&page=${pageNumber}${filterQuery}`,
               }))}
-              prevHref={page > 1 ? `${baseHref}?tab=${activeTab}&page=${page - 1}` : undefined}
+              prevHref={page > 1 ? `${baseHref}?tab=${activeTab}&page=${page - 1}${filterQuery}` : undefined}
               to={to}
               total={total}
             />

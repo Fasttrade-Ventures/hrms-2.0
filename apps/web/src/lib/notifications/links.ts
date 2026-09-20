@@ -109,6 +109,16 @@ export function resolveNotificationHref(
     return "/hr/assets";
   }
 
+  if (row.template === "payroll.payslip_available") {
+    if (portal === "employee") return "/employee/payslips";
+    return null;
+  }
+
+  if (row.template === "attendance.tardy") {
+    if (portal === "employee") return "/employee/attendance";
+    return null;
+  }
+
   const payloadHref = row.payload.href;
   if (typeof payloadHref === "string" && payloadHref.startsWith("/")) {
     return payloadHref;

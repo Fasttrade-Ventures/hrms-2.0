@@ -110,6 +110,9 @@ export const hrPlaceholderNotifications: NotificationRow[] = [
 
 export type NotificationPortal = "employee" | "manager" | "hr";
 
+/**
+ * @deprecated Prefer live DB in-app feed via `listUserNotifications` from `@/lib/notifications/inbox`.
+ */
 export function getPlaceholderNotifications(portal: NotificationPortal): NotificationRow[] {
   switch (portal) {
     case "employee":
