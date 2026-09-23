@@ -10,6 +10,7 @@ import {
   RequestStatusPill,
 } from "@/components/employee/employee-shared";
 import { LeaveActionControls } from "@/components/employee/leave-action-controls";
+import { PortalIcon } from "@/components/portal/portal-icons";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { getLeaveRequest, requireEmployeeContext } from "@/lib/employee/leave";
 import { getApprovalTimeline } from "@/lib/employee/requests";
@@ -142,9 +143,11 @@ export default async function LeaveDetailPage({
             <Link
               href={`/api/files/${request.attachmentFileId}/download`}
               target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-sm font-medium text-[var(--accent-primary)] hover:underline"
             >
-              📎 {request.attachmentFileName ?? "Download document"}
+              <PortalIcon name="documents" className="h-4 w-4" />
+              <span>{request.attachmentFileName ?? "Download document"}</span>
             </Link>
           </div>
         </section>

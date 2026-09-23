@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { StatusPill } from "@hrms/ui";
 
 import { HrApprovalActions } from "@/components/hr/operations/hr-approval-actions";
+import { PortalIcon } from "@/components/portal/portal-icons";
 import { PortalSectionCard } from "@/components/portal/portal-section";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { getHrApprovalDetail } from "@/lib/hr/operations";
@@ -43,7 +44,20 @@ export default async function HrOperationDetailPage({
       </div>
 
       <PortalSectionCard
-        action={<StatusPill label={detail.status} tone="pending" />}
+        action={
+          <StatusPill
+            label={detail.status === "expired" ? "Expired" : detail.status.charAt(0).toUpperCase() + detail.status.slice(1)}
+            tone={
+              detail.status === "pending"
+                ? "warning"
+                : detail.status === "approved"
+                  ? "success"
+                  : detail.status === "rejected"
+                    ? "danger"
+                    : "neutral"
+            }
+          />
+        }
         description={detail.summary}
         title="Request summary"
       >
@@ -67,16 +81,60 @@ export default async function HrOperationDetailPage({
               <Link
                 href={`/api/files/${attachmentFileId}/download`}
                 target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-sm font-medium text-[var(--accent-primary)] hover:underline"
               >
-                📎 {attachmentFileName ?? "Download attachment"}
+                <PortalIcon name="documents" className="h-4 w-4" />
+                <span>{attachmentFileName ?? "Download attachment"}</span>
               </Link>
             </div>
           </div>
         )}
       </PortalSectionCard>
 
-      {detail.status === "pending" ? <HrApprovalActions stepId={detail.stepId} /> : null}
+      {/* Resolution Banners vs Decision Form */}
+      {detail.status === "pending" ? (
+        <HrApprovalActions stepId={detail.stepId} />
+      ) : detail.status === "expired" ? (
+        <div className="rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-muted)] p-4 sm:p-5">
+          <h3 className="text-sm font-semibold text-[var(--foreground-primary)]">Request Expired</h3>
+          <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+            This request expired because the scheduled dates passed without approval.
+            Any reserved leave days have been restored to the employee&apos;s balance.
+          </p>
+        </div>
+      ) : detail.status === "approved" ? (
+        <div className="rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-muted)] p-4 sm:p-5">
+          <h3 className="text-sm font-semibold text-[var(--foreground-primary)]">Request Approved</h3>
+          <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+            This request was approved and processed.
+          </p>
+          {detail.comment && (
+            <p className="mt-2 text-xs italic text-[var(--foreground-secondary)]">
+              Note: &ldquo;{detail.comment}&rdquo;
+            </p>
+          )}
+        </div>
+      ) : detail.status === "rejected" ? (
+        <div className="rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-muted)] p-4 sm:p-5">
+          <h3 className="text-sm font-semibold text-[var(--foreground-primary)]">Request Rejected</h3>
+          <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+            This request was rejected.
+          </p>
+          {detail.comment && (
+            <p className="mt-2 text-xs italic text-[var(--foreground-secondary)]">
+              Reason: &ldquo;{detail.comment}&rdquo;
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-muted)] p-4 sm:p-5">
+          <h3 className="text-sm font-semibold text-[var(--foreground-primary)]">Request Cancelled</h3>
+          <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+            This request was cancelled by the requester.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
