@@ -15,26 +15,45 @@ const approvalStepSelect = `
   )
 `;
 
-export async function listOrgPendingApprovals(): Promise<ApprovalInboxRow[]> {
+export async function listOrgApprovals(options?: {
+  status?: "all" | "pending" | "approved" | "rejected" | "expired" | string;
+  limit?: number;
+}): Promise<ApprovalInboxRow[]> {
   await requireRole("hr_administrator");
   const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("approval_steps")
     .select(approvalStepSelect)
-    .eq("organization_id", organizationId)
-    .eq("status", "pending")
-    .order("created_at", { ascending: false });
+    .eq("organization_id", organizationId);
+
+  if (options?.status && options.status !== "all") {
+    if (options.status === "expired") {
+      query = query.eq("status", "cancelled");
+    } else {
+      query = query.eq("status", options.status);
+    }
+  } else {
+    query = query.in("status", ["pending", "approved", "rejected", "cancelled"]);
+  }
+
+  const { data, error } = await query
+    .order("created_at", { ascending: false })
+    .limit(options?.limit ?? 200);
 
   if (error) throw new Error(error.message);
+  const rows = (data ?? []).map((row) => mapApprovalInboxRow(row as Record<string, unknown>));
 
-  return (data ?? [])
-    .filter((row) => {
-      const request = (row as Record<string, unknown>).approval_requests as Record<string, unknown>;
-      return request.status === "pending";
-    })
-    .map((row) => mapApprovalInboxRow(row as Record<string, unknown>));
+  if (options?.status === "expired") {
+    return rows.filter((r) => r.status === "expired");
+  }
+
+  return rows;
+}
+
+export async function listOrgPendingApprovals(): Promise<ApprovalInboxRow[]> {
+  return listOrgApprovals({ status: "pending" });
 }
 
 export async function getHrApprovalDetail(stepId: string): Promise<ApprovalDetail | null> {
@@ -56,6 +75,16 @@ export async function getHrApprovalDetail(stepId: string): Promise<ApprovalDetai
 }
 
 export async function countOrgPendingApprovals(): Promise<number> {
-  const rows = await listOrgPendingApprovals().catch(() => []);
-  return rows.length;
+  await requireRole("hr_administrator");
+  const organizationId = await requireOrganizationId();
+  const supabase = await createClient();
+
+  const { count, error } = await supabase
+    .from("approval_steps")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", organizationId)
+    .eq("status", "pending");
+
+  if (error) throw new Error(error.message);
+  return count ?? 0;
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   Briefcase,
@@ -89,6 +89,7 @@ export function LeaveApplyForm({
   const [startDate, setStartDate] = useState(defaultStartDate);
   const [endDate, setEndDate] = useState(defaultEndDate);
   const [todayStr, setTodayStr] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setTodayStr(new Date().toLocaleDateString("en-CA"));
@@ -318,16 +319,22 @@ export function LeaveApplyForm({
         )}
 
         {requiresAttachment && (
-          <HrField id="file" label="Supporting Document (Medical Certificate, etc.)">
-            <input
-              accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
-              className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-foreground"
-              id="file"
-              name="file"
-              required
-              type="file"
-            />
-          </HrField>
+          <div className="space-y-1 sm:col-span-2">
+            <HrField id="file" label="Supporting Document (Medical Certificate, etc.)">
+              <input
+                ref={fileInputRef}
+                accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                className="block w-full text-xs text-[var(--foreground-muted)] file:mr-3 file:rounded-[var(--radius-md)] file:border-0 file:bg-[var(--accent-primary)] file:px-3 file:py-2 file:text-xs file:font-medium file:text-white hover:file:opacity-90 file:cursor-pointer cursor-pointer rounded-[var(--radius-md)] border border-[var(--border-primary)] bg-[var(--surface-muted)] p-1.5 focus:outline-hidden focus:ring-1 focus:ring-[var(--border-focus)]"
+                id="file"
+                name="file"
+                required
+                type="file"
+              />
+            </HrField>
+            <p className="text-[11px] text-[var(--foreground-muted)] pl-0.5">
+              Upload a clear copy of your MC or supporting document (PDF, PNG, JPG, DOC, DOCX up to 10 MB).
+            </p>
+          </div>
         )}
 
         <HrField id="reason" label="Reason">
@@ -343,28 +350,24 @@ export function LeaveApplyForm({
 
         {/* Overlap Conflict Notice */}
         {overlappingRequest && (
-          <div className="rounded-[var(--radius-lg)] border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-[var(--foreground-primary)]">
-            <div className="flex items-start gap-3">
-              <span className="text-lg">⚠️</span>
-              <div className="space-y-1">
-                <p className="font-semibold text-amber-600 dark:text-amber-400">
-                  Date Conflict: Leave already requested
-                </p>
-                <p className="text-[var(--foreground-secondary)]">
-                  You already have an active <span className="font-medium capitalize">{overlappingRequest.status}</span> {overlappingRequest.leaveTypeName ?? "leave"} request covering {overlappingRequest.startDate} to {overlappingRequest.endDate}.
-                  You must cancel that leave request first before you can apply for these dates again.
-                </p>
-                {overlappingRequest.id && (
-                  <div className="pt-1.5">
-                    <Link
-                      href={`/employee/leave/${overlappingRequest.id}`}
-                      className="font-semibold text-[var(--accent-primary)] hover:underline inline-flex items-center gap-1"
-                    >
-                      View or cancel existing request →
-                    </Link>
-                  </div>
-                )}
-              </div>
+          <div className="rounded-[var(--radius-lg)] border border-[var(--border-primary)] bg-[var(--surface-muted)] p-4 text-xs">
+            <div className="space-y-1.5">
+              <p className="font-semibold text-[var(--foreground-primary)]">
+                Leave already requested for these dates
+              </p>
+              <p className="text-[var(--foreground-secondary)] leading-relaxed">
+                You already have a <span className="font-medium capitalize">{overlappingRequest.status}</span> {overlappingRequest.leaveTypeName ?? "leave"} request covering {overlappingRequest.startDate} to {overlappingRequest.endDate}. Cancel that request first to apply for these dates.
+              </p>
+              {overlappingRequest.id && (
+                <div className="pt-1">
+                  <Link
+                    href={`/employee/leave/${overlappingRequest.id}`}
+                    className="font-medium text-[var(--accent-primary)] hover:underline inline-flex items-center"
+                  >
+                    View existing request
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -389,6 +392,9 @@ export function LeaveApplyForm({
               setDurationMode("full");
               setStartDate(defaultStartDate);
               setEndDate(defaultEndDate);
+              if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+              }
             }}
           >
             Clear

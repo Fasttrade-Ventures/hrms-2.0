@@ -92,13 +92,19 @@ export async function canDownloadFile(input: {
   }
 
   if (file.category === "leave-attachments") {
-    if (input.roles.includes("hr_administrator")) return true;
+    if (
+      input.roles.includes("hr_administrator") ||
+      input.roles.includes("platform_administrator") ||
+      input.roles.includes("organization_owner")
+    ) {
+      return true;
+    }
     if (!input.employeeId) return false;
 
     const supabase = await createClient();
     const { data: leaveReq } = await supabase
       .from("leave_requests")
-      .select("employee_id, employees(manager_employee_id)")
+      .select("id, employee_id, approval_request_id, employees(manager_employee_id)")
       .eq("organization_id", input.organizationId)
       .eq("attachment_file_id", input.fileId)
       .maybeSingle();
@@ -110,6 +116,18 @@ export async function canDownloadFile(input: {
     const requesterManagerId = (leaveReq.employees as { manager_employee_id?: string | null } | null)
       ?.manager_employee_id;
     if (input.roles.includes("manager") && requesterManagerId === input.employeeId) return true;
+
+    if (leaveReq.approval_request_id) {
+      const { data: step } = await supabase
+        .from("approval_steps")
+        .select("id")
+        .eq("organization_id", input.organizationId)
+        .eq("approval_request_id", leaveReq.approval_request_id)
+        .eq("approver_employee_id", input.employeeId)
+        .maybeSingle();
+
+      if (step) return true;
+    }
 
     return false;
   }

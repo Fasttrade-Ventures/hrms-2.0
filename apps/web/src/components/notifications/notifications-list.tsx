@@ -331,7 +331,7 @@ export function NotificationsList({
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-primary)] bg-[var(--surface-muted)] px-4 py-3 text-sm font-medium">
           <div className="flex items-center gap-3">
             <span>
-              {activeTab === "all" ? "Recent" : GROUPS.find((g) => g.id === activeTab)?.label} ({filteredRows.length})
+              {activeTab === "all" ? "Recent" : GROUPS.find((g) => g.id === activeTab)?.label} ({isUnreadOnly ? (localTabCounts[activeTab] ?? filteredRows.length) : total})
             </span>
 
             <div className="inline-flex rounded-lg border border-[var(--border-primary)] bg-[var(--surface-card)] p-0.5 text-xs font-medium">
