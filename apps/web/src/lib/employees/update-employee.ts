@@ -15,7 +15,7 @@ export async function updateEmployeeFullProfile(
 
   const { data: existingEmployee, error: existingError } = await admin
     .from("employees")
-    .select("manager_employee_id")
+    .select("manager_employee_id, job_title, position_id")
     .eq("id", employeeId)
     .eq("organization_id", organizationId)
     .maybeSingle();
@@ -24,6 +24,17 @@ export async function updateEmployeeFullProfile(
 
   const previousManagerId = existingEmployee?.manager_employee_id ?? null;
   const nextManagerId = input.managerEmployeeId ?? null;
+
+  const positionId = input.positionId ?? existingEmployee?.position_id ?? null;
+  let jobTitle = input.jobTitle ?? existingEmployee?.job_title ?? null;
+  if (positionId) {
+    const { data: pos } = await admin
+      .from("positions")
+      .select("title")
+      .eq("id", positionId)
+      .maybeSingle();
+    if (pos?.title) jobTitle = pos.title;
+  }
 
   const { error: employeeError } = await admin
     .from("employees")
@@ -37,7 +48,8 @@ export async function updateEmployeeFullProfile(
       shift_id: input.shiftId ?? null,
       pay_group_id: input.payGroupId ?? null,
       employment_type: input.employmentType ?? null,
-      job_title: input.jobTitle ?? null,
+      job_title: jobTitle,
+      position_id: positionId,
       confirmation_status: input.confirmationStatus ?? null,
       annual_leave_entitlement: input.annualLeaveEntitlement ?? 14,
       annual_leave_carry_forward: input.annualLeaveCarryForward ?? 0,

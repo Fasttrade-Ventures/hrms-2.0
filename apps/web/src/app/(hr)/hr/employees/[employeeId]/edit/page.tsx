@@ -70,6 +70,7 @@ export default async function EditEmployeePage({
         leaveTypes={options.leaveTypes}
         managers={options.managers}
         payGroups={options.payGroups}
+        positions={options.positions}
         shifts={options.shifts}
       />
 

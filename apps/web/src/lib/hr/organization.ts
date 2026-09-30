@@ -21,6 +21,7 @@ export type OrgHubModule = {
 export type OrgHubData = {
   branchCount: number;
   departmentCount: number;
+  positionCount: number;
   shiftCount: number;
   holidayCount: number;
   leaveTypeCount: number;
@@ -64,6 +65,18 @@ export type DepartmentRow = {
   branchName: string | null;
   employeeCount: number;
   createdAt: string;
+};
+
+export type PositionRow = {
+  id: string;
+  title: string;
+  departmentId: string | null;
+  departmentName: string | null;
+  description: string | null;
+  isActive: boolean;
+  employeeCount: number;
+  createdAt: string;
+  updatedAt?: string;
 };
 
 export type ShiftRow = {
@@ -130,7 +143,7 @@ export async function getOrgHubData(): Promise<OrgHubData> {
     .maybeSingle();
   const productTier = orgRow?.product_tier ?? "enterprise";
 
-  const [branches, departments, shifts, holidays, leaveTypes, assetCategories] = await Promise.all([
+  const [branches, departments, positions, shifts, holidays, leaveTypes, assetCategories] = await Promise.all([
     supabase
       .from("branches")
       .select("id, name", { count: "exact" })
@@ -138,6 +151,10 @@ export async function getOrgHubData(): Promise<OrgHubData> {
     supabase
       .from("departments")
       .select("id, name", { count: "exact" })
+      .eq("organization_id", organizationId),
+    supabase
+      .from("positions")
+      .select("id, title", { count: "exact" })
       .eq("organization_id", organizationId),
     supabase
       .from("shifts")
@@ -161,6 +178,9 @@ export async function getOrgHubData(): Promise<OrgHubData> {
 
   if (branches.error) throw new Error(branches.error.message);
   if (departments.error) throw new Error(departments.error.message);
+  if (positions.error && !positions.error.message.includes("relation \"public.positions\" does not exist")) {
+    throw new Error(positions.error.message);
+  }
   if (shifts.error) throw new Error(shifts.error.message);
   if (holidays.error) throw new Error(holidays.error.message);
   if (leaveTypes.error) throw new Error(leaveTypes.error.message);
@@ -168,6 +188,7 @@ export async function getOrgHubData(): Promise<OrgHubData> {
 
   const branchCount = branches.count ?? branches.data?.length ?? 0;
   const departmentCount = departments.count ?? departments.data?.length ?? 0;
+  const positionCount = positions.count ?? positions.data?.length ?? 0;
   const shiftCount = shifts.count ?? shifts.data?.length ?? 0;
   const holidayCount = holidays.count ?? holidays.data?.length ?? 0;
   const leaveTypeCount = leaveTypes.count ?? leaveTypes.data?.length ?? 0;
@@ -175,6 +196,7 @@ export async function getOrgHubData(): Promise<OrgHubData> {
 
   const branchNames = (branches.data ?? []).map((row) => row.name).slice(0, 3).join(" · ") || "No branches yet";
   const deptNames = (departments.data ?? []).map((row) => row.name).slice(0, 4).join(" · ") || "No departments yet";
+  const posNames = (positions.data ?? []).map((row) => row.title).slice(0, 4).join(" · ") || "No positions yet";
   const shiftNames = (shifts.data ?? []).map((row) => row.name).slice(0, 2).join(" · ") || "No shifts yet";
   const leaveNames = (leaveTypes.data ?? []).map((row) => row.name).slice(0, 3).join(" · ") || "No leave types yet";
   const assetCategoryNames =
@@ -183,6 +205,7 @@ export async function getOrgHubData(): Promise<OrgHubData> {
   return {
     branchCount,
     departmentCount,
+    positionCount,
     shiftCount,
     holidayCount,
     leaveTypeCount,
@@ -207,6 +230,16 @@ export async function getOrgHubData(): Promise<OrgHubData> {
         details: deptNames,
         href: "/hr/organization/departments",
         count: departmentCount,
+      },
+      {
+        id: "positions",
+        typeLabel: "Positions",
+        typeTone: "accent",
+        title: "Positions & Roles",
+        subtitle: `${positionCount} role${positionCount === 1 ? "" : "s"}`,
+        details: posNames,
+        href: "/hr/organization/positions",
+        count: positionCount,
       },
       {
         id: "shifts",
@@ -356,6 +389,50 @@ export async function listDepartments(): Promise<DepartmentRow[]> {
 export async function getDepartment(departmentId: string): Promise<DepartmentRow | null> {
   const departments = await listDepartments();
   return departments.find((row) => row.id === departmentId) ?? null;
+}
+
+export async function listPositions(): Promise<PositionRow[]> {
+  await requireRole("hr_administrator", "branch_admin");
+  const supabase = await createClient();
+  const organizationId = await requireOrganizationId();
+
+  const [{ data, error }, { data: employees, error: employeeError }] = await Promise.all([
+    supabase
+      .from("positions")
+      .select("id, title, department_id, description, is_active, created_at, updated_at, departments(name)")
+      .eq("organization_id", organizationId)
+      .order("title"),
+    supabase.from("employees").select("position_id").eq("organization_id", organizationId),
+  ]);
+
+  if (error && !error.message.includes("relation \"public.positions\" does not exist")) {
+    throw new Error(error.message);
+  }
+  if (employeeError) throw new Error(employeeError.message);
+
+  const counts = new Map<string, number>();
+  for (const row of employees ?? []) {
+    if (row.position_id) {
+      counts.set(row.position_id, (counts.get(row.position_id) ?? 0) + 1);
+    }
+  }
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    title: row.title,
+    departmentId: row.department_id,
+    departmentName: (row.departments as { name?: string } | null)?.name ?? null,
+    description: row.description ?? null,
+    isActive: row.is_active ?? true,
+    employeeCount: counts.get(row.id) ?? 0,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }));
+}
+
+export async function getPosition(positionId: string): Promise<PositionRow | null> {
+  const positions = await listPositions();
+  return positions.find((row) => row.id === positionId) ?? null;
 }
 
 export async function listShifts(): Promise<ShiftRow[]> {

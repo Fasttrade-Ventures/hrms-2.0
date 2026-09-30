@@ -7,13 +7,23 @@ export function StatusPill({
   tone?: "neutral" | "success" | "warning" | "danger" | "pending";
   className?: string;
 }) {
+  const normalized = label.trim().toLowerCase();
+  const effectiveTone =
+    tone === "neutral" || tone === "warning"
+      ? normalized === "active"
+        ? "success"
+        : normalized === "inactive"
+          ? "danger"
+          : tone
+      : tone;
+
   const toneClass = {
     neutral: "bg-[var(--surface-muted)] text-[var(--foreground-secondary)]",
     pending: "bg-[var(--surface-accent-soft)] text-[var(--accent-primary)]",
-    success: "bg-[var(--success-soft)] text-[var(--success)]",
-    warning: "bg-[var(--warning-soft)] text-[var(--warning)]",
-    danger: "bg-[var(--danger-soft)] text-[var(--danger)]",
-  }[tone];
+    success: "border border-emerald-500/30 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300",
+    warning: "border border-amber-500/30 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300",
+    danger: "border border-rose-500/30 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-300",
+  }[effectiveTone];
 
   return (
     <span

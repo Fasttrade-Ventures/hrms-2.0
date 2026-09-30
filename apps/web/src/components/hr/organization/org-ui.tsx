@@ -17,6 +17,7 @@ import {
   HrPrimaryButton,
   HrSelect,
   HrTextInput,
+  HrTextarea,
 } from "@/components/hr/employees/form-fields";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,9 +50,22 @@ export function OrgTableCell({
 }
 
 export function OrgTableStatus({ label = "Active" }: { label?: string }) {
+  const isInactive = label.trim().toLowerCase() === "inactive";
+  const isActive = label.trim().toLowerCase() === "active";
+
   return (
     <div className="flex w-fit items-center justify-self-start">
-      <Badge variant="secondary">{label}</Badge>
+      <Badge
+        className={cn(
+          isActive &&
+            "border-emerald-500/30 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300",
+          isInactive &&
+            "border-rose-500/30 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-300",
+        )}
+        variant={isActive || isInactive ? "outline" : "secondary"}
+      >
+        {label}
+      </Badge>
     </div>
   );
 }
@@ -270,4 +284,5 @@ export {
   HrGhostButton,
   HrSelect,
   HrTextInput,
+  HrTextarea,
 };

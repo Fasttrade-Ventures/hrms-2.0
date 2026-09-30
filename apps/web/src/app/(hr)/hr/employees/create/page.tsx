@@ -32,6 +32,7 @@ export default async function CreateEmployeePage() {
         leaveTypes={options.leaveTypes}
         managers={options.managers}
         payGroups={options.payGroups}
+        positions={options.positions}
         shifts={options.shifts}
         suggestedEmployeeNumber={suggestedEmployeeNumber}
       />

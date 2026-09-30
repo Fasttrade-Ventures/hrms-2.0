@@ -105,10 +105,19 @@ export function HrPagination({
 
 export function HrStatusBadge({
   label,
-  variant = "secondary",
+  variant,
 }: {
   label: string;
-  variant?: "default" | "secondary" | "destructive" | "outline";
+  variant?: "default" | "secondary" | "destructive" | "outline" | "active" | "inactive" | "success" | "warning";
 }) {
-  return <Badge variant={variant}>{label}</Badge>;
+  const normalized = label.trim().toLowerCase();
+  const effectiveVariant =
+    variant ??
+    (normalized === "active"
+      ? "active"
+      : normalized === "inactive"
+        ? "inactive"
+        : "secondary");
+
+  return <Badge variant={effectiveVariant}>{label}</Badge>;
 }
