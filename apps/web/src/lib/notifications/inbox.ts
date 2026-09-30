@@ -1,6 +1,5 @@
 import { requireAuth } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import { syncEmployeeDocumentCompliance } from "@/lib/hr/scan-document-compliance";
 
 import type { NotificationRow } from "./types";
 
@@ -10,26 +9,17 @@ export { formatNotificationMessage } from "./types";
 export async function listUserNotifications(
   tab = "all",
   page = 1,
-  pageSize = 5,
+  pageSize = 10,
+  unreadOnly = false,
 ): Promise<{
   notifications: NotificationRow[];
   total: number;
 }> {
   const session = await requireAuth();
 
-  if (session.membership.employeeId) {
-    await syncEmployeeDocumentCompliance(
-      session.membership.organizationId,
-      session.membership.employeeId,
-      session.user.id,
-      session.user.fullName || session.user.email || "Employee"
-    ).catch((err) => {
-      console.error("Failed to sync employee document compliance:", err);
-    });
-  }
-
   const supabase = await createClient();
-  const from = (page - 1) * pageSize;
+  const safePage = Math.max(1, page);
+  const from = (safePage - 1) * pageSize;
   const to = from + pageSize - 1;
 
   let query = supabase
@@ -38,6 +28,10 @@ export async function listUserNotifications(
     .eq("organization_id", session.membership.organizationId)
     .eq("recipient_user_id", session.user.id)
     .eq("channel", "in_app");
+
+  if (unreadOnly) {
+    query = query.eq("status", "pending");
+  }
 
   if (tab === "leave") {
     query = query.like("template", "approval.%").eq("payload->>requestType", "leave");
@@ -55,7 +49,39 @@ export async function listUserNotifications(
     .order("created_at", { ascending: false })
     .range(from, to);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (error.code === "PGRST103" || error.message.includes("Requested range not satisfiable")) {
+      let countQuery = supabase
+        .from("notification_outbox")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", session.membership.organizationId)
+        .eq("recipient_user_id", session.user.id)
+        .eq("channel", "in_app");
+
+      if (unreadOnly) {
+        countQuery = countQuery.eq("status", "pending");
+      }
+
+      if (tab === "leave") {
+        countQuery = countQuery.like("template", "approval.%").eq("payload->>requestType", "leave");
+      } else if (tab === "claim") {
+        countQuery = countQuery.like("template", "approval.%").eq("payload->>requestType", "claim");
+      } else if (tab === "ot") {
+        countQuery = countQuery.like("template", "approval.%").eq("payload->>requestType", "overtime");
+      } else if (tab === "document") {
+        countQuery = countQuery.like("template", "document_compliance_%");
+      } else if (tab === "announcement") {
+        countQuery = countQuery.eq("template", "announcement.published");
+      }
+
+      const { count: totalCount } = await countQuery;
+      return {
+        notifications: [],
+        total: totalCount ?? 0,
+      };
+    }
+    throw new Error(error.message);
+  }
 
   const notifications = (data ?? []).map((row) => ({
     id: row.id,
@@ -71,16 +97,22 @@ export async function listUserNotifications(
   };
 }
 
-export async function getNotificationTabCounts(): Promise<Record<string, number>> {
+export async function getNotificationTabCounts(unreadOnly = true): Promise<Record<string, number>> {
   const session = await requireAuth();
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("notification_outbox")
-    .select("template, payload")
+    .select("template, payload, status")
     .eq("organization_id", session.membership.organizationId)
     .eq("recipient_user_id", session.user.id)
     .eq("channel", "in_app");
+
+  if (unreadOnly) {
+    query = query.eq("status", "pending");
+  }
+
+  const { data, error } = await query;
 
   if (error) throw new Error(error.message);
 
@@ -114,18 +146,6 @@ export async function getNotificationTabCounts(): Promise<Record<string, number>
 
 export async function getUnreadNotificationCount(): Promise<number> {
   const session = await requireAuth();
-
-  if (session.membership.employeeId) {
-    await syncEmployeeDocumentCompliance(
-      session.membership.organizationId,
-      session.membership.employeeId,
-      session.user.id,
-      session.user.fullName || session.user.email || "Employee"
-    ).catch((err) => {
-      console.error("Failed to sync employee document compliance:", err);
-    });
-  }
-
   const supabase = await createClient();
 
   const { count, error } = await supabase
