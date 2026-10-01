@@ -127,11 +127,19 @@ export const listHolidaysSchema = z.object({
   pageSize: z.coerce.number().int().min(5).max(50).default(10),
 });
 
+export const leaveAccrualFrequencySchema = z.enum(["none", "monthly", "yearly"]);
+
 export const createLeaveTypeSchema = z.object({
   name: z.string().min(1).max(200),
   entitlementDays: z.coerce.number().min(0).max(365).default(0),
   requiresAttachment: z.boolean().default(false),
   isUnpaid: z.boolean().default(false),
+  accrualFrequency: leaveAccrualFrequencySchema.default("none"),
+  monthlyAccrualRate: z.coerce.number().min(0).max(31).default(0),
+  carryForwardEnabled: z.boolean().default(false),
+  maxCarryForwardDays: z.coerce.number().min(0).max(365).default(0),
+  carryForwardExpiryMonths: z.coerce.number().int().min(1).max(12).optional().nullable(),
+  carryForwardExpiryCutoffDate: z.string().regex(/^(\d{2}-\d{2})?$/, "Use MM-DD format").optional().nullable(),
 });
 
 export const updateLeaveTypeSchema = createLeaveTypeSchema;

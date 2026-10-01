@@ -111,6 +111,12 @@ export type LeaveTypeRow = {
   entitlementDays: number;
   requiresAttachment: boolean;
   isUnpaid: boolean;
+  accrualFrequency: "none" | "monthly" | "yearly";
+  monthlyAccrualRate: number;
+  carryForwardEnabled: boolean;
+  maxCarryForwardDays: number;
+  carryForwardExpiryMonths: number | null;
+  carryForwardExpiryCutoffDate: string | null;
   requestCount: number;
   createdAt: string;
 };
@@ -621,7 +627,7 @@ export async function listLeaveTypes(): Promise<LeaveTypeRow[]> {
   const [{ data, error }, { data: requests, error: requestError }] = await Promise.all([
     supabase
       .from("leave_types")
-      .select("id, name, entitlement_days, requires_attachment, is_unpaid, created_at")
+      .select("id, name, entitlement_days, requires_attachment, is_unpaid, accrual_frequency, monthly_accrual_rate, carry_forward_enabled, max_carry_forward_days, carry_forward_expiry_months, carry_forward_expiry_cutoff_date, created_at")
       .eq("organization_id", organizationId)
       .order("name"),
     supabase.from("leave_requests").select("leave_type_id").eq("organization_id", organizationId),
@@ -641,6 +647,12 @@ export async function listLeaveTypes(): Promise<LeaveTypeRow[]> {
     entitlementDays: Number(row.entitlement_days ?? 0),
     requiresAttachment: row.requires_attachment,
     isUnpaid: row.is_unpaid,
+    accrualFrequency: (row.accrual_frequency ?? "none") as "none" | "monthly" | "yearly",
+    monthlyAccrualRate: Number(row.monthly_accrual_rate ?? 0),
+    carryForwardEnabled: Boolean(row.carry_forward_enabled),
+    maxCarryForwardDays: Number(row.max_carry_forward_days ?? 0),
+    carryForwardExpiryMonths: row.carry_forward_expiry_months ?? null,
+    carryForwardExpiryCutoffDate: row.carry_forward_expiry_cutoff_date ?? null,
     requestCount: counts.get(row.id) ?? 0,
     createdAt: row.created_at,
   }));

@@ -31,6 +31,7 @@ const initialState: OrgActionState = {};
 export function LeaveTypesList({ leaveTypes }: { leaveTypes: LeaveTypeRow[] }) {
   const unpaid = leaveTypes.filter((row) => row.isUnpaid).length;
   const withAttachment = leaveTypes.filter((row) => row.requiresAttachment).length;
+  const withAccrual = leaveTypes.filter((row) => row.accrualFrequency === "monthly").length;
 
   return (
     <div className="space-y-6">
@@ -43,13 +44,14 @@ export function LeaveTypesList({ leaveTypes }: { leaveTypes: LeaveTypeRow[] }) {
             <HrLinkButton href="/hr/organization/leave-types/create">Add leave type</HrLinkButton>
           </div>
         }
-        description="Policies used for apply leave and employee entitlements."
+        description="Policies used for apply leave, automated accrual, and employee entitlements."
         title="Leave types"
       />
 
       <OrgStatCards
         items={[
           { label: "Leave types", value: leaveTypes.length, hint: "configured" },
+          { label: "Monthly accrual", value: withAccrual, hint: "automated jobs" },
           { label: "Unpaid", value: unpaid, hint: "policies" },
           { label: "Need attachment", value: withAttachment, hint: "e.g. MC" },
         ]}
@@ -58,13 +60,28 @@ export function LeaveTypesList({ leaveTypes }: { leaveTypes: LeaveTypeRow[] }) {
       <OrgTableShell
         emptyDescription="Create leave types so employees can apply for leave."
         emptyTitle="No leave types yet"
-        headers={["Name", "Entitlement", "Flags", "Requests", "Status", "Action"]}
+        headers={["Name", "Entitlement", "Accrual & Carry-Forward", "Flags", "Requests", "Status", "Action"]}
         isEmpty={leaveTypes.length === 0}
       >
         {leaveTypes.map((leaveType) => (
           <OrgTableRow key={leaveType.id}>
             <OrgTableCell variant="name">{leaveType.name}</OrgTableCell>
             <OrgTableCell>{leaveType.entitlementDays} days</OrgTableCell>
+            <OrgTableCell variant="muted">
+              <div className="text-xs space-y-0.5">
+                <div>
+                  {leaveType.accrualFrequency === "monthly"
+                    ? `Monthly (${leaveType.monthlyAccrualRate} d/mo)`
+                    : "Upfront annual"}
+                </div>
+                {leaveType.carryForwardEnabled ? (
+                  <div className="text-[var(--foreground-muted)]">
+                    Carry-over: max {leaveType.maxCarryForwardDays}d
+                    {leaveType.carryForwardExpiryCutoffDate ? ` (exp ${leaveType.carryForwardExpiryCutoffDate})` : ""}
+                  </div>
+                ) : null}
+              </div>
+            </OrgTableCell>
             <OrgTableCell variant="muted">
               {[
                 leaveType.isUnpaid ? "Unpaid" : "Paid",
@@ -107,34 +124,98 @@ export function LeaveTypeForm({ leaveType }: { leaveType?: LeaveTypeRow }) {
         description="Leave types appear on employee create and apply-leave screens."
         title={leaveType ? "Edit leave type" : "Create leave type"}
       >
-        <form action={formAction} className="space-y-5">
-          <HrField id="name" label="Leave type name">
-            <HrTextInput defaultValue={leaveType?.name ?? ""} id="name" name="name" required />
-          </HrField>
-          <HrField id="entitlementDays" label="Default entitlement (days)">
-            <HrTextInput
-              defaultValue={String(leaveType?.entitlementDays ?? 0)}
-              id="entitlementDays"
-              min={0}
-              name="entitlementDays"
-              step="0.5"
-              type="number"
-            />
-          </HrField>
-          <div className="space-y-3">
-            <HrCheckbox
-              defaultChecked={leaveType?.requiresAttachment ?? false}
-              id="requiresAttachment"
-              label="Requires attachment (e.g. medical certificate)"
-              name="requiresAttachment"
-            />
-            <HrCheckbox
-              defaultChecked={leaveType?.isUnpaid ?? false}
-              id="isUnpaid"
-              label="Unpaid leave"
-              name="isUnpaid"
-            />
+        <form action={formAction} className="space-y-6">
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-[var(--foreground-primary)]">Basic Details</h3>
+            <HrField id="name" label="Leave type name">
+              <HrTextInput defaultValue={leaveType?.name ?? ""} id="name" name="name" required />
+            </HrField>
+            <HrField id="entitlementDays" label="Default annual entitlement (days)">
+              <HrTextInput
+                defaultValue={String(leaveType?.entitlementDays ?? 0)}
+                id="entitlementDays"
+                min={0}
+                name="entitlementDays"
+                step="0.5"
+                type="number"
+              />
+            </HrField>
+            <div className="space-y-3 pt-1">
+              <HrCheckbox
+                defaultChecked={leaveType?.requiresAttachment ?? false}
+                id="requiresAttachment"
+                label="Requires attachment (e.g. medical certificate)"
+                name="requiresAttachment"
+              />
+              <HrCheckbox
+                defaultChecked={leaveType?.isUnpaid ?? false}
+                id="isUnpaid"
+                label="Unpaid leave"
+                name="isUnpaid"
+              />
+            </div>
           </div>
+
+          <div className="border-t border-[var(--border-secondary)] pt-4 space-y-4">
+            <h3 className="text-sm font-semibold text-[var(--foreground-primary)]">Accrual Automation Policy</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <HrField id="accrualFrequency" label="Accrual frequency">
+                <select
+                  className="w-full rounded-[var(--radius-md)] border border-[var(--border-primary)] bg-[var(--surface-primary)] px-3 py-2 text-sm text-[var(--foreground-primary)] focus:border-[var(--accent-primary)] focus:outline-none"
+                  defaultValue={leaveType?.accrualFrequency ?? "none"}
+                  id="accrualFrequency"
+                  name="accrualFrequency"
+                >
+                  <option value="none">None (Upfront annual allocation)</option>
+                  <option value="monthly">Monthly scheduled accrual</option>
+                  <option value="yearly">Yearly accrual</option>
+                </select>
+              </HrField>
+              <HrField id="monthlyAccrualRate" label="Monthly accrual rate (days/month)">
+                <HrTextInput
+                  defaultValue={String(leaveType?.monthlyAccrualRate ?? 0)}
+                  id="monthlyAccrualRate"
+                  min={0}
+                  name="monthlyAccrualRate"
+                  step="0.01"
+                  type="number"
+                />
+              </HrField>
+            </div>
+          </div>
+
+          <div className="border-t border-[var(--border-secondary)] pt-4 space-y-4">
+            <h3 className="text-sm font-semibold text-[var(--foreground-primary)]">Year-End Carry-Forward & Expiry</h3>
+            <div className="space-y-3">
+              <HrCheckbox
+                defaultChecked={leaveType?.carryForwardEnabled ?? false}
+                id="carryForwardEnabled"
+                label="Allow unused leave carry-forward to next year"
+                name="carryForwardEnabled"
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <HrField id="maxCarryForwardDays" label="Maximum carry-forward days">
+                <HrTextInput
+                  defaultValue={String(leaveType?.maxCarryForwardDays ?? 0)}
+                  id="maxCarryForwardDays"
+                  min={0}
+                  name="maxCarryForwardDays"
+                  step="0.5"
+                  type="number"
+                />
+              </HrField>
+              <HrField id="carryForwardExpiryCutoffDate" label="Carry-forward expiry cutoff (MM-DD)">
+                <HrTextInput
+                  defaultValue={leaveType?.carryForwardExpiryCutoffDate ?? "06-30"}
+                  id="carryForwardExpiryCutoffDate"
+                  name="carryForwardExpiryCutoffDate"
+                  placeholder="06-30"
+                />
+              </HrField>
+            </div>
+          </div>
+
           <OrgFormActions
             cancelHref="/hr/organization/leave-types"
             error={state.error}

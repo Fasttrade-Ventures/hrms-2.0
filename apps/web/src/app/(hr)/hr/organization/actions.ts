@@ -772,6 +772,12 @@ export async function createLeaveType(
     entitlementDays: String(formData.get("entitlementDays") ?? "0").trim(),
     requiresAttachment: readCheckbox(formData, "requiresAttachment"),
     isUnpaid: readCheckbox(formData, "isUnpaid"),
+    accrualFrequency: String(formData.get("accrualFrequency") ?? "none").trim(),
+    monthlyAccrualRate: String(formData.get("monthlyAccrualRate") ?? "0").trim(),
+    carryForwardEnabled: readCheckbox(formData, "carryForwardEnabled"),
+    maxCarryForwardDays: String(formData.get("maxCarryForwardDays") ?? "0").trim(),
+    carryForwardExpiryMonths: formData.get("carryForwardExpiryMonths") ? String(formData.get("carryForwardExpiryMonths")).trim() : null,
+    carryForwardExpiryCutoffDate: String(formData.get("carryForwardExpiryCutoffDate") ?? "").trim() || null,
   });
 
   if (!parsed.success) {
@@ -785,6 +791,12 @@ export async function createLeaveType(
     entitlement_days: parsed.data.entitlementDays,
     requires_attachment: parsed.data.requiresAttachment,
     is_unpaid: parsed.data.isUnpaid,
+    accrual_frequency: parsed.data.accrualFrequency,
+    monthly_accrual_rate: parsed.data.monthlyAccrualRate,
+    carry_forward_enabled: parsed.data.carryForwardEnabled,
+    max_carry_forward_days: parsed.data.maxCarryForwardDays,
+    carry_forward_expiry_months: parsed.data.carryForwardExpiryMonths,
+    carry_forward_expiry_cutoff_date: parsed.data.carryForwardExpiryCutoffDate,
   });
 
   if (error) {
@@ -811,6 +823,12 @@ export async function updateLeaveType(
     entitlementDays: String(formData.get("entitlementDays") ?? "0").trim(),
     requiresAttachment: readCheckbox(formData, "requiresAttachment"),
     isUnpaid: readCheckbox(formData, "isUnpaid"),
+    accrualFrequency: String(formData.get("accrualFrequency") ?? "none").trim(),
+    monthlyAccrualRate: String(formData.get("monthlyAccrualRate") ?? "0").trim(),
+    carryForwardEnabled: readCheckbox(formData, "carryForwardEnabled"),
+    maxCarryForwardDays: String(formData.get("maxCarryForwardDays") ?? "0").trim(),
+    carryForwardExpiryMonths: formData.get("carryForwardExpiryMonths") ? String(formData.get("carryForwardExpiryMonths")).trim() : null,
+    carryForwardExpiryCutoffDate: String(formData.get("carryForwardExpiryCutoffDate") ?? "").trim() || null,
   });
 
   if (!parsed.success) {
@@ -825,6 +843,12 @@ export async function updateLeaveType(
       entitlement_days: parsed.data.entitlementDays,
       requires_attachment: parsed.data.requiresAttachment,
       is_unpaid: parsed.data.isUnpaid,
+      accrual_frequency: parsed.data.accrualFrequency,
+      monthly_accrual_rate: parsed.data.monthlyAccrualRate,
+      carry_forward_enabled: parsed.data.carryForwardEnabled,
+      max_carry_forward_days: parsed.data.maxCarryForwardDays,
+      carry_forward_expiry_months: parsed.data.carryForwardExpiryMonths,
+      carry_forward_expiry_cutoff_date: parsed.data.carryForwardExpiryCutoffDate,
     })
     .eq("id", leaveTypeId)
     .eq("organization_id", organizationId);
