@@ -43,6 +43,14 @@
     {
       "path": "/api/cron/attendance-tardiness",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/leave-accrual",
+      "schedule": "0 0 1 * *"
+    },
+    {
+      "path": "/api/cron/leave-rollover",
+      "schedule": "0 0 1 1 *"
     }
   ]
 }

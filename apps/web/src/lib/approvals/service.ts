@@ -47,8 +47,14 @@ async function resolveApproverEmployeeId(
 export async function resolveUserIdForEmployee(
   organizationId: string,
   employeeId: string,
+  client?: ReturnType<typeof createAdminClient> | Awaited<ReturnType<typeof createClient>>,
 ): Promise<string | null> {
-  const admin = createAdminClient();
+  let admin: ReturnType<typeof createAdminClient> | Awaited<ReturnType<typeof createClient>>;
+  try {
+    admin = client ?? createAdminClient();
+  } catch {
+    return null;
+  }
   const { data, error } = await admin
     .from("organization_memberships")
     .select("user_id")

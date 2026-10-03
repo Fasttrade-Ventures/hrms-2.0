@@ -40,6 +40,9 @@ export default async function HrLeavePage({
             <HrLinkButton href="/hr/operations" variant="outline">
               Operations ({pendingApprovals.length} leave)
             </HrLinkButton>
+            <HrLinkButton href="/hr/leave/audit" variant="outline">
+              Balance audit log
+            </HrLinkButton>
             <HrLinkButton href="/hr/reports/leave-usage" variant="outline">
               Leave usage report
             </HrLinkButton>
