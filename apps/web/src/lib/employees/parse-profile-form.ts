@@ -72,6 +72,7 @@ export function parseEmployeeProfileFormData(formData: FormData): {
     joinDate: String(formData.get("joinDate") ?? "").trim(),
     employmentType: emptyToNull(formData.get("employmentType")),
     jobTitle: emptyToNull(formData.get("jobTitle")),
+    positionId: readOptionalUuid(formData, "positionId"),
     confirmationStatus: emptyToNull(formData.get("confirmationStatus")),
     annualLeaveEntitlement: String(formData.get("annualLeaveEntitlement") ?? "").trim() || undefined,
     annualLeaveCarryForward: String(formData.get("annualLeaveCarryForward") ?? "").trim() || undefined,

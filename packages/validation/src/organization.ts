@@ -136,6 +136,15 @@ export const createLeaveTypeSchema = z.object({
 
 export const updateLeaveTypeSchema = createLeaveTypeSchema;
 
+export const createPositionSchema = z.object({
+  title: z.string().min(1, "Position title is required.").max(200),
+  departmentId: z.string().uuid().optional().nullable(),
+  description: z.string().max(500).optional().nullable(),
+  isActive: z.boolean().default(true),
+});
+
+export const updatePositionSchema = createPositionSchema;
+
 export const createRosterEntrySchema = z.object({
   employeeId: z.string().uuid(),
   shiftId: z.string().uuid(),
@@ -149,6 +158,8 @@ export type CreateBranchInput = z.infer<typeof createBranchSchema>;
 export type UpdateBranchInput = z.infer<typeof updateBranchSchema>;
 export type CreateDepartmentInput = z.infer<typeof createDepartmentSchema>;
 export type UpdateDepartmentInput = z.infer<typeof updateDepartmentSchema>;
+export type CreatePositionInput = z.infer<typeof createPositionSchema>;
+export type UpdatePositionInput = z.infer<typeof updatePositionSchema>;
 export type CreateShiftInput = z.infer<typeof createShiftSchema>;
 export type UpdateShiftInput = z.infer<typeof updateShiftSchema>;
 export type CreateHolidayInput = z.infer<typeof createHolidaySchema>;
@@ -157,3 +168,4 @@ export type CreateLeaveTypeInput = z.infer<typeof createLeaveTypeSchema>;
 export type UpdateLeaveTypeInput = z.infer<typeof updateLeaveTypeSchema>;
 export type ImportHolidaysInput = z.infer<typeof importHolidaysSchema>;
 export type ListHolidaysInput = z.infer<typeof listHolidaysSchema>;
+

@@ -96,8 +96,18 @@ export function EmployeeProfileView({ employee }: { employee: EmployeeDetail }) 
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Badge variant={employee.status === "active" ? "secondary" : "outline"}>
-                {employee.status === "active" ? "Active" : employee.status}
+              <Badge
+                variant={
+                  employee.status === "active"
+                    ? "active"
+                    : employee.status === "inactive"
+                      ? "inactive"
+                      : employee.status === "terminated"
+                        ? "destructive"
+                        : "outline"
+                }
+              >
+                {employee.status === "active" ? "Active" : employee.status === "inactive" ? "Inactive" : employee.status}
               </Badge>
               <Badge variant={hasLogin ? "secondary" : "outline"}>
                 {hasLogin ? "Login linked" : "No login"}

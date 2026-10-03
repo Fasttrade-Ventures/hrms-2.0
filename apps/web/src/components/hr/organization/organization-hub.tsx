@@ -21,6 +21,12 @@ const areaMeta: Record<
     cta: "Manage departments",
     createHref: "/hr/organization/departments/create",
   },
+  positions: {
+    icon: "organization",
+    blurb: "Standardized job titles and position catalog.",
+    cta: "Manage positions",
+    createHref: "/hr/organization/positions/create",
+  },
   shifts: {
     icon: "attendance",
     blurb: "Attendance patterns assigned on employee profiles.",
@@ -74,6 +80,9 @@ export function OrganizationHub({ data }: { data: OrgHubData }) {
           </div>
           <div className="flex flex-wrap gap-2">
             <HrLinkButton href="/hr/organization/branches/create">Add branch</HrLinkButton>
+            <HrLinkButton href="/hr/organization/positions/create" variant="outline">
+              Add position
+            </HrLinkButton>
             <HrLinkButton href="/hr/organization/leave-types" variant="outline">
               Leave types
             </HrLinkButton>
@@ -82,10 +91,11 @@ export function OrganizationHub({ data }: { data: OrgHubData }) {
       </Card>
 
       <HrStatCards
-        columns={5}
+        columns={3}
         items={[
           { label: "Branches", value: data.branchCount },
           { label: "Departments", value: data.departmentCount },
+          { label: "Positions", value: data.positionCount },
           { label: "Shifts", value: data.shiftCount },
           { label: "Holidays", value: data.holidayCount },
           { label: "Leave types", value: data.leaveTypeCount },

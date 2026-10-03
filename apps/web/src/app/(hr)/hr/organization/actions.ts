@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import {
   createBranchSchema,
   createDepartmentSchema,
+  createPositionSchema,
   createHolidaySchema,
   createLeaveTypeSchema,
   createShiftSchema,
@@ -15,6 +16,7 @@ import {
   createRosterEntrySchema,
   updateBranchSchema,
   updateDepartmentSchema,
+  updatePositionSchema,
   updateHolidaySchema,
   updateLeaveTypeSchema,
   updateShiftSchema,
@@ -294,6 +296,118 @@ export async function deleteDepartment(departmentId: string): Promise<OrgActionS
 
   revalidateOrg(["/hr/organization/departments"]);
   return { success: "Department deleted." };
+}
+
+export async function createPosition(
+  _prevState: OrgActionState,
+  formData: FormData,
+): Promise<OrgActionState> {
+  await requireRole("hr_administrator");
+  const organizationId = await getOrganizationId();
+
+  const parsed = createPositionSchema.safeParse({
+    title: String(formData.get("title") ?? "").trim(),
+    departmentId: readOptionalUuid(formData, "departmentId"),
+    description: String(formData.get("description") ?? "").trim() || null,
+    isActive: formData.has("isActive") ? formData.get("isActive") === "true" || formData.get("isActive") === "on" : true,
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid position details." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("positions").insert({
+    organization_id: organizationId,
+    title: parsed.data.title,
+    department_id: parsed.data.departmentId ?? null,
+    description: parsed.data.description ?? null,
+    is_active: parsed.data.isActive,
+  });
+
+  if (error) {
+    if (error.message.includes("duplicate") || error.message.includes("unique")) {
+      return { error: "A position with this title already exists in your organization." };
+    }
+    return { error: error.message };
+  }
+
+  revalidateOrg(["/hr/organization/positions"]);
+  return { success: `Position "${parsed.data.title}" created successfully.` };
+}
+
+export async function updatePosition(
+  positionId: string,
+  _prevState: OrgActionState,
+  formData: FormData,
+): Promise<OrgActionState> {
+  await requireRole("hr_administrator");
+  const organizationId = await getOrganizationId();
+
+  const parsed = updatePositionSchema.safeParse({
+    title: String(formData.get("title") ?? "").trim(),
+    departmentId: readOptionalUuid(formData, "departmentId"),
+    description: String(formData.get("description") ?? "").trim() || null,
+    isActive: formData.get("isActive") === "true" || formData.get("isActive") === "on",
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid position details." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("positions")
+    .update({
+      title: parsed.data.title,
+      department_id: parsed.data.departmentId ?? null,
+      description: parsed.data.description ?? null,
+      is_active: parsed.data.isActive,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", positionId)
+    .eq("organization_id", organizationId);
+
+  if (error) {
+    if (error.message.includes("duplicate") || error.message.includes("unique")) {
+      return { error: "A position with this title already exists in your organization." };
+    }
+    return { error: error.message };
+  }
+
+  revalidateOrg([
+    "/hr/organization/positions",
+    `/hr/organization/positions/${positionId}/edit`,
+  ]);
+  return { success: "Position saved." };
+}
+
+export async function deletePosition(positionId: string): Promise<OrgActionState> {
+  await requireRole("hr_administrator");
+  const organizationId = await getOrganizationId();
+  const supabase = await createClient();
+
+  const { count, error: countError } = await supabase
+    .from("employees")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", organizationId)
+    .eq("position_id", positionId);
+
+  if (countError) return { error: countError.message };
+  if ((count ?? 0) > 0) {
+    return { error: "Cannot delete a position that still has employees assigned." };
+  }
+
+  const { error } = await supabase
+    .from("positions")
+    .delete()
+    .eq("id", positionId)
+    .eq("organization_id", organizationId);
+
+  if (error) return { error: error.message };
+
+  revalidateOrg(["/hr/organization/positions"]);
+  return { success: "Position deleted." };
 }
 
 export async function createShift(

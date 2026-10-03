@@ -58,6 +58,7 @@ export type EmployeeDetail = {
   payGroupId: string | null;
   employmentType: "full_time" | "part_time" | "contract" | "intern" | null;
   jobTitle: string | null;
+  positionId: string | null;
   confirmationStatus: "probation" | "confirmed" | "contract" | null;
   annualLeaveEntitlement: number;
   annualLeaveCarryForward: number;
@@ -322,11 +323,13 @@ export async function getEmployeeDetail(employeeId: string): Promise<EmployeeDet
       pay_group_id,
       employment_type,
       job_title,
+      position_id,
       confirmation_status,
       annual_leave_entitlement,
       annual_leave_carry_forward,
       branches(name),
       departments(name),
+      positions(title),
       shifts(name),
       pay_groups(name),
       employee_profiles(
@@ -410,7 +413,8 @@ export async function getEmployeeDetail(employeeId: string): Promise<EmployeeDet
     shiftId: employee.shift_id,
     payGroupId: employee.pay_group_id,
     employmentType: employee.employment_type,
-    jobTitle: employee.job_title,
+    jobTitle: (employee.positions as { title?: string } | null)?.title ?? employee.job_title,
+    positionId: employee.position_id ?? null,
     confirmationStatus: employee.confirmation_status,
     annualLeaveEntitlement: Number(employee.annual_leave_entitlement ?? 14),
     annualLeaveCarryForward: Number(employee.annual_leave_carry_forward ?? 0),
@@ -508,7 +512,7 @@ export async function getEmployeeOptions() {
   const supabase = await createClient();
   const organizationId = await requireOrganizationId();
 
-  const [branches, departments, managers, shifts, payGroups, leaveTypes] = await Promise.all([
+  const [branches, departments, managers, shifts, payGroups, leaveTypes, positions] = await Promise.all([
     supabase.from("branches").select("id, name").eq("organization_id", organizationId).order("name"),
     supabase.from("departments").select("id, name, branch_id").eq("organization_id", organizationId).order("name"),
     supabase
@@ -520,6 +524,12 @@ export async function getEmployeeOptions() {
     supabase.from("shifts").select("id, name").eq("organization_id", organizationId).order("name"),
     supabase.from("pay_groups").select("id, name").eq("organization_id", organizationId).order("name"),
     supabase.from("leave_types").select("id, name").eq("organization_id", organizationId).order("name"),
+    supabase
+      .from("positions")
+      .select("id, title, department_id, is_active")
+      .eq("organization_id", organizationId)
+      .eq("is_active", true)
+      .order("title"),
   ]);
 
   return {
@@ -529,6 +539,7 @@ export async function getEmployeeOptions() {
     shifts: shifts.data ?? [],
     payGroups: payGroups.data ?? [],
     leaveTypes: leaveTypes.data ?? [],
+    positions: (positions.data ?? []) as Array<{ id: string; title: string; department_id: string | null; is_active: boolean }>,
   };
 }
 

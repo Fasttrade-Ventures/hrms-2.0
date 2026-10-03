@@ -37,6 +37,7 @@ export function CreateEmployeeForm({
   joinDate,
   branches,
   departments,
+  positions = [],
   managers,
   shifts,
   payGroups,
@@ -46,6 +47,7 @@ export function CreateEmployeeForm({
   joinDate: string;
   branches: Option[];
   departments: Option[];
+  positions?: Array<{ id: string; title: string; department_id?: string | null }>;
   managers: Array<{ id: string; full_name: string; employee_number: string }>;
   shifts: Option[];
   payGroups: Option[];
@@ -91,8 +93,19 @@ export function CreateEmployeeForm({
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <HrField id="jobTitle" label="Position / job title">
-              <HrTextInput id="jobTitle" name="jobTitle" />
+            <HrField hint="Select from standardized positions catalog" id="positionId" label="Position / job title">
+              {positions.length > 0 ? (
+                <HrSelect defaultValue="" id="positionId" name="positionId">
+                  <option value="">-- Select position --</option>
+                  {positions.map((pos) => (
+                    <option key={pos.id} value={pos.id}>
+                      {pos.title}
+                    </option>
+                  ))}
+                </HrSelect>
+              ) : (
+                <HrTextInput id="jobTitle" name="jobTitle" placeholder="e.g. Software Engineer" />
+              )}
             </HrField>
             <HrField id="portalRole" label="Portal role">
               <HrSelect defaultValue="employee" id="portalRole" name="portalRole">

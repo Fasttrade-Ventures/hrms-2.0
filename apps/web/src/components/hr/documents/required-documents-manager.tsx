@@ -161,7 +161,7 @@ export function RequiredDocumentsManager({ rows }: { rows: RequiredDocumentRow[]
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <p className="font-medium">{row.name}</p>
-                      <Badge variant={row.isActive ? "secondary" : "outline"}>
+                      <Badge variant={row.isActive ? "active" : "inactive"}>
                         {row.isActive ? "Active" : "Inactive"}
                       </Badge>
                     </div>

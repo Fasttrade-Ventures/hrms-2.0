@@ -27,11 +27,11 @@ const DIRECTORY_GRID =
 function statusVariant(status: EmployeeListItem["displayStatus"]) {
   switch (status) {
     case "active":
-      return "secondary" as const;
+      return "active" as const;
     case "on_leave":
-      return "outline" as const;
+      return "warning" as const;
     case "inactive":
-      return "outline" as const;
+      return "inactive" as const;
     case "terminated":
       return "destructive" as const;
   }

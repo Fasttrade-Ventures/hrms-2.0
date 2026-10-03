@@ -40,6 +40,16 @@ export async function createEmployeeRecord(
     throw new Error("An employee with this email or employee number already exists.");
   }
 
+  let jobTitle = input.jobTitle ?? null;
+  if (input.positionId && !jobTitle) {
+    const { data: pos } = await admin
+      .from("positions")
+      .select("title")
+      .eq("id", input.positionId)
+      .maybeSingle();
+    if (pos?.title) jobTitle = pos.title;
+  }
+
   const { data: employee, error: employeeError } = await admin
     .from("employees")
     .insert({
@@ -53,7 +63,8 @@ export async function createEmployeeRecord(
       shift_id: input.shiftId ?? null,
       pay_group_id: input.payGroupId ?? null,
       employment_type: input.employmentType ?? null,
-      job_title: input.jobTitle ?? null,
+      job_title: jobTitle,
+      position_id: input.positionId ?? null,
       confirmation_status: input.confirmationStatus ?? null,
       annual_leave_entitlement: input.annualLeaveEntitlement ?? 14,
       annual_leave_carry_forward: input.annualLeaveCarryForward ?? 0,

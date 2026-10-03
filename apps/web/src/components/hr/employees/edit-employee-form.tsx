@@ -46,6 +46,7 @@ export function EditEmployeeForm({
   employee,
   branches,
   departments,
+  positions = [],
   managers,
   shifts,
   payGroups,
@@ -55,6 +56,7 @@ export function EditEmployeeForm({
   employee: EmployeeDetail;
   branches: Option[];
   departments: Option[];
+  positions?: Array<{ id: string; title: string; department_id?: string | null }>;
   managers: Array<{ id: string; full_name: string; employee_number: string }>;
   shifts: Option[];
   payGroups: Option[];
@@ -86,6 +88,32 @@ export function EditEmployeeForm({
     ) ?? "employee";
   const [currentPortalRole, setCurrentPortalRole] = useState(portalRole);
 
+  const resolvedPositions = useMemo(() => {
+    const list = [...positions];
+    if (employee.positionId && !list.some((p) => p.id === employee.positionId)) {
+      list.push({
+        id: employee.positionId,
+        title: employee.jobTitle ?? "Current Position",
+        department_id: employee.departmentId,
+      });
+    }
+    return list;
+  }, [positions, employee.positionId, employee.jobTitle, employee.departmentId]);
+
+  const initialPositionId = useMemo(() => {
+    if (employee.positionId && resolvedPositions.some((p) => p.id === employee.positionId)) {
+      return employee.positionId;
+    }
+    if (employee.jobTitle) {
+      const normalized = employee.jobTitle.trim().toLowerCase();
+      const match = resolvedPositions.find((p) => p.title.trim().toLowerCase() === normalized);
+      if (match) return match.id;
+    }
+    return employee.positionId ?? "";
+  }, [employee.positionId, employee.jobTitle, resolvedPositions]);
+
+  const [positionId, setPositionId] = useState(initialPositionId);
+
   useEffect(() => {
     setShiftId(employee.shiftId ?? "");
   }, [employee.shiftId]);
@@ -97,6 +125,10 @@ export function EditEmployeeForm({
   useEffect(() => {
     setDepartmentId(employee.departmentId ?? "");
   }, [employee.departmentId]);
+
+  useEffect(() => {
+    setPositionId(initialPositionId);
+  }, [initialPositionId]);
 
   useEffect(() => {
     setManagerEmployeeId(employee.managerEmployeeId ?? "");
@@ -173,8 +205,33 @@ export function EditEmployeeForm({
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <HrField id="jobTitle" label="Position / job title">
-                <HrTextInput defaultValue={employee.jobTitle ?? ""} id="jobTitle" name="jobTitle" />
+              <HrField hint="Select from standardized positions catalog" id="positionId" label="Position / job title">
+                {resolvedPositions.length > 0 ? (
+                  <>
+                    <HrSelect
+                      id="positionId"
+                      name="positionId"
+                      onChange={(e) => setPositionId(e.target.value)}
+                      value={positionId}
+                    >
+                      <option value="">
+                        {employee.jobTitle && !positionId
+                          ? `${employee.jobTitle} (Current - unlinked)`
+                          : "-- Select position --"}
+                      </option>
+                      {resolvedPositions.map((pos) => (
+                        <option key={pos.id} value={pos.id}>
+                          {pos.title}
+                        </option>
+                      ))}
+                    </HrSelect>
+                    {employee.jobTitle && !positionId ? (
+                      <input name="jobTitle" type="hidden" value={employee.jobTitle} />
+                    ) : null}
+                  </>
+                ) : (
+                  <HrTextInput defaultValue={employee.jobTitle ?? ""} id="jobTitle" name="jobTitle" placeholder="e.g. Software Engineer" />
+                )}
               </HrField>
               <HrField id="portalRole" label="Portal role">
                 <HrSelect
