@@ -16,6 +16,9 @@ function isPublicPath(pathname: string): boolean {
   if (pathname === "/") return true;
   if (pathname === "/api/health") return true;
   if (pathname.startsWith("/api/cron/")) return true;
+  if (pathname.startsWith("/api/webhooks/")) return true;
+  if (pathname.startsWith("/api/v1/")) return true;
+  if (pathname === "/api/register") return true;
   if (pathname === "/api/auth/logout") return true;
   if (pathname === "/unauthorized") return true;
   if (isPublicAuthPath(pathname)) return true;
@@ -24,7 +27,11 @@ function isPublicPath(pathname: string): boolean {
 
 /** Paths that must not wait on Supabase at all (no session refresh needed). */
 function isAuthBypassPath(pathname: string): boolean {
-  return pathname === "/api/health" || pathname.startsWith("/api/cron/");
+  return (
+    pathname === "/api/health" ||
+    pathname.startsWith("/api/cron/") ||
+    pathname.startsWith("/api/webhooks/")
+  );
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {

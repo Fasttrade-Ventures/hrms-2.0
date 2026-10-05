@@ -21,7 +21,7 @@ const saasBrand = {
   subhead:
     "Create your organization, invite your team, and manage leave, attendance, and Malaysia payroll in one place.",
   features: [
-    "Start free with Core HRMS",
+    "Start free with Core BukuHR",
     "Upgrade to Professional automation anytime",
     "Invite employees with role-based access",
   ],

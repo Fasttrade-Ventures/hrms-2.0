@@ -10,6 +10,8 @@
 
 **Spec:** [2026-08-27-billplz-saas-billing-design.md](../specs/2026-08-27-billplz-saas-billing-design.md)
 
+**Price and provider revision (6 Oct 2026):** this plan records the Billplz build. SaaS checkout is now Stripe. Current prices are in [docs/pricing.md](../../pricing.md): Professional RM 249 / RM 18 extra, Enterprise RM 449 / RM 29 extra. Do not add new Billplz work, and do not re-seed the old RM 129 / RM 179 amounts.
+
 ## Global Constraints
 
 - `DEPLOYMENT_MODE=saas` only — gate all billing code with `isSaasMode()`

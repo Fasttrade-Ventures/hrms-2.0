@@ -37,7 +37,7 @@ export default async function OwnerBillingPage({
   return (
     <div className="space-y-6">
       <PortalPageHeader
-        description="Manage your HRMS subscription and payment history."
+        description="Manage your BukuHR subscription and payment history."
         title="Billing"
       />
 

@@ -21,12 +21,7 @@ export async function POST(request: Request) {
   const rawBody = await request.text();
   const payload = parseFormBody(rawBody);
   const xSignatureKey = process.env.BILLPLZ_X_SIGNATURE_KEY?.trim();
-
-  if (process.env.NODE_ENV === "production") {
-    if (!xSignatureKey || !verifyBillplzCallbackSignature(payload, xSignatureKey)) {
-      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
-    }
-  } else if (xSignatureKey && !verifyBillplzCallbackSignature(payload, xSignatureKey)) {
+  if (!xSignatureKey || !verifyBillplzCallbackSignature(payload, xSignatureKey)) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 

@@ -80,7 +80,7 @@ export function generatePayslipPdf(data: {
 
   // Footer note
   stream += "BT\n/F1 8 Tf\n0.48 0.56 0.49 rg\n50 330 Td (* This is a computer-generated document and does not require a physical signature.) Tj\nET\n";
-  stream += "BT\n/F1 8 Tf\n0.48 0.56 0.49 rg\n50 318 Td (Generated securely via HRMS Portal.) Tj\nET\n";
+  stream += "BT\n/F1 8 Tf\n0.48 0.56 0.49 rg\n50 318 Td (Generated securely via BukuHR.) Tj\nET\n";
 
   const catalog = `1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n`;
   const pages = `2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n`;

@@ -7,12 +7,12 @@ export function buildEmployeeActivationEmail({
   organizationName: string;
   activationLink: string;
 }): { subject: string; html: string; text: string } {
-  const subject = `Activate your ${organizationName} HRMS account`;
+  const subject = `Activate your ${organizationName} BukuHR account`;
 
   const text = [
     `Hi ${fullName},`,
     "",
-    `You've been added to ${organizationName} on HRMS.`,
+    `You've been added to ${organizationName} on BukuHR.`,
     "Open the link below to set your password and activate your account:",
     "",
     activationLink,
@@ -23,7 +23,7 @@ export function buildEmployeeActivationEmail({
   const html = `
     <div style="font-family: system-ui, sans-serif; color: #1b3a28; max-width: 560px;">
       <p>Hi ${fullName},</p>
-      <p>You've been added to <strong>${organizationName}</strong> on HRMS.</p>
+      <p>You've been added to <strong>${organizationName}</strong> on BukuHR.</p>
       <p>Open the button below to set your password and activate your account.</p>
       <p style="margin: 32px 0;">
         <a href="${activationLink}" style="background:#2d5e3a;color:#fff;padding:12px 20px;text-decoration:none;font-weight:600;">

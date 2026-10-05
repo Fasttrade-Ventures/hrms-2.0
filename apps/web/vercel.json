@@ -63,6 +63,14 @@
     {
       "path": "/api/cron/record-retention",
       "schedule": "0 3 * * 0"
+    },
+    {
+      "path": "/api/cron/state-holidays",
+      "schedule": "0 2 2 1 *"
+    },
+    {
+      "path": "/api/cron/celebrations",
+      "schedule": "0 0 * * *"
     }
   ]
 }

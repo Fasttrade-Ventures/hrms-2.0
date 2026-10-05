@@ -55,7 +55,7 @@ export function buildDocumentComplianceEmail(input: {
       <p>${intro}</p>
       <p>${docLine}</p>
       ${expiryLine}
-      <p>Please sign in to HRMS and upload or renew the document if required.</p>
+      <p>Please sign in to BukuHR and upload or renew the document if required.</p>
     </div>
   `.trim();
 
@@ -63,7 +63,7 @@ export function buildDocumentComplianceEmail(input: {
     intro,
     docLineText,
     input.expiresAt ? `Expiry date: ${input.expiresAt}` : "",
-    "Please sign in to HRMS and upload or renew the document if required.",
+    "Please sign in to BukuHR and upload or renew the document if required.",
   ]
     .filter(Boolean)
     .join("\n");

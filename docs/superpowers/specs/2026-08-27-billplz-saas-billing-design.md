@@ -2,9 +2,11 @@
 
 **Date:** 2026-08-27  
 **Status:** Pricing **approved** (2026-08-27); implementation plan ready  
-**Scope:** SaaS mode only (`DEPLOYMENT_MODE=saas`). Standalone stays offline/sales-led (no Billplz).  
+**Provider decision (6 Oct 2026):** SaaS checkout is **Stripe**, not Billplz. New charges use Stripe Checkout (`apps/web/src/lib/billing/stripe.ts`). Prices and packages are in [docs/pricing.md](../../pricing.md). This file is the record of the earlier Billplz build. Do not extend Billplz.
+
+**Scope:** SaaS mode only (`DEPLOYMENT_MODE=saas`). Standalone stays an invoice and uses the standalone rates in `docs/pricing.md`.  
 **Depends on:** Dual-mode isolation complete ([dual-mode plan](../plans/2026-08-27-dual-mode-saas-standalone-plan.md), packages #1–6 + Phase 2).  
-**Provider:** [Billplz API v4](https://www.billplz.com/api) (MYR, FPX/cards/e-wallets)
+**Built provider (to be replaced):** [Billplz API v4](https://www.billplz.com/api). Target provider: Stripe, MYR, card.
 
 ---
 
@@ -68,7 +70,7 @@ Platform admin sets tier; Billplz used only for manual invoice links sent by ops
 | --- | --- |
 | Minimal build | Not self-serve SaaS |
 
-**Recommendation:** **Option B** for v1 GA, with **Option A** as a config flag (`BILLING_SIGNUP_MODE=pay_first|trial_first`) for a later sales-led funnel.
+**Chosen signup:** Option B. Register creates the organization, signs the owner in, and starts a 14-day trial. Payment is Stripe after the trial. Pay-first signup is not the SaaS path.
 
 ---
 
@@ -128,8 +130,8 @@ Reuse `ProductTier`: `core` | `professional` | `enterprise`.
 | Tier | Included staff | Base / month | Overage / extra staff | Base / year (10 mo) |
 | --- | --- | --- | --- | --- |
 | **Core** | 10 | **RM 69** | **RM 6** | **RM 690** |
-| **Professional** | 10 | **RM 129** | **RM 12** | **RM 1,290** |
-| **Enterprise** | 10 | **RM 179** | **RM 17** | **RM 1,790** |
+| **Professional** | 10 | **RM 249** | **RM 18** | **RM 2,490** |
+| **Enterprise** | 10 | **RM 449** | **RM 29** | **RM 4,490** |
 
 **Monthly total formula:**
 
@@ -151,12 +153,11 @@ annual_billplz = round(annual_subtotal × 1.08)
 
 | Staff | Core | Professional | Enterprise |
 | --- | --- | --- | --- |
-| 5 | RM 69 | RM 129 | RM 179 |
-| 10 | RM 69 | RM 129 | RM 179 |
-| 20 | RM 129 | RM 249 | RM 349 |
-| 50 | RM 309 | RM 609 | RM 859 |
+| 10 | RM 69 | RM 249 | RM 449 |
+| 20 | RM 129 | RM 429 | RM 739 |
+| 50 | RM 309 | RM 969 | RM 1,609 |
 
-**Register / billing UI copy:** show monthly price and annual equivalent, e.g. “RM 129/mo or RM 1,290/yr (2 months free)”.
+**Register / billing UI copy:** show monthly price and annual equivalent, e.g. “RM 249/mo or RM 2,490/yr (2 months free)”.
 
 ---
 
@@ -429,10 +430,12 @@ CI: `saas-billing-unit` job with `DEPLOYMENT_MODE=saas`, no live Billplz calls.
 
 | | Standalone | SaaS |
 | --- | --- | --- |
-| Payment | Offline invoice / contract | Billplz subscription bills |
+| Payment | Invoice. Setup RM 5,000 once. License from `docs/pricing.md` | Stripe Checkout for the invoice total. |
+| Packages | Same Core / Professional / Enterprise features | Same three packages |
 | Tier source | `PRODUCT_TIER` env + owner settings | `organization_subscriptions` → DB tier |
 | Register | Disabled | Plan + trial |
-| Billplz | Not used | Required for self-serve GA |
+| Card checkout | Not used | Stripe Checkout. |
+| Public site | Quote page only | Homepage cards |
 
 ---
 
@@ -441,11 +444,11 @@ CI: `saas-billing-unit` job with `DEPLOYMENT_MODE=saas`, no live Billplz calls.
 | # | Decision | Approved |
 | --- | --- | --- |
 | 1 | Pricing model | Option A (base + overage) |
-| 2 | Professional @ 20 staff | RM 249/mo OK |
+| 2 | Professional price | RM 249/mo for 10 staff, then RM 18 per extra employee (revised 6 Oct 2026) |
 | 3 | Micro hook | Trial only (14 days) |
 | 4 | Billing interval | Monthly **or** annual (2 months free) |
 | 5 | Included headcount | 10 (all tiers) |
-| 6 | SST | +8% on Billplz bill |
+| 6 | SST | +8% on the Stripe charge |
 | 7 | Trial length | 14 days |
 | 8 | Past-due grace | 7 days partial lock |
 | 9 | Pay-first signup | Defer v2 |

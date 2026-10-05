@@ -10,7 +10,10 @@ import {
   getAnnouncementViewer,
   listDashboardAnnouncementItems,
 } from "@/lib/announcements/queries";
-import { getTodayAttendance } from "@/lib/employee/attendance";
+import {
+  getClockInSelfieRequired,
+  getTodayAttendance,
+} from "@/lib/employee/attendance";
 import { getLeaveBalances, listLeaveRequests, requireEmployeeContext, type LeaveBalanceRow } from "@/lib/employee/leave";
 import { getMyDocumentComplianceSummary } from "@/lib/employee/documents";
 import {
@@ -43,6 +46,9 @@ export default async function Page() {
   const employeeContext = employee ? await requireEmployeeContext().catch(() => null) : null;
 
   const todayAttendance = await getTodayAttendance().catch(() => null);
+  const requireSelfie = employeeContext
+    ? await getClockInSelfieRequired(employeeContext.organizationId).catch(() => false)
+    : false;
 
   const [
     balances,
@@ -232,6 +238,7 @@ export default async function Page() {
           <DashboardClockPanel
             geofence={attendanceContext.geofence}
             locationModuleEnabled={attendanceContext.locationModuleEnabled}
+            requireSelfie={requireSelfie}
             today={todayAttendance}
           />
         </div>

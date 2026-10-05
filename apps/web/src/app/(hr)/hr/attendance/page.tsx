@@ -10,6 +10,9 @@ import { parseReportFilters } from "@/lib/reports/filters";
 import { runReport } from "@/lib/reports/run";
 
 import { exportReportCsv, logReportPrint } from "../reports/actions";
+import { setClockInSelfieRequired } from "./actions";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export default async function HrAttendancePage({
   searchParams,
@@ -29,12 +32,25 @@ export default async function HrAttendancePage({
   ]);
 
   const hasLocation = entitlements.hasModule("location");
+  const admin = createAdminClient();
+  const { data: org } = await admin
+    .from("organizations")
+    .select("require_clock_in_selfie")
+    .eq("id", await requireOrganizationId())
+    .maybeSingle();
+  const selfieOn = Boolean(org?.require_clock_in_selfie);
 
   return (
     <div className="space-y-6">
       <PortalPageHeader
         actions={
           <div className="flex flex-wrap gap-2">
+            <form action={setClockInSelfieRequired}>
+              <input name="enabled" type="hidden" value={selfieOn ? "false" : "true"} />
+              <button className="text-xs underline" type="submit">
+                {selfieOn ? "Turn off selfie clock-in" : "Require selfie on clock-in"}
+              </button>
+            </form>
             <HrLinkButton href="/hr/reports/attendance-daily" variant="outline">
               Daily log
             </HrLinkButton>

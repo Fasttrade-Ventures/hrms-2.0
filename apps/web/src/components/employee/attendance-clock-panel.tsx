@@ -25,10 +25,12 @@ export function AttendanceClockPanel({
   today,
   geofence,
   locationModuleEnabled,
+  requireSelfie = false,
 }: {
   today: TodayAttendance | null;
   geofence: GeofenceConfig | null;
   locationModuleEnabled: boolean;
+  requireSelfie?: boolean;
 }) {
   const [locationState, setLocationState] = useState<LocationState>("idle");
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -330,6 +332,9 @@ export function AttendanceClockPanel({
                 <form action={clockInAction} onSubmit={handleClockInSubmit}>
                   <input name="latitude" type="hidden" value={coords?.latitude ?? ""} />
                   <input name="longitude" type="hidden" value={coords?.longitude ?? ""} />
+                  {requireSelfie ? (
+                    <input accept="image/*" capture="user" className="mb-2 block text-xs text-white" name="selfie" required type="file" />
+                  ) : null}
                   <button
                     className="px-5 py-2.5 rounded-xl text-sm font-bold bg-white text-[var(--accent-deep)] hover:bg-[var(--surface-primary)] active:translate-y-px transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md flex items-center gap-2 cursor-pointer"
                     disabled={clockInPending || locationState === "loading"}

@@ -8,14 +8,14 @@ export function AuthBrand({ inverted = false }: { inverted?: boolean }) {
           inverted ? "bg-white text-[var(--surface-inverse)]" : "bg-[var(--accent-primary)] text-white"
         }`}
       >
-        <span className="text-lg font-bold leading-none">H</span>
+        <span className="text-lg font-bold leading-none">B</span>
       </div>
       <span
         className={`text-xl font-bold ${
           inverted ? "text-[var(--foreground-inverse)]" : "text-[var(--foreground-primary)]"
         }`}
       >
-        HRMS
+        BukuHR
       </span>
     </div>
   );

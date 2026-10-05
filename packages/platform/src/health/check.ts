@@ -56,9 +56,8 @@ export async function runHealthChecks(): Promise<HealthReport> {
   };
 
   if (billingEnabled) {
-    env.BILLPLZ_API_KEY = envPresent("BILLPLZ_API_KEY");
-    env.BILLPLZ_X_SIGNATURE_KEY = envPresent("BILLPLZ_X_SIGNATURE_KEY");
-    env.BILLPLZ_COLLECTION_PROFESSIONAL = envPresent("BILLPLZ_COLLECTION_PROFESSIONAL");
+    env.STRIPE_SECRET_KEY = envPresent("STRIPE_SECRET_KEY");
+    env.STRIPE_WEBHOOK_SECRET = envPresent("STRIPE_WEBHOOK_SECRET");
   }
 
   const [supabase, r2, resend, ops] = await Promise.all([

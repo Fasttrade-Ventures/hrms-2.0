@@ -58,7 +58,7 @@ export default async function IntegrationsHubPage() {
     return (
       <div className="space-y-6">
         <PortalPageHeader
-          description="Connect HRMS to external systems, accounting, and security tools."
+          description="Connect BukuHR to external systems, accounting, and security tools."
           title="Integrations"
         />
         <p className="rounded-[var(--radius-md)] border border-[var(--border-primary)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--foreground-secondary)]">

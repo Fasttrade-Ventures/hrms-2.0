@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 
 import { requireActiveSubscription } from "@/lib/billing/subscription-gate";
-import { getImpersonationOrgId } from "@/lib/platform/impersonation-cookie";
 import { getSession } from "@/lib/auth/session";
 
 /** Cookie for multi-membership active organization (SaaS). */
@@ -29,22 +28,14 @@ export async function setActiveOrganizationCookie(organizationId: string): Promi
 
 /**
  * Resolves the organization for the current request.
- * Priority: impersonation → standalone DEFAULT → active-org cookie (validated in session) → session membership.
+ * SaaS uses the session membership. Impersonation is honored only when that
+ * session already belongs to a platform administrator.
+ * Standalone uses DEFAULT_ORGANIZATION_ID.
  */
 export async function getEffectiveOrganizationId(): Promise<string | null> {
   const deploymentMode = process.env.DEPLOYMENT_MODE ?? "standalone";
-  let impersonateOrgId: string | null = null;
-  try {
-    impersonateOrgId = await getImpersonationOrgId();
-  } catch {
-    impersonateOrgId = null;
-  }
 
-  if (impersonateOrgId) {
-    return impersonateOrgId;
-  }
-
-  if (deploymentMode === "standalone") {
+  if (deploymentMode !== "saas") {
     return process.env.DEFAULT_ORGANIZATION_ID ?? null;
   }
 

@@ -75,5 +75,14 @@ export function formatNotificationMessage(row: NotificationRow): string {
     const graceText = graceMinutes > 0 ? ` (grace ended after ${graceMinutes}m)` : "";
     return `Tardiness alert: You have not clocked in for today's shift starting at ${shiftStart}${graceText}.`;
   }
+  if (row.template === "celebration.birthday") {
+    return String(row.payload.message ?? "Happy birthday from BukuHR.");
+  }
+  if (row.template === "celebration.anniversary") {
+    return String(row.payload.message ?? "Happy work anniversary from BukuHR.");
+  }
+  if (row.template === "celebration.digest") {
+    return String(row.payload.message ?? "Someone on the team has a celebration today.");
+  }
   return row.template;
 }

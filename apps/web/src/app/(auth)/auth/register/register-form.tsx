@@ -25,7 +25,7 @@ export function RegisterForm() {
   return (
     <>
       <AuthCardHeader
-        subtitle="14-day Professional trial · pay via Billplz when ready"
+        subtitle="14-day Professional trial · pay with Stripe when ready"
         title="Register organization"
       />
 

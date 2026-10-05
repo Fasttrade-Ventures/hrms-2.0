@@ -491,6 +491,18 @@ describe("clockIn JIT past stale session auto clock-out", () => {
             }),
           };
         }
+        if (table === "organizations") {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: { require_clock_in_selfie: false },
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
         if (table === "roster_entries") {
           return {
             select: vi.fn().mockReturnValue({

@@ -95,6 +95,24 @@ export async function canDownloadFile(input: {
     return true;
   }
 
+  if (file.category === "attendance-selfies") {
+    if (
+      input.roles.includes("hr_administrator") ||
+      input.roles.includes("organization_owner") ||
+      input.roles.includes("platform_administrator")
+    ) {
+      return true;
+    }
+    if (!input.employeeId) return false;
+    const { data: attendance } = await admin
+      .from("attendance_records")
+      .select("employee_id")
+      .eq("organization_id", input.organizationId)
+      .eq("selfie_file_id", input.fileId)
+      .maybeSingle();
+    return attendance?.employee_id === input.employeeId;
+  }
+
   if (file.category === "leave-attachments") {
     if (
       input.roles.includes("hr_administrator") ||

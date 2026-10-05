@@ -187,8 +187,8 @@ Preserve intended business rules; **do not** preserve insecure auth patterns.
 - Bidirectional sync with PHP during development
 - Scraping or calling Payroll.my in production payroll
 - Treating JWT claims as the authorization source of truth
-- Wiring deferred specialist permissions (recruiter, document_custodian, asset_manager, exporter, integration_manager) before product duty-segregation needs them
-- Payment billing / public marketing site (FUTURE SaaS packaging)
+- Wiring exporter and integration_manager before product duty-segregation needs them. Recruiter, document custodian, and asset manager are already wired.
+- Rebuilding the public marketing site inside this app. The site is a separate folder. Packages and prices are in [pricing.md](./pricing.md).
 
 ---
 

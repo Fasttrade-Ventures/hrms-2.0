@@ -143,7 +143,7 @@ export function buildEmployeeDossierPdf(employee: EmployeeDetail): Uint8Array {
   const hasLogin = Boolean(employee.membership?.userId);
 
   return buildStyledPdf({
-    brandTitle: "HRMS",
+    brandTitle: "BukuHR",
     documentTitle: employee.fullName,
     subtitleLines: [
       `${employee.jobTitle?.trim() || "No job title"} · ${employee.employeeNumber}`,
@@ -167,7 +167,7 @@ export function buildEmployeeDossierPdf(employee: EmployeeDetail): Uint8Array {
       const gd = String(g.getDate()).padStart(2, "0");
       const gm = String(g.getMonth() + 1).padStart(2, "0");
       const gt = g.toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit", hour12: true });
-      return `Generated ${gd}/${gm}/${g.getFullYear()}, ${gt} · HRMS Employee Dossier`;
+      return `Generated ${gd}/${gm}/${g.getFullYear()}, ${gt} · BukuHR Employee Dossier`;
     })(),
     compact: true,
   });

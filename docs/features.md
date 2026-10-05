@@ -1,10 +1,10 @@
-# HRMS — Full feature list
+# BukuHR — Full feature list
 
 Complete product feature inventory for engineering and stakeholders.  
 Cross-check UI screens in [ui-design-inventory.md](./ui-design-inventory.md).  
 Build order and rules in [developer-brief.md](./developer-brief.md).
 
-**Last codebase audit:** 2026-10-06 (`main` @ PR #35) — statuses below reflect implemented routes/libs/schema in `apps/web`, not Pencil alone.  
+**Last codebase audit:** 2026-10-06 (`main` through PR #36). Package prices and the marketing/standalone split are in [pricing.md](./pricing.md). Statuses below reflect implemented routes/libs/schema in `apps/web`, not Pencil alone.  
 **Roadmap:** §19–§21 = new planned features (not in code yet). **Competitive:** §22 vs MySyarikat.
 
 **Legend**
@@ -27,15 +27,15 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 |---------|------|-----|--------|
 | Standalone deployment mode | Core | — | One org, own Supabase + R2 |
 | SaaS multi-tenant mode | Core | ✅ Auth/Register | Shared DB + RLS; app-layer org resolution + switcher shipped |
-| SaaS billing (Billplz) | SaaS | ✅ Owner | `/owner/billing` — plans, invoices, webhook; renewal cron in `vercel.json`; write gate on payroll/HR mutations |
-| SaaS marketing site | SaaS | ⬜ | Still FUTURE / out of app |
+| SaaS billing (Stripe) | SaaS | ✅ Owner | Register starts a 14-day trial. After the trial the workspace is read-only for the grace window, then the owner pays with Stripe. Prices are in [pricing.md](./pricing.md). |
+| SaaS marketing site | SaaS | ⬜ | Not built. English site in its own folder later. Homepage is SaaS pricing from [pricing.md](./pricing.md). Standalone is a separate quote page. |
 | Login (standalone / SaaS) | Core | ✅ | Desktop + mobile login frames |
 | Forgot / reset password | Core | ✅ | |
 | Account activation (set password) | Core | ✅ | After HR creates employee |
 | Organization registration (SaaS) | Core | ✅ | Hidden in standalone |
 | Role-based access (7+ roles) | Core | — | Employee, Manager, Branch Admin, HR Admin, Director, Org Owner, Platform Admin (+ Auditor portal) |
 | Scoped permissions | Core | — | Team / branch / org; multi-branch via `organization_membership_branches` |
-| Specialist permissions | Core | 🟡 | Wired: payroll_processor, payroll_approver, auditor; deferred: recruiter, document_custodian, asset_manager, etc. |
+| Specialist permissions | Core | ✅ | Wired: payroll processor, payroll approver, auditor, recruiter, document custodian, asset manager. Still deferred: exporter, integration manager. |
 | Module entitlements (Core/Pro/Ent) | Core | ✅ Owner | Server-enforced + Owner settings + nav filter |
 | Audit log | Core | ✅ | `/hr/audit`, `/auditor/audit`; archive + SIEM crons |
 | In-app + email notifications | Core | ✅ Emp/Mgr/HR | Outbox pattern; `/api/cron/notifications` |
@@ -282,7 +282,7 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | External API keys + OpenAPI `/api/v1` | Ent | ✅ | `/hr/integrations/api` |
 | Outbound webhooks | Ent | ✅ | `/hr/integrations/webhooks` |
 | BukuCloud payroll sync | Ent | ✅ | `/hr/integrations/bukucloud` |
-| SSO (SAML / OIDC) | Ent | ⬜ | Not implemented |
+| SSO (SAML / OIDC) | Ent | ⬜ | End milestone. Not in the current packages. |
 
 ---
 
@@ -330,9 +330,9 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | External APIs / webhooks / BukuCloud | ✅ Done |
 | Payroll duty segregation | ✅ Done |
 | Payout batches / reconciliation | ✅ Done |
-| Custom workflow builder | ⬜ |
-| SSO | ⬜ |
-| Advanced retention & compliance controls | 🟡 Audit archive/SIEM only |
+| Custom workflow builder | ⬜ After multi-level approvals |
+| SSO | ⬜ End milestone |
+| Advanced retention & compliance controls | 🟡 Audit archive/SIEM, plus document and old policy PDF retention |
 
 ---
 
@@ -399,10 +399,10 @@ Public positioning (2026). Use to prioritize roadmap above — not a claim of fu
 | **LHDN + Zakat** called out in payroll marketing | 🟡 PCB/EPF/SOCSO/EIS/HRDF done; zakat thin/absent | §19 Zakat |
 | **Accounting software sync** (marketing) | 🟡 BukuCloud + API/webhooks | Improve integrations |
 | **Goal & task tracking** | ❌ | §20 |
-| **Weekly product updates** / strong SME GTM + demo motion | 🟡 Product strong; marketing site FUTURE | SaaS marketing |
+| **Weekly product updates** / strong SME GTM + demo motion | 🟡 Product strong; marketing site not built | [pricing.md](./pricing.md) |
 | BM-first SME UX / local support narrative | 🟡 EN-first today | §19 BM/EN toggle |
 
-**Where we already match or lead (keep sharpening):** MY statutory payroll engine, dual-mode SaaS/standalone, Billplz billing, branch admin, assets, documents compliance, analytics, external API/OpenAPI, audit/SIEM, multi-role portals.
+**Where we already match or lead (keep sharpening):** MY statutory payroll engine, dual-mode SaaS/standalone, branch admin, assets, documents compliance, analytics, external API/OpenAPI, audit/SIEM, multi-role portals. SaaS checkout is Stripe.
 
 **Beat-them strategy (short):** ship BM/EN + mobile (PWA→native) + HR letters/e-sign + salary advance + selfie attendance — then Training Academy and public jobs portal.
 
@@ -432,17 +432,17 @@ Sources (competitive research, Aug 2026):
 
 **Still open**
 
-1. **Multi-level / custom approval workflows** — runtime is still one manager step
-2. **Leave-balance reminder notifications** — accrual job exists; no “balance low / expiring” reminder
-3. **Long-leave escalation**
-4. **Mileage / richer claim policy** and **employee-specific OT rates**
-5. **Conditional approval routing**
-6. **Onboarding / offboarding checklists**
-7. **Advanced KPI cycles**
-8. **Specialist roles still deferred** — recruiter, document custodian, asset manager
-9. **SSO + marketing site**
-10. **Pay-first signup / seat hard limits** — still FUTURE
-11. **Custom workflow builder** and **advanced retention** beyond audit archive/SIEM  
+1. **Multi-level / custom approval workflows** — runtime is still one manager step. Do not sell this as live.
+2. **Long-leave escalation** and **conditional approval routing**
+3. **Mileage / richer claim policy** and **employee-specific OT rates**
+4. **Apply-on-behalf** for claims, overtime, and replacement credit (HR and branch admin)
+5. **Custom workflow builder** — only after multi-level approvals
+6. **Marketing site** — plan only, SaaS homepage, standalone quote page
+7. **End milestone** — SSO, Bahasa, WhatsApp, native apps, zakat, e-signature, salary advance
+
+**Shipped in PR #36 (do not rebuild)**
+
+Leave-balance reminders, probation confirmation, policy acknowledgement, onboarding and offboarding checklists, recruiter / document custodian / asset manager, seat hard limit, KPI rows on appraisals, document and policy retention. SaaS checkout is Stripe at the prices in [pricing.md](./pricing.md).
 
 ### B — New roadmap (beat MySyarikat) — all ⬜
 See §19–§21. Suggested build order:

@@ -8,6 +8,7 @@ import { isSaasMode, type ProductTier } from "@hrms/platform";
 import { logAuthEvent } from "@/lib/audit/log-auth-event";
 import { createSubscriptionOnRegister } from "@/lib/billing/subscriptions";
 import type { BillingInterval } from "@/lib/billing/plans";
+import { clientIpFromForwarded } from "@/lib/auth/client-ip";
 import { setActiveOrganizationCookie } from "@/lib/auth/organization-context";
 import { provisionTenant } from "@/lib/platform/provision-tenant";
 import { checkRateLimitDurable } from "@/lib/rate-limit";
@@ -48,10 +49,10 @@ export async function registerOrganizationAction(
   }
 
   const headerStore = await headers();
-  const ip =
-    headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    headerStore.get("x-real-ip") ||
-    "unknown";
+  const ip = clientIpFromForwarded(
+    headerStore.get("x-forwarded-for"),
+    headerStore.get("x-real-ip"),
+  );
   const limited = await checkRateLimitDurable(`register:${ip}`, 5, 60_000, 3_000);
   if (!limited.allowed) {
     return {

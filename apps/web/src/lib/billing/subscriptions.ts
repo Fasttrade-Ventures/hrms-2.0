@@ -1,13 +1,10 @@
 import type { ProductTier } from "@hrms/platform";
 import { isSaasMode } from "@hrms/platform";
-import { createBillplzClientFromEnv } from "@hrms/platform/billing/billplz/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { calculateSubscriptionAmount, type InvoiceType } from "@/lib/billing/calculate-invoice";
-import {
-  resolveBillplzCollectionId,
-  type BillingInterval,
-} from "@/lib/billing/plans";
+import { type BillingInterval } from "@/lib/billing/plans";
+import { createStripeCheckoutSession } from "@/lib/billing/stripe";
 import { syncEntitlementsFromSubscription } from "@/lib/billing/sync-entitlements";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { relationOne } from "@/lib/supabase/relation-one";
@@ -224,16 +221,11 @@ export async function createBillForInvoice(invoiceId: string): Promise<string> {
     throw new Error("Billing is not enabled.");
   }
 
-  const client = createBillplzClientFromEnv();
-  if (!client) {
-    throw new Error("Billplz is not configured.");
-  }
-
   const admin = createAdminClient();
   const { data: invoice, error } = await admin
     .from("subscription_invoices")
     .select(
-      "id, organization_id, total_sen, status, invoice_type, subscription_id, billing_plans(tier, name, billplz_collection_id), organization_billing_subscriptions(billplz_email, billing_interval)",
+      "id, organization_id, total_sen, status, invoice_type, subscription_id, billing_plans(tier, name), organization_billing_subscriptions(billplz_email, billing_interval)",
     )
     .eq("id", invoiceId)
     .single();
@@ -250,41 +242,157 @@ export async function createBillForInvoice(invoiceId: string): Promise<string> {
       | Array<{ billplz_email: string; billing_interval: BillingInterval }>
       | null,
   );
-  if (!subscription) throw new Error("Subscription not found for invoice.");
+  if (!subscription?.billplz_email) throw new Error("Subscription billing email is missing.");
 
-  const collectionId = resolveBillplzCollectionId(plan.tier, plan.billplz_collection_id);
-  if (!collectionId) {
-    throw new Error(`Billplz collection is not configured for ${plan.name}.`);
+  const session = await createStripeCheckoutSession({
+    invoiceId,
+    amountSen: invoice.total_sen as number,
+    planName: plan.name,
+    customerEmail: subscription.billplz_email,
+  });
+
+  const { error: sessionError } = await admin.from("stripe_checkout_sessions").insert({
+    organization_id: invoice.organization_id,
+    invoice_id: invoiceId,
+    stripe_session_id: session.id,
+    checkout_url: session.url,
+  });
+
+  if (sessionError) throw new Error(sessionError.message);
+
+  await appendBillingEvent(admin, invoice.organization_id as string, "stripe.checkout.created", {
+    invoiceId,
+    stripeSessionId: session.id,
+  });
+
+  return session.url;
+}
+
+export async function markInvoicePaidFromStripe(input: {
+  invoiceId: string;
+  stripeSessionId: string;
+  amountTotal: number | null;
+}): Promise<boolean> {
+  const admin = createAdminClient();
+  const { data: sessionRow } = await admin
+    .from("stripe_checkout_sessions")
+    .select("invoice_id")
+    .eq("stripe_session_id", input.stripeSessionId)
+    .maybeSingle();
+
+  if (!sessionRow || sessionRow.invoice_id !== input.invoiceId) {
+    return false;
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  const bill = await client.createBill({
-    collectionId,
-    email: subscription.billplz_email,
-    name: plan.name,
-    amountSen: invoice.total_sen as number,
-    description: `HRMS ${plan.name} subscription`,
-    callbackUrl: `${siteUrl}/api/webhooks/billplz`,
-    redirectUrl: `${siteUrl}/owner/billing?paid=1`,
-    reference1: invoiceId,
-    reference1Label: "Invoice",
-  });
+  const { data: invoice } = await admin
+    .from("subscription_invoices")
+    .select("total_sen, status")
+    .eq("id", input.invoiceId)
+    .maybeSingle();
 
-  const { error: billError } = await admin.from("billplz_bills").insert({
-    invoice_id: invoiceId,
-    billplz_bill_id: bill.id,
-    billplz_url: bill.url,
-    state: bill.state,
-  });
+  if (!invoice) return false;
+  if (invoice.status !== "paid") {
+    if (input.amountTotal == null || input.amountTotal !== invoice.total_sen) {
+      return false;
+    }
+  }
 
-  if (billError) throw new Error(billError.message);
+  return markInvoicePaid(input.invoiceId, { stripeSessionId: input.stripeSessionId });
+}
 
-  await appendBillingEvent(admin, invoice.organization_id as string, "bill.created", {
-    invoiceId,
-    billplzBillId: bill.id,
-  });
+export async function reuseMatchingOpenInvoice(input: {
+  organizationId: string;
+  subscriptionId: string;
+  expectedTotalSen: number;
+}): Promise<string | null> {
+  const admin = createAdminClient();
+  const { data: openInvoices, error } = await admin
+    .from("subscription_invoices")
+    .select("id, total_sen")
+    .eq("organization_id", input.organizationId)
+    .eq("subscription_id", input.subscriptionId)
+    .eq("status", "open");
 
-  return bill.url;
+  if (error) throw new Error(error.message);
+
+  let reusable: string | null = null;
+  for (const row of openInvoices ?? []) {
+    if (row.total_sen === input.expectedTotalSen && !reusable) {
+      reusable = row.id as string;
+      continue;
+    }
+    await admin.from("subscription_invoices").update({ status: "void" }).eq("id", row.id as string);
+  }
+
+  return reusable;
+}
+
+export async function markInvoicePaid(
+  invoiceId: string,
+  provider: { stripeSessionId?: string; billplzBillId?: string },
+): Promise<boolean> {
+  const admin = createAdminClient();
+  const { data: invoice } = await admin
+    .from("subscription_invoices")
+    .select("id, organization_id, subscription_id, status")
+    .eq("id", invoiceId)
+    .maybeSingle();
+
+  if (!invoice) return false;
+
+  const { data: subscription } = await admin
+    .from("organization_billing_subscriptions")
+    .select("id, status, billing_interval")
+    .eq("id", invoice.subscription_id)
+    .single();
+
+  const alreadyPaid = invoice.status === "paid";
+  const alreadyActive = subscription?.status === "active";
+  if (alreadyPaid && alreadyActive) {
+    await syncEntitlementsFromSubscription(admin, invoice.organization_id as string);
+    return true;
+  }
+
+  if (!alreadyPaid) {
+    const paidAt = new Date().toISOString();
+    if (provider.stripeSessionId) {
+      await admin
+        .from("stripe_checkout_sessions")
+        .update({ status: "paid" })
+        .eq("stripe_session_id", provider.stripeSessionId);
+    }
+    await admin
+      .from("subscription_invoices")
+      .update({ status: "paid", paid_at: paidAt })
+      .eq("id", invoice.id);
+  }
+
+  if (!alreadyActive) {
+    const now = new Date();
+    const billingInterval = (subscription?.billing_interval ?? "month") as BillingInterval;
+    const periodEnd = periodEndFrom(now, billingInterval);
+    const { error: activationError } = await admin
+      .from("organization_billing_subscriptions")
+      .update({
+        status: "active",
+        trial_ends_at: null,
+        current_period_start: now.toISOString(),
+        current_period_end: periodEnd.toISOString(),
+        updated_at: now.toISOString(),
+      })
+      .eq("id", invoice.subscription_id);
+    if (activationError) throw new Error(activationError.message);
+  }
+
+  await syncEntitlementsFromSubscription(admin, invoice.organization_id as string);
+  if (!alreadyPaid) {
+    await appendBillingEvent(admin, invoice.organization_id as string, "invoice.paid", {
+      invoiceId: invoice.id,
+      ...provider,
+    });
+  }
+
+  return true;
 }
 
 export async function markInvoicePaidFromCallback(payload: Record<string, string>): Promise<boolean> {
@@ -301,22 +409,10 @@ export async function markInvoicePaidFromCallback(payload: Record<string, string
     .eq("billplz_bill_id", billplzBillId)
     .maybeSingle();
 
-  let invoiceId = payload.reference_1 ?? billRow?.invoice_id;
-  if (!invoiceId && billRow?.invoice_id) invoiceId = billRow.invoice_id;
+  const invoiceId = payload.reference_1 ?? billRow?.invoice_id;
   if (!invoiceId) return false;
 
-  const { data: invoice } = await admin
-    .from("subscription_invoices")
-    .select("id, organization_id, subscription_id, status")
-    .eq("id", invoiceId)
-    .maybeSingle();
-
-  if (!invoice || invoice.status === "paid") {
-    return true;
-  }
-
   const paidAt = payload.paid_at ? new Date(payload.paid_at).toISOString() : new Date().toISOString();
-
   await admin
     .from("billplz_bills")
     .update({
@@ -326,39 +422,7 @@ export async function markInvoicePaidFromCallback(payload: Record<string, string
     })
     .eq("billplz_bill_id", billplzBillId);
 
-  await admin
-    .from("subscription_invoices")
-    .update({ status: "paid", paid_at: paidAt })
-    .eq("id", invoice.id);
-
-  const { data: subscription } = await admin
-    .from("organization_billing_subscriptions")
-    .select("id, billing_interval, plan_id, billing_plans(tier)")
-    .eq("id", invoice.subscription_id)
-    .single();
-
-  const now = new Date();
-  const billingInterval = (subscription?.billing_interval ?? "month") as BillingInterval;
-  const periodEnd = periodEndFrom(now, billingInterval);
-
-  await admin
-    .from("organization_billing_subscriptions")
-    .update({
-      status: "active",
-      trial_ends_at: null,
-      current_period_start: now.toISOString(),
-      current_period_end: periodEnd.toISOString(),
-      updated_at: now.toISOString(),
-    })
-    .eq("id", invoice.subscription_id);
-
-  await syncEntitlementsFromSubscription(admin, invoice.organization_id as string);
-  await appendBillingEvent(admin, invoice.organization_id as string, "invoice.paid", {
-    invoiceId: invoice.id,
-    billplzBillId,
-  });
-
-  return true;
+  return markInvoicePaid(invoiceId, { billplzBillId });
 }
 
 export function isBillingRequired(): boolean {
@@ -379,6 +443,20 @@ export async function createCheckoutInvoiceForOrganization(organizationId: strin
   const now = new Date();
   const periodEnd = periodEndFrom(now, subscription.billing_interval);
   const dueAt = addDays(now, 7);
+  const expected = calculateSubscriptionAmount({
+    tier: subscription.billing_plans.tier,
+    interval: subscription.billing_interval,
+    activeEmployees,
+  });
+  const openInvoiceId = await reuseMatchingOpenInvoice({
+    organizationId,
+    subscriptionId: subscription.id,
+    expectedTotalSen: expected.totalSen,
+  });
+
+  if (openInvoiceId) {
+    return createBillForInvoice(openInvoiceId);
+  }
 
   const invoiceId = await createSubscriptionInvoice({
     organizationId,

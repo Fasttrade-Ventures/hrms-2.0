@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { AppraisalSummary } from "@/components/performance/appraisal-summary";
+import { GoalList } from "@/components/performance/goal-list";
 import { KpiScoreList } from "@/components/performance/kpi-score-list";
 import { RatingSelect } from "@/components/performance/rating-select";
 import { submitManagerReviewAction } from "@/app/(manager)/manager/team-performance/actions";
@@ -112,6 +113,7 @@ export default async function Page({
           </div>
         )}
       </section>
+      <GoalList canAdd={false} canComment={canReview} cycleId={appraisal.cycleId} employeeId={appraisal.employeeId} />
     </div>
   );
 }
