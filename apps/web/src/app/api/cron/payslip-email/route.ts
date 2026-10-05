@@ -1,13 +1,8 @@
+import { authorizeCron } from "@/lib/cron/authorize";
 import { NextResponse } from "next/server";
 
 import { runPayslipEmailJob } from "@/lib/payroll/jobs/payslip-email";
 import { processNotificationOutbox } from "@/lib/notifications/process-outbox";
-
-function authorizeCron(request: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  return request.headers.get("authorization") === `Bearer ${secret}`;
-}
 
 /** Queue payslip emails for pay_date = today (MYT) or asOf query parameter and flush the email outbox. */
 export async function GET(request: Request) {

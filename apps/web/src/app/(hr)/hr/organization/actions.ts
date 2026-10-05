@@ -23,7 +23,8 @@ import {
 } from "@hrms/validation";
 
 import { requireRole } from "@/lib/auth/session";
-import { fetchMalaysiaHolidaysForState, mergeHolidayNames } from "@/lib/hr/malaysia-holidays-api";
+import { fetchMalaysiaHolidaysForState } from "@/lib/hr/malaysia-holidays-api";
+import { persistHolidaySync } from "@/lib/hr/sync-state-holidays";
 import { getOrganizationId } from "@/lib/hr/organization";
 import { createClient } from "@/lib/supabase/server";
 import { createAssetCategory, updateAssetCategory } from "@/lib/assets/categories";
@@ -652,110 +653,43 @@ export async function importHolidays(input: {
     };
   }
 
-  const { data: existing, error: existingError } = await supabase
-    .from("holidays")
-    .select("id, holiday_date, name")
-    .eq("organization_id", organizationId)
-    .eq("branch_id", parsed.data.branchId)
-    .gte("holiday_date", `${parsed.data.year}-01-01`)
-    .lte("holiday_date", `${parsed.data.year}-12-31`);
+  const result = await persistHolidaySync(supabase, {
+    organizationId,
+    branchId: parsed.data.branchId,
+    year: parsed.data.year,
+    fetched,
+  });
 
-  if (existingError) {
-    return { imported: 0, updated: 0, skipped: 0, error: existingError.message };
-  }
-
-  const existingByDate = new Map(
-    (existing ?? []).map((row) => [row.holiday_date, { id: row.id, name: row.name }]),
-  );
-
-  const toInsert: Array<{
-    organization_id: string;
-    branch_id: string;
-    name: string;
-    holiday_date: string;
-  }> = [];
-  const toUpdate: Array<{ id: string; name: string }> = [];
-  let skipped = 0;
-
-  for (const holiday of fetched) {
-    const current = existingByDate.get(holiday.holidayDate);
-    if (!current) {
-      toInsert.push({
-        organization_id: organizationId,
-        branch_id: parsed.data.branchId,
-        name: holiday.name,
-        holiday_date: holiday.holidayDate,
-      });
-      continue;
-    }
-
-    if (current.name === holiday.name) {
-      skipped += 1;
-      continue;
-    }
-
-    toUpdate.push({ id: current.id, name: mergeHolidayNames(current.name, holiday.name) });
-  }
-
-  if (toInsert.length === 0 && toUpdate.length === 0) {
-    revalidateOrg(["/hr/organization/holidays"]);
-    return {
-      imported: 0,
-      updated: 0,
-      skipped,
-      success: "Public holidays for this branch and year are already imported.",
-    };
-  }
-
-  if (toInsert.length > 0) {
-    const { error: insertError } = await supabase.from("holidays").insert(toInsert);
-    if (insertError) {
-      return { imported: 0, updated: 0, skipped, error: insertError.message };
-    }
-  }
-
-  if (toUpdate.length > 0) {
-    const updateResults = await Promise.all(
-      toUpdate.map((holiday) =>
-        supabase
-          .from("holidays")
-          .update({ name: holiday.name })
-          .eq("id", holiday.id)
-          .eq("organization_id", organizationId),
-      ),
-    );
-    const updateError = updateResults.find((result) => result.error)?.error;
-    if (updateError) {
-      return {
-        imported: toInsert.length,
-        updated: 0,
-        skipped,
-        error: updateError.message,
-      };
-    }
+  if (result.error) {
+    return { imported: result.imported, updated: result.updated, skipped: result.skipped, error: result.error };
   }
 
   revalidateOrg(["/hr/organization/holidays"]);
 
+  if (result.imported === 0 && result.updated === 0) {
+    return {
+      imported: 0,
+      updated: 0,
+      skipped: result.skipped,
+      success: "Public holidays for this branch and year are already imported.",
+    };
+  }
+
   const parts: string[] = [];
-  if (toInsert.length > 0) {
-    parts.push(
-      `imported ${toInsert.length} new holiday${toInsert.length === 1 ? "" : "s"}`,
-    );
+  if (result.imported > 0) {
+    parts.push(`imported ${result.imported} new holiday${result.imported === 1 ? "" : "s"}`);
   }
-  if (toUpdate.length > 0) {
-    parts.push(
-      `updated ${toUpdate.length} holiday name${toUpdate.length === 1 ? "" : "s"}`,
-    );
+  if (result.updated > 0) {
+    parts.push(`updated ${result.updated} holiday name${result.updated === 1 ? "" : "s"}`);
   }
-  if (skipped > 0) {
-    parts.push(`${skipped} unchanged`);
+  if (result.skipped > 0) {
+    parts.push(`${result.skipped} unchanged`);
   }
 
   return {
-    imported: toInsert.length,
-    updated: toUpdate.length,
-    skipped,
+    imported: result.imported,
+    updated: result.updated,
+    skipped: result.skipped,
     success: `${parts[0]![0]!.toUpperCase()}${parts[0]!.slice(1)}${parts.length > 1 ? `; ${parts.slice(1).join("; ")}` : ""}.`,
   };
 }

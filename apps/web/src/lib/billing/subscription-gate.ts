@@ -7,14 +7,8 @@ function billingEnabled(): boolean {
   return process.env.DEPLOYMENT_MODE === "saas" && process.env.BILLING_ENABLED === "true";
 }
 
-function addDays(date: Date, days: number): Date {
-  const next = new Date(date);
-  next.setUTCDate(next.getUTCDate() + days);
-  return next;
-}
-
 export type SubscriptionGateResult =
-  | { allowed: true; reason: "billing_disabled" | "impersonating" | "no_subscription" | "trialing" | "active" | "past_due_grace" }
+  | { allowed: true; reason: "billing_disabled" | "impersonating" | "no_subscription" | "trialing" | "active" }
   | { allowed: false; reason: "trial_expired" | "past_due" | "canceled" | "paused" | "unknown" };
 
 /**
@@ -44,9 +38,7 @@ export function evaluateSubscriptionGate(input: {
 
   if (input.status === "active") return { allowed: true, reason: "active" };
 
-  if (input.status === "past_due" && input.currentPeriodEnd) {
-    const graceEnds = addDays(new Date(input.currentPeriodEnd), input.graceDays);
-    if (graceEnds >= now) return { allowed: true, reason: "past_due_grace" };
+  if (input.status === "past_due") {
     return { allowed: false, reason: "past_due" };
   }
 

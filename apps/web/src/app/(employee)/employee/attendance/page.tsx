@@ -7,7 +7,8 @@ import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { isClockInLate, isPastGraceCutoff } from "@/lib/attendance/shift";
 import { orgLocalDateString } from "@/lib/datetime/org-timezone";
 import { getEmployeeAttendanceContext } from "@/lib/employee/attendance-context";
-import { getTodayAttendance, listRecentAttendance } from "@/lib/employee/attendance";
+import { getTodayAttendance, getClockInSelfieRequired, listRecentAttendance } from "@/lib/employee/attendance";
+import { requireEmployeeContext } from "@/lib/employee/leave";
 
 function formatDateLong(dateStr: string): string {
   const [year, month, day] = dateStr.split("T")[0]?.split("-") ?? [];
@@ -72,10 +73,12 @@ function getStatusBadge(
 }
 
 export default async function Page() {
+  const employeeContext = await requireEmployeeContext();
   const today = await getTodayAttendance();
-  const [recent, attendanceContext] = await Promise.all([
+  const [recent, attendanceContext, requireSelfie] = await Promise.all([
     listRecentAttendance(),
     getEmployeeAttendanceContext(today?.workDate),
+    getClockInSelfieRequired(employeeContext.organizationId),
   ]);
 
   const todayWorkDate = today?.workDate || orgLocalDateString();
@@ -125,8 +128,16 @@ export default async function Page() {
       <AttendanceClockPanel
         geofence={attendanceContext.geofence}
         locationModuleEnabled={attendanceContext.locationModuleEnabled}
+        requireSelfie={requireSelfie}
         today={today}
       />
+      {today?.sessions.some((session) => session.selfieFileId) ? (
+        <p className="text-sm">
+          <a className="underline" href={`/api/files/${today.sessions.find((session) => session.selfieFileId)?.selfieFileId}/download`}>
+            View today’s clock-in selfie
+          </a>
+        </p>
+      ) : null}
 
       <ListCard
         columns={[

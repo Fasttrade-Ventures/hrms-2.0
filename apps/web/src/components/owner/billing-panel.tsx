@@ -53,7 +53,19 @@ export function BillingPanel({
           {subscription.status === "trialing" && subscription.trial_ends_at ? (
             <p className="text-sm text-[var(--foreground-muted)]">
               Trial ends {formatDate(subscription.trial_ends_at)}. Professional
-              features are enabled during trial.
+              features stay on until then. After that, the workspace is read-only until you pay.
+            </p>
+          ) : null}
+
+          {subscription.status === "past_due" ? (
+            <p className="text-sm text-[var(--foreground-muted)]">
+              The workspace is read-only until this invoice is paid.
+            </p>
+          ) : null}
+
+          {subscription.status === "canceled" ? (
+            <p className="text-sm text-[var(--foreground-muted)]">
+              This subscription has ended. Pay to start it again.
             </p>
           ) : null}
 
@@ -62,7 +74,7 @@ export function BillingPanel({
           </p>
 
           <form action={payNowAction}>
-            <Button type="submit">Pay now via Billplz</Button>
+            <Button type="submit">Pay now</Button>
           </form>
         </CardContent>
       </Card>

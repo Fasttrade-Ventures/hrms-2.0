@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "HRMS",
-  description: "Hybrid standalone-first HRMS",
+  title: "BukuHR",
+  description: "BukuHR people operations",
 };
 
 export default function RootLayout({

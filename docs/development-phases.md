@@ -20,7 +20,7 @@ Each phase has:
 
 **Rule:** implement UI from Pencil; do not invent parallel designs. If a screen is missing from Pencil, design it first.
 
-**Current deployment:** `DEPLOYMENT_MODE=standalone` (single org: Fasttrade HRMS).
+**Current deployment:** `DEPLOYMENT_MODE=standalone` (single org). Product name is BukuHR. Package prices are in [pricing.md](./pricing.md).
 
 ---
 

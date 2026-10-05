@@ -14,7 +14,7 @@ export function buildScheduledReportEmail(input: {
   const html = `
     <p>Your <strong>${input.schedule}</strong> report <strong>${input.reportTitle}</strong> is ready.</p>
     <p>${input.rowCount} row(s) matched the saved filters.</p>
-    <p><a href="${input.reportUrl}">Open report in HRMS</a></p>
+    <p><a href="${input.reportUrl}">Open report in BukuHR</a></p>
   `.trim();
 
   return { subject, html, text };

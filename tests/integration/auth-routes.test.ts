@@ -42,5 +42,7 @@ describe("auth route guards", () => {
     expect(isSafeInternalPath("/hr/dashboard")).toBe(true);
     expect(isSafeInternalPath("//evil.test")).toBe(false);
     expect(isSafeInternalPath("https://evil.test")).toBe(false);
+    expect(isSafeInternalPath("/%2F%2Fevil.test")).toBe(false);
+    expect(isSafeInternalPath("/\\evil.test")).toBe(false);
   });
 });

@@ -16,10 +16,12 @@ export function DashboardClockPanel({
   today,
   geofence,
   locationModuleEnabled,
+  requireSelfie = false,
 }: {
   today: TodayAttendance | null;
   geofence: GeofenceConfig | null;
   locationModuleEnabled: boolean;
+  requireSelfie?: boolean;
 }) {
   const [timeStr, setTimeStr] = useState<string>("");
   const [locationState, setLocationState] = useState<LocationState>("idle");
@@ -262,6 +264,9 @@ export function DashboardClockPanel({
               <form action={clockInAction} onSubmit={handleClockInSubmit}>
                 <input name="latitude" type="hidden" value={coords?.latitude ?? ""} />
                 <input name="longitude" type="hidden" value={coords?.longitude ?? ""} />
+                {requireSelfie ? (
+                  <input accept="image/*" capture="user" className="mb-2 block max-w-[140px] text-[10px]" name="selfie" required type="file" />
+                ) : null}
                 <button
                   type="submit"
                   disabled={clockInPending || !canClockIn || locationState === "loading"}

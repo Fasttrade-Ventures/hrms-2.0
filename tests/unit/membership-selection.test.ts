@@ -34,6 +34,15 @@ describe("selectMembershipRow", () => {
     expect(selected?.organization_id).toBe("org-a");
   });
 
+  it("ignores an impersonation cookie unless the user is a platform administrator", () => {
+    const selected = selectMembershipRow(rows, {
+      deploymentMode: "saas",
+      impersonateOrgId: "org-target",
+    });
+    expect(selected?.organization_id).toBe("org-a");
+    expect(selected?.roles).toEqual(["employee"]);
+  });
+
   it("saas falls back to first membership when cookie missing", () => {
     const selected = selectMembershipRow(rows, { deploymentMode: "saas" });
     expect(selected?.organization_id).toBe("org-a");

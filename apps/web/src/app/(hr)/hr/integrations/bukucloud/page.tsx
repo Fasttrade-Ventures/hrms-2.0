@@ -30,11 +30,11 @@ export default async function BukucloudIntegrationPage() {
       <Card size="sm">
         <CardHeader>
           <CardTitle>How sync works</CardTitle>
-          <CardDescription>Payroll totals from HRMS map to BukuCloud journal lines.</CardDescription>
+          <CardDescription>Payroll totals from BukuHR map to BukuCloud journal lines.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
           <p>
-            When you sync a locked or approved payrun, HRMS sends gross pay, employer statutory contributions,
+            When you sync a locked or approved payrun, BukuHR sends gross pay, employer statutory contributions,
             combined payables (employee + employer), PCB, and net pay to{" "}
             <code className="text-xs">POST /api/v1/payroll</code> on your tenant.
           </p>

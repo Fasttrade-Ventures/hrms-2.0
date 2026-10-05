@@ -46,5 +46,9 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
+  const site = request.headers.get("sec-fetch-site");
+  if (site === "cross-site") {
+    return NextResponse.redirect(new URL("/auth/login", request.url), 303);
+  }
   return POST(request);
 }

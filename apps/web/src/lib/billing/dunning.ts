@@ -1,9 +1,12 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { relationOne } from "@/lib/supabase/relation-one";
+import { calculateSubscriptionAmount } from "@/lib/billing/calculate-invoice";
+import { syncEntitlementsFromSubscription } from "@/lib/billing/sync-entitlements";
 import {
   countActiveEmployees,
   createBillForInvoice,
   createSubscriptionInvoice,
+  reuseMatchingOpenInvoice,
   type BillingPlanRow,
 } from "@/lib/billing/subscriptions";
 
@@ -57,18 +60,29 @@ export async function processBillingRenewals(): Promise<{ renewed: number; dunne
       billing_plans: plan,
     };
 
-    if (subscription.status === "trialing") {
-      await admin
-        .from("organization_billing_subscriptions")
-        .update({ status: "past_due", updated_at: now.toISOString() })
-        .eq("id", subscription.id);
-      dunned += 1;
-    }
+    await admin
+      .from("organization_billing_subscriptions")
+      .update({ status: "past_due", updated_at: now.toISOString() })
+      .eq("id", subscription.id);
+    await syncEntitlementsFromSubscription(admin, subscription.organization_id);
+    dunned += 1;
 
     const activeEmployees = await countActiveEmployees(admin, subscription.organization_id);
     const periodStart = now;
     const periodEnd = periodEndFrom(now, subscription.billing_interval);
     const dueAt = addDays(now, 7);
+    const expected = calculateSubscriptionAmount({
+      tier: subscription.billing_plans.tier,
+      interval: subscription.billing_interval,
+      activeEmployees,
+    });
+    const openInvoiceId = await reuseMatchingOpenInvoice({
+      organizationId: subscription.organization_id,
+      subscriptionId: subscription.id,
+      expectedTotalSen: expected.totalSen,
+    });
+
+    if (openInvoiceId) continue;
 
     const invoiceId = await createSubscriptionInvoice({
       organizationId: subscription.organization_id,
@@ -81,7 +95,11 @@ export async function processBillingRenewals(): Promise<{ renewed: number; dunne
       dueAt,
     });
 
-    await createBillForInvoice(invoiceId);
+    try {
+      await createBillForInvoice(invoiceId);
+    } catch (error) {
+      console.error("Billing checkout was not created", subscription.organization_id, error);
+    }
 
     await admin.from("notification_outbox").insert({
       organization_id: subscription.organization_id,

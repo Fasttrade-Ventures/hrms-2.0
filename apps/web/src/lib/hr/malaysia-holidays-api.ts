@@ -91,3 +91,38 @@ export async function fetchMalaysiaHolidaysForState(
 
   return groupHolidaysByDate(normalized);
 }
+
+export type ExistingHoliday = {
+  id: string;
+  holidayDate: string;
+  name: string;
+};
+
+export function planHolidayChanges(
+  existing: ExistingHoliday[],
+  fetched: FetchedMalaysiaHoliday[],
+): {
+  toInsert: FetchedMalaysiaHoliday[];
+  toUpdate: { id: string; name: string }[];
+  skipped: number;
+} {
+  const existingByDate = new Map(existing.map((row) => [row.holidayDate, row]));
+  const toInsert: FetchedMalaysiaHoliday[] = [];
+  const toUpdate: { id: string; name: string }[] = [];
+  let skipped = 0;
+
+  for (const holiday of fetched) {
+    const current = existingByDate.get(holiday.holidayDate);
+    if (!current) {
+      toInsert.push(holiday);
+      continue;
+    }
+    if (current.name === holiday.name) {
+      skipped += 1;
+      continue;
+    }
+    toUpdate.push({ id: current.id, name: mergeHolidayNames(current.name, holiday.name) });
+  }
+
+  return { toInsert, toUpdate, skipped };
+}

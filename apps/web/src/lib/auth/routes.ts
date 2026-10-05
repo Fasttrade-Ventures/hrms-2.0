@@ -116,5 +116,15 @@ export function canAccessPath(
 }
 
 export function isSafeInternalPath(path: string): boolean {
-  return path.startsWith("/") && !path.startsWith("//") && !path.includes("\\");
+  if (!path.startsWith("/") || path.startsWith("//") || path.includes("\\")) return false;
+  if (path.includes("://") || /[\u0000-\u001F\u007F]/.test(path)) return false;
+  let decoded = path;
+  try {
+    decoded = decodeURIComponent(path);
+  } catch {
+    return false;
+  }
+  if (!decoded.startsWith("/") || decoded.startsWith("//") || decoded.includes("\\")) return false;
+  if (decoded.includes("://")) return false;
+  return true;
 }

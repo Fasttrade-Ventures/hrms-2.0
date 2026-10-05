@@ -57,7 +57,7 @@ describe("evaluateSubscriptionGate", () => {
     expect(result.allowed).toBe(false);
   });
 
-  it("allows past_due within grace", () => {
+  it("blocks writes while past_due, including inside the grace window", () => {
     const result = evaluateSubscriptionGate({
       billingEnabled: true,
       impersonating: false,
@@ -67,7 +67,7 @@ describe("evaluateSubscriptionGate", () => {
       graceDays: 7,
       now,
     });
-    expect(result).toEqual({ allowed: true, reason: "past_due_grace" });
+    expect(result).toEqual({ allowed: false, reason: "past_due" });
   });
 
   it("blocks past_due after grace", () => {

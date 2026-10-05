@@ -46,6 +46,16 @@ async function sendResendEmail(input: {
   return { sent: true, id: payload.id };
 }
 
+export async function sendNoticeEmail(input: {
+  to: string;
+  subject: string;
+  message: string;
+}): Promise<SendResult> {
+  const text = input.message;
+  const html = `<p>${input.message.replace(/</g, "")}</p>`;
+  return sendResendEmail({ to: input.to, subject: input.subject, html, text });
+}
+
 export async function sendDocumentComplianceEmail(input: {
   to: string;
   recipientName: string;

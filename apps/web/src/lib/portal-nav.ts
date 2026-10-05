@@ -27,9 +27,11 @@ const NAV_MODULE_RULES = [
   { prefix: "/employee/claims", module: "claims" },
   { prefix: "/employee/payslips", module: "payroll" },
   { prefix: "/employee/performance", module: "performance" },
+  { prefix: "/employee/pulse", module: "performance" },
   { prefix: "/employee/assets", module: "assets" },
   { prefix: "/manager/team-performance", module: "performance" },
   { prefix: "/hr/performance", module: "performance" },
+  { prefix: "/hr/pulse", module: "performance" },
   { prefix: "/hr/assets", module: "assets" },
   { prefix: "/hr/analytics", module: "analytics" },
   { prefix: "/hr/recruitment", module: "recruitment" },
@@ -194,6 +196,7 @@ const employeeNav: PortalNavSection[] = [
       { href: "/employee/announcements", label: "Announcements", icon: "announcements" },
       { href: "/employee/assets", label: "My assets", icon: "assets" },
       { href: "/employee/performance", label: "Performance", icon: "performance" },
+      { href: "/employee/pulse", label: "Pulse", icon: "performance" },
     ],
   },
 ];
@@ -288,6 +291,7 @@ const hrNav: PortalNavSection[] = [
       { href: "/hr/calendar", label: "Calendar", icon: "calendar" },
       { href: "/hr/assets", label: "Assets", icon: "assets" },
       { href: "/hr/performance", label: "Performance", icon: "performance" },
+      { href: "/hr/pulse", label: "Pulse", icon: "performance" },
     ],
   },
   {

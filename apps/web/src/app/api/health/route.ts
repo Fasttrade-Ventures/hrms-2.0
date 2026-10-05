@@ -1,3 +1,4 @@
+import { authorizeBearerSecret } from "@/lib/cron/authorize";
 import { NextResponse } from "next/server";
 
 import { runHealthChecks } from "@hrms/platform";
@@ -5,15 +6,8 @@ import { runHealthChecks } from "@hrms/platform";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-function authorizeDeepHealth(request: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  const auth = request.headers.get("authorization");
-  return auth === `Bearer ${secret}`;
-}
-
 export async function GET(request: Request) {
-  if (!authorizeDeepHealth(request)) {
+  if (!authorizeBearerSecret(request, process.env.CRON_SECRET)) {
     return NextResponse.json({ ok: true, timestamp: new Date().toISOString() });
   }
 

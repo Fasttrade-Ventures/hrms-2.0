@@ -1,8 +1,8 @@
-# Pending wave plan (no SSO, no marketing site)
+# Pending wave plan
 
-> **For agentic workers:** Do not start these until the staff board in `docs/pending.md` section 1 is done. Multi-level approvals on that board must ship before the workflow builder. This file is the sequence. Each phase gets its own implementation plan when work starts.
+> **For agentic workers:** Phases 1–6, 8, and 9 shipped on `main` in PR #36. Phase 7 waits for the staff multi-level approval card. SSO, Bahasa, WhatsApp, native apps, zakat, e-signature, and salary advance are an end milestone. Marketing and package prices are in `docs/pricing.md`.
 
-**Goal:** Finish the nine pending items that matter for a corporate HRMS sale, without SSO and without a marketing site.
+**Goal:** The product wave for a BukuHR sale. SaaS and standalone share Core, Professional, and Enterprise. The public site sells SaaS. Standalone is quoted from `docs/pricing.md`.
 
 **Architecture:** Reuse the notification outbox, Vercel crons, employee `confirmation_status`, audit retention columns, and the billing write gate. Add tables only where nothing exists today. One phase, one PR, off `main`.
 
@@ -10,9 +10,8 @@
 
 ## Out of this wave
 
-- SSO (SAML / OIDC)
-- Marketing site
-- Bahasa, WhatsApp, native apps, selfie clock, zakat, salary advance
+- End milestone: SSO, Bahasa, WhatsApp, native apps, selfie clock, zakat, e-signature, salary advance
+- Marketing site (plan only, in `docs/pricing.md`; build it in the marketing workspace)
 - Rebuilding positions, leave cancel/revoke, accrual, or appraisal templates
 
 ## Order
@@ -29,7 +28,7 @@
 | 8 | Advanced KPI cycles | Opened on `feat/probation-confirmation` | Staff |
 | 9 | Retention beyond the audit archive | Opened on `feat/probation-confirmation` | Staff |
 
-Pay-first signup is not a phase. Standalone clients pay by invoice. The seat limit in phase 6 is what protects the RM 12,000 license. Pay-first stays a later SaaS-only change to `apps/web/src/lib/billing/subscription-gate.ts`.
+Pay-first signup is not the SaaS path. SaaS is register, a 14-day trial, then a read-only grace window, then Stripe. Standalone clients pay by invoice. Phase 6 stores `licensed_headcount` from the quote. Package minimums are in `docs/pricing.md`: Core RM 6,000, Professional RM 12,000, Enterprise RM 18,000 a year.
 
 ---
 
@@ -138,7 +137,7 @@ Pay-first signup is not a phase. Standalone clients pay by invoice. The seat lim
 - Check inside create and status-change to `active`
 - `tests/unit/seat-limit.test.ts`
 
-**Rule for the RM 12,000 deal:** set `licensed_headcount` to the staff count on the quote (50 if they bought the floor). Do not turn on pay-first.
+**Rule:** set `licensed_headcount` to the staff count on the quote. Use the package minimums in `docs/pricing.md`. Do not turn on pay-first for a standalone invoice.
 
 **Test:** `pnpm exec vitest run tests/unit/seat-limit.test.ts`
 
@@ -180,8 +179,9 @@ Pay-first signup is not a phase. Standalone clients pay by invoice. The seat lim
 
 ---
 
-## What you do while staff build phase 1
+## What is still open after this wave
 
 - Close or rename the vague cards "Employee - Still Open" and "Next Task Phase".
 - Do not sell multi-level approvals or the workflow builder as live.
-- Write the licensed headcount into the client contract so phase 6 has a number to enforce.
+- Write the package, staff count, and `licensed_headcount` into the standalone contract. Prices are in `docs/pricing.md`.
+- SaaS cards on the marketing site use the revised prices in `docs/pricing.md`. Checkout in the app is Stripe at those amounts.

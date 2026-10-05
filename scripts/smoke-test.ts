@@ -130,7 +130,7 @@ async function runHttpChecks(baseUrl: string) {
 
   const phase2 = "Phase 2";
   const loginHtml = await (await fetch(`${baseUrl}/auth/login`)).text();
-  if (loginHtml.includes("auth-theme") || loginHtml.includes("HRMS")) {
+  if (loginHtml.includes("auth-theme") || loginHtml.includes("BukuHR")) {
     pass(phase2, "Auth page renders Forest Sage shell markers");
   } else {
     fail(phase2, "Auth page renders Forest Sage shell markers");

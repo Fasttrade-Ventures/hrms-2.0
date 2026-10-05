@@ -27,6 +27,7 @@ export type TodayAttendance = {
     clockOutAt: string | null;
     status: string | null;
     isAutoClockOut?: boolean;
+    selfieFileId?: string | null;
   }[];
   accumulatedSeconds: number;
 };
@@ -40,6 +41,7 @@ function formatAttendanceRecords(
     clock_out_at: string | null;
     status: string | null;
     is_auto_clock_out?: boolean | null;
+    selfie_file_id?: string | null;
   }[],
   workDate: string,
 ): TodayAttendance | null {
@@ -52,6 +54,7 @@ function formatAttendanceRecords(
     clockOutAt: item.clock_out_at,
     status: item.status,
     isAutoClockOut: Boolean(item.is_auto_clock_out),
+    selfieFileId: item.selfie_file_id ?? null,
   }));
 
   const activeSession = sessions.find((s) => s.clockOutAt === null);
@@ -86,6 +89,16 @@ function formatAttendanceRecords(
   };
 }
 
+export async function getClockInSelfieRequired(organizationId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("organizations")
+    .select("require_clock_in_selfie")
+    .eq("id", organizationId)
+    .maybeSingle();
+  return Boolean(data?.require_clock_in_selfie);
+}
+
 export async function getTodayAttendance(targetWorkDate?: string): Promise<TodayAttendance | null> {
   const { employeeId, organizationId } = await requireEmployeeContext();
   const supabase = await createClient();
@@ -93,7 +106,7 @@ export async function getTodayAttendance(targetWorkDate?: string): Promise<Today
   if (targetWorkDate) {
     const { data, error } = await supabase
       .from("attendance_records")
-      .select("id, work_date, session, clock_in_at, clock_out_at, status, is_auto_clock_out")
+      .select("id, work_date, session, clock_in_at, clock_out_at, status, is_auto_clock_out, selfie_file_id")
       .eq("organization_id", organizationId)
       .eq("employee_id", employeeId)
       .eq("work_date", targetWorkDate)
@@ -109,7 +122,7 @@ export async function getTodayAttendance(targetWorkDate?: string): Promise<Today
 
   const { data, error } = await supabase
     .from("attendance_records")
-    .select("id, work_date, session, clock_in_at, clock_out_at, status, is_auto_clock_out")
+    .select("id, work_date, session, clock_in_at, clock_out_at, status, is_auto_clock_out, selfie_file_id")
     .eq("organization_id", organizationId)
     .eq("employee_id", employeeId)
     .in("work_date", [yesterdayDate, todayDate])
@@ -164,6 +177,7 @@ export async function clockIn(input?: {
   latitude?: number | null;
   longitude?: number | null;
   ipAddress?: string | null;
+  selfieFileId?: string | null;
 }): Promise<TodayAttendance> {
   const { employeeId, organizationId } = await requireEmployeeContext();
   const { geofence } = await getEmployeeAttendanceContext();
@@ -256,6 +270,15 @@ export async function clockIn(input?: {
     }
   }
 
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("require_clock_in_selfie")
+    .eq("id", organizationId)
+    .maybeSingle();
+  if (org?.require_clock_in_selfie && !input?.selfieFileId) {
+    throw new Error("A selfie is required to clock in.");
+  }
+
   const record = {
     organization_id: organizationId,
     employee_id: employeeId,
@@ -266,6 +289,7 @@ export async function clockIn(input?: {
     latitude: input?.latitude ?? null,
     longitude: input?.longitude ?? null,
     ip_address: input?.ipAddress ?? null,
+    selfie_file_id: input?.selfieFileId ?? null,
   };
 
   const { data, error } = await supabase

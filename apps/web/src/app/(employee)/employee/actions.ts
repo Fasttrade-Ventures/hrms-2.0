@@ -11,6 +11,7 @@ import { requireEmployeeContext } from "@/lib/employee/leave";
 import { submitEmployeeRequest } from "@/lib/employee/submit-request";
 import { requireModule } from "@/lib/entitlements";
 import { createClient } from "@/lib/supabase/server";
+import { uploadOrganizationFile } from "@/lib/files/storage";
 import { checkRateLimitDurable } from "@/lib/rate-limit";
 
 export type EmployeeActionState = {
@@ -381,10 +382,25 @@ export async function employeeClockIn(formData?: FormData): Promise<EmployeeActi
                      headersList.get("x-real-ip") ||
                      "127.0.0.1";
 
+    const selfie = formData?.get("selfie");
+    let selfieFileId: string | null = null;
+    if (selfie instanceof File && selfie.size > 0) {
+      const { organizationId, session } = await requireEmployeeContext();
+      selfieFileId = await uploadOrganizationFile({
+        organizationId,
+        category: "attendance-selfies",
+        fileName: `clock-in-${Date.now()}.jpg`,
+        contentType: selfie.type || "image/jpeg",
+        body: new Uint8Array(await selfie.arrayBuffer()),
+        uploadedByUserId: session.user.id,
+      });
+    }
+
     await clockIn({
       latitude: latitudeRaw ? Number(latitudeRaw) : null,
       longitude: longitudeRaw ? Number(longitudeRaw) : null,
       ipAddress,
+      selfieFileId,
     });
     revalidatePath("/employee/attendance");
     revalidatePath("/employee/dashboard");

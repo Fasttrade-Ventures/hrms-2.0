@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 
 import type { BillingInterval } from "@/lib/billing/plans";
 import { createSubscriptionOnRegister } from "@/lib/billing/subscriptions";
+import { clientIpFromForwarded } from "@/lib/auth/client-ip";
 import { provisionTenant } from "@/lib/platform/provision-tenant";
 import { checkRateLimitDurable } from "@/lib/rate-limit";
 
@@ -22,10 +23,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Registration is disabled in standalone mode." }, { status: 403 });
   }
 
-  const ip =
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip") ||
-    "unknown";
+  const ip = clientIpFromForwarded(
+    request.headers.get("x-forwarded-for"),
+    request.headers.get("x-real-ip"),
+  );
   const limited = await checkRateLimitDurable(`register:${ip}`, 5, 60_000, 3_000);
   if (!limited.allowed) {
     return NextResponse.json(

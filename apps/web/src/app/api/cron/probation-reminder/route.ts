@@ -1,13 +1,8 @@
+import { authorizeCron } from "@/lib/cron/authorize";
 import { NextResponse } from "next/server";
 
 import { performProbationReminders } from "@/lib/employees/probation";
 import { processNotificationOutbox } from "@/lib/notifications/process-outbox";
-
-function authorizeCron(request: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return true;
-  return request.headers.get("authorization") === `Bearer ${secret}`;
-}
 
 export async function GET(request: Request) {
   if (!authorizeCron(request)) {

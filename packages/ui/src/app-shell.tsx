@@ -15,7 +15,7 @@ export function AppShell({
     <div className="flex min-h-screen bg-[var(--surface-primary)]">
       <aside className="w-[248px] border-r border-[var(--border-primary)] bg-[var(--surface-card)]">
         <div className="border-b border-[var(--border-primary)] p-4">
-          <p className="text-sm font-semibold text-[var(--accent-primary)]">HRMS</p>
+          <p className="text-sm font-semibold text-[var(--accent-primary)]">BukuHR</p>
           <p className="text-xs text-[var(--foreground-muted)]">{portalLabel}</p>
         </div>
         <nav className="space-y-1 p-3">

@@ -1,12 +1,7 @@
+import { authorizeCron } from "@/lib/cron/authorize";
 import { NextResponse } from "next/server";
 
 import { processWebhookOutbox } from "@/lib/audit/webhooks";
-
-function authorizeCron(request: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  return request.headers.get("authorization") === `Bearer ${secret}`;
-}
 
 /** Deliver pending SIEM webhook payloads. */
 export async function GET(request: Request) {

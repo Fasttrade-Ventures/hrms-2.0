@@ -3,6 +3,7 @@ import {
   StubR2StorageAdapter,
   type R2StorageAdapter,
   sendDocumentComplianceEmail,
+  sendNoticeEmail,
   sendPayslipAvailableEmail,
   sendScheduledReportEmail,
 } from "@hrms/platform";
@@ -169,6 +170,12 @@ export async function processNotificationOutbox(limit = 25): Promise<{
         payslipPath: String(payload.href ?? "/employee/payslips"),
         secureLink,
         attachment,
+      });
+    } else if (row.template === "celebration.notice") {
+      result = await sendNoticeEmail({
+        to: email,
+        subject: String(payload.subject ?? "BukuHR"),
+        message: String(payload.message ?? ""),
       });
     } else if (row.template === "reports.scheduled") {
       result = await sendScheduledReportEmail({

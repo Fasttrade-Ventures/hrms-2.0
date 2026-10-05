@@ -32,28 +32,28 @@ Health checks treat `DEFAULT_ORGANIZATION_ID` as required only when standalone.
 
 - Payslip email and document-compliance crons iterate **all** organizations in SaaS (standalone still uses DEFAULT only).
 
-## Billing (Billplz)
+## Billing (Stripe)
 
 - Opt-in: `BILLING_ENABLED=true` with `DEPLOYMENT_MODE=saas`.
-- Migration: `20260828120000_saas_billing.sql` (plans, subscriptions, invoices, webhooks).
-- Register: plan + interval picker; 14-day trial with Professional entitlements.
-- Owner: `/owner/billing` — pay via Billplz, invoice history.
-- Webhook: `POST /api/webhooks/billplz` (X Signature).
+- Migration: `20260828120000_saas_billing.sql` plus `20261006150000_saas_stripe_prices.sql` (revised plan amounts, Stripe checkout sessions).
+- Register starts a 14-day trial with Professional features, then sign-in. No payment is required to create the organization.
+- After the trial, or when a paid period ends unpaid, status becomes `past_due`. New writes stop. People can still sign in and read. They have `BILLING_PAST_DUE_GRACE_DAYS` (default 7) to pay on `/owner/billing` via Stripe. After that the subscription is canceled.
+- Owner: `/owner/billing` — pay via Stripe Checkout, invoice history.
+- Webhook: `POST /api/webhooks/stripe` (`STRIPE_WEBHOOK_SECRET`). `POST /api/webhooks/billplz` remains for bills already issued.
 - Cron: `GET /api/cron/billing-renewal` (Bearer `CRON_SECRET`).
-- Spec + plan: `docs/superpowers/specs/2026-08-27-billplz-saas-billing-design.md`, `docs/superpowers/plans/2026-08-27-billplz-saas-billing.md`.
+- Prices: `docs/pricing.md`.
 
 ## Still FUTURE
 
 - Public marketing / pricing page
-- Pay-first signup (`BILLING_SIGNUP_MODE=pay_first`)
-- Usage metering / hard seat limits
+- Usage metering
 
 ## Known billing ops gaps (re-audit 2026-08-28) — remediated
 
 - ~~`requireActiveSubscription` unused~~ → `requireOrganizationIdForWrite()` on payroll generate/workflow, create employee, leave apply, apply-behalf creates.
 - ~~`billing-renewal` missing from vercel.json~~ → scheduled `0 1 * * *` UTC.
 - ~~`/api/register` without subscription~~ → creates trial subscription when `BILLING_ENABLED`.
-- ~~Health ignores Billplz~~ → requires Billplz env keys when `BILLING_ENABLED=true`.
+- ~~Health ignores Billplz~~ → requires Stripe env keys (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`) when `BILLING_ENABLED=true`.
 
 ## Performance
 

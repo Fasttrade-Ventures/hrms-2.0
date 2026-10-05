@@ -1,12 +1,7 @@
+import { authorizeCron } from "@/lib/cron/authorize";
 import { NextResponse } from "next/server";
 
 import { runAuditArchiveJob } from "@/lib/audit/jobs/archive";
-
-function authorizeCron(request: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  return request.headers.get("authorization") === `Bearer ${secret}`;
-}
 
 /** Archive audit events older than retention window to cold storage. */
 export async function GET(request: Request) {
