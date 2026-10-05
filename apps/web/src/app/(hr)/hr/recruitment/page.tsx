@@ -3,13 +3,13 @@ import Link from "next/link";
 import { CreateRequisitionForm } from "@/components/hr/recruitment/create-requisition-form";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { PortalSectionCard } from "@/components/portal/portal-section";
-import { requireRole } from "@/lib/auth/session";
+import { requireRoleOrPermission } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
 import { listRequisitions } from "@/lib/recruitment/requisitions";
 
 export default async function Page() {
   await requireModule("recruitment");
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["recruiter"]);
 
   const requisitions = await listRequisitions();
 

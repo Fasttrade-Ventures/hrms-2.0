@@ -6,7 +6,7 @@ import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { listAssetCategories } from "@/lib/assets/categories";
 import { getAssetDetail } from "@/lib/assets/queries";
 import { listActiveEmployeesForSelect } from "@/lib/employees/queries";
-import { requireRole } from "@/lib/auth/session";
+import { requireRoleOrPermission } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
 
 export default async function AssetDetailPage({
@@ -15,7 +15,7 @@ export default async function AssetDetailPage({
   params: Promise<{ assetId: string }>;
 }) {
   await requireModule("assets");
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["asset_manager"]);
 
   const { assetId } = await params;
   const [asset, categories, employees] = await Promise.all([

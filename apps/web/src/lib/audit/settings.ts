@@ -8,6 +8,8 @@ import { requireOrganizationId } from "@/lib/auth/organization-context";
 export type AuditSettings = {
   retentionDays: number;
   archiveEnabled: boolean;
+  documentRetentionDays: number | null;
+  policyRetentionDays: number | null;
   siem: {
     url: string;
     secret: string;
@@ -34,7 +36,7 @@ export async function getAuditSettings(): Promise<AuditSettings> {
   const [{ data: org }, siem, { data: archives }] = await Promise.all([
     supabase
       .from("organizations")
-      .select("audit_retention_days, audit_archive_enabled")
+      .select("audit_retention_days, audit_archive_enabled, document_retention_days, policy_retention_days")
       .eq("id", organizationId)
       .maybeSingle(),
     getSiemWebhookConfig(organizationId),
@@ -49,6 +51,8 @@ export async function getAuditSettings(): Promise<AuditSettings> {
   return {
     retentionDays: org?.audit_retention_days ?? 2555,
     archiveEnabled: org?.audit_archive_enabled ?? false,
+    documentRetentionDays: org?.document_retention_days ?? null,
+    policyRetentionDays: org?.policy_retention_days ?? null,
     siem: {
       url: siem?.url ?? "",
       secret: siem?.secret ? "••••••••" : "",
@@ -69,6 +73,8 @@ export async function getAuditSettings(): Promise<AuditSettings> {
 export async function updateAuditRetentionSettings(input: {
   retentionDays: number;
   archiveEnabled: boolean;
+  documentRetentionDays: number | null;
+  policyRetentionDays: number | null;
 }): Promise<void> {
   await requireRole("hr_administrator");
   await requireModule("audit");
@@ -83,6 +89,8 @@ export async function updateAuditRetentionSettings(input: {
     .update({
       audit_retention_days: input.retentionDays,
       audit_archive_enabled: input.archiveEnabled,
+      document_retention_days: input.documentRetentionDays,
+      policy_retention_days: input.policyRetentionDays,
       updated_at: new Date().toISOString(),
     })
     .eq("id", await requireOrganizationId());

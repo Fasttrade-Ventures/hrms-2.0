@@ -54,6 +54,26 @@ export function AuditSettingsForms({
                 type="number"
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="documentRetentionDays">Employee document retention (days)</Label>
+              <Input
+                defaultValue={settings.documentRetentionDays ?? ""}
+                id="documentRetentionDays"
+                min={1}
+                name="documentRetentionDays"
+                type="number"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="policyRetentionDays">Old policy PDF retention (days)</Label>
+              <Input
+                defaultValue={settings.policyRetentionDays ?? ""}
+                id="policyRetentionDays"
+                min={1}
+                name="policyRetentionDays"
+                type="number"
+              />
+            </div>
             <input name="archiveEnabled" type="hidden" value={String(archiveEnabled)} />
             <label className="flex items-center gap-2 text-sm">
               <Checkbox

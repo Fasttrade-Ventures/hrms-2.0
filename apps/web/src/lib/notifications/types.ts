@@ -63,6 +63,12 @@ export function formatNotificationMessage(row: NotificationRow): string {
     if (year && month) return `Your ${year}-${String(month).padStart(2, "0")} payslip is ready.`;
     return "Your payslip is ready.";
   }
+  if (row.template === "employee.probation_ending") {
+    return String(row.payload.message ?? "An employee's probation is ending.");
+  }
+  if (row.template === "leave.balance_reminder") {
+    return String(row.payload.message ?? "Your leave balance needs attention.");
+  }
   if (row.template === "attendance.tardy") {
     const shiftStart = String(row.payload.shiftStart ?? "09:00");
     const graceMinutes = Number(row.payload.graceMinutes ?? 0);

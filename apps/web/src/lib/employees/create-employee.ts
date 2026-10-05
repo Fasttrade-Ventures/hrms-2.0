@@ -2,6 +2,8 @@ import type { CreateEmployeeInput } from "@hrms/validation";
 import { sendEmployeeActivationEmail } from "@hrms/platform";
 
 import { logEmployeeEvent } from "@/lib/audit/log-employee-event";
+import { confirmedOnForStatus } from "@/lib/employees/probation";
+import { seatLimitMessage } from "@/lib/employees/seat-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { getNextEmployeeNumber } from "./organization";
@@ -26,6 +28,19 @@ export async function createEmployeeRecord(
 ): Promise<CreateEmployeeResult> {
   const admin = createAdminClient();
   const organizationId = await requireOrganizationIdForWrite();
+  const { count: activeCount } = await admin
+    .from("employees")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", organizationId)
+    .eq("status", "active");
+  const { data: organization } = await admin
+    .from("organizations")
+    .select("licensed_headcount")
+    .eq("id", organizationId)
+    .maybeSingle();
+  const seatError = seatLimitMessage(activeCount ?? 0, organization?.licensed_headcount ?? null);
+  if (seatError) throw new Error(seatError);
+
   const employeeNumber = input.employeeNumber?.trim() || (await getNextEmployeeNumber(organizationId));
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
@@ -66,6 +81,12 @@ export async function createEmployeeRecord(
       job_title: jobTitle,
       position_id: input.positionId ?? null,
       confirmation_status: input.confirmationStatus ?? null,
+      probation_end_date: input.probationEndDate ?? null,
+      confirmed_on: confirmedOnForStatus(
+        input.confirmationStatus,
+        input.confirmedOn ?? null,
+        new Date().toISOString().slice(0, 10),
+      ),
       annual_leave_entitlement: input.annualLeaveEntitlement ?? 14,
       annual_leave_carry_forward: input.annualLeaveCarryForward ?? 0,
       status: "active",

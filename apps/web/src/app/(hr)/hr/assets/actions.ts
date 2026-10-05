@@ -11,7 +11,7 @@ import {
   assetRequestSchema,
 } from "@hrms/validation";
 
-import { requireRole } from "@/lib/auth/session";
+import { requireRoleOrPermission } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
 import { assignAsset, returnAssetAssignment, disposeAsset, acknowledgeAssignment } from "@/lib/assets/assignments";
 import { getAssetCategory } from "@/lib/assets/categories";
@@ -66,7 +66,7 @@ export async function createAssetAction(
 ): Promise<HrActionState> {
   try {
     await requireModule("assets");
-    await requireRole("hr_administrator");
+    await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["asset_manager"]);
 
     const parsed = createAssetSchema.safeParse({
       name: String(formData.get("name") ?? "").trim(),
@@ -111,7 +111,7 @@ export async function updateAssetAction(
 ): Promise<HrActionState> {
   try {
     await requireModule("assets");
-    await requireRole("hr_administrator");
+    await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["asset_manager"]);
 
     const parsed = updateAssetSchema.safeParse({
       name: String(formData.get("name") ?? "").trim(),
@@ -149,7 +149,7 @@ export async function assignAssetAction(
 ): Promise<HrActionState> {
   try {
     await requireModule("assets");
-    await requireRole("hr_administrator");
+    await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["asset_manager"]);
 
     const parsed = assignAssetSchema.safeParse({
       assetId: String(formData.get("assetId") ?? "").trim(),
@@ -177,7 +177,7 @@ export async function returnAssetAction(
 ): Promise<HrActionState> {
   try {
     await requireModule("assets");
-    await requireRole("hr_administrator");
+    await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["asset_manager"]);
 
     const parsed = returnAssetSchema.safeParse({
       assignmentId: String(formData.get("assignmentId") ?? "").trim(),
@@ -210,7 +210,7 @@ export async function disposeAssetAction(
   void formData;
   try {
     await requireModule("assets");
-    await requireRole("hr_administrator");
+    await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["asset_manager"]);
     await disposeAsset(assetId);
     revalidatePath("/hr/assets");
     revalidatePath(`/hr/assets/${assetId}`);
@@ -230,7 +230,7 @@ export async function resolveAssetRequestAction(
   void formData;
   try {
     await requireModule("assets");
-    await requireRole("hr_administrator");
+    await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["asset_manager"]);
     await resolveAssetRequest(requestId);
     revalidatePath(`/hr/assets/${assetId}`);
     return { success: "Request resolved." };
@@ -289,7 +289,7 @@ export async function createAssetRequestAction(
 
 export async function exportAssetRegisterCsv() {
   await requireModule("assets");
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["asset_manager"]);
 
   const { listAssets } = await import("@/lib/assets/queries");
   const { assetsToCsv } = await import("@/lib/assets/export");

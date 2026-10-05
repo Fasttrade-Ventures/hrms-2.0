@@ -10,7 +10,7 @@ import {
   moveStageSchema,
 } from "@hrms/validation";
 
-import { requireRole } from "@/lib/auth/session";
+import { requireRoleOrPermission } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
 import { addCandidateToRequisition } from "@/lib/recruitment/applications";
 import { acceptOffer, createOfferForApplication, moveApplicationStage } from "@/lib/recruitment/offers";
@@ -40,7 +40,7 @@ export async function createRequisitionAction(
 ): Promise<RecruitmentActionState> {
   try {
     await requireModule("recruitment");
-    const session = await requireRole("hr_administrator");
+    const session = await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["recruiter"]);
     const parsed = createRequisitionSchema.parse({
       title: formData.get("title"),
       description: formData.get("description") || undefined,
@@ -65,7 +65,7 @@ export async function addCandidateAction(
 ): Promise<RecruitmentActionState> {
   try {
     await requireModule("recruitment");
-    await requireRole("hr_administrator");
+    await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["recruiter"]);
     const parsed = addCandidateSchema.parse({
       requisitionId: formData.get("requisitionId"),
       fullName: formData.get("fullName"),
@@ -87,7 +87,7 @@ export async function moveStageAction(
 ): Promise<RecruitmentActionState> {
   try {
     await requireModule("recruitment");
-    const session = await requireRole("hr_administrator");
+    const session = await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["recruiter"]);
     const parsed = moveStageSchema.parse({
       applicationId: formData.get("applicationId"),
       toStage: formData.get("toStage"),
@@ -115,7 +115,7 @@ export async function createOfferAction(
 ): Promise<RecruitmentActionState> {
   try {
     await requireModule("recruitment");
-    const session = await requireRole("hr_administrator");
+    const session = await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["recruiter"]);
     const parsed = createOfferSchema.parse({
       applicationId: formData.get("applicationId"),
       jobTitle: formData.get("jobTitle"),
@@ -143,7 +143,7 @@ export async function acceptOfferAction(
 ): Promise<RecruitmentActionState> {
   try {
     await requireModule("recruitment");
-    const session = await requireRole("hr_administrator");
+    const session = await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["recruiter"]);
     const offerId = String(formData.get("offerId") ?? "");
     if (!offerId) return { error: "Offer ID is required." };
 

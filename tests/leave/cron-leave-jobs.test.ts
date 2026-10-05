@@ -25,6 +25,13 @@ vi.mock("@/lib/leave/rollover", () => ({
   }),
 }));
 
+vi.mock("@/lib/leave/balance-reminders", () => ({
+  performLeaveBalanceReminders: vi.fn().mockResolvedValue({
+    remindedCount: 4,
+    skippedCount: 1,
+  }),
+}));
+
 vi.mock("@/lib/notifications/process-outbox", () => ({
   processNotificationOutbox: vi.fn().mockResolvedValue(2),
 }));
@@ -90,6 +97,32 @@ describe("Leave Background Cron Endpoints", () => {
       expect(json.ok).toBe(true);
       expect(json.carryForward.totalCarriedDays).toBe(5);
       expect(json.expiry.totalExpiredDays).toBe(3);
+    });
+  });
+
+  describe("GET /api/cron/leave-balance-reminders", () => {
+    it("rejects unauthorized requests with 401", async () => {
+      const { GET } = await import("@/app/api/cron/leave-balance-reminders/route");
+      const req = new Request("http://localhost/api/cron/leave-balance-reminders", {
+        headers: { authorization: "Bearer invalid" },
+      });
+
+      const res = await GET(req);
+      expect(res.status).toBe(401);
+    });
+
+    it("queues reminders with valid authorization", async () => {
+      const { GET } = await import("@/app/api/cron/leave-balance-reminders/route");
+      const req = new Request("http://localhost/api/cron/leave-balance-reminders?asOf=2026-06-10", {
+        headers: { authorization: "Bearer test-secret-123" },
+      });
+
+      const res = await GET(req);
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.ok).toBe(true);
+      expect(json.remindedCount).toBe(4);
+      expect(json.notificationsSent).toBe(2);
     });
   });
 });

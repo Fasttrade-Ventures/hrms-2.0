@@ -8,7 +8,7 @@ import { PortalShell } from "@/components/portal-shell";
 import { listUserMemberships, requireRole, requireRoleOrPermission } from "@/lib/auth/session";
 import { getEntitlements } from "@/lib/entitlements";
 import { getHrTopbarMeta } from "@/lib/hr/topbar";
-import { getPortalNavSectionsForEntitlements, getPortalIntegrationsHref } from "@/lib/portal-nav";
+import { filterNavForSpecialist, getPortalNavSectionsForEntitlements, getPortalIntegrationsHref } from "@/lib/portal-nav";
 import { getImpersonationState } from "@/lib/platform/impersonation";
 import { getUnreadNotificationCount } from "@/lib/notifications/inbox";
 import { createClient } from "@/lib/supabase/server";
@@ -63,10 +63,14 @@ export async function PortalLayout({
       loadOrgSwitcherOptions(session.user.id, session.membership.organizationId),
     ]);
 
-  const navSections = getPortalNavSectionsForEntitlements(portal, {
-    hasModule: (module) => entitlements.hasModule(module),
-    tier: entitlements.tier,
-  });
+  const navSections = filterNavForSpecialist(
+    getPortalNavSectionsForEntitlements(portal, {
+      hasModule: (module) => entitlements.hasModule(module),
+      tier: entitlements.tier,
+    }),
+    session.membership.roles,
+    session.membership.permissions,
+  );
   const enabledModules = ALL_MODULE_KEYS.filter((module) => entitlements.hasModule(module));
   const integrationsHref =
     portal === "HR Administrator" ? getPortalIntegrationsHref(portal) : undefined;

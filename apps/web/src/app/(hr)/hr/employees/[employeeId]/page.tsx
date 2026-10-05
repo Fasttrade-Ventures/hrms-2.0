@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 
+import { EmployeeChecklistPanel } from "@/components/hr/employees/employee-checklist-panel";
+import { SpecialistAccessPanel } from "@/components/hr/employees/specialist-access-panel";
 import { EmployeeDocumentsSection } from "@/components/hr/documents/employee-documents-section";
 import { EmployeeAssetsPanel } from "@/components/hr/employees/employee-assets-panel";
 import { EmployeePayrollSection } from "@/components/hr/payroll/employee-payroll-section";
@@ -57,6 +59,9 @@ export default async function ViewEmployeePage({
       />
 
       <EmployeeProfileView employee={employee} />
+
+      <EmployeeChecklistPanel employeeId={employee.id} />
+      <SpecialistAccessPanel employeeId={employee.id} />
 
       <EmployeePayrollSection
         allowanceComponents={payroll.allowanceComponents}

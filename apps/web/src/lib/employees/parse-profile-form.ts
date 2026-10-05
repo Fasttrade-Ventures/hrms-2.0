@@ -74,6 +74,8 @@ export function parseEmployeeProfileFormData(formData: FormData): {
     jobTitle: emptyToNull(formData.get("jobTitle")),
     positionId: readOptionalUuid(formData, "positionId"),
     confirmationStatus: emptyToNull(formData.get("confirmationStatus")),
+    probationEndDate: emptyToNull(formData.get("probationEndDate")),
+    confirmedOn: emptyToNull(formData.get("confirmedOn")),
     annualLeaveEntitlement: String(formData.get("annualLeaveEntitlement") ?? "").trim() || undefined,
     annualLeaveCarryForward: String(formData.get("annualLeaveCarryForward") ?? "").trim() || undefined,
     allowedLeaveTypeIds,

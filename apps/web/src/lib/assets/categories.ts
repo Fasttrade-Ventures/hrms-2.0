@@ -1,6 +1,6 @@
 import type { AssetCategoryField } from "@hrms/domain";
 
-import { requireRole } from "@/lib/auth/session";
+import { requireRoleOrPermission } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
 import { logAssetEvent } from "./audit";
@@ -29,7 +29,7 @@ function mapCategoryRow(row: {
 export async function listAssetCategories(options?: {
   activeOnly?: boolean;
 }): Promise<AssetCategoryRow[]> {
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["asset_manager"]);
   const supabase = await createClient();
   const organizationId = await requireOrganizationId();
 
@@ -50,7 +50,7 @@ export async function listAssetCategories(options?: {
 }
 
 export async function getAssetCategory(categoryId: string): Promise<AssetCategoryRow | null> {
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["asset_manager"]);
   const supabase = await createClient();
   const organizationId = await requireOrganizationId();
 
@@ -72,7 +72,7 @@ export async function createAssetCategory(input: {
   isActive?: boolean;
   fieldSchema: AssetCategoryField[];
 }): Promise<string> {
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["asset_manager"]);
   const supabase = await createClient();
   const organizationId = await requireOrganizationId();
 
@@ -104,7 +104,7 @@ export async function updateAssetCategory(
     fieldSchema: AssetCategoryField[];
   },
 ): Promise<void> {
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["asset_manager"]);
   const supabase = await createClient();
   const organizationId = await requireOrganizationId();
 

@@ -1,11 +1,11 @@
 import { RequiredDocumentsManager } from "@/components/hr/documents/required-documents-manager";
 import { HrLinkButton } from "@/components/hr/hr-ui.client";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
-import { requireRole } from "@/lib/auth/session";
+import { requireRoleOrPermission } from "@/lib/auth/session";
 import { listRequiredDocuments } from "@/lib/hr/documents";
 
 export default async function RequiredDocumentsPage() {
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["document_custodian"]);
   const rows = await listRequiredDocuments();
 
   return (

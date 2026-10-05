@@ -5,7 +5,7 @@ import { DocumentLibrary } from "@/components/hr/documents/document-library";
 import { HrLinkButton, HrPagination } from "@/components/hr/hr-ui.client";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { listActiveEmployeesForSelect } from "@/lib/employees/queries";
-import { requireRole } from "@/lib/auth/session";
+import { requireRoleOrPermission } from "@/lib/auth/session";
 import { listDocumentFolders } from "@/lib/hr/document-folders";
 import { listDocumentLibrary, listRequiredDocuments } from "@/lib/hr/documents";
 
@@ -26,7 +26,7 @@ export default async function DocumentLibraryPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["document_custodian"]);
   const raw = await searchParams;
   const filters = documentLibraryFiltersSchema.parse({
     search: typeof raw.search === "string" ? raw.search : undefined,

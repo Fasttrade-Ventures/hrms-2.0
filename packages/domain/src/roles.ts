@@ -41,12 +41,12 @@ export const WIRED_SPECIALIST_PERMISSIONS = [
   "payroll_processor",
   "payroll_approver",
   "auditor",
-] as const satisfies readonly SpecialistPermission[];
-
-export const DEFERRED_SPECIALIST_PERMISSIONS = [
   "recruiter",
   "document_custodian",
   "asset_manager",
+] as const satisfies readonly SpecialistPermission[];
+
+export const DEFERRED_SPECIALIST_PERMISSIONS = [
   "exporter",
   "integration_manager",
 ] as const satisfies readonly SpecialistPermission[];

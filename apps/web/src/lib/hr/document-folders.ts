@@ -1,4 +1,4 @@
-import { requireRole } from "@/lib/auth/session";
+import { requireRole, requireRoleOrPermission } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import type { DocumentFolderInput } from "@hrms/validation";
 import { requireOrganizationId } from "@/lib/auth/organization-context";
@@ -39,7 +39,7 @@ export async function listDocumentFolders(): Promise<DocumentFolderRow[]> {
 }
 
 export async function createDocumentFolder(input: DocumentFolderInput): Promise<void> {
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["document_custodian"]);
   const supabase = await createClient();
   const organizationId = await requireOrganizationId();
 
@@ -71,7 +71,7 @@ export async function updateDocumentFolder(
   folderId: string,
   input: DocumentFolderInput,
 ): Promise<void> {
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["document_custodian"]);
   const supabase = await createClient();
   const organizationId = await requireOrganizationId();
 
@@ -105,7 +105,7 @@ export async function updateDocumentFolder(
 }
 
 export async function deleteDocumentFolder(folderId: string): Promise<void> {
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["document_custodian"]);
   const supabase = await createClient();
   const organizationId = await requireOrganizationId();
 

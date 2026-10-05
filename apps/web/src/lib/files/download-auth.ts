@@ -91,6 +91,10 @@ export async function canDownloadFile(input: {
     });
   }
 
+  if (file.category === "policies") {
+    return true;
+  }
+
   if (file.category === "leave-attachments") {
     if (
       input.roles.includes("hr_administrator") ||

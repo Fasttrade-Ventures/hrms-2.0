@@ -72,6 +72,19 @@ export function isAuditPath(pathname: string): boolean {
   return pathname === "/hr/audit" || pathname.startsWith("/hr/audit/") || pathname === "/auditor/audit" || pathname.startsWith("/auditor/audit/");
 }
 
+const SPECIALIST_PREFIXES: Record<string, string> = {
+  recruiter: "/hr/recruitment",
+  document_custodian: "/hr/documents",
+  asset_manager: "/hr/assets",
+};
+
+function specialistPrefixAllowed(pathname: string, permissions: readonly string[]): boolean {
+  return permissions.some((permission) => {
+    const prefix = SPECIALIST_PREFIXES[permission];
+    return Boolean(prefix && (pathname === prefix || pathname.startsWith(`${prefix}/`)));
+  });
+}
+
 export function canAccessPath(
   pathname: string,
   roles: readonly string[],
@@ -90,10 +103,10 @@ export function canAccessPath(
   }
 
   if (pathname === "/hr" || pathname.startsWith("/hr/")) {
-    if (roles.includes("hr_administrator")) {
+    if (roles.includes("hr_administrator") || roles.includes("organization_owner")) {
       return true;
     }
-    if (roles.includes("organization_owner")) {
+    if (specialistPrefixAllowed(pathname, permissions)) {
       return true;
     }
     return false;

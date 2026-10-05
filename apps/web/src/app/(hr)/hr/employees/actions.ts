@@ -108,6 +108,39 @@ export async function updateEmployeeFull(
   }
 }
 
+export async function markEmployeeConfirmed(employeeId: string): Promise<EmployeeActionState> {
+  const session = await requireRole("hr_administrator");
+  const organizationId = await requireOrganizationId();
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const admin = createAdminClient();
+  const confirmedOn = new Date().toISOString().slice(0, 10);
+
+  const { error } = await admin
+    .from("employees")
+    .update({
+      confirmation_status: "confirmed",
+      confirmed_on: confirmedOn,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", employeeId)
+    .eq("organization_id", organizationId);
+
+  if (error) return { error: error.message };
+
+  await logEmployeeEvent({
+    organizationId,
+    employeeId,
+    actorUserId: session.user.id,
+    action: "employee.confirmed",
+    metadata: { confirmedOn },
+  });
+
+  revalidatePath("/hr/employees");
+  revalidatePath(`/hr/employees/${employeeId}`);
+  revalidatePath(`/hr/employees/${employeeId}/edit`);
+  return { success: "Employee marked as confirmed." };
+}
+
 export async function updateEmployeeCore(
   employeeId: string,
   _prevState: EmployeeActionState,

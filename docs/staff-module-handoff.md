@@ -1,10 +1,10 @@
 # Staff module — programmer handoff
 
-**Last updated:** 2026-09-23  
+**Last updated:** 2026-10-06  
 **Audience:** Engineering team  
 **Product name in UI:** **Employee portal** (`/employee/*`)  
 **Legacy name:** **Staff** (`hrms-fasttrade/staff/`)  
-**Status:** ✅ **Fully implemented, tested, and merged to `main` (PR #1 – PR #30)**
+**Status:** Employee portal through PR #35 is on `main`. Open product gaps are in [features.md](./features.md) §23.
 
 ---
 
@@ -85,7 +85,7 @@ In the old PHP system, everyday employees used the **Staff** area. In HRMS 2.0 t
 
 ## 4. Completed PRs & changelog
 
-All backlog items and feature extensions have been implemented, reviewed, and merged via PR #1 through PR #30:
+Employee-portal work merged through PR #35. Product gaps that are still open live in [features.md](./features.md) §23A.
 
 ### Foundation, Core Sprints & Polish (PR #1 – PR #20)
 
@@ -122,6 +122,11 @@ All backlog items and feature extensions have been implemented, reviewed, and me
 | **#28** | `feat/overnight-shift` | Full support for overnight shifts spanning past midnight, plus standardized Malaysian `DD/MM/YYYY` date displays. |
 | **#29** | `feat/auto-clock-out-after-shift-ends` | Background cron engine automatically clocking out employees who forgot to clock out after shift conclusion. |
 | **#30** | `feat/tardiness-alert` | Real-time automated tardiness notification alert triggered when an employee is unclocked after shift start + grace. |
+| **#31** | `feat/real-notifications` | Live notification outbox replaces the placeholder feed, with unread filtering. |
+| **#32** | `feat/leave-attachment-upload` | MC attachment required on apply; approvers can view the file from R2. |
+| **#33** | `feat/hr-positions-catalog-and-status-styling` | Positions catalog under HR Organization; employee create/edit selects a position. |
+| **#34** | `feat/leave-accrual-carry-forward-jobs` | Monthly leave accrual, year-end carry-forward rollover, and leave balance audit. |
+| **#35** | `feat/appraisal-templates` | Reusable appraisal template builder, preview, and cycle creation. |
 
 ---
 

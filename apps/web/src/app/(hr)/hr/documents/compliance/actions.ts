@@ -1,13 +1,13 @@
 "use server";
 
 import { logReportExport } from "@/lib/reports/audit";
-import { requireRole } from "@/lib/auth/session";
+import { requireRoleOrPermission } from "@/lib/auth/session";
 import { buildComplianceMatrix, listRequiredDocuments } from "@/lib/hr/documents";
 import { complianceMatrixToCsv } from "@/lib/hr/documents-export";
 import { parseReportFilters } from "@/lib/reports/filters";
 
 export async function exportComplianceMatrixCsv() {
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["document_custodian"]);
   const [rows, requiredTypes] = await Promise.all([
     buildComplianceMatrix(),
     listRequiredDocuments(true),

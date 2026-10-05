@@ -110,6 +110,36 @@ export function filterPortalNavSections(
     .filter((section) => section.items.length > 0);
 }
 
+const SPECIALIST_NAV_PREFIXES: Record<string, string> = {
+  recruiter: "/hr/recruitment",
+  document_custodian: "/hr/documents",
+  asset_manager: "/hr/assets",
+};
+
+export function filterNavForSpecialist(
+  sections: PortalNavSection[],
+  roles: readonly string[],
+  permissions: readonly string[],
+): PortalNavSection[] {
+  if (roles.includes("hr_administrator") || roles.includes("organization_owner")) {
+    return sections;
+  }
+
+  const prefixes = permissions
+    .map((permission) => SPECIALIST_NAV_PREFIXES[permission])
+    .filter((prefix): prefix is string => Boolean(prefix));
+  if (prefixes.length === 0) return sections;
+
+  return sections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) =>
+        prefixes.some((prefix) => item.href === prefix || item.href.startsWith(`${prefix}/`)),
+      ),
+    }))
+    .filter((section) => section.items.length > 0);
+}
+
 export function getPortalNavSectionsForEntitlements(
   portal: string,
   options: {
@@ -159,6 +189,7 @@ const employeeNav: PortalNavSection[] = [
     label: "Workplace",
     items: [
       { href: "/employee/documents", label: "Documents", icon: "documents" },
+      { href: "/employee/policies", label: "Policies", icon: "documents" },
       { href: "/employee/calendar", label: "Calendar", icon: "calendar" },
       { href: "/employee/announcements", label: "Announcements", icon: "announcements" },
       { href: "/employee/assets", label: "My assets", icon: "assets" },
@@ -214,6 +245,7 @@ const hrNav: PortalNavSection[] = [
           { href: "/hr/employees/import", label: "Bulk import", icon: "reports" },
         ],
       },
+      { href: "/hr/checklists", label: "Checklists", icon: "documents" },
       { href: "/hr/apply-behalf", label: "Apply on behalf", icon: "apply-behalf" },
       {
         href: "/hr/organization",
@@ -251,6 +283,7 @@ const hrNav: PortalNavSection[] = [
     label: "Workplace",
     items: [
       { href: "/hr/documents", label: "Documents", icon: "documents" },
+      { href: "/hr/policies", label: "Policies", icon: "documents" },
       { href: "/hr/announcements", label: "Announcements", icon: "announcements" },
       { href: "/hr/calendar", label: "Calendar", icon: "calendar" },
       { href: "/hr/assets", label: "Assets", icon: "assets" },
