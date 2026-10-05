@@ -114,6 +114,19 @@ export function resolveNotificationHref(
     return null;
   }
 
+  if (row.template === "employee.probation_ending") {
+    const employeeId = row.payload.employeeId;
+    if (portal === "hr" && typeof employeeId === "string") {
+      return `/hr/employees/${employeeId}/edit`;
+    }
+    return null;
+  }
+
+  if (row.template === "leave.balance_reminder") {
+    if (portal === "employee") return "/employee/leave";
+    return null;
+  }
+
   if (row.template === "attendance.tardy") {
     if (portal === "employee") return "/employee/attendance";
     return null;

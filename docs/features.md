@@ -4,7 +4,7 @@ Complete product feature inventory for engineering and stakeholders.
 Cross-check UI screens in [ui-design-inventory.md](./ui-design-inventory.md).  
 Build order and rules in [developer-brief.md](./developer-brief.md).
 
-**Last codebase audit:** 2026-08-28 — statuses below reflect implemented routes/libs/schema in `apps/web`, not Pencil alone.  
+**Last codebase audit:** 2026-10-06 (`main` @ PR #35) — statuses below reflect implemented routes/libs/schema in `apps/web`, not Pencil alone.  
 **Roadmap:** §19–§21 = new planned features (not in code yet). **Competitive:** §22 vs MySyarikat.
 
 **Legend**
@@ -55,7 +55,7 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Organizations | Core | — | |
 | Branches | Core | ✅ HR Org | CRUD under `/hr/organization/branches` (+ geofence fields) |
 | Departments | Core | ✅ HR Org | CRUD under `/hr/organization/departments` |
-| Positions / job titles | Core | 🟡 HR Org | Free-text `job_title` on employees — **no positions catalog/CRUD yet** |
+| Positions / job titles | Core | ✅ HR Org | Catalog CRUD at `/hr/organization/positions`; employee create/edit uses `position_id` (legacy `job_title` kept) |
 | Shifts | Core | ✅ HR Org | CRUD under `/hr/organization/shifts` (`grace_minutes` stored) |
 | Public holidays / observed holidays | Core | ✅ HR Org | Managed under `/hr/organization/holidays`; Calendar consumes |
 | Reporting relationships (manager → team) | Core | ✅ | `manager_employee_id` on create/edit; drives manager scope |
@@ -92,8 +92,8 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Team calendar (manager) | Core | ✅ | Month / list at `/manager/team-calendar` |
 | Long-leave escalation | Core | ⬜ | Not implemented |
 | Replacement-credit balance on leave | Core | ✅ | Dynamic balance linked to `replacement_credits` and `replacement_credit_usages` ledgers |
-| Prorating / carry-forward / expiry automation | Pro | 🟡 | Manual carry-forward field; **no accrual/expiry jobs** |
-| Accrual & reminders | Pro | ⬜ | |
+| Prorating / carry-forward / expiry automation | Pro | ✅ | Monthly accrual `/api/cron/leave-accrual`; year-end rollover + carry-forward expiry `/api/cron/leave-rollover`; pending-request expiry `/api/cron/leave-expiry`; HR audit `/hr/leave/audit` |
+| Accrual & reminders | Pro | 🟡 | Accrual job shipped; **no leave-balance reminder notifications** |
 | Blackout periods | Pro | ✅ HR Org | `leave_blackout_periods` + apply/behalf enforcement |
 | Configurable multi-level approvals | Pro | ⬜ | Schema allows steps; runtime always single manager step |
 
@@ -110,12 +110,12 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Manual attendance request | Core | ✅ | Approval flow |
 | Report late | Core | ✅ | Same-day + history |
 | Attendance timesheet (month grid / PDF) | Core | ✅ | Codes: hours, AL, MC, HOL, absent, HD |
-| Shift-based lateness rules | Core | 🟡 | `grace_minutes` on shifts; clock “Late” badge still hardcoded (~09:00) |
+| Shift-based lateness rules | Core | ✅ | Roster today, else `employees.shift_id` + `grace_minutes`; 09:00 only if no shift assigned |
 | HR apply attendance on behalf | Core | ✅ Apply Behalf | Late reports auto-approved |
 | GPS / geofencing | Pro | ✅ | Branch geofence + outside action; clock enforcement |
 | Rosters / work schedules | Pro | ✅ | `/hr/organization/rosters` + `/employee/schedule` |
 | Overnight shifts | Pro | ✅ | Cross-midnight sessions; clock-out after midnight stays on the same work date |
-| Tardiness alerts | Pro | ⬜ | No notification/cron |
+| Tardiness alerts | Pro | ✅ | `/api/cron/attendance-tardiness` if not clocked in after start + grace |
 | Auto clock-out (idempotent) | Pro | ✅ | Scheduled cron (/api/cron/auto-clock-out) + JIT auto-close at shift end |
 
 ---
@@ -233,7 +233,7 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Manager team performance list | Core | ✅ | |
 | Manager review detail / rating | Core | ✅ | |
 | HR appraisal cycles | Core | ✅ | `/hr/performance` — create, launch, close, CSV export |
-| Reusable appraisal templates | Core | ⬜ | Cycles only — **no template catalog table/UI** |
+| Reusable appraisal templates | Core | ✅ | `/hr/performance/templates` — builder, preview, cycle uses template |
 | Advanced KPI cycles | Pro | ⬜ | |
 
 ---
@@ -307,11 +307,12 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Capability | Status |
 |------------|--------|
 | Leave blackouts | ✅ Done |
-| Leave accrual / carry-forward automation / reminders | 🟡 / ⬜ Partial field only |
+| Leave accrual / carry-forward / expiry jobs | ✅ Done |
+| Leave-balance reminder notifications | ⬜ |
 | Multi-level leave approvals | ⬜ |
 | Attendance rosters + employee schedule | ✅ Done |
 | GPS / geofence | ✅ Done |
-| Overnight shifts / auto clock-out (✅ Done) / tardiness alerts | 🟡 |
+| Overnight shifts / auto clock-out / tardiness alerts | ✅ Done |
 | Claim max-amount policy + payroll inclusion | ✅ Done |
 | Mileage / richer claim policy | ⬜ |
 | Document expiry notifications | ✅ Done |
@@ -417,17 +418,31 @@ Sources (competitive research, Aug 2026):
 ## 23. Still pending (open backlog)
 
 ### A — Existing product gaps (in code / features above)
-1. **Positions catalog** — free-text `job_title` only  
-2. **Leave cancel / revoke** — no UI/service  
-3. ~~**Replacement credit ↔ leave** consume-once accounting~~ (✅ Implemented via `replacement_credit_usages` ledger)
-4. ~~**Shift-based lateness enforcement** — grace unused on clock~~ (✅ Implemented dynamic late detection from shift + grace minutes)  
-5. ~~**Overnight shifts & auto clock-out**~~ (✅ Cross-midnight sessions stay on work date; idempotent auto-clock out at shift end), tardiness alerts  
-6. **Multi-level / custom approval workflows**  
-7. **Leave accrual / expiry automation**  
-8. **Appraisal templates** (cycles exist)  
-9. **Mileage / employee-specific OT rates**  
-10. **SSO + marketing site**  
-11. **Pay-first signup / seat hard limits** — still FUTURE  
+
+**Done (do not rebuild)**
+
+1. ~~**Positions catalog**~~ (✅ `/hr/organization/positions`; employees store `position_id`)
+2. ~~**Leave cancel / revoke**~~ (✅ `/employee/leave/[id]`; restores balance + replacement credits)
+3. ~~**Replacement credit ↔ leave** consume-once~~ (✅ `replacement_credit_usages`)
+4. ~~**Shift-based lateness**~~ (✅ roster or `employees.shift_id` + `grace_minutes`)
+5. ~~**Overnight shifts, auto clock-out, tardiness alerts**~~ (✅ `/api/cron/auto-clock-out`, `/api/cron/attendance-tardiness`)
+6. ~~**Leave accrual, carry-forward, pending-request expiry**~~ (✅ `/api/cron/leave-accrual`, `/api/cron/leave-rollover`, `/api/cron/leave-expiry`, `/hr/leave/audit`)
+7. ~~**Appraisal templates**~~ (✅ `/hr/performance/templates`)
+8. ~~**Employee notifications**~~ (✅ live outbox; placeholders deprecated)
+
+**Still open**
+
+1. **Multi-level / custom approval workflows** — runtime is still one manager step
+2. **Leave-balance reminder notifications** — accrual job exists; no “balance low / expiring” reminder
+3. **Long-leave escalation**
+4. **Mileage / richer claim policy** and **employee-specific OT rates**
+5. **Conditional approval routing**
+6. **Onboarding / offboarding checklists**
+7. **Advanced KPI cycles**
+8. **Specialist roles still deferred** — recruiter, document custodian, asset manager
+9. **SSO + marketing site**
+10. **Pay-first signup / seat hard limits** — still FUTURE
+11. **Custom workflow builder** and **advanced retention** beyond audit archive/SIEM  
 
 ### B — New roadmap (beat MySyarikat) — all ⬜
 See §19–§21. Suggested build order:

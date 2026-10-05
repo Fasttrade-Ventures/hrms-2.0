@@ -36,6 +36,8 @@ export async function getCurrentEmployeeDetail(): Promise<EmployeeDetail | null>
       job_title,
       position_id,
       confirmation_status,
+      probation_end_date,
+      confirmed_on,
       annual_leave_entitlement,
       annual_leave_carry_forward,
       branches(name),
@@ -127,6 +129,8 @@ export async function getCurrentEmployeeDetail(): Promise<EmployeeDetail | null>
     jobTitle: (employee.positions as { title?: string } | null)?.title ?? employee.job_title ?? null,
     positionId: employee.position_id ?? null,
     confirmationStatus: employee.confirmation_status ?? null,
+    probationEndDate: employee.probation_end_date ?? null,
+    confirmedOn: employee.confirmed_on ?? null,
     annualLeaveEntitlement: Number(employee.annual_leave_entitlement ?? 14),
     annualLeaveCarryForward: Number(employee.annual_leave_carry_forward ?? 0),
     allowedLeaveTypeIds: (employee.employee_allowed_leave_types ?? []).map(

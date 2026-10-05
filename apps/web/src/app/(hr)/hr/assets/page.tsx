@@ -12,7 +12,7 @@ import { parseAssetRegisterFilters } from "@/lib/assets/parse-filters";
 import { listAssets } from "@/lib/assets/queries";
 import { listActiveEmployeesForSelect } from "@/lib/employees/queries";
 import { listBranches } from "@/lib/hr/organization";
-import { requireRole } from "@/lib/auth/session";
+import { requireRoleOrPermission } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
 
 export default async function Page({
@@ -21,7 +21,7 @@ export default async function Page({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   await requireModule("assets");
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["asset_manager"]);
 
   const query = await searchParams;
   const filters = parseAssetRegisterFilters(query);

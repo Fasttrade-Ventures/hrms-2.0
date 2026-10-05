@@ -105,6 +105,18 @@ function getNotificationText(row: NotificationRow): { title: string; message: st
       message: periodStr ? `${periodStr} payslip is available.` : "Your payslip is ready."
     };
   }
+  if (row.template === "employee.probation_ending") {
+    return {
+      title: String(row.payload.title ?? "Probation ending"),
+      message: String(row.payload.message ?? "An employee's probation is ending."),
+    };
+  }
+  if (row.template === "leave.balance_reminder") {
+    return {
+      title: String(row.payload.title ?? "Leave balance reminder"),
+      message: String(row.payload.message ?? "Your leave balance needs attention."),
+    };
+  }
   if (row.template === "attendance.tardy") {
     const shiftStart = String(row.payload.shiftStart ?? "09:00");
     const graceMinutes = Number(row.payload.graceMinutes ?? 0);

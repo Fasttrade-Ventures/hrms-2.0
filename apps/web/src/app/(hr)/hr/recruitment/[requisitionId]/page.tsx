@@ -4,13 +4,13 @@ import { notFound } from "next/navigation";
 import { AddCandidateForm } from "@/components/hr/recruitment/create-requisition-form";
 import { RecruitmentPipeline } from "@/components/hr/recruitment/recruitment-pipeline";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
-import { requireRole } from "@/lib/auth/session";
+import { requireRoleOrPermission } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
 import { getRequisitionPipeline } from "@/lib/recruitment/applications";
 
 export default async function Page({ params }: { params: Promise<{ requisitionId: string }> }) {
   await requireModule("recruitment");
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["recruiter"]);
   const { requisitionId } = await params;
 
   const pipeline = await getRequisitionPipeline(requisitionId);

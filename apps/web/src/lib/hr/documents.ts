@@ -1,6 +1,6 @@
 import type { DocumentLibraryFilters } from "@hrms/validation";
 
-import { requireRole } from "@/lib/auth/session";
+import { requireRole, requireRoleOrPermission } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import {
   documentTypesMatch,
@@ -129,7 +129,7 @@ export async function listDocumentLibrary(
   truncated: boolean;
   fetchedCap: number;
 }> {
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["document_custodian"]);
   const supabase = await createClient();
   const organizationId = await requireOrganizationId();
   const today = new Date().toISOString().slice(0, 10);
@@ -193,7 +193,7 @@ export async function listEmployeeDocuments(): Promise<HrDocumentRow[]> {
 }
 
 export async function listEmployeeDocumentsForProfile(employeeId: string): Promise<HrDocumentRow[]> {
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["document_custodian"]);
   const result = await listDocumentLibrary({
     employeeId,
     status: "all",
@@ -237,7 +237,7 @@ export async function createRequiredDocument(input: {
   isActive: boolean;
   sortOrder: number;
 }): Promise<void> {
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["document_custodian"]);
   const supabase = await createClient();
 
   const { error } = await supabase.from("required_documents").insert({
@@ -264,7 +264,7 @@ export async function updateRequiredDocument(
     sortOrder: number;
   },
 ): Promise<void> {
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["document_custodian"]);
   const supabase = await createClient();
 
   const { error } = await supabase
@@ -284,7 +284,7 @@ export async function updateRequiredDocument(
 }
 
 export async function deleteRequiredDocument(id: string): Promise<void> {
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["document_custodian"]);
   const supabase = await createClient();
 
   const { error } = await supabase
@@ -418,7 +418,7 @@ export async function deleteEmployeeDocument(
   documentId: string,
   actorUserId?: string | null,
 ): Promise<void> {
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["document_custodian"]);
   const supabase = await createClient();
   const organizationId = await requireOrganizationId();
 
@@ -461,7 +461,7 @@ export async function deleteEmployeeDocument(
 }
 
 export async function getDocumentsHubStats(): Promise<DocumentsHubStats> {
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["document_custodian"]);
   const supabase = await createClient();
   const organizationId = await requireOrganizationId();
   const today = new Date().toISOString().slice(0, 10);

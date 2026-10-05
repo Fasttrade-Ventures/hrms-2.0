@@ -7,7 +7,7 @@ import {
 } from "@hrms/domain";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireRole, getSession } from "@/lib/auth/session";
+import { getSession, requireRoleOrPermission } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
 import { logAssetEvent } from "./audit";
@@ -33,7 +33,7 @@ export async function assignAsset(input: {
   assignedAt: string;
   notes?: string | null;
 }): Promise<void> {
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["asset_manager"]);
   const session = await getSession();
   const supabase = await createClient();
   const organizationId = await requireOrganizationId();
@@ -130,7 +130,7 @@ export async function returnAssetAssignment(input: {
   destination: ReturnDestination;
   notes?: string | null;
 }): Promise<void> {
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["asset_manager"]);
   const session = await getSession();
   const supabase = await createClient();
   const organizationId = await requireOrganizationId();
@@ -186,7 +186,7 @@ export async function returnAssetAssignment(input: {
 }
 
 export async function disposeAsset(assetId: string): Promise<void> {
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["asset_manager"]);
   const supabase = await createClient();
   const organizationId = await requireOrganizationId();
 

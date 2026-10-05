@@ -1,5 +1,5 @@
 import { requireEmployeeContext } from "@/lib/employee/leave";
-import { requireRole } from "@/lib/auth/session";
+import { requireRoleOrPermission } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
 import { logAssetEvent } from "./audit";
@@ -78,7 +78,7 @@ export async function createAssetRequest(input: {
 }
 
 export async function resolveAssetRequest(requestId: string): Promise<void> {
-  const session = await requireRole("hr_administrator");
+  const session = await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["asset_manager"]);
   const supabase = await createClient();
 
   const organizationId = await requireOrganizationId();

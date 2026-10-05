@@ -9,7 +9,9 @@ import { selectMembershipRow, type MembershipRow } from "@/lib/auth/membership-s
 import { resolvePostLoginPath } from "@/lib/auth/redirect";
 import { canAccessPortal, isSafeInternalPath } from "@/lib/auth/routes";
 import { getMembershipRoles } from "@/lib/auth/session";
+import { seatLimitMessage } from "@/lib/employees/seat-limit";
 import { checkRateLimitDurable } from "@/lib/rate-limit";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export type LoginState = {
@@ -216,12 +218,37 @@ export async function activateAccount(
   });
 
   if (membership?.employee_id) {
-    await supabase
+    const admin = createAdminClient();
+    const { data: current } = await admin
       .from("employees")
-      .update({ status: "active" })
+      .select("status")
       .eq("id", membership.employee_id)
       .eq("organization_id", membership.organization_id)
-      .eq("status", "inactive");
+      .maybeSingle();
+
+    if (current?.status === "inactive") {
+      const { count } = await admin
+        .from("employees")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", membership.organization_id)
+        .eq("status", "active");
+      const { data: organization } = await admin
+        .from("organizations")
+        .select("licensed_headcount")
+        .eq("id", membership.organization_id)
+        .maybeSingle();
+      const seatError = seatLimitMessage(count ?? 0, organization?.licensed_headcount ?? null);
+      if (seatError) {
+        return { error: seatError };
+      }
+
+      await admin
+        .from("employees")
+        .update({ status: "active" })
+        .eq("id", membership.employee_id)
+        .eq("organization_id", membership.organization_id)
+        .eq("status", "inactive");
+    }
   }
 
   await logAuthEvent({

@@ -9,7 +9,7 @@ import {
 } from "@hrms/validation";
 
 import { logDocumentEvent } from "@/lib/audit/log-document-event";
-import { requireRole } from "@/lib/auth/session";
+import { requireRoleOrPermission } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
 import { assertDocumentUpload, uploadOrganizationFile } from "@/lib/files/storage";
 import {
@@ -48,7 +48,7 @@ export async function uploadDocumentAction(
 
   try {
     await requireModule("documents");
-    const session = await requireRole("hr_administrator");
+    const session = await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["document_custodian"]);
     assertDocumentUpload(file);
 
     const requiredTypes = await listRequiredDocuments(true);
@@ -111,7 +111,7 @@ export async function uploadDocumentAction(
 export async function deleteDocumentAction(documentId: string): Promise<DocumentActionState> {
   try {
     await requireModule("documents");
-    const session = await requireRole("hr_administrator");
+    const session = await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["document_custodian"]);
     await deleteEmployeeDocument(documentId, session.user.id);
 
     revalidatePath("/hr/documents");
@@ -143,7 +143,7 @@ export async function saveRequiredDocumentAction(
 
   try {
     await requireModule("documents");
-    await requireRole("hr_administrator");
+    await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["document_custodian"]);
 
     if (id) {
       await updateRequiredDocument(id, parsed.data);
@@ -162,7 +162,7 @@ export async function saveRequiredDocumentAction(
 export async function deleteRequiredDocumentAction(id: string): Promise<DocumentActionState> {
   try {
     await requireModule("documents");
-    await requireRole("hr_administrator");
+    await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["document_custodian"]);
     await deleteRequiredDocument(id);
     revalidatePath("/hr/documents/required");
     revalidatePath("/hr/documents/compliance");
@@ -188,7 +188,7 @@ export async function saveDocumentFolderAction(
 
   try {
     await requireModule("documents");
-    await requireRole("hr_administrator");
+    await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["document_custodian"]);
 
     if (id) {
       await updateDocumentFolder(id, parsed.data);
@@ -207,7 +207,7 @@ export async function saveDocumentFolderAction(
 export async function deleteDocumentFolderAction(id: string): Promise<DocumentActionState> {
   try {
     await requireModule("documents");
-    await requireRole("hr_administrator");
+    await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["document_custodian"]);
     await deleteDocumentFolder(id);
     revalidatePath("/hr/documents/folders");
     return { success: "Folder deleted." };

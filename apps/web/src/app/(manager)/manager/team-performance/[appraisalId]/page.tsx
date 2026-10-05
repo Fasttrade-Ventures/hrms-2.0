@@ -3,12 +3,14 @@ import { notFound } from "next/navigation";
 
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { AppraisalSummary } from "@/components/performance/appraisal-summary";
+import { KpiScoreList } from "@/components/performance/kpi-score-list";
 import { RatingSelect } from "@/components/performance/rating-select";
 import { submitManagerReviewAction } from "@/app/(manager)/manager/team-performance/actions";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { requireModule } from "@/lib/entitlements";
 import { getTeamAppraisal } from "@/lib/manager/performance";
+import { listAppraisalKpis } from "@/lib/performance/kpi-service";
 import { appraisalStatusLabel } from "@/lib/performance/types";
 import { requireRole } from "@/lib/auth/session";
 
@@ -24,6 +26,7 @@ export default async function Page({
   const { appraisalId } = await params;
   const query = await searchParams;
   const appraisal = await getTeamAppraisal(appraisalId);
+  const kpis = appraisal ? await listAppraisalKpis(appraisalId).catch(() => ({ rows: [], rating: null })) : null;
 
   if (!appraisal) notFound();
 
@@ -51,6 +54,9 @@ export default async function Page({
       ) : null}
 
       <AppraisalSummary appraisal={appraisal} />
+      {kpis ? (
+        <KpiScoreList appraisalId={appraisalId} rating={kpis.rating} rows={kpis.rows} side="manager" />
+      ) : null}
 
       <section className="space-y-3 border border-[var(--border-primary)] bg-[var(--surface-card)] p-6">
         <h2 className="text-base font-semibold text-[var(--foreground-primary)]">Employee self review</h2>

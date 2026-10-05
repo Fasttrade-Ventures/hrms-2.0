@@ -1,6 +1,7 @@
 import type { CreateEmployeeInput } from "@hrms/validation";
 
 import { logEmployeeEvent } from "@/lib/audit/log-employee-event";
+import { confirmedOnForStatus } from "@/lib/employees/probation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireOrganizationId } from "@/lib/auth/organization-context";
 
@@ -15,7 +16,7 @@ export async function updateEmployeeFullProfile(
 
   const { data: existingEmployee, error: existingError } = await admin
     .from("employees")
-    .select("manager_employee_id, job_title, position_id")
+    .select("manager_employee_id, job_title, position_id, confirmed_on")
     .eq("id", employeeId)
     .eq("organization_id", organizationId)
     .maybeSingle();
@@ -51,6 +52,12 @@ export async function updateEmployeeFullProfile(
       job_title: jobTitle,
       position_id: positionId,
       confirmation_status: input.confirmationStatus ?? null,
+      probation_end_date: input.probationEndDate ?? null,
+      confirmed_on: confirmedOnForStatus(
+        input.confirmationStatus,
+        input.confirmedOn ?? existingEmployee?.confirmed_on ?? null,
+        new Date().toISOString().slice(0, 10),
+      ),
       annual_leave_entitlement: input.annualLeaveEntitlement ?? 14,
       annual_leave_carry_forward: input.annualLeaveCarryForward ?? 0,
       join_date: input.joinDate,

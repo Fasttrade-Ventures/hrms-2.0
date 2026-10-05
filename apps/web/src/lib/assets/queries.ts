@@ -3,7 +3,7 @@ import type { AssetStatus } from "@hrms/domain";
 import { validateCustomValues } from "@hrms/domain";
 
 import { requireEmployeeContext } from "@/lib/employee/leave";
-import { requireRole } from "@/lib/auth/session";
+import { requireRoleOrPermission } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
 import { assignAsset } from "./assignments";
@@ -44,7 +44,7 @@ function mapAssignment(row: {
 }
 
 export async function listAssets(filters: AssetRegisterFilters = {}): Promise<AssetListRow[]> {
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["asset_manager"]);
   const supabase = await createClient();
   const organizationId = await requireOrganizationId();
 
@@ -122,7 +122,7 @@ export async function listAssets(filters: AssetRegisterFilters = {}): Promise<As
 }
 
 export async function getAssetDetail(assetId: string): Promise<AssetDetail | null> {
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["asset_manager"]);
   const supabase = await createClient();
   const organizationId = await requireOrganizationId();
 
@@ -212,7 +212,7 @@ export async function createAssetRecord(input: {
   assignedEmployeeId?: string | null;
   issuedAt?: string | null;
 }): Promise<string> {
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["asset_manager"]);
   const supabase = await createClient();
   const organizationId = await requireOrganizationId();
 
@@ -271,7 +271,7 @@ export async function updateAssetRecord(
   assetId: string,
   input: Omit<Parameters<typeof createAssetRecord>[0], "assignedEmployeeId" | "issuedAt">,
 ): Promise<void> {
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["asset_manager"]);
   const supabase = await createClient();
   const organizationId = await requireOrganizationId();
 
@@ -398,7 +398,7 @@ export async function getMyAssetDetail(assetId: string): Promise<MyAssetDetail |
 export async function listActiveAssignmentsForEmployee(
   employeeId: string,
 ): Promise<EmployeeAssetAssignmentRow[]> {
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["asset_manager"]);
   const supabase = await createClient();
   const organizationId = await requireOrganizationId();
 
@@ -435,7 +435,7 @@ export async function listActiveAssignmentsForEmployee(
 }
 
 export async function listAssetAssignments(assetId: string): Promise<AssetAssignmentRow[]> {
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["asset_manager"]);
   const supabase = await createClient();
   const organizationId = await requireOrganizationId();
 

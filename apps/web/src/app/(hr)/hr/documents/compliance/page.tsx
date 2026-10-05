@@ -2,7 +2,7 @@ import { ComplianceMatrix } from "@/components/hr/documents/compliance-matrix";
 import { ExportComplianceButton } from "@/components/hr/documents/export-compliance-button";
 import { HrLinkButton, HrPagination } from "@/components/hr/hr-ui.client";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
-import { requireRole } from "@/lib/auth/session";
+import { requireRoleOrPermission } from "@/lib/auth/session";
 import { buildComplianceMatrix, listRequiredDocuments } from "@/lib/hr/documents";
 
 import { DEFAULT_LIST_PAGE_SIZE } from "@/lib/pagination";
@@ -19,7 +19,7 @@ export default async function DocumentCompliancePage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await requireRole("hr_administrator");
+  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["document_custodian"]);
   const raw = await searchParams;
   const page = Math.max(1, Number(typeof raw.page === "string" ? raw.page : "1") || 1);
 

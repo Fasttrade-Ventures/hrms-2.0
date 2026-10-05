@@ -175,7 +175,15 @@ export function EmployeeProfileView({ employee }: { employee: EmployeeDetail }) 
             />
             <ProfileField
               label="Confirmation"
-              value={formatConfirmationStatus(employee.confirmationStatus)}
+              value={
+                employee.confirmedOn
+                  ? `${formatConfirmationStatus(employee.confirmationStatus)} on ${formatProfileDate(employee.confirmedOn)}`
+                  : formatConfirmationStatus(employee.confirmationStatus)
+              }
+            />
+            <ProfileField
+              label="Probation ends"
+              value={formatProfileDate(employee.probationEndDate)}
             />
           </div>
         </ProfileSection>

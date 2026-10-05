@@ -37,6 +37,10 @@
       "schedule": "0 16 * * *"
     },
     {
+      "path": "/api/cron/leave-balance-reminders",
+      "schedule": "0 1 * * *"
+    },
+    {
       "path": "/api/cron/auto-clock-out",
       "schedule": "0 20 * * *"
     },
@@ -51,6 +55,14 @@
     {
       "path": "/api/cron/leave-rollover",
       "schedule": "0 0 1 1 *"
+    },
+    {
+      "path": "/api/cron/probation-reminder",
+      "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/cron/record-retention",
+      "schedule": "0 3 * * 0"
     }
   ]
 }

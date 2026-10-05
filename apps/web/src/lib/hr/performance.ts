@@ -142,7 +142,7 @@ export async function launchAppraisalsForCycle(cycleId: string, actorUserId?: st
 
   const { data: cycle, error: cycleError } = await supabase
     .from("review_cycles")
-    .select("closed_at, target_department_id")
+    .select("closed_at, target_department_id, template_id")
     .eq("organization_id", organizationId)
     .eq("id", cycleId)
     .maybeSingle();
@@ -177,14 +177,36 @@ export async function launchAppraisalsForCycle(cycleId: string, actorUserId?: st
 
     if (existing) continue;
 
-    const { error } = await supabase.from("performance_appraisals").insert({
-      organization_id: organizationId,
-      employee_id: employee.id,
-      review_cycle_id: cycleId,
-      status: "draft",
-    });
+    const { data: createdRow, error } = await supabase
+      .from("performance_appraisals")
+      .insert({
+        organization_id: organizationId,
+        employee_id: employee.id,
+        review_cycle_id: cycleId,
+        status: "draft",
+      })
+      .select("id")
+      .single();
 
-    if (!error) created += 1;
+    if (!error && createdRow) {
+      created += 1;
+      if (cycle.template_id) {
+        const { data: kpis } = await supabase
+          .from("appraisal_template_kpis")
+          .select("id")
+          .eq("organization_id", organizationId)
+          .eq("template_id", cycle.template_id);
+        if (kpis?.length) {
+          await supabase.from("appraisal_kpi_scores").insert(
+            kpis.map((kpi) => ({
+              organization_id: organizationId,
+              appraisal_id: createdRow.id,
+              kpi_id: kpi.id,
+            })),
+          );
+        }
+      }
+    }
   }
 
   if (created > 0) {

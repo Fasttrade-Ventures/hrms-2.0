@@ -12,6 +12,16 @@ export type AuditSettingsActionState = {
   success?: string;
 };
 
+function optionalDays(value: FormDataEntryValue | null): number | null {
+  const raw = String(value ?? "").trim();
+  if (!raw) return null;
+  const days = Number(raw);
+  if (!Number.isInteger(days) || days < 1) {
+    throw new Error("Document and policy retention must be a positive number of days, or blank to keep them.");
+  }
+  return days;
+}
+
 export async function updateRetentionSettingsAction(
   _prev: AuditSettingsActionState,
   formData: FormData,
@@ -20,6 +30,8 @@ export async function updateRetentionSettingsAction(
     await updateAuditRetentionSettings({
       retentionDays: Number(formData.get("retentionDays") ?? 2555),
       archiveEnabled: formData.get("archiveEnabled") === "true",
+      documentRetentionDays: optionalDays(formData.get("documentRetentionDays")),
+      policyRetentionDays: optionalDays(formData.get("policyRetentionDays")),
     });
     revalidatePath("/hr/audit/settings");
     return { success: "Retention settings saved." };

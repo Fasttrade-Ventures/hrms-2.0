@@ -4,6 +4,7 @@ import { useActionState, useEffect, useMemo, useState, useTransition } from "rea
 import { useRouter } from "next/navigation";
 
 import {
+  markEmployeeConfirmed,
   resendActivation,
   updateEmployeeFull,
   type EmployeeActionState,
@@ -428,6 +429,14 @@ export function EditEmployeeForm({
                   <option value="contract">Contract</option>
                 </HrSelect>
               </HrField>
+              <HrField id="probationEndDate" label="Probation end date">
+                <HrTextInput
+                  defaultValue={employee.probationEndDate ?? ""}
+                  id="probationEndDate"
+                  name="probationEndDate"
+                  type="date"
+                />
+              </HrField>
               <HrField id="fullName" label="Full name">
                 <HrTextInput
                   defaultValue={employee.fullName}
@@ -437,6 +446,31 @@ export function EditEmployeeForm({
                 />
               </HrField>
             </div>
+            {employee.confirmedOn ? (
+              <p className="text-sm text-[var(--foreground-muted)]">
+                Confirmed on {employee.confirmedOn}.{" "}
+                <a
+                  className="font-medium text-[var(--accent-primary)] underline"
+                  href={`/hr/employees/${employee.id}/confirmation-letter`}
+                >
+                  Download confirmation letter
+                </a>
+              </p>
+            ) : (
+              <button
+                className="text-sm font-medium text-[var(--accent-primary)] underline"
+                onClick={() =>
+                  startResend(async () => {
+                    const result = await markEmployeeConfirmed(employee.id);
+                    setResendState(result);
+                    if (!result.error) router.refresh();
+                  })
+                }
+                type="button"
+              >
+                Mark as confirmed
+              </button>
+            )}
 
             <div className="grid gap-4 md:grid-cols-2">
               <HrField id="email" label="Email">
