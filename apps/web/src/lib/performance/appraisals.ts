@@ -10,6 +10,7 @@ function mapAppraisalRow(row: {
   self_comments: string | null;
   manager_rating: number | null;
   manager_comments: string | null;
+  criteria_responses?: any;
   employees:
     | { full_name: string | null; email: string | null; employee_number: string | null }
     | Array<{ full_name: string | null; email: string | null; employee_number: string | null }>
@@ -22,6 +23,8 @@ function mapAppraisalRow(row: {
         period_end: string;
         due_date: string;
         closed_at: string | null;
+        template_id: string | null;
+        appraisal_templates?: { name: string } | Array<{ name: string }> | null;
       }
     | Array<{
         id: string;
@@ -30,11 +33,18 @@ function mapAppraisalRow(row: {
         period_end: string;
         due_date: string;
         closed_at: string | null;
+        template_id: string | null;
+        appraisal_templates?: { name: string } | Array<{ name: string }> | null;
       }>
     | null;
 }): AppraisalDetail {
   const employee = Array.isArray(row.employees) ? row.employees[0] : row.employees;
   const cycle = Array.isArray(row.review_cycles) ? row.review_cycles[0] : row.review_cycles;
+  const template = cycle?.appraisal_templates
+    ? Array.isArray(cycle.appraisal_templates)
+      ? cycle.appraisal_templates[0]
+      : cycle.appraisal_templates
+    : null;
 
   return {
     id: row.id,
@@ -52,6 +62,9 @@ function mapAppraisalRow(row: {
     selfComments: row.self_comments,
     managerRating: row.manager_rating,
     managerComments: row.manager_comments,
+    templateId: cycle?.template_id ?? null,
+    templateName: template?.name ?? null,
+    criteriaResponses: Array.isArray(row.criteria_responses) ? row.criteria_responses : [],
   };
 }
 
@@ -63,8 +76,9 @@ const APPRAISAL_SELECT = `
   self_comments,
   manager_rating,
   manager_comments,
+  criteria_responses,
   employees(full_name, email, employee_number),
-  review_cycles(id, name, period_start, period_end, due_date, closed_at)
+  review_cycles(id, name, period_start, period_end, due_date, closed_at, template_id, appraisal_templates(name))
 `;
 
 export async function getAppraisalDetail(
