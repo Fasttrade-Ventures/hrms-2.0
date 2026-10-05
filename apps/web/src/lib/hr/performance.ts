@@ -13,6 +13,10 @@ export type ReviewCycleRow = {
   closedAt: string | null;
   appraisalCount: number;
   pendingCount: number;
+  templateId: string | null;
+  templateName: string | null;
+  targetDepartmentId: string | null;
+  targetDepartmentName: string | null;
 };
 
 export type CycleAppraisalExportRow = {
@@ -32,7 +36,18 @@ export async function listReviewCycles(): Promise<ReviewCycleRow[]> {
 
   const { data: cycles, error } = await supabase
     .from("review_cycles")
-    .select("id, name, period_start, period_end, due_date, closed_at")
+    .select(`
+      id,
+      name,
+      period_start,
+      period_end,
+      due_date,
+      closed_at,
+      template_id,
+      target_department_id,
+      appraisal_templates(name),
+      departments(name)
+    `)
     .eq("organization_id", organizationId)
     .order("due_date", { ascending: false });
 
@@ -40,6 +55,9 @@ export async function listReviewCycles(): Promise<ReviewCycleRow[]> {
 
   const rows: ReviewCycleRow[] = [];
   for (const cycle of cycles ?? []) {
+    const template = Array.isArray(cycle.appraisal_templates) ? cycle.appraisal_templates[0] : cycle.appraisal_templates;
+    const department = Array.isArray(cycle.departments) ? cycle.departments[0] : cycle.departments;
+
     const { count: appraisalCount } = await supabase
       .from("performance_appraisals")
       .select("id", { count: "exact", head: true })
@@ -62,6 +80,10 @@ export async function listReviewCycles(): Promise<ReviewCycleRow[]> {
       closedAt: cycle.closed_at,
       appraisalCount: appraisalCount ?? 0,
       pendingCount: pendingCount ?? 0,
+      templateId: cycle.template_id,
+      templateName: template?.name ?? null,
+      targetDepartmentId: cycle.target_department_id,
+      targetDepartmentName: department?.name ?? null,
     });
   }
 
@@ -73,10 +95,27 @@ export async function createReviewCycle(input: {
   periodStart: string;
   periodEnd: string;
   dueDate: string;
+  templateId?: string | null;
+  targetDepartmentId?: string | null;
 }): Promise<string> {
   await requireRole("hr_administrator");
   const supabase = await createClient();
   const organizationId = await requireOrganizationId();
+
+  let resolvedTemplateId = input.templateId || null;
+  if (!resolvedTemplateId) {
+    const { data: defaultTemplate } = await supabase
+      .from("appraisal_templates")
+      .select("id")
+      .eq("organization_id", organizationId)
+      .eq("is_default", true)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (defaultTemplate?.id) {
+      resolvedTemplateId = defaultTemplate.id;
+    }
+  }
 
   const { data, error } = await supabase
     .from("review_cycles")
@@ -86,6 +125,8 @@ export async function createReviewCycle(input: {
       period_start: input.periodStart,
       period_end: input.periodEnd,
       due_date: input.dueDate,
+      template_id: resolvedTemplateId,
+      target_department_id: input.targetDepartmentId || null,
     })
     .select("id")
     .single();
@@ -101,7 +142,7 @@ export async function launchAppraisalsForCycle(cycleId: string, actorUserId?: st
 
   const { data: cycle, error: cycleError } = await supabase
     .from("review_cycles")
-    .select("closed_at")
+    .select("closed_at, target_department_id")
     .eq("organization_id", organizationId)
     .eq("id", cycleId)
     .maybeSingle();
@@ -110,11 +151,17 @@ export async function launchAppraisalsForCycle(cycleId: string, actorUserId?: st
   if (!cycle) throw new Error("Review cycle not found.");
   if (cycle.closed_at) throw new Error("Cannot launch appraisals for a closed cycle.");
 
-  const { data: employees, error: employeesError } = await supabase
+  let employeesQuery = supabase
     .from("employees")
     .select("id")
     .eq("organization_id", organizationId)
     .eq("status", "active");
+
+  if (cycle.target_department_id) {
+    employeesQuery = employeesQuery.eq("department_id", cycle.target_department_id);
+  }
+
+  const { data: employees, error: employeesError } = await employeesQuery;
 
   if (employeesError) throw new Error(employeesError.message);
 
