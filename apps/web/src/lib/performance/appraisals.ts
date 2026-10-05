@@ -10,7 +10,7 @@ function mapAppraisalRow(row: {
   self_comments: string | null;
   manager_rating: number | null;
   manager_comments: string | null;
-  criteria_responses?: any;
+  criteria_responses?: unknown;
   employees:
     | { full_name: string | null; email: string | null; employee_number: string | null }
     | Array<{ full_name: string | null; email: string | null; employee_number: string | null }>

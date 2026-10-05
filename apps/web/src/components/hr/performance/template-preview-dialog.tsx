@@ -4,11 +4,11 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { StatusPill } from "@hrms/ui";
-import type { AppraisalTemplateDetail, AppraisalTemplateListItem } from "@/lib/hr/performance-templates";
+import type { AppraisalTemplateDetail } from "@/lib/hr/performance-templates";
 
 type TemplatePreviewProps = {
   template: AppraisalTemplateDetail;
-  triggerButton?: React.ReactNode;
+  triggerButton?: React.ReactElement;
 };
 
 export function TemplatePreviewDialog({ template, triggerButton }: TemplatePreviewProps) {
@@ -19,9 +19,7 @@ export function TemplatePreviewDialog({ template, triggerButton }: TemplatePrevi
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          triggerButton ? (
-            (triggerButton as any)
-          ) : (
+          triggerButton ?? (
             <Button variant="outline" size="sm">
               Preview
             </Button>

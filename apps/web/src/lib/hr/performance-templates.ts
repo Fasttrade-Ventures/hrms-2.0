@@ -229,15 +229,17 @@ export async function getAppraisalTemplateDetail(templateId: string): Promise<Ap
     questions: questionsBySection[s.id] ?? [],
   }));
 
-  const scaleLabels = t.rating_scale && typeof t.rating_scale === "object" && "labels" in (t.rating_scale as any)
-    ? (t.rating_scale as any).labels
-    : {
-        "1": "Unsatisfactory",
-        "2": "Needs Improvement",
-        "3": "Meets Expectations",
-        "4": "Exceeds Expectations",
-        "5": "Outstanding",
-      };
+  const rawScale = t.rating_scale as Record<string, unknown> | null;
+  const scaleLabels =
+    rawScale && typeof rawScale === "object" && typeof rawScale.labels === "object" && rawScale.labels !== null
+      ? (rawScale.labels as Record<string, string>)
+      : {
+          "1": "Unsatisfactory",
+          "2": "Needs Improvement",
+          "3": "Meets Expectations",
+          "4": "Exceeds Expectations",
+          "5": "Outstanding",
+        };
 
   return {
     id: t.id,
