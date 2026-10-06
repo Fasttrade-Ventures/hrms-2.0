@@ -102,6 +102,7 @@ export async function updateEmployeeCompensationAction(
   const socsoOverride = String(formData.get("socsoCategoryOverride") ?? "");
   const hourlyRateRaw = String(formData.get("hourlyRate") ?? "");
   const dailyRateRaw = String(formData.get("dailyRate") ?? "");
+  const otHourlyRateRaw = String(formData.get("otHourlyRate") ?? "");
 
   try {
     await guardPayroll();
@@ -110,6 +111,7 @@ export async function updateEmployeeCompensationAction(
       basicSalary: Number(formData.get("basicSalary") ?? 0),
       hourlyRate: hourlyRateRaw ? Number(hourlyRateRaw) : null,
       dailyRate: dailyRateRaw ? Number(dailyRateRaw) : null,
+      otHourlyRate: otHourlyRateRaw ? Number(otHourlyRateRaw) : null,
       voluntaryEpfExtraRate: Number(formData.get("voluntaryEpfExtraRate") ?? 0),
       socsoCategoryOverride:
         socsoOverride === "cat1" || socsoOverride === "cat2" ? socsoOverride : null,

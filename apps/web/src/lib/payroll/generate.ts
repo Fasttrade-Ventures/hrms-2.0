@@ -94,7 +94,7 @@ export async function generateDraftPayrun(input: CreatePayrunInput): Promise<str
     .select(
       `id, branch_id, join_date, pay_group_id,
        employee_profiles(basic_salary, epf_employee_rate, epf_employer_rate, eis_eligible, date_of_birth, marital_status, is_foreign_worker),
-       employee_compensation(pay_basis, basic_salary, hourly_rate, daily_rate, voluntary_epf_extra_rate, socso_category_override),
+       employee_compensation(pay_basis, basic_salary, hourly_rate, daily_rate, ot_hourly_rate, voluntary_epf_extra_rate, socso_category_override),
        employee_tax_profiles(marital_status, spouse_working, zakat_annual, zakat_monthly, tp1_payload),
        employee_dependents(dependent_type)`,
     )
@@ -129,6 +129,7 @@ export async function generateDraftPayrun(input: CreatePayrunInput): Promise<str
         payBasis: compensation?.pay_basis ?? "monthly",
         hourlyRate: compensation?.hourly_rate != null ? Number(compensation.hourly_rate) : null,
         dailyRate: compensation?.daily_rate != null ? Number(compensation.daily_rate) : null,
+        otHourlyRate: compensation?.ot_hourly_rate != null ? Number(compensation.ot_hourly_rate) : null,
       };
     }) ?? [];
 

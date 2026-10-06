@@ -45,6 +45,7 @@ export async function getEmployeePayrollSectionData(
       basicSalary: employee.profile.basicSalary,
       hourlyRate: null,
       dailyRate: null,
+      otHourlyRate: null,
       voluntaryEpfExtraRate: employee.profile.voluntaryEpfExtraRate,
       socsoCategoryOverride: null,
       epfEmployeeRate: employee.profile.epfEmployeeRate,

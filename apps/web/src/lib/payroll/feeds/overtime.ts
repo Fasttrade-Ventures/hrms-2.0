@@ -11,8 +11,10 @@ export function aggregateOtPayByEmployee(
   const otByEmployee = new Map<string, number>();
   for (const row of rows) {
     const multiplier = Number(row.rate_type);
-    const basic = employees.find((employee) => employee.employeeId === row.employee_id)?.monthlyBasic ?? 0;
-    const pay = computeOtPay(Number(row.hours), multiplier, money(basic)).toNumber();
+    const emp = employees.find((employee) => employee.employeeId === row.employee_id);
+    const basic = emp?.monthlyBasic ?? 0;
+    const otRateOverride = emp?.otHourlyRate != null && emp.otHourlyRate > 0 ? money(emp.otHourlyRate) : null;
+    const pay = computeOtPay(Number(row.hours), multiplier, money(basic), 26, otRateOverride).toNumber();
     otByEmployee.set(row.employee_id, (otByEmployee.get(row.employee_id) ?? 0) + pay);
   }
   return otByEmployee;

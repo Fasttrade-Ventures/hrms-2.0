@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { buildBankCsv } from "@/lib/payroll/exports/bank";
 import { buildEpfFile } from "@/lib/payroll/exports/statutory";
-import { aggregateOtPayByEmployee } from "@/lib/payroll/feeds/ot";
+import { aggregateOtPayByEmployee } from "@/lib/payroll/feeds/overtime";
 import { groupComponents } from "@/lib/payroll/item-detail";
 
 describe("payroll feeds", () => {
