@@ -37,6 +37,11 @@ export const claimRequestSchema = z.object({
   amount: z.string().regex(/^\d+(\.\d{1,2})?$/),
   receiptDate: z.string().date(),
   description: z.string().max(2000).optional(),
+  isMileage: z.boolean().optional(),
+  distanceKm: z.coerce.number().positive().optional().nullable(),
+  ratePerKm: z.coerce.number().positive().optional().nullable(),
+  origin: z.string().max(255).optional().nullable(),
+  destination: z.string().max(255).optional().nullable(),
 });
 
 export type LeaveRequestInput = z.infer<typeof leaveRequestSchema>;
