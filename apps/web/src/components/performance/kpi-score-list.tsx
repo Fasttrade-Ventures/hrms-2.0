@@ -1,4 +1,5 @@
-import { saveEmployeeKpiScore, saveManagerKpiScore, type AppraisalKpiRow } from "@/lib/performance/kpi-service";
+import type { AppraisalKpiRow } from "@/lib/performance/kpi-service";
+import { saveEmployeeKpiScore, saveManagerKpiScore } from "@/lib/performance/kpi-actions";
 
 export function KpiScoreList({
   appraisalId,

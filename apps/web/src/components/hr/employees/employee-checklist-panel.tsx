@@ -1,9 +1,11 @@
 import {
   listEmployeeChecklistTasks,
   openTasksForProfile,
+} from "@/lib/employees/checklist-service";
+import {
   startEmployeeChecklist,
   toggleChecklistTask,
-} from "@/lib/employees/checklist-service";
+} from "@/lib/employees/checklist-actions";
 
 export async function EmployeeChecklistPanel({ employeeId }: { employeeId: string }) {
   const tasks = await listEmployeeChecklistTasks(employeeId);

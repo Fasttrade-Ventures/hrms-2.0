@@ -1,7 +1,7 @@
 import Link from "next/link";
-
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
-import { listPoliciesForHr, publishPolicy } from "@/lib/policies/service";
+import { listPoliciesForHr } from "@/lib/policies/service";
+import { publishPolicy } from "@/lib/policies/actions";
 import { requireRole } from "@/lib/auth/session";
 
 export default async function PoliciesPage() {
