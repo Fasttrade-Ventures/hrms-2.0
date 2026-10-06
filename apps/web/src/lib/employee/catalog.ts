@@ -11,7 +11,7 @@ export async function listClaimTypes() {
 
   const { data, error } = await supabase
     .from("claim_types")
-    .select("id, name, max_amount")
+    .select("id, name, max_amount, is_mileage, rate_per_km")
     .eq("organization_id", organizationId)
     .order("name");
 

@@ -45,6 +45,12 @@ const areaMeta: Record<
     cta: "Manage leave types",
     createHref: "/hr/organization/leave-types/create",
   },
+  "claim-types": {
+    icon: "claims",
+    blurb: "Claim categories, mileage calculation rates, and tax treatment.",
+    cta: "Manage claim types",
+    createHref: "/hr/organization/claim-types/create",
+  },
   "asset-categories": {
     icon: "assets",
     blurb: "Asset types and custom fields for the register.",

@@ -10,6 +10,8 @@ import {
   createHolidaySchema,
   createLeaveTypeSchema,
   createShiftSchema,
+  createClaimTypeSchema,
+  updateClaimTypeSchema,
   createAssetCategorySchema,
   updateAssetCategorySchema,
   importHolidaysSchema,
@@ -827,6 +829,129 @@ export async function deleteLeaveType(leaveTypeId: string): Promise<OrgActionSta
 
   revalidateOrg(["/hr/organization/leave-types"]);
   return { success: "Leave type deleted." };
+}
+
+export async function createClaimType(
+  _prevState: OrgActionState,
+  formData: FormData,
+): Promise<OrgActionState> {
+  await requireRole("hr_administrator");
+  const organizationId = await getOrganizationId();
+
+  const isMileage = readCheckbox(formData, "isMileage");
+  const maxAmountRaw = String(formData.get("maxAmount") ?? "").trim();
+  const ratePerKmRaw = String(formData.get("ratePerKm") ?? "").trim();
+
+  const parsed = createClaimTypeSchema.safeParse({
+    name: String(formData.get("name") ?? "").trim(),
+    maxAmount: maxAmountRaw ? maxAmountRaw : null,
+    payrollTreatment: String(formData.get("payrollTreatment") ?? "taxable").trim(),
+    isMileage,
+    ratePerKm: isMileage && ratePerKmRaw ? ratePerKmRaw : null,
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid claim type details." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("claim_types").insert({
+    organization_id: organizationId,
+    name: parsed.data.name,
+    max_amount: parsed.data.maxAmount,
+    payroll_treatment: parsed.data.payrollTreatment,
+    is_mileage: parsed.data.isMileage,
+    rate_per_km: parsed.data.ratePerKm,
+  });
+
+  if (error) {
+    if (error.message.toLowerCase().includes("duplicate") || error.code === "23505") {
+      return { error: "A claim type with this name already exists." };
+    }
+    return { error: error.message };
+  }
+
+  revalidateOrg(["/hr/organization/claim-types"]);
+  redirect("/hr/organization/claim-types");
+}
+
+export async function updateClaimType(
+  claimTypeId: string,
+  _prevState: OrgActionState,
+  formData: FormData,
+): Promise<OrgActionState> {
+  await requireRole("hr_administrator");
+  const organizationId = await getOrganizationId();
+
+  const isMileage = readCheckbox(formData, "isMileage");
+  const maxAmountRaw = String(formData.get("maxAmount") ?? "").trim();
+  const ratePerKmRaw = String(formData.get("ratePerKm") ?? "").trim();
+
+  const parsed = updateClaimTypeSchema.safeParse({
+    name: String(formData.get("name") ?? "").trim(),
+    maxAmount: maxAmountRaw ? maxAmountRaw : null,
+    payrollTreatment: String(formData.get("payrollTreatment") ?? "taxable").trim(),
+    isMileage,
+    ratePerKm: isMileage && ratePerKmRaw ? ratePerKmRaw : null,
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid claim type details." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("claim_types")
+    .update({
+      name: parsed.data.name,
+      max_amount: parsed.data.maxAmount,
+      payroll_treatment: parsed.data.payrollTreatment,
+      is_mileage: parsed.data.isMileage,
+      rate_per_km: parsed.data.ratePerKm,
+    })
+    .eq("id", claimTypeId)
+    .eq("organization_id", organizationId);
+
+  if (error) {
+    if (error.message.toLowerCase().includes("duplicate") || error.code === "23505") {
+      return { error: "A claim type with this name already exists." };
+    }
+    return { error: error.message };
+  }
+
+  revalidateOrg([
+    "/hr/organization/claim-types",
+    `/hr/organization/claim-types/${claimTypeId}/edit`,
+  ]);
+  return { success: "Claim type saved." };
+}
+
+export async function deleteClaimType(claimTypeId: string): Promise<OrgActionState> {
+  await requireRole("hr_administrator");
+  const organizationId = await getOrganizationId();
+  const supabase = await createClient();
+
+  const { count, error: countError } = await supabase
+    .from("claims")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", organizationId)
+    .eq("claim_type_id", claimTypeId);
+
+  if (countError) return { error: countError.message };
+  if ((count ?? 0) > 0) {
+    return { error: "Cannot delete a claim type that has existing claims." };
+  }
+
+  const { error } = await supabase
+    .from("claim_types")
+    .delete()
+    .eq("id", claimTypeId)
+    .eq("organization_id", organizationId);
+
+  if (error) return { error: error.message };
+
+  revalidateOrg(["/hr/organization/claim-types"]);
+  return { success: "Claim type deleted." };
 }
 
 function parseFieldSchemaJson(raw: string) {
