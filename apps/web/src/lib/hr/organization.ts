@@ -663,6 +663,56 @@ export async function getLeaveType(leaveTypeId: string): Promise<LeaveTypeRow | 
   return leaveTypes.find((row) => row.id === leaveTypeId) ?? null;
 }
 
+export type ClaimTypeRow = {
+  id: string;
+  name: string;
+  maxAmount: number | null;
+  payrollTreatment: "taxable" | "reimbursement" | "exclude";
+  isMileage: boolean;
+  ratePerKm: number | null;
+  claimsCount: number;
+  createdAt: string;
+};
+
+export async function listClaimTypesAdmin(): Promise<ClaimTypeRow[]> {
+  await requireRole("hr_administrator", "branch_admin");
+  const supabase = await createClient();
+  const organizationId = await requireOrganizationId();
+
+  const [{ data, error }, { data: claims, error: claimError }] = await Promise.all([
+    supabase
+      .from("claim_types")
+      .select("id, name, max_amount, payroll_treatment, is_mileage, rate_per_km, created_at")
+      .eq("organization_id", organizationId)
+      .order("name"),
+    supabase.from("claims").select("claim_type_id").eq("organization_id", organizationId),
+  ]);
+
+  if (error) throw new Error(error.message);
+  if (claimError) throw new Error(claimError.message);
+
+  const counts = new Map<string, number>();
+  for (const row of claims ?? []) {
+    counts.set(row.claim_type_id, (counts.get(row.claim_type_id) ?? 0) + 1);
+  }
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    name: row.name,
+    maxAmount: row.max_amount != null ? Number(row.max_amount) : null,
+    payrollTreatment: (row.payroll_treatment ?? "taxable") as ClaimTypeRow["payrollTreatment"],
+    isMileage: Boolean(row.is_mileage),
+    ratePerKm: row.rate_per_km != null ? Number(row.rate_per_km) : null,
+    claimsCount: counts.get(row.id) ?? 0,
+    createdAt: row.created_at,
+  }));
+}
+
+export async function getClaimTypeAdmin(claimTypeId: string): Promise<ClaimTypeRow | null> {
+  const claimTypes = await listClaimTypesAdmin();
+  return claimTypes.find((row) => row.id === claimTypeId) ?? null;
+}
+
 export async function listBranchOptions(): Promise<Array<{ id: string; name: string }>> {
   const branches = await listBranchesForImport();
   return branches.map(({ id, name }) => ({ id, name }));

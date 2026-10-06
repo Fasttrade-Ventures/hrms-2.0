@@ -86,6 +86,20 @@ export function EmployeeCompensationPanel({
             />
           </label>
           <label className="space-y-1 text-sm">
+            <span className="text-muted-foreground">Hourly OT rate override (RM)</span>
+            <p className="text-xs text-muted-foreground">
+              Optional. Leave blank to use standard salary formula: basic / 26 * multiplier * hours.
+            </p>
+            <input
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3"
+              defaultValue={compensation.otHourlyRate ?? ""}
+              name="otHourlyRate"
+              placeholder="e.g. 25.00"
+              step="0.0001"
+              type="number"
+            />
+          </label>
+          <label className="space-y-1 text-sm">
             <span className="text-muted-foreground">Extra EPF on top of statutory (%)</span>
             <p className="text-xs text-muted-foreground">
               Added to the employee EPF rate below. Employee total rate = statutory + extra.
@@ -99,7 +113,7 @@ export function EmployeeCompensationPanel({
             />
           </label>
           <label className="space-y-1 text-sm">
-            <span className="text-muted-foreground">EPF employee rate — statutory (%)</span>
+            <span className="text-muted-foreground">EPF employee rate: statutory (%)</span>
             <input
               className="flex h-9 w-full rounded-md border border-input bg-background px-3"
               defaultValue={compensation.epfEmployeeRate}

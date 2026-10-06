@@ -16,7 +16,7 @@ export * from "./payroll/tp1-reliefs";
 export * from "./payroll/ytd";
 export * from "./payroll/payrun-pipeline";
 export * from "./payroll/seed-components";
-export * from "./payroll/ot";
+export * from "./payroll/overtime";
 export * from "./payroll/proration";
 export * from "./reports/dates";
 export * from "./reports/csv";

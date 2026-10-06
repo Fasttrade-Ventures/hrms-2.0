@@ -97,11 +97,22 @@ export async function submitClaim(
   _prev: EmployeeActionState,
   formData: FormData,
 ): Promise<EmployeeActionState> {
+  const isMileage = formData.get("isMileage") === "true";
+  const distanceKmRaw = formData.get("distanceKm");
+  const ratePerKmRaw = formData.get("ratePerKm");
+  const originRaw = formData.get("origin");
+  const destinationRaw = formData.get("destination");
+
   const parsed = claimRequestSchema.safeParse({
     claimTypeId: String(formData.get("claimTypeId") ?? ""),
     amount: String(formData.get("amount") ?? ""),
     receiptDate: String(formData.get("receiptDate") ?? ""),
     description: String(formData.get("description") ?? "").trim() || undefined,
+    isMileage,
+    distanceKm: distanceKmRaw ? String(distanceKmRaw) : undefined,
+    ratePerKm: ratePerKmRaw ? String(ratePerKmRaw) : undefined,
+    origin: originRaw ? String(originRaw).trim() : undefined,
+    destination: destinationRaw ? String(destinationRaw).trim() : undefined,
   });
 
   if (!parsed.success) {
@@ -120,7 +131,7 @@ export async function submitClaim(
 
     const { data: claimType, error: claimTypeError } = await supabase
       .from("claim_types")
-      .select("id, name, max_amount")
+      .select("id, name, max_amount, is_mileage, rate_per_km")
       .eq("id", parsed.data.claimTypeId)
       .eq("organization_id", organizationId)
       .maybeSingle();
@@ -128,8 +139,28 @@ export async function submitClaim(
     if (claimTypeError) throw new Error(claimTypeError.message);
     if (!claimType) return { error: "Claim type not found." };
 
-    const amount = Number(parsed.data.amount);
-    if (claimType.max_amount != null && amount > Number(claimType.max_amount)) {
+    const isMileage = Boolean(claimType.is_mileage);
+    let finalAmount = Number(parsed.data.amount);
+    let distanceKm: number | null = null;
+    let ratePerKm: number | null = null;
+    let origin: string | null = null;
+    let destination: string | null = null;
+
+    if (isMileage) {
+      distanceKm = parsed.data.distanceKm ? Number(parsed.data.distanceKm) : null;
+      if (!distanceKm || distanceKm <= 0) {
+        return { error: "Please enter a valid travel distance in km." };
+      }
+      origin = parsed.data.origin?.trim() || null;
+      destination = parsed.data.destination?.trim() || null;
+      if (!origin || !destination) {
+        return { error: "Please enter both origin and destination for mileage claims." };
+      }
+      ratePerKm = claimType.rate_per_km != null ? Number(claimType.rate_per_km) : Number(parsed.data.ratePerKm ?? 0);
+      finalAmount = Number((distanceKm * ratePerKm).toFixed(2));
+    }
+
+    if (claimType.max_amount != null && finalAmount > Number(claimType.max_amount)) {
       return {
         error: `Amount exceeds maximum allowed (RM ${Number(claimType.max_amount).toFixed(2)}).`,
       };
@@ -141,9 +172,14 @@ export async function submitClaim(
         organization_id: organizationId,
         employee_id: employeeId,
         claim_type_id: parsed.data.claimTypeId,
-        amount: parsed.data.amount,
+        amount: finalAmount.toFixed(2),
         receipt_date: parsed.data.receiptDate,
         description: parsed.data.description ?? null,
+        is_mileage: isMileage,
+        distance_km: distanceKm,
+        rate_per_km: ratePerKm,
+        origin,
+        destination,
         status: "draft",
       })
       .select("id, claim_types(name)")
@@ -157,8 +193,17 @@ export async function submitClaim(
       sourceId: data.id,
       payload: {
         claimTypeName: claimType.name ?? "Claim",
-        amount: parsed.data.amount,
+        amount: finalAmount.toFixed(2),
         receiptDate: parsed.data.receiptDate,
+        isMileage,
+        ...(isMileage
+          ? {
+              origin,
+              destination,
+              distanceKm,
+              ratePerKm,
+            }
+          : {}),
       },
     });
 

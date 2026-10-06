@@ -162,6 +162,18 @@ export const createRosterEntrySchema = z.object({
 
 export const reportScheduleSchema = z.enum(["daily", "weekly", "monthly"]);
 
+export const claimPayrollTreatmentSchema = z.enum(["taxable", "reimbursement", "exclude"]);
+
+export const createClaimTypeSchema = z.object({
+  name: z.string().min(1, "Name is required").max(200),
+  maxAmount: z.coerce.number().min(0).optional().nullable(),
+  payrollTreatment: claimPayrollTreatmentSchema.default("taxable"),
+  isMileage: z.boolean().default(false),
+  ratePerKm: z.coerce.number().min(0).optional().nullable(),
+});
+
+export const updateClaimTypeSchema = createClaimTypeSchema;
+
 export type CreateBranchInput = z.infer<typeof createBranchSchema>;
 export type UpdateBranchInput = z.infer<typeof updateBranchSchema>;
 export type CreateDepartmentInput = z.infer<typeof createDepartmentSchema>;
@@ -174,6 +186,9 @@ export type CreateHolidayInput = z.infer<typeof createHolidaySchema>;
 export type UpdateHolidayInput = z.infer<typeof updateHolidaySchema>;
 export type CreateLeaveTypeInput = z.infer<typeof createLeaveTypeSchema>;
 export type UpdateLeaveTypeInput = z.infer<typeof updateLeaveTypeSchema>;
+export type CreateClaimTypeInput = z.infer<typeof createClaimTypeSchema>;
+export type UpdateClaimTypeInput = z.infer<typeof updateClaimTypeSchema>;
 export type ImportHolidaysInput = z.infer<typeof importHolidaysSchema>;
 export type ListHolidaysInput = z.infer<typeof listHolidaysSchema>;
+
 

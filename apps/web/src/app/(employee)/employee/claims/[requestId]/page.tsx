@@ -54,11 +54,33 @@ export default async function ClaimDetailPage({
           </div>
         </div>
         <StatCard label="Amount" value={formatCurrency(request.amount)} />
-        <StatCard label="Receipt date" value={formatDate(request.receiptDate)} />
+        <StatCard label={request.isMileage ? "Travel date" : "Receipt date"} value={formatDate(request.receiptDate)} />
+        {request.isMileage && request.distanceKm != null && (
+          <StatCard label="Distance" value={`${request.distanceKm} km`} />
+        )}
+        {request.isMileage && request.ratePerKm != null && (
+          <StatCard label="Applied rate" value={`RM ${request.ratePerKm.toFixed(2)} / km`} />
+        )}
       </div>
 
+      {request.isMileage && (request.origin || request.destination) && (
+        <section className="space-y-3 border border-[var(--border-primary)] bg-[var(--surface-card)] p-6">
+          <h2 className="text-base font-semibold text-[var(--foreground-primary)]">Trip itinerary</h2>
+          <div className="grid gap-4 text-sm sm:grid-cols-2">
+            <div className="rounded-[var(--radius-md)] bg-[var(--surface-muted)] p-3">
+              <span className="text-xs text-[var(--foreground-muted)]">Origin</span>
+              <p className="mt-1 font-medium text-[var(--foreground-primary)]">{request.origin || "-"}</p>
+            </div>
+            <div className="rounded-[var(--radius-md)] bg-[var(--surface-muted)] p-3">
+              <span className="text-xs text-[var(--foreground-muted)]">Destination</span>
+              <p className="mt-1 font-medium text-[var(--foreground-primary)]">{request.destination || "-"}</p>
+            </div>
+          </div>
+        </section>
+      )}
+
       <section className="space-y-3 border border-[var(--border-primary)] bg-[var(--surface-card)] p-6">
-        <h2 className="text-base font-semibold text-[var(--foreground-primary)]">Details</h2>
+        <h2 className="text-base font-semibold text-[var(--foreground-primary)]">Description</h2>
         <p className="text-sm text-[var(--foreground-primary)]">
           {request.description?.trim() || "No description provided."}
         </p>

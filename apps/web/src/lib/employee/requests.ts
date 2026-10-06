@@ -118,7 +118,7 @@ export async function listClaims() {
 
   const { data, error } = await supabase
     .from("claims")
-    .select("id, amount, receipt_date, description, status, created_at, approval_request_id, claim_types(name)")
+    .select("id, amount, receipt_date, description, status, created_at, approval_request_id, is_mileage, distance_km, rate_per_km, origin, destination, claim_types(name)")
     .eq("organization_id", organizationId)
     .eq("employee_id", employeeId)
     .order("created_at", { ascending: false });
@@ -133,6 +133,11 @@ export async function listClaims() {
     createdAt: row.created_at,
     approvalRequestId: row.approval_request_id,
     claimTypeName: (row.claim_types as { name?: string } | null)?.name ?? "Claim",
+    isMileage: Boolean(row.is_mileage),
+    distanceKm: row.distance_km != null ? Number(row.distance_km) : null,
+    ratePerKm: row.rate_per_km != null ? Number(row.rate_per_km) : null,
+    origin: row.origin ?? null,
+    destination: row.destination ?? null,
   }));
 }
 
@@ -142,7 +147,7 @@ export async function getClaim(id: string) {
 
   const { data, error } = await supabase
     .from("claims")
-    .select("id, amount, receipt_date, description, status, created_at, approval_request_id, claim_types(name)")
+    .select("id, amount, receipt_date, description, status, created_at, approval_request_id, is_mileage, distance_km, rate_per_km, origin, destination, claim_types(name)")
     .eq("organization_id", organizationId)
     .eq("employee_id", employeeId)
     .eq("id", id)
@@ -160,6 +165,11 @@ export async function getClaim(id: string) {
     createdAt: data.created_at,
     approvalRequestId: data.approval_request_id,
     claimTypeName: (data.claim_types as { name?: string } | null)?.name ?? "Claim",
+    isMileage: Boolean(data.is_mileage),
+    distanceKm: data.distance_km != null ? Number(data.distance_km) : null,
+    ratePerKm: data.rate_per_km != null ? Number(data.rate_per_km) : null,
+    origin: data.origin ?? null,
+    destination: data.destination ?? null,
   };
 }
 

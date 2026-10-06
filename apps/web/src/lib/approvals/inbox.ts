@@ -8,6 +8,10 @@ export function summarizeApprovalPayload(
     case "leave":
       return `${payload.leaveTypeName ?? "Leave"} · ${payload.startDate ?? ""} → ${payload.endDate ?? ""}`;
     case "claim":
+      if (payload.isMileage && payload.distanceKm) {
+        const tripInfo = payload.origin && payload.destination ? ` (${payload.distanceKm} km: ${payload.origin} → ${payload.destination})` : ` (${payload.distanceKm} km)`;
+        return `${payload.claimTypeName ?? "Mileage Claim"} · RM ${payload.amount ?? "0"}${tripInfo}`;
+      }
       return `${payload.claimTypeName ?? "Claim"} · RM ${payload.amount ?? "0"}`;
     case "overtime":
       return `${payload.workDate ?? ""} · ${payload.hours ?? "0"}h @ ${payload.rateType ?? "1.5"}x`;
@@ -51,7 +55,7 @@ export function mapApprovalInboxRow(row: Record<string, unknown>): ApprovalInbox
     requestType,
     requestTypeLabel: REQUEST_TYPE_LABELS[requestType] ?? requestType,
     requesterName: String(requester?.full_name ?? requester?.email ?? "Employee"),
-    requesterEmployeeNumber: String(requester?.employee_number ?? "—"),
+    requesterEmployeeNumber: String(requester?.employee_number ?? "-"),
     submittedAt: String(request.submitted_at ?? request.created_at ?? ""),
     summary: summarizeApprovalPayload(requestType, payload),
     status,

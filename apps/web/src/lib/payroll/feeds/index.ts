@@ -12,7 +12,7 @@ import { createClient } from "@/lib/supabase/server";
 import { hourlyPayFromAttendance, fetchAttendanceHoursForPeriod } from "./attendance";
 import { aggregateClaimsByEmployee, fetchApprovedClaimsForPeriod } from "./claims";
 import { fetchUnpaidLeaveDaysForPeriod } from "./leave";
-import { aggregateOtPayByEmployee, fetchApprovedOtForPeriod } from "./ot";
+import { aggregateOtPayByEmployee, fetchApprovedOtForPeriod } from "./overtime";
 import {
   DEDUCTION_FLAGS,
   EARNING_FLAGS,
@@ -22,7 +22,7 @@ import {
 } from "./shared";
 
 export type { EmployeePayInput } from "./shared";
-export { fetchApprovedOtForPeriod } from "./ot";
+export { fetchApprovedOtForPeriod } from "./overtime";
 export { fetchApprovedClaimsForPeriod } from "./claims";
 export { fetchUnpaidLeaveDaysForPeriod } from "./leave";
 export { fetchAttendanceHoursForPeriod } from "./attendance";

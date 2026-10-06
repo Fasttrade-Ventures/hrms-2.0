@@ -33,6 +33,7 @@ export type EmployeePayInput = {
   payBasis?: string;
   hourlyRate?: number | null;
   dailyRate?: number | null;
+  otHourlyRate?: number | null;
 };
 
 export async function loadHolidayDates(organizationId: string): Promise<string[]> {

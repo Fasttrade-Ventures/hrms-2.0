@@ -8,6 +8,7 @@ export type EmployeeCompensation = {
   basicSalary: number;
   hourlyRate: number | null;
   dailyRate: number | null;
+  otHourlyRate: number | null;
   voluntaryEpfExtraRate: number;
   socsoCategoryOverride: "cat1" | "cat2" | null;
   epfEmployeeRate: number;
@@ -71,7 +72,7 @@ export async function getEmployeeCompensation(employeeId: string): Promise<Emplo
     .from("employees")
     .select(
       `employee_profiles(pay_basis, basic_salary, epf_employee_rate, epf_employer_rate, eis_eligible),
-       employee_compensation(pay_basis, basic_salary, hourly_rate, daily_rate, voluntary_epf_extra_rate, socso_category_override)`,
+       employee_compensation(pay_basis, basic_salary, hourly_rate, daily_rate, ot_hourly_rate, voluntary_epf_extra_rate, socso_category_override)`,
     )
     .eq("organization_id", organizationId)
     .eq("id", employeeId)
@@ -93,6 +94,7 @@ export async function getEmployeeCompensation(employeeId: string): Promise<Emplo
     basicSalary: Number(compensation?.basic_salary ?? profile?.basic_salary ?? 0),
     hourlyRate: compensation?.hourly_rate != null ? Number(compensation.hourly_rate) : null,
     dailyRate: compensation?.daily_rate != null ? Number(compensation.daily_rate) : null,
+    otHourlyRate: compensation?.ot_hourly_rate != null ? Number(compensation.ot_hourly_rate) : null,
     voluntaryEpfExtraRate: Number(compensation?.voluntary_epf_extra_rate ?? 0),
     socsoCategoryOverride: (compensation?.socso_category_override as "cat1" | "cat2" | null) ?? null,
     epfEmployeeRate: Number(profile?.epf_employee_rate ?? 11),
@@ -149,6 +151,7 @@ export async function upsertEmployeeCompensation(
     basic_salary: input.basicSalary,
     hourly_rate: input.hourlyRate,
     daily_rate: input.dailyRate,
+    ot_hourly_rate: input.otHourlyRate,
     voluntary_epf_extra_rate: input.voluntaryEpfExtraRate,
     socso_category_override: input.socsoCategoryOverride,
     updated_at: new Date().toISOString(),
