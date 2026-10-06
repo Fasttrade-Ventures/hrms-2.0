@@ -11,10 +11,46 @@ import { getManagerApprovalDetail } from "@/lib/manager/approvals";
 import { requireRole } from "@/lib/auth/session";
 
 function formatFieldLabel(key: string): string {
+  const customLabels: Record<string, string> = {
+    isMileage: "Claim Mode",
+    distanceKm: "Travel Distance",
+    ratePerKm: "Reimbursement Rate",
+    claimTypeName: "Claim Category",
+    receiptDate: "Receipt / Travel Date",
+    leaveTypeName: "Leave Type",
+    startDate: "Start Date",
+    endDate: "End Date",
+    workDate: "Work Date",
+    creditDays: "Credit Days",
+    halfDay: "Half Day",
+  };
+  if (customLabels[key]) return customLabels[key];
+
   return key
     .replace(/([A-Z])/g, " $1")
     .replace(/^./, (char) => char.toUpperCase())
     .trim();
+}
+
+function formatFieldValue(key: string, value: unknown): string {
+  if (value === null || value === undefined || value === "") return "—";
+  if (key === "isMileage") {
+    return value === true || value === "true" ? "Distance-based Mileage" : "Standard Expense";
+  }
+  if (key === "distanceKm") {
+    return `${value} km`;
+  }
+  if (key === "ratePerKm") {
+    return `RM ${Number(value).toFixed(2)} / km`;
+  }
+  if (key === "amount" && (typeof value === "number" || typeof value === "string")) {
+    const num = Number(value);
+    if (!Number.isNaN(num)) return `RM ${num.toFixed(2)}`;
+  }
+  if (typeof value === "boolean") {
+    return value ? "Yes" : "No";
+  }
+  return String(value);
 }
 
 export default async function Page({ params }: { params: Promise<{ stepId: string }> }) {
@@ -67,7 +103,7 @@ export default async function Page({ params }: { params: Promise<{ stepId: strin
               <div className="rounded-[var(--radius-md)] bg-[var(--surface-muted)] px-3 py-2.5" key={key}>
                 <dt className="text-xs text-[var(--foreground-muted)]">{formatFieldLabel(key)}</dt>
                 <dd className="mt-1 font-medium text-[var(--foreground-primary)]">
-                  {String(value ?? "—")}
+                  {formatFieldValue(key, value)}
                 </dd>
               </div>
             ))}

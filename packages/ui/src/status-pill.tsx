@@ -7,12 +7,12 @@ export function StatusPill({
   tone?: "neutral" | "success" | "warning" | "danger" | "pending";
   className?: string;
 }) {
-  const normalized = label.trim().toLowerCase();
+  const normalized = (label ?? "").trim().toLowerCase();
   const effectiveTone =
     tone === "neutral" || tone === "warning"
-      ? normalized === "active"
+      ? normalized === "active" || normalized === "approved" || normalized === "paid" || normalized === "confirmed"
         ? "success"
-        : normalized === "inactive"
+        : normalized === "inactive" || normalized === "rejected" || normalized === "declined" || normalized === "cancelled" || normalized === "revoked"
           ? "danger"
           : tone
       : tone;
@@ -25,11 +25,18 @@ export function StatusPill({
     danger: "border border-rose-500/30 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-300",
   }[effectiveTone];
 
+  const formattedLabel = label
+    ? label
+        .split(/[\s_]+/)
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(" ")
+    : label;
+
   return (
     <span
       className={`inline-flex w-fit items-center rounded-full px-2.5 text-xs font-semibold ${toneClass} ${className ?? "h-6"}`}
     >
-      {label}
+      {formattedLabel}
     </span>
   );
 }

@@ -18,6 +18,7 @@ export function TemplatePreviewDialog({ template, triggerButton }: TemplatePrevi
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
+        id={`template-preview-trigger-${template.id}`}
         render={
           triggerButton ?? (
             <Button variant="outline" size="sm">
