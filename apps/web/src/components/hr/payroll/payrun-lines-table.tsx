@@ -16,6 +16,7 @@ function formatAmount(value: string | number) {
 const NUMERIC_COLUMN_KEYS = new Set([
   "gross",
   "basicEdit",
+  "overtime",
   "epf",
   "socso",
   "eis",
@@ -37,6 +38,7 @@ function getColumns(editable: boolean): ColumnDef[] {
   }
 
   columns.push(
+    { key: "overtime", label: "OT (RM)", align: "right" },
     { key: "epf", label: "EPF", align: "right" },
     { key: "socso", label: "SOCSO", align: "right" },
     { key: "eis", label: "EIS", align: "right" },
@@ -51,8 +53,8 @@ function getColumns(editable: boolean): ColumnDef[] {
 function getGridStyle(editable: boolean): CSSProperties {
   return {
     gridTemplateColumns: editable
-      ? "minmax(11rem, 2.4fr) repeat(8, minmax(4.5rem, 1fr))"
-      : "minmax(11rem, 2.4fr) repeat(7, minmax(4.5rem, 1fr))",
+      ? "minmax(12rem, 2fr) minmax(5.5rem, 0.9fr) minmax(9.5rem, 1.2fr) minmax(5rem, 0.8fr) minmax(5.5rem, 0.9fr) minmax(5.5rem, 0.9fr) minmax(5rem, 0.8fr) minmax(4.5rem, 0.7fr) minmax(4.5rem, 0.7fr) minmax(6rem, 1fr)"
+      : "minmax(13rem, 2.2fr) minmax(6rem, 1fr) minmax(5.5rem, 0.9fr) minmax(6rem, 1fr) minmax(6rem, 1fr) minmax(5rem, 0.9fr) minmax(5rem, 0.9fr) minmax(5rem, 0.9fr) minmax(6.5rem, 1.1fr)",
   };
 }
 
@@ -154,10 +156,19 @@ function buildRowCells(
   options: { editable: boolean; payrunId?: string },
 ) {
   const basicAmount = Number(item.basicPay ?? item.grossPay);
+  const otAmount = Number(item.overtimePay ?? 0);
 
   const cells: Record<string, ReactNode> = {
     employee: <EmployeeCell item={item} />,
     gross: <span className="text-xs tabular-nums">{formatAmount(item.grossPay)}</span>,
+    overtime:
+      otAmount > 0 ? (
+        <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
+          {formatAmount(otAmount)}
+        </span>
+      ) : (
+        <span className="text-xs text-muted-foreground tabular-nums">-</span>
+      ),
     epf: <StatutoryCell employee={item.epfEmployee} employer={item.epfEmployer} />,
     socso: <StatutoryCell employee={item.socsoEmployee} employer={item.socsoEmployer} />,
     eis: <StatutoryCell employee={item.eisEmployee} employer={item.eisEmployer} />,
@@ -183,7 +194,7 @@ function buildRowCells(
 }
 
 function sumField(items: PayrunLineItem[], field: keyof PayrunLineItem) {
-  return items.reduce((total, item) => total + Number(item[field]), 0);
+  return items.reduce((total, item) => total + Number(item[field] ?? 0), 0);
 }
 
 export function PayrunLinesTable({
@@ -197,6 +208,7 @@ export function PayrunLinesTable({
   payrunId?: string;
   totalsOverride?: {
     gross: number;
+    overtime?: number;
     epfEmployee: number;
     epfEmployer: number;
     socsoEmployee: number;
@@ -211,6 +223,7 @@ export function PayrunLinesTable({
   const columns = getColumns(editable);
   const totals = totalsOverride ?? {
     gross: sumField(items, "grossPay"),
+    overtime: sumField(items, "overtimePay" as keyof PayrunLineItem),
     epfEmployee: sumField(items, "epfEmployee"),
     epfEmployer: sumField(items, "epfEmployer"),
     socsoEmployee: sumField(items, "socsoEmployee"),
@@ -227,6 +240,15 @@ export function PayrunLinesTable({
       <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Totals</span>
     ),
     gross: <span className="text-xs font-semibold tabular-nums">{formatAmount(totals.gross)}</span>,
+    overtime: (
+      <span className="text-xs font-semibold tabular-nums">
+        {totals.overtime && totals.overtime > 0 ? (
+          <span className="text-emerald-600 dark:text-emerald-400">{formatAmount(totals.overtime)}</span>
+        ) : (
+          "-"
+        )}
+      </span>
+    ),
     epf: <StatutoryCell employee={totals.epfEmployee} employer={totals.epfEmployer} />,
     socso: <StatutoryCell employee={totals.socsoEmployee} employer={totals.socsoEmployer} />,
     eis: <StatutoryCell employee={totals.eisEmployee} employer={totals.eisEmployer} />,
@@ -261,47 +283,49 @@ export function PayrunLinesTable({
       </div>
 
       {items.length > 0 ? (
-        <div className="w-full">
-          <GridRow
-            className="border-b border-[var(--border-primary)] bg-[var(--surface-muted)]/60"
-            compact
-            editable={editable}
-          >
-            {columns.map((column) => (
-              <GridCell columnKey={column.key} key={column.key} align={column.align}>
-                <span className="text-xs font-medium uppercase tracking-wide text-[var(--foreground-muted)]">
-                  {column.label}
-                </span>
-              </GridCell>
-            ))}
-          </GridRow>
+        <div className="w-full overflow-x-auto">
+          <div className={editable ? "min-w-[70rem]" : "min-w-[62rem]"}>
+            <GridRow
+              className="border-b border-[var(--border-primary)] bg-[var(--surface-muted)]/60"
+              compact
+              editable={editable}
+            >
+              {columns.map((column) => (
+                <GridCell columnKey={column.key} key={column.key} align={column.align}>
+                  <span className="text-xs font-medium uppercase tracking-wide text-[var(--foreground-muted)]">
+                    {column.label}
+                  </span>
+                </GridCell>
+              ))}
+            </GridRow>
 
-          <div className="divide-y divide-[var(--border-primary)]">
-            {items.map((item) => {
-              const cells = buildRowCells(item, { editable, payrunId });
-              return (
-                <GridRow compact={editable} editable={editable} key={item.id}>
-                  {columns.map((column) => (
-                    <GridCell columnKey={column.key} key={column.key} align={column.align}>
-                      {cells[column.key]}
-                    </GridCell>
-                  ))}
-                </GridRow>
-              );
-            })}
+            <div className="divide-y divide-[var(--border-primary)]">
+              {items.map((item) => {
+                const cells = buildRowCells(item, { editable, payrunId });
+                return (
+                  <GridRow compact={editable} editable={editable} key={item.id}>
+                    {columns.map((column) => (
+                      <GridCell columnKey={column.key} key={column.key} align={column.align}>
+                        {cells[column.key]}
+                      </GridCell>
+                    ))}
+                  </GridRow>
+                );
+              })}
+            </div>
+
+            <GridRow
+              className="border-t border-[var(--border-primary)] bg-[var(--surface-muted)]/50"
+              compact
+              editable={editable}
+            >
+              {columns.map((column) => (
+                <GridCell columnKey={column.key} key={column.key} align={column.align}>
+                  {totalsCells[column.key]}
+                </GridCell>
+              ))}
+            </GridRow>
           </div>
-
-          <GridRow
-            className="border-t border-[var(--border-primary)] bg-[var(--surface-muted)]/50"
-            compact
-            editable={editable}
-          >
-            {columns.map((column) => (
-              <GridCell columnKey={column.key} key={column.key} align={column.align}>
-                {totalsCells[column.key]}
-              </GridCell>
-            ))}
-          </GridRow>
         </div>
       ) : (
         <p className="px-4 py-6 text-sm text-[var(--foreground-muted)]">No rows to display.</p>

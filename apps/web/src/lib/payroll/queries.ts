@@ -23,6 +23,7 @@ export type PayrunLineItem = {
   branchName: string | null;
   grossPay: string;
   basicPay: string | null;
+  overtimePay?: string | null;
   epfEmployee: string;
   epfEmployer: string;
   socsoEmployee: string;
@@ -53,6 +54,7 @@ export type PayrunDetail = {
   pageSize: number;
   totals: {
     gross: number;
+    overtime?: number;
     epfEmployee: number;
     epfEmployer: number;
     socsoEmployee: number;
@@ -199,20 +201,25 @@ export async function getPayrunDetail(
 
   const itemIds = (items ?? []).map((row) => row.id);
   const basicByItem = new Map<string, string>();
+  const overtimeByItem = new Map<string, string>();
 
   if (itemIds.length > 0) {
-    const { data: basicComponents } = await supabase
+    const { data: itemComponents } = await supabase
       .from("payroll_item_components")
       .select("payrun_item_id, amount, payroll_components(code)")
       .in("payrun_item_id", itemIds)
       .eq("organization_id", organizationId);
 
-    for (const row of basicComponents ?? []) {
+    for (const row of itemComponents ?? []) {
       const component = Array.isArray(row.payroll_components)
         ? row.payroll_components[0]
         : row.payroll_components;
-      if ((component as { code?: string } | null)?.code === "BASIC") {
+      const code = (component as { code?: string } | null)?.code;
+      if (code === "BASIC") {
         basicByItem.set(row.payrun_item_id, row.amount);
+      } else if (code === "OT") {
+        const current = Number(overtimeByItem.get(row.payrun_item_id) ?? 0);
+        overtimeByItem.set(row.payrun_item_id, (current + Number(row.amount)).toFixed(2));
       }
     }
   }
@@ -230,6 +237,7 @@ export async function getPayrunDetail(
       branchName: (branch as { name?: string } | null)?.name ?? null,
       grossPay: row.gross_pay,
       basicPay: basicByItem.get(row.id) ?? null,
+      overtimePay: overtimeByItem.get(row.id) ?? null,
       epfEmployee: row.epf_employee,
       epfEmployer: row.epf_employer,
       socsoEmployee: row.socso_employee,
@@ -243,8 +251,14 @@ export async function getPayrunDetail(
     };
   });
 
+  const totalOvertime = (items ?? []).reduce(
+    (sum, row) => sum + Number(overtimeByItem.get(row.id) ?? 0),
+    0,
+  );
+
   const totals = {
     gross: Number(totalsSource?.gross_pay ?? 0),
+    overtime: totalOvertime,
     epfEmployee: Number(totalsSource?.epf_employee ?? 0),
     epfEmployer: Number(totalsSource?.epf_employer ?? 0),
     socsoEmployee: Number(totalsSource?.socso_employee ?? 0),
