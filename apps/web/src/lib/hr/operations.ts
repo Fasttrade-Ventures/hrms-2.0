@@ -1,12 +1,12 @@
 import { mapApprovalDetail, mapApprovalInboxRow } from "@/lib/approvals/inbox";
+import { escalateOverdueApprovalSteps } from "@/lib/approvals/escalation";
 import type { ApprovalDetail, ApprovalInboxRow } from "@/lib/approvals/types";
 import { requireRole } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-
 const approvalStepSelect = `
-  id, status, comment,
+  id, step_order, step_label, status, comment, timeout_days, due_date, is_escalated, escalated_at,
   approval_requests!inner(
     id, request_type, status, submitted_at, created_at, payload,
     employees!approval_requests_requester_employee_id_fkey(
@@ -21,6 +21,7 @@ export async function listOrgApprovals(options?: {
 }): Promise<ApprovalInboxRow[]> {
   await requireRole("hr_administrator");
   const organizationId = await requireOrganizationId();
+  await escalateOverdueApprovalSteps({ organizationId }).catch(console.error);
   const supabase = await createClient();
 
   let query = supabase

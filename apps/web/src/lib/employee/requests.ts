@@ -2,11 +2,14 @@ import { createClient } from "@/lib/supabase/server";
 import { requireEmployeeContext } from "@/lib/employee/leave";
 
 export type TimelineStep = {
+  stepOrder?: number;
   label: string;
   approverName?: string;
   status: string;
   actedAt: string | null;
   comment: string | null;
+  isEscalated?: boolean;
+  dueDate?: string | null;
 };
 
 export async function getApprovalTimeline(approvalRequestId: string): Promise<TimelineStep[]> {
@@ -39,6 +42,7 @@ export async function getApprovalTimeline(approvalRequestId: string): Promise<Ti
 
   const timeline: TimelineStep[] = [
     {
+      stepOrder: 0,
       label: "Submitted",
       approverName: requesterName,
       status: "completed",
@@ -52,10 +56,13 @@ export async function getApprovalTimeline(approvalRequestId: string): Promise<Ti
     .select(`
       id,
       step_order,
+      step_label,
       status,
       acted_at,
       comment,
-      approver_employee_id
+      approver_employee_id,
+      is_escalated,
+      due_date
     `)
     .eq("organization_id", organizationId)
     .eq("approval_request_id", approvalRequestId)
@@ -64,7 +71,7 @@ export async function getApprovalTimeline(approvalRequestId: string): Promise<Ti
   if (stepsError) throw new Error(stepsError.message);
 
   for (const step of steps ?? []) {
-    let approverName = "Manager";
+    let approverName = "Approver";
     if (step.approver_employee_id) {
       const { data: empRaw } = await supabase
         .from("employees")
@@ -72,15 +79,28 @@ export async function getApprovalTimeline(approvalRequestId: string): Promise<Ti
         .eq("organization_id", organizationId)
         .eq("id", step.approver_employee_id)
         .maybeSingle();
-      approverName = empRaw?.full_name ?? empRaw?.email ?? "Manager";
+      approverName = empRaw?.full_name ?? empRaw?.email ?? "Approver";
     }
 
+    const stepLabel =
+      step.step_label ||
+      (step.step_order === 1
+        ? "Line Manager Review"
+        : step.step_order === 2
+          ? "Head of Department Review"
+          : `Step ${step.step_order} Review`);
+
+    const stepStatus = step.status === "draft" ? "waiting" : step.status;
+
     timeline.push({
-      label: "Manager Review",
+      stepOrder: step.step_order,
+      label: stepLabel,
       approverName,
-      status: step.status,
+      status: stepStatus,
       actedAt: step.acted_at,
       comment: step.comment,
+      isEscalated: Boolean(step.is_escalated),
+      dueDate: step.due_date,
     });
   }
 
