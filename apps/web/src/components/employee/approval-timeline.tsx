@@ -5,7 +5,7 @@ export function ApprovalTimeline({ steps }: { steps: TimelineStep[] }) {
   if (!steps || !steps.length) return null;
 
   return (
-    <div className="border border-[var(--border-primary)] bg-[var(--surface-card)] p-6">
+    <div className="rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-card)] p-6">
       <h3 className="text-base font-semibold text-[var(--foreground-primary)] mb-6">
         Approval History
       </h3>
@@ -13,6 +13,7 @@ export function ApprovalTimeline({ steps }: { steps: TimelineStep[] }) {
         {steps.map((step, idx) => {
           const isCompleted = step.status === "completed" || step.status === "approved";
           const isPending = step.status === "pending";
+          const isWaiting = step.status === "waiting" || step.status === "draft";
           const isRejected =
             step.status === "rejected" ||
             step.status === "cancelled" ||
@@ -33,7 +34,7 @@ export function ApprovalTimeline({ steps }: { steps: TimelineStep[] }) {
             dotColor = "bg-amber-500 border-amber-500 text-white animate-pulse";
             icon = (
               <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4} />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
             );
@@ -45,8 +46,8 @@ export function ApprovalTimeline({ steps }: { steps: TimelineStep[] }) {
               </svg>
             );
           } else {
-            // Default upcoming
-            icon = <div className="h-1.5 w-1.5 rounded-full bg-[var(--foreground-muted)]" />;
+            // Default upcoming / waiting
+            icon = <div className="h-2 w-2 rounded-full bg-[var(--foreground-muted)]" />;
           }
 
           return (
@@ -59,9 +60,21 @@ export function ApprovalTimeline({ steps }: { steps: TimelineStep[] }) {
               {/* Content */}
               <div>
                 <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
-                  <span className="font-semibold text-sm text-[var(--foreground-primary)]">
-                    {step.label}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-sm text-[var(--foreground-primary)]">
+                      {step.label}
+                    </span>
+                    {step.isEscalated && (
+                      <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                        Escalated
+                      </span>
+                    )}
+                    {isWaiting && (
+                      <span className="inline-flex items-center rounded-full bg-zinc-500/10 px-2 py-0.5 text-[10px] font-medium text-[var(--foreground-muted)] border border-[var(--border-primary)]">
+                        Upcoming
+                      </span>
+                    )}
+                  </div>
                   {step.actedAt && (
                     <span className="text-xs text-[var(--foreground-muted)]">
                       {formatDateTime(step.actedAt)}
@@ -71,7 +84,13 @@ export function ApprovalTimeline({ steps }: { steps: TimelineStep[] }) {
 
                 {step.approverName && (
                   <p className="text-xs text-[var(--foreground-secondary)] mt-0.5">
-                    {step.label === "Submitted" ? "Submitted by" : "Actioned by"} {step.approverName}
+                    {step.label === "Submitted"
+                      ? `Submitted by ${step.approverName}`
+                      : isPending
+                        ? `Awaiting decision from ${step.approverName}`
+                        : isWaiting
+                          ? `Assigned to ${step.approverName}`
+                          : `Actioned by ${step.approverName}`}
                   </p>
                 )}
 
