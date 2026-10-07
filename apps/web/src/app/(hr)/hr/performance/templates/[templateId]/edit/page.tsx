@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { TemplateBuilder } from "@/components/hr/performance/template-builder";
-import { addTemplateKpi, listTemplateKpis } from "@/lib/performance/kpi-service";
+import { listTemplateKpis } from "@/lib/performance/kpi-service";
+import { addTemplateKpi } from "@/lib/performance/kpi-actions";
 import { getAppraisalTemplateDetail } from "@/lib/hr/performance-templates";
 import { listDepartments } from "@/lib/hr/organization";
 import { requireModule } from "@/lib/entitlements";

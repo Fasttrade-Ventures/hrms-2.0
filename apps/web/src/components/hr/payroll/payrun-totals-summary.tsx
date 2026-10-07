@@ -105,10 +105,20 @@ export function PayrunTotalsSummary({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 bg-[var(--surface-muted)]/30 px-4 py-2 text-xs text-muted-foreground">
-        <span>
-          Employee deductions{" "}
-          <span className="font-medium tabular-nums text-foreground">RM {formatAmount(totalDeductions)}</span>
-        </span>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <span>
+            Employee deductions{" "}
+            <span className="font-medium tabular-nums text-foreground">RM {formatAmount(totalDeductions)}</span>
+          </span>
+          {totals.overtime && totals.overtime > 0 ? (
+            <span>
+              Total overtime{" "}
+              <span className="font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                RM {formatAmount(totals.overtime)}
+              </span>
+            </span>
+          ) : null}
+        </div>
         <span>
           Employer statutory{" "}
           <span className="font-medium tabular-nums text-foreground">

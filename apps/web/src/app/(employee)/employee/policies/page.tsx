@@ -1,7 +1,8 @@
 import Link from "next/link";
 
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
-import { acknowledgePolicy, listPoliciesForEmployee } from "@/lib/policies/service";
+import { listPoliciesForEmployee } from "@/lib/policies/service";
+import { acknowledgePolicy } from "@/lib/policies/actions";
 
 export default async function EmployeePoliciesPage() {
   const policies = await listPoliciesForEmployee();

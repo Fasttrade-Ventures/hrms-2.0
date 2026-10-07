@@ -61,7 +61,9 @@ export function UploadDocumentDialog({
 
   return (
     <Dialog>
-      <DialogTrigger render={<Button size="sm" />}>{triggerLabel}</DialogTrigger>
+      <DialogTrigger id="upload-document-dialog-trigger" render={<Button size="sm" />}>
+        {triggerLabel}
+      </DialogTrigger>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Upload employee document</DialogTitle>

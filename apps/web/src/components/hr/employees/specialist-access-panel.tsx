@@ -1,4 +1,5 @@
-import { getSpecialistAccess, updateSpecialistAccess } from "@/lib/employees/specialist-access";
+import { getSpecialistAccess } from "@/lib/employees/specialist-access";
+import { updateSpecialistAccess } from "@/lib/employees/specialist-access-actions";
 
 const FLAGS = [
   { id: "recruiter", label: "Recruiter" },

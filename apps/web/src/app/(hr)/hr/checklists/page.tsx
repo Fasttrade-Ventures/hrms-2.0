@@ -1,5 +1,6 @@
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
-import { addChecklistTemplateItem, listChecklistTemplates } from "@/lib/employees/checklist-service";
+import { listChecklistTemplates } from "@/lib/employees/checklist-service";
+import { addChecklistTemplateItem } from "@/lib/employees/checklist-actions";
 import { requireRole } from "@/lib/auth/session";
 
 export default async function ChecklistsPage() {

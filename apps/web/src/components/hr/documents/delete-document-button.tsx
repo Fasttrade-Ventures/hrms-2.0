@@ -27,6 +27,7 @@ export function DeleteDocumentButton({
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger
+        id={`delete-document-trigger-${documentId}`}
         render={
           <Button aria-label={`Delete ${fileName}`} size="icon-sm" type="button" variant="destructive" />
         }

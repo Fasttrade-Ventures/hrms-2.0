@@ -59,7 +59,7 @@ export function ClaimTypesList({ claimTypes }: { claimTypes: ClaimTypeRow[] }) {
       <OrgTableShell
         emptyDescription="Create claim types so employees can submit expenses and mileage claims."
         emptyTitle="No claim types yet"
-        headers={["Name", "Calculation Mode", "Default Rate / Max Limit", "Payroll Treatment", "Claims", "Status", "Action"]}
+        headers={["Name", "Calculation & Rate", "Payroll Treatment", "Claims", "Status", "Action"]}
         isEmpty={claimTypes.length === 0}
       >
         {claimTypes.map((claimType) => (
@@ -67,19 +67,19 @@ export function ClaimTypesList({ claimTypes }: { claimTypes: ClaimTypeRow[] }) {
             <OrgTableCell variant="name">{claimType.name}</OrgTableCell>
             <OrgTableCell>
               {claimType.isMileage ? (
-                <span className="inline-flex items-center rounded-full bg-[var(--surface-muted)] px-2.5 py-0.5 text-xs font-medium text-[var(--accent-primary)]">
-                  Mileage (Distance)
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="inline-flex items-center rounded-full bg-[var(--surface-muted)] px-2.5 py-0.5 text-xs font-medium text-[var(--accent-primary)]">
+                    Mileage
+                  </span>
+                  <span className="text-xs text-[var(--foreground-muted)]">
+                    RM {Number(claimType.ratePerKm ?? 0).toFixed(2)} / km
+                  </span>
                 </span>
               ) : (
-                <span className="text-xs text-[var(--foreground-muted)]">Standard receipt</span>
+                <span className="text-xs text-[var(--foreground-muted)]">
+                  Standard receipt {claimType.maxAmount != null ? `· Max RM ${claimType.maxAmount.toFixed(2)}` : "· No limit"}
+                </span>
               )}
-            </OrgTableCell>
-            <OrgTableCell variant="muted">
-              {claimType.isMileage
-                ? `RM ${Number(claimType.ratePerKm ?? 0).toFixed(2)} / km`
-                : claimType.maxAmount != null
-                  ? `Max RM ${claimType.maxAmount.toFixed(2)}`
-                  : "No limit"}
             </OrgTableCell>
             <OrgTableCell variant="muted">
               <span className="capitalize">{claimType.payrollTreatment}</span>
@@ -137,10 +137,11 @@ export function ClaimTypeCreateForm() {
           </div>
 
           {isMileage ? (
-            <HrField id="ratePerKm" label="Reimbursement rate per km (RM)">
+            <HrField id="ratePerKm" key="fieldRatePerKm" label="Reimbursement rate per km (RM)">
               <HrTextInput
                 defaultValue="0.80"
                 id="ratePerKm"
+                key="ratePerKm"
                 min="0.01"
                 name="ratePerKm"
                 placeholder="0.80"
@@ -150,9 +151,10 @@ export function ClaimTypeCreateForm() {
               />
             </HrField>
           ) : (
-            <HrField id="maxAmount" label="Maximum claim amount (RM)">
+            <HrField id="maxAmount" key="fieldMaxAmount" label="Maximum claim amount (RM)">
               <HrTextInput
                 id="maxAmount"
+                key="maxAmount"
                 min="0"
                 name="maxAmount"
                 placeholder="Leave blank for no limit"
@@ -229,10 +231,11 @@ export function ClaimTypeEditForm({ claimType }: { claimType: ClaimTypeRow }) {
           </div>
 
           {isMileage ? (
-            <HrField id="ratePerKm" label="Reimbursement rate per km (RM)">
+            <HrField id="ratePerKm" key="fieldEditRatePerKm" label="Reimbursement rate per km (RM)">
               <HrTextInput
                 defaultValue={claimType.ratePerKm != null ? String(claimType.ratePerKm) : "0.80"}
                 id="ratePerKm"
+                key="editRatePerKm"
                 min="0.01"
                 name="ratePerKm"
                 placeholder="0.80"
@@ -242,10 +245,11 @@ export function ClaimTypeEditForm({ claimType }: { claimType: ClaimTypeRow }) {
               />
             </HrField>
           ) : (
-            <HrField id="maxAmount" label="Maximum claim amount (RM)">
+            <HrField id="maxAmount" key="fieldEditMaxAmount" label="Maximum claim amount (RM)">
               <HrTextInput
                 defaultValue={claimType.maxAmount != null ? String(claimType.maxAmount) : ""}
                 id="maxAmount"
+                key="editMaxAmount"
                 min="0"
                 name="maxAmount"
                 placeholder="Leave blank for no limit"
