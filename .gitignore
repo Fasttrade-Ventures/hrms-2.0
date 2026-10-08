@@ -1,8 +1,22 @@
 .DS_Store
 *.empty-backup
+# Environment variables & secrets
 .env
 .env.*
+.env*.local
+**/.env
+**/.env.*
+**/.env*.local
 !.env.example
+!**/.env.example
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+credentials.json
+service-account*.json
 
 node_modules
 .pnpm-store
