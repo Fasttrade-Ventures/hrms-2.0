@@ -188,6 +188,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Create Deployment Archive
+        run: tar -cvf ./deploy.tar --exclude='./deploy.tar' --exclude='./.git' .
+
       - name: Deploy App to CapRover
         uses: caprover/deploy-from-github@v1.1.2
         with:
