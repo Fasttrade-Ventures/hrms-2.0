@@ -57,6 +57,12 @@ const areaMeta: Record<
     cta: "Manage asset categories",
     createHref: "/hr/organization/asset-categories/create",
   },
+  "approval-workflows": {
+    icon: "approvals",
+    blurb: "Sequential approval chains, step deadlines, and escalation routes.",
+    cta: "Manage approval workflows",
+    createHref: "/hr/organization/approval-workflows/create",
+  },
 };
 
 export function OrganizationHub({ data }: { data: OrgHubData }) {

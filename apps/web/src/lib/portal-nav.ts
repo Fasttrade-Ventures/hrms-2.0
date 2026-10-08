@@ -260,6 +260,7 @@ const hrNav: PortalNavSection[] = [
           { href: "/hr/organization/branches", label: "Branches", icon: "organization" },
           { href: "/hr/organization/departments", label: "Departments", icon: "team-performance" },
           { href: "/hr/organization/positions", label: "Positions", icon: "organization" },
+          { href: "/hr/organization/approval-workflows", label: "Workflows", icon: "approvals" },
         ],
       },
     ],
