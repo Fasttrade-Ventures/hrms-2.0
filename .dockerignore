@@ -1,0 +1,26 @@
+# Dependencies & caches
+node_modules
+.pnpm-store
+.next
+.turbo
+dist
+out
+coverage
+
+# Git & System
+.git
+.gitignore
+.agents
+.vscode
+.idea
+
+# Secrets & Environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Tests & Docs
+test-results
+playwright-report
