@@ -5,11 +5,26 @@ import { authenticateApiKey } from "@/lib/api/keys";
 export type ApiContext = {
   organizationId: string;
   keyId: string;
+  scopes: string[];
 };
+
+export const API_SCOPES = [
+  "employees:read",
+  "leave:read",
+  "payroll:read",
+  "attendance:clock",
+] as const;
+
+export type ApiScope = (typeof API_SCOPES)[number];
+
+export function hasApiScope(scopes: string[] | null | undefined, scope: string): boolean {
+  return (scopes ?? []).includes(scope);
+}
 
 export async function withApiAuth(
   request: Request,
   handler: (context: ApiContext) => Promise<NextResponse>,
+  options?: { scope?: ApiScope },
 ): Promise<NextResponse> {
   const auth = await authenticateApiKey(
     request.headers.get("authorization"),
@@ -18,6 +33,10 @@ export async function withApiAuth(
 
   if (!auth) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (options?.scope && !hasApiScope(auth.scopes, options.scope)) {
+    return NextResponse.json({ error: "This API key cannot perform that action." }, { status: 403 });
   }
 
   return handler(auth);

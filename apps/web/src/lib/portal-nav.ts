@@ -328,7 +328,7 @@ const hrNav: PortalNavSection[] = [
         icon: "organization",
         children: [
           { href: "/hr/integrations/webhooks", label: "Webhooks", icon: "organization" },
-          { href: "/hr/integrations/api", label: "API keys", icon: "organization" },
+          { href: "/hr/integrations/api", label: "Developer API", icon: "organization" },
           { href: "/hr/integrations/bukucloud", label: "BukuCloud", icon: "payroll" },
         ],
       },

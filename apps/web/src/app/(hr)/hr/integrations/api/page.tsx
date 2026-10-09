@@ -20,10 +20,13 @@ export default async function Page() {
             Back to integrations
           </Link>
         }
-        description="Issue read-only API keys for employees, leave, and payroll."
-        title="API keys"
+        description="Create a key here, then call BukuHR from a virtual office or another system."
+        title="Developer API"
       />
-      <ApiKeysPanel keys={keys} />
+      <ApiKeysPanel
+        baseUrl={`${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/api/v1`}
+        keys={keys}
+      />
     </div>
   );
 }

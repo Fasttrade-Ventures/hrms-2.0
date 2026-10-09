@@ -33,7 +33,7 @@ export default async function IntegrationsHubPage() {
     },
     {
       href: "/hr/integrations/api",
-      title: "API keys",
+      title: "Developer API",
       description: "REST API access for employees, leave requests, and payroll read endpoints.",
       tier: "Enterprise",
       enabled: hasApi,

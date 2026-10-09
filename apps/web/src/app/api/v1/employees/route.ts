@@ -4,7 +4,9 @@ import { parsePagination, withApiAuth } from "@/lib/api/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function GET(request: Request) {
-  return withApiAuth(request, async ({ organizationId }) => {
+  return withApiAuth(
+    request,
+    async ({ organizationId }) => {
     const url = new URL(request.url);
     const { page, pageSize, offset } = parsePagination(url);
     const admin = createAdminClient();
@@ -26,5 +28,7 @@ export async function GET(request: Request) {
       pageSize,
       total: count ?? 0,
     });
-  });
+    },
+    { scope: "employees:read" },
+  );
 }
