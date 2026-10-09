@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 
@@ -22,14 +22,11 @@ COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
-ENV NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key
-ENV NEXT_PUBLIC_SITE_URL=https://hrmsv2.manage.hirix.ai
 
 RUN pnpm --filter @hrms/web build
 
 # Step 3: Production runner
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -43,3 +40,4 @@ COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
 EXPOSE 3000
 
 CMD ["node", "apps/web/server.js"]
+
