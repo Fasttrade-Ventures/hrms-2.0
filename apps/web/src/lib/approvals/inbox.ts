@@ -59,6 +59,10 @@ export function mapApprovalInboxRow(row: Record<string, unknown>): ApprovalInbox
     submittedAt: String(request.submitted_at ?? request.created_at ?? ""),
     summary: summarizeApprovalPayload(requestType, payload),
     status,
+    stepOrder: row.step_order != null ? Number(row.step_order) : undefined,
+    stepLabel: row.step_label != null ? String(row.step_label) : undefined,
+    isEscalated: Boolean(row.is_escalated),
+    dueDate: row.due_date != null ? String(row.due_date) : null,
   };
 }
 

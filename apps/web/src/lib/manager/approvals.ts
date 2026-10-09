@@ -1,4 +1,5 @@
 import { mapApprovalDetail, mapApprovalInboxRow } from "@/lib/approvals/inbox";
+import { escalateOverdueApprovalSteps } from "@/lib/approvals/escalation";
 import type { ApprovalDetail, ApprovalInboxRow } from "@/lib/approvals/types";
 import { expireOverduePendingLeaves } from "@/lib/leave/expiry";
 import { requireManagerContext } from "@/lib/manager/context";
@@ -9,13 +10,16 @@ export async function listManagerApprovals(options?: {
   limit?: number;
 }): Promise<ApprovalInboxRow[]> {
   const { employeeId, organizationId } = await requireManagerContext();
-  await expireOverduePendingLeaves({ organizationId }).catch(console.error);
+  await Promise.all([
+    expireOverduePendingLeaves({ organizationId }).catch(console.error),
+    escalateOverdueApprovalSteps({ organizationId }).catch(console.error),
+  ]);
   const supabase = await createClient();
 
   let query = supabase
     .from("approval_steps")
     .select(
-      `id, status, comment, approval_requests!inner(
+      `id, step_order, step_label, status, comment, timeout_days, due_date, is_escalated, escalated_at, approval_requests!inner(
         id, request_type, status, submitted_at, created_at, payload,
         employees!approval_requests_requester_employee_id_fkey(
           employee_number, email, full_name
@@ -51,13 +55,16 @@ export async function listManagerApprovals(options?: {
 
 export async function getManagerApprovalDetail(stepId: string): Promise<ApprovalDetail | null> {
   const { employeeId, organizationId } = await requireManagerContext();
-  await expireOverduePendingLeaves({ organizationId }).catch(console.error);
+  await Promise.all([
+    expireOverduePendingLeaves({ organizationId }).catch(console.error),
+    escalateOverdueApprovalSteps({ organizationId }).catch(console.error),
+  ]);
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("approval_steps")
     .select(
-      `id, status, comment, approval_requests!inner(
+      `id, step_order, step_label, status, comment, timeout_days, due_date, is_escalated, escalated_at, approval_requests!inner(
         id, request_type, status, submitted_at, created_at, payload,
         employees!approval_requests_requester_employee_id_fkey(
           employee_number, email, full_name
@@ -77,7 +84,10 @@ export async function getManagerApprovalDetail(stepId: string): Promise<Approval
 
 export async function countPendingApprovals(): Promise<number> {
   const { employeeId, organizationId } = await requireManagerContext();
-  await expireOverduePendingLeaves({ organizationId }).catch(console.error);
+  await Promise.all([
+    expireOverduePendingLeaves({ organizationId }).catch(console.error),
+    escalateOverdueApprovalSteps({ organizationId }).catch(console.error),
+  ]);
   const supabase = await createClient();
 
   const { count, error } = await supabase
@@ -90,3 +100,4 @@ export async function countPendingApprovals(): Promise<number> {
   if (error) throw new Error(error.message);
   return count ?? 0;
 }
+
