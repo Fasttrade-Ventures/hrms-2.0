@@ -26,9 +26,13 @@ export async function createApiKey(input: {
   organizationId: string;
   name: string;
   createdByUserId: string;
+  scopes?: string[];
 }): Promise<CreatedApiKey> {
   const { prefix, secret, hash } = generateApiKeySecret();
   const admin = createAdminClient();
+  const scopes = input.scopes?.length
+    ? input.scopes
+    : ["employees:read", "leave:read", "payroll:read"];
 
   const { data, error } = await admin
     .from("api_keys")
@@ -37,6 +41,7 @@ export async function createApiKey(input: {
       name: input.name,
       key_prefix: prefix,
       key_hash: hash,
+      scopes,
       created_by_user_id: input.createdByUserId,
     })
     .select("id, name, key_prefix")
@@ -73,7 +78,7 @@ export async function listApiKeys(organizationId: string) {
 export async function authenticateApiKey(
   authorizationHeader: string | null,
   apiKeyHeader: string | null,
-): Promise<{ organizationId: string; keyId: string } | null> {
+): Promise<{ organizationId: string; keyId: string; scopes: string[] } | null> {
   const token =
     authorizationHeader?.startsWith("Bearer ")
       ? authorizationHeader.slice(7).trim()
@@ -84,7 +89,7 @@ export async function authenticateApiKey(
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("api_keys")
-    .select("id, organization_id, key_hash, revoked_at")
+    .select("id, organization_id, key_hash, revoked_at, scopes")
     .eq("key_hash", hashKey(token))
     .maybeSingle();
 
@@ -95,5 +100,9 @@ export async function authenticateApiKey(
     .update({ last_used_at: new Date().toISOString() })
     .eq("id", data.id);
 
-  return { organizationId: data.organization_id, keyId: data.id };
+  return {
+    organizationId: data.organization_id,
+    keyId: data.id,
+    scopes: (data.scopes as string[] | null) ?? ["employees:read", "leave:read", "payroll:read"],
+  };
 }

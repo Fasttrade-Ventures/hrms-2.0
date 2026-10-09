@@ -19,6 +19,9 @@ export async function GET() {
       "/payruns": { get: { summary: "List payruns" } },
       "/payruns/{id}": { get: { summary: "Get payrun" } },
       "/payruns/{id}/items": { get: { summary: "List payrun items" } },
+      "/attendance": { get: { summary: "List attendance for a day" } },
+      "/attendance/clock-in": { post: { summary: "Clock in from an outside system such as a virtual office" } },
+      "/attendance/clock-out": { post: { summary: "Clock out from an outside system" } },
     },
   });
 }
