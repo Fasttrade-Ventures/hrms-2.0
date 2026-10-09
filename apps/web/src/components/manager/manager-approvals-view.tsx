@@ -248,6 +248,7 @@ export function ManagerApprovalsView({
                         </Link>
                         <p className="mt-0.5 text-xs text-[var(--foreground-muted)]">
                           ID: {row.requesterEmployeeNumber}
+                          {row.stepLabel && ` · ${row.stepLabel}`}
                         </p>
                       </td>
 
@@ -263,10 +264,17 @@ export function ManagerApprovalsView({
 
                       {/* Status */}
                       <td className="px-5 py-3.5 whitespace-nowrap">
-                        <StatusPill
-                          label={getStatusLabel(row.status)}
-                          tone={getStatusTone(row.status)}
-                        />
+                        <div className="flex items-center gap-1.5">
+                          {row.isEscalated && (
+                            <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                              Escalated
+                            </span>
+                          )}
+                          <StatusPill
+                            label={getStatusLabel(row.status)}
+                            tone={getStatusTone(row.status)}
+                          />
+                        </div>
                       </td>
 
                       {/* Action */}

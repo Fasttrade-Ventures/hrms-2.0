@@ -80,20 +80,25 @@ export default async function Page({ params }: { params: Promise<{ stepId: strin
 
       <PortalSectionCard
         action={
-          <StatusPill
-            label={detail.status === "expired" ? "Expired" : detail.status.charAt(0).toUpperCase() + detail.status.slice(1)}
-            tone={
-              detail.status === "pending"
-                ? "warning"
-                : detail.status === "approved"
-                  ? "success"
-                  : detail.status === "rejected"
-                    ? "danger"
-                    : "neutral"
-            }
-          />
+          <div className="flex items-center gap-2">
+            {detail.isEscalated && (
+              <StatusPill label="Escalated" tone="warning" />
+            )}
+            <StatusPill
+              label={detail.status === "expired" ? "Expired" : detail.status.charAt(0).toUpperCase() + detail.status.slice(1)}
+              tone={
+                detail.status === "pending"
+                  ? "warning"
+                  : detail.status === "approved"
+                    ? "success"
+                    : detail.status === "rejected"
+                      ? "danger"
+                      : "neutral"
+              }
+            />
+          </div>
         }
-        description={detail.summary}
+        description={detail.stepLabel ? `${detail.stepLabel} · ${detail.summary}` : detail.summary}
         title="Request summary"
       >
         <dl className="mt-2 grid gap-4 text-sm sm:grid-cols-2">
