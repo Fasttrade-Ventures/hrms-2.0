@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 
 import { logAuthEvent } from "@/lib/audit/log-auth-event";
 import { resolvePostLoginPath } from "@/lib/auth/redirect";
-import { canAccessPortal, isSafeInternalPath } from "@/lib/auth/routes";
+import { canAccessPortal, getPublicOrigin, isSafeInternalPath } from "@/lib/auth/routes";
 import { getMembershipRoles } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
+  const origin = getPublicOrigin(request);
   const code = searchParams.get("code");
   const next = searchParams.get("next");
 

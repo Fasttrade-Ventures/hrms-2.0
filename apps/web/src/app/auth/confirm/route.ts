@@ -1,6 +1,6 @@
 import { type EmailOtpType } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { isSafeInternalPath } from "@/lib/auth/routes";
+import { getPublicUrl, isSafeInternalPath } from "@/lib/auth/routes";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
@@ -9,9 +9,6 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get("type") as EmailOtpType | null;
   const requestedNext = searchParams.get("next") ?? "/";
   const next = isSafeInternalPath(requestedNext) ? requestedNext : "/";
-
-  const redirectTo = request.nextUrl.clone();
-  redirectTo.search = "";
 
   if (token_hash && type) {
     const supabase = await createClient();
@@ -22,12 +19,9 @@ export async function GET(request: NextRequest) {
     });
 
     if (!error) {
-      redirectTo.pathname = next;
-      return NextResponse.redirect(redirectTo);
+      return NextResponse.redirect(getPublicUrl(next, request));
     }
   }
 
-  redirectTo.pathname = "/auth/login";
-  redirectTo.searchParams.set("error", "auth_callback_failed");
-  return NextResponse.redirect(redirectTo);
+  return NextResponse.redirect(getPublicUrl("/auth/login?error=auth_callback_failed", request));
 }

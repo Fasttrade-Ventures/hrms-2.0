@@ -128,3 +128,39 @@ export function isSafeInternalPath(path: string): boolean {
   if (decoded.includes("://")) return false;
   return true;
 }
+
+export function getPublicOrigin(request?: { headers?: { get(name: string): string | null }; url?: string } | Request): string {
+  if (request?.headers?.get) {
+    const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
+    const forwardedHost = request.headers.get("x-forwarded-host") || request.headers.get("host");
+
+    if (forwardedHost && !forwardedHost.startsWith("0.0.0.0") && !forwardedHost.startsWith("127.0.0.1")) {
+      return `${forwardedProto}://${forwardedHost}`;
+    }
+  }
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  if (siteUrl && !siteUrl.includes("0.0.0.0")) {
+    return siteUrl.replace(/\/+$/, "");
+  }
+
+  if (request && "url" in request && typeof request.url === "string") {
+    try {
+      const url = new URL(request.url);
+      if (!url.hostname.startsWith("0.0.0.0")) {
+        return url.origin;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return "http://localhost:3000";
+}
+
+export function getPublicUrl(path: string, request?: { headers?: { get(name: string): string | null }; url?: string } | Request): URL {
+  const origin = getPublicOrigin(request);
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return new URL(cleanPath, origin);
+}
+

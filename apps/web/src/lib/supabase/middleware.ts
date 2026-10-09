@@ -4,10 +4,20 @@ import type { User } from "@supabase/supabase-js";
 import { dashboardPathForRoles } from "@/lib/auth/redirect";
 import {
   canAccessPath,
+  getPublicOrigin,
   isAuthEntryPath,
   isPublicAuthPath,
 } from "@/lib/auth/routes";
 import { createMiddlewareSupabaseClient } from "@/lib/supabase/create-middleware-client";
+
+function redirectPublic(url: URL, request: NextRequest) {
+  const origin = getPublicOrigin(request);
+  const parsed = new URL(origin);
+  url.protocol = parsed.protocol;
+  url.host = parsed.host;
+  url.port = parsed.port;
+  return NextResponse.redirect(url);
+}
 
 /** Stay well under Vercel middleware invocation limits when Auth/DB is slow or unreachable. */
 const AUTH_TIMEOUT_MS = 2_500;
@@ -141,7 +151,7 @@ export async function updateSession(request: NextRequest) {
     if (pathname !== "/") {
       url.searchParams.set("next", pathname);
     }
-    return NextResponse.redirect(url);
+    return redirectPublic(url, request);
   }
 
   let supabaseResponse = NextResponse.next({ request });
@@ -163,7 +173,7 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
     url.searchParams.set("next", "/auth/change-password");
-    return NextResponse.redirect(url);
+    return redirectPublic(url, request);
   }
 
   if (!user && !isPublicPath(pathname)) {
@@ -172,14 +182,14 @@ export async function updateSession(request: NextRequest) {
     if (pathname !== "/") {
       url.searchParams.set("next", pathname);
     }
-    return NextResponse.redirect(url);
+    return redirectPublic(url, request);
   }
 
   if (user && isPublicAuthPath(pathname) && pathname !== "/auth/activate" && pathname !== "/auth/reset-password") {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     url.search = "";
-    return NextResponse.redirect(url);
+    return redirectPublic(url, request);
   }
 
   if (user && !isPublicPath(pathname) && !pathname.startsWith("/api/")) {
@@ -191,7 +201,7 @@ export async function updateSession(request: NextRequest) {
       const url = request.nextUrl.clone();
       url.pathname = "/auth/login";
       url.searchParams.set("error", "session_check_timeout");
-      return NextResponse.redirect(url);
+      return redirectPublic(url, request);
     }
 
     const { roles, permissions } = membership;
@@ -200,14 +210,14 @@ export async function updateSession(request: NextRequest) {
       const url = request.nextUrl.clone();
       url.pathname = "/auth/login";
       url.searchParams.set("error", "no_membership");
-      return NextResponse.redirect(url);
+      return redirectPublic(url, request);
     }
 
     if (!canAccessPath(pathname, roles, permissions)) {
       const url = request.nextUrl.clone();
       url.pathname = "/unauthorized";
       url.searchParams.set("from", pathname);
-      return NextResponse.redirect(url);
+      return redirectPublic(url, request);
     }
   }
 
@@ -217,12 +227,12 @@ export async function updateSession(request: NextRequest) {
       const url = request.nextUrl.clone();
       url.pathname = "/auth/login";
       url.searchParams.set("error", "session_check_timeout");
-      return NextResponse.redirect(url);
+      return redirectPublic(url, request);
     }
     const url = request.nextUrl.clone();
     url.pathname = dashboardPathForRoles(membership.roles);
     url.search = "";
-    return NextResponse.redirect(url);
+    return redirectPublic(url, request);
   }
 
   return getResponse();

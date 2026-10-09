@@ -3,10 +3,11 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { logAuthEvent } from "@/lib/audit/log-auth-event";
+import { getPublicUrl } from "@/lib/auth/routes";
 
 export async function POST(request: Request) {
   const cookieStore = await cookies();
-  const loginUrl = new URL("/auth/login", request.url);
+  const loginUrl = getPublicUrl("/auth/login", request);
   // 303 See Other: after POST logout, the browser must GET /auth/login.
   // Default 307 preserves POST, which Next.js pages reject with HTTP 405.
   const response = NextResponse.redirect(loginUrl, 303);
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   const site = request.headers.get("sec-fetch-site");
   if (site === "cross-site") {
-    return NextResponse.redirect(new URL("/auth/login", request.url), 303);
+    return NextResponse.redirect(getPublicUrl("/auth/login", request), 303);
   }
   return POST(request);
 }
