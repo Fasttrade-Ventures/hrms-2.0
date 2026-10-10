@@ -1,5 +1,6 @@
-import { createClient } from "@/lib/supabase/server";
 import { requireOrganizationId } from "@/lib/auth/organization-context";
+import type { BalanceClient } from "@/lib/leave/balance";
+import { createClient } from "@/lib/supabase/server";
 
 export type LeaveBlackoutRow = {
   id: string;
@@ -54,8 +55,9 @@ export async function assertLeaveDatesAllowed(
   leaveTypeId: string,
   startDate: string,
   endDate: string,
+  client?: BalanceClient,
 ): Promise<void> {
-  const supabase = await createClient();
+  const supabase = client ?? (await createClient());
   const { data, error } = await supabase
     .from("leave_blackout_periods")
     .select("name, start_date, end_date, leave_type_ids")

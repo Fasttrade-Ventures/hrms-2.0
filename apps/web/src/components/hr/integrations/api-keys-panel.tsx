@@ -10,6 +10,7 @@ const SCOPE_OPTIONS = [
   { id: "leave:read", label: "Read leave" },
   { id: "payroll:read", label: "Read payroll" },
   { id: "attendance:clock", label: "Clock attendance" },
+  { id: "staff:self", label: "Staff self-service" },
 ] as const;
 
 export function ApiKeysPanel({
@@ -81,6 +82,22 @@ export function ApiKeysPanel({
             <p className="text-muted-foreground">Optional <span className="font-mono text-foreground">?date=2026-10-10</span>. Returns each session with clock-in, clock-out, status, and source.</p>
           </div>
           <pre className="overflow-x-auto rounded-lg bg-muted p-3 text-xs">{clockInExample}</pre>
+        </div>
+
+        <div className="space-y-2">
+          <p className="font-medium">Staff self-service</p>
+          <p className="text-muted-foreground">
+            One key with Staff self-service checked can also apply and cancel leave, submit a claim, request overtime, ask to fix a missed clock time, and read that person’s leave balance and locked payslips. Clock attendance is included. Identify the person the same way, with employee number or email. The person must already have a login in BukuHR, because the request still goes to their manager for approval.
+          </p>
+          <ul className="space-y-1 text-muted-foreground">
+            <li><span className="font-mono text-xs text-foreground">POST {baseUrl}/leave-requests</span> — leaveTypeId, startDate, endDate, optional halfDay and reason</li>
+            <li><span className="font-mono text-xs text-foreground">POST {baseUrl}/leave-requests/{"{id}"}/cancel</span> — optional reason</li>
+            <li><span className="font-mono text-xs text-foreground">POST {baseUrl}/claims</span> — claimTypeId, receiptDate, amount. Mileage uses distanceKm, origin, and destination</li>
+            <li><span className="font-mono text-xs text-foreground">POST {baseUrl}/overtime</span> — workDate, hours, optional rateType (1.5, 2.0, or 3.0) and reason</li>
+            <li><span className="font-mono text-xs text-foreground">POST {baseUrl}/attendance/manual</span> — requestDate, optional clockInTime, clockOutTime, and reason</li>
+            <li><span className="font-mono text-xs text-foreground">GET {baseUrl}/leave-balances?employeeNumber=E001</span></li>
+            <li><span className="font-mono text-xs text-foreground">GET {baseUrl}/payslips?employeeNumber=E001</span> — locked payslips only</li>
+          </ul>
         </div>
       </section>
 

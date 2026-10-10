@@ -13,12 +13,16 @@ export const API_SCOPES = [
   "leave:read",
   "payroll:read",
   "attendance:clock",
+  "staff:self",
 ] as const;
 
 export type ApiScope = (typeof API_SCOPES)[number];
 
 export function hasApiScope(scopes: string[] | null | undefined, scope: string): boolean {
-  return (scopes ?? []).includes(scope);
+  const granted = scopes ?? [];
+  if (granted.includes(scope)) return true;
+  if (granted.includes("staff:self") && scope === "attendance:clock") return true;
+  return false;
 }
 
 export async function withApiAuth(
