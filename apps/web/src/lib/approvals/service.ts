@@ -23,6 +23,7 @@ type SubmitApprovalInput = {
   sourceId: string;
   payload: Record<string, unknown>;
   actorUserId: string;
+  client?: ReturnType<typeof createAdminClient> | Awaited<ReturnType<typeof createClient>>;
 };
 
 type ActOnApprovalInput = {
@@ -187,7 +188,7 @@ export async function resolveApprovalChain(params: {
 }
 
 export async function submitForApproval(input: SubmitApprovalInput): Promise<string> {
-  const supabase = await createClient();
+  const supabase = input.client ?? (await createClient());
 
   const chain = await resolveApprovalChain({
     organizationId: input.organizationId,
