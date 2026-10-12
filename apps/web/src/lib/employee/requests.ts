@@ -459,7 +459,6 @@ export async function cancelClaimRequest(requestId: string, reason?: string): Pr
 
   if (updateError) throw new Error(updateError.message);
 
-  let approverEmployeeId: string | null = null;
   let pendingStepId: string | null = null;
 
   if (request.approval_request_id) {

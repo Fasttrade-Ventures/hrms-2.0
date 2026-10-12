@@ -430,7 +430,6 @@ export async function cancelLeaveRequest(requestId: string, reason?: string): Pr
     client: supabase,
   });
 
-  let approverEmployeeId: string | null = null;
   let pendingStepId: string | null = null;
   if (request.approval_request_id) {
     const { data: appReq } = await supabase
