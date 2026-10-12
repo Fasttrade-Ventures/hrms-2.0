@@ -338,6 +338,19 @@ export function ApplyBehalfDetail({
                   />
                 </>
               ) : null}
+              {application.receiptFileId ? (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">Receipt document</p>
+                  <a
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+                    href={`/api/files/${application.receiptFileId}/download`}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    Download receipt
+                  </a>
+                </div>
+              ) : null}
             </>
           ) : null}
 
@@ -557,7 +570,7 @@ export function ApplyBehalfForm({
 
         <CardContent className="space-y-5 px-5 py-6">
 
-          <form action={activeFormAction} className="space-y-5">
+          <form action={activeFormAction} className="space-y-5" encType="multipart/form-data">
             <HrField id="employeeId" label="Employee">
               <HrSelect defaultValue="" id="employeeId" name="employeeId" required>
                 <option value="">-- Select employee --</option>
@@ -728,6 +741,16 @@ export function ApplyBehalfForm({
                   />
                 </HrField>
 
+                <HrField id="receipt" label="Receipt attachment (optional)">
+                  <input
+                    accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                    className="block w-full text-xs text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-primary-foreground hover:file:opacity-90 file:cursor-pointer cursor-pointer rounded-md border border-input bg-transparent p-1.5 focus:outline-hidden focus:ring-1 focus:ring-ring"
+                    id="receipt"
+                    name="receipt"
+                    type="file"
+                  />
+                </HrField>
+
                 <HrField id="description" label="Description / notes">
                   <HrTextInput
                     id="description"
@@ -771,11 +794,11 @@ export function ApplyBehalfForm({
                   </HrSelect>
                 </HrField>
 
-                <HrField id="reason" label="Reason">
+                <HrField id="reason" label="Reason / project or task reference">
                   <HrTextInput
                     id="reason"
                     name="reason"
-                    placeholder="Reason for overtime work"
+                    placeholder="e.g. Project Apollo launch or urgent production fix"
                   />
                 </HrField>
               </>

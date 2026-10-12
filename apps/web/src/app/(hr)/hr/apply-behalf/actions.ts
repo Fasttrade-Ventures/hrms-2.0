@@ -11,6 +11,7 @@ import {
   applyBehalfReplacementCreditSchema,
 } from "@hrms/validation";
 
+import { requireOrganizationIdForWrite } from "@/lib/auth/organization-context";
 import { requireRole } from "@/lib/auth/session";
 import {
   createBehalfClaim,
@@ -96,6 +97,33 @@ export async function submitBehalfClaim(
 ): Promise<ApplyBehalfActionState> {
   const session = await requireRole("hr_administrator");
 
+  let attachmentFileId: string | undefined = undefined;
+  const receiptFile = formData.get("receipt");
+  if (receiptFile instanceof File && receiptFile.size > 0) {
+    try {
+      const { assertDocumentUpload, uploadOrganizationFile } = await import("@/lib/files/storage");
+      const organizationId = await requireOrganizationIdForWrite();
+      assertDocumentUpload({
+        name: receiptFile.name,
+        type: receiptFile.type || "application/octet-stream",
+        size: receiptFile.size,
+      });
+      const fileBuffer = new Uint8Array(await receiptFile.arrayBuffer());
+      attachmentFileId = await uploadOrganizationFile({
+        organizationId,
+        category: "claims",
+        fileName: receiptFile.name,
+        contentType: receiptFile.type || "application/octet-stream",
+        body: fileBuffer,
+        uploadedByUserId: session.user.id,
+      });
+    } catch (uploadErr) {
+      return {
+        error: uploadErr instanceof Error ? uploadErr.message : "Failed to upload receipt file.",
+      };
+    }
+  }
+
   const isMileage = readCheckbox(formData, "isMileage");
   const parsed = applyBehalfClaimSchema.safeParse({
     employeeId: String(formData.get("employeeId") ?? "").trim(),
@@ -108,6 +136,7 @@ export async function submitBehalfClaim(
     ratePerKm: String(formData.get("ratePerKm") ?? "").trim() || undefined,
     origin: String(formData.get("origin") ?? "").trim() || undefined,
     destination: String(formData.get("destination") ?? "").trim() || undefined,
+    attachmentFileId,
   });
 
   if (!parsed.success) {

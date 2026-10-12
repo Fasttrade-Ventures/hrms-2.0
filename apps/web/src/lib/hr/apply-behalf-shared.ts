@@ -60,6 +60,7 @@ export type BehalfClaimDetail = {
   ratePerKm: number | null;
   origin: string | null;
   destination: string | null;
+  receiptFileId?: string | null;
   status: string;
   appliedAt: string;
   appliedOnBehalfBy: string | null;

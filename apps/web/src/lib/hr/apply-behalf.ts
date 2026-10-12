@@ -391,6 +391,36 @@ export async function listBehalfApplications(
   };
 }
 
+async function notifyBehalfEmployee(
+  client: ReturnType<typeof createAdminClient>,
+  organizationId: string,
+  employeeId: string,
+  type: string,
+  requestId: string,
+) {
+  try {
+    const { data: emp } = await client
+      .from("employees")
+      .select("user_id")
+      .eq("id", employeeId)
+      .maybeSingle();
+
+    if (emp?.user_id) {
+      const { queueNotification } = await import("@/lib/notifications/queue");
+      await queueNotification({
+        organizationId,
+        recipientUserId: emp.user_id,
+        channel: "in_app",
+        template: "approval.approve",
+        payload: { requestType: type, requestId },
+        idempotencyKey: `behalf-${type}-${requestId}`,
+      });
+    }
+  } catch {
+    // Notifications must not block primary flows.
+  }
+}
+
 export async function createBehalfLeave(
   input: ApplyBehalfLeaveInput,
   actorUserId: string,
@@ -490,6 +520,8 @@ export async function createBehalfLeave(
     },
   });
 
+  await notifyBehalfEmployee(admin, organizationId, input.employeeId, "leave", data.id);
+
   return data.id;
 }
 
@@ -539,6 +571,8 @@ export async function createBehalfLate(
     employeeId: input.employeeId,
     metadata: { type: "late", requestId: data.id },
   });
+
+  await notifyBehalfEmployee(admin, organizationId, input.employeeId, "late", data.id);
 
   return data.id;
 }
@@ -642,6 +676,8 @@ export async function createBehalfClaim(
     },
   });
 
+  await notifyBehalfEmployee(admin, organizationId, input.employeeId, "claim", data.id);
+
   return data.id;
 }
 
@@ -699,6 +735,8 @@ export async function createBehalfOvertime(
     },
   });
 
+  await notifyBehalfEmployee(admin, organizationId, input.employeeId, "overtime", data.id);
+
   return data.id;
 }
 
@@ -755,6 +793,8 @@ export async function createBehalfReplacementCredit(
       creditDays: input.creditDays,
     },
   });
+
+  await notifyBehalfEmployee(admin, organizationId, input.employeeId, "replacement", data.id);
 
   return data.id;
 }
@@ -897,7 +937,7 @@ export async function getBehalfClaimDetail(
   const { data, error } = await supabase
     .from("claims")
     .select(
-      "id, employee_id, amount, receipt_date, description, is_mileage, distance_km, rate_per_km, origin, destination, status, created_at, applied_on_behalf_by, claim_types(name), employees(full_name, employee_number, branch_id)",
+      "id, employee_id, amount, receipt_date, description, is_mileage, distance_km, rate_per_km, origin, destination, status, created_at, applied_on_behalf_by, receipt_file_id, claim_types(name), employees(full_name, employee_number, branch_id)",
     )
     .eq("organization_id", organizationId)
     .eq("id", requestId)
@@ -938,6 +978,7 @@ export async function getBehalfClaimDetail(
     ratePerKm: data.rate_per_km != null ? Number(data.rate_per_km) : null,
     origin: data.origin,
     destination: data.destination,
+    receiptFileId: data.receipt_file_id,
     status: data.status,
     appliedAt: data.created_at,
     appliedOnBehalfBy: data.applied_on_behalf_by,
