@@ -7,13 +7,12 @@ export type AttendanceTarget = {
   email?: string;
 };
 
-export function parseAttendanceTarget(body: AttendanceTarget): { employeeNumber?: string; email?: string } {
-  const employeeNumber = body.employeeNumber?.trim();
+export function parseAttendanceTarget(body: AttendanceTarget): { email: string } {
   const email = body.email?.trim().toLowerCase();
-  if (!employeeNumber && !email) {
-    throw new Error("employeeNumber or email is required.");
+  if (!email) {
+    throw new Error("email is required.");
   }
-  return { employeeNumber: employeeNumber || undefined, email: email || undefined };
+  return { email };
 }
 
 type EmployeeRow = {
@@ -31,9 +30,7 @@ async function findEmployee(organizationId: string, target: AttendanceTarget): P
     .select("id, employee_number, full_name, email, status")
     .eq("organization_id", organizationId)
     .eq("status", "active");
-  query = parsed.employeeNumber
-    ? query.eq("employee_number", parsed.employeeNumber)
-    : query.eq("email", parsed.email!);
+  query = query.ilike("email", parsed.email.replace(/[%_\\]/g, "\\$&"));
 
   const { data, error } = await query.maybeSingle();
   if (error) throw new Error(error.message);
@@ -103,6 +100,7 @@ export async function clockInFromApi(organizationId: string, target: AttendanceT
   return {
     id: data.id,
     employeeId: employee.id,
+    email: employee.email,
     employeeNumber: employee.employee_number,
     fullName: employee.full_name,
     workDate: data.work_date,
@@ -134,6 +132,7 @@ export async function clockOutFromApi(organizationId: string, target: Attendance
   return {
     id: data.id,
     employeeId: employee.id,
+    email: employee.email,
     employeeNumber: employee.employee_number,
     fullName: employee.full_name,
     workDate: data.work_date,

@@ -5,16 +5,12 @@ import { hasApiScope } from "../../apps/web/src/lib/api/auth";
 import { staffApiErrorStatus } from "../../apps/web/src/lib/api/staff-requests";
 
 describe("attendance API", () => {
-  it("requires an employee number or email", () => {
-    expect(parseAttendanceTarget({ employeeNumber: " E001 " })).toEqual({
-      employeeNumber: "E001",
-      email: undefined,
-    });
+  it("requires an email", () => {
     expect(parseAttendanceTarget({ email: " Staff@Example.com " })).toEqual({
-      employeeNumber: undefined,
       email: "staff@example.com",
     });
-    expect(() => parseAttendanceTarget({})).toThrow(/required/);
+    expect(() => parseAttendanceTarget({ employeeNumber: "E001" })).toThrow(/email is required/);
+    expect(() => parseAttendanceTarget({})).toThrow(/email is required/);
   });
 
   it("allows clock-in only when the key has the attendance scope", () => {

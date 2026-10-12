@@ -10,7 +10,6 @@ export async function GET(request: Request) {
       const url = new URL(request.url);
       try {
         const data = await payslipsFromApi(organizationId, {
-          employeeNumber: url.searchParams.get("employeeNumber") ?? undefined,
           email: url.searchParams.get("email") ?? undefined,
         });
         return NextResponse.json({ data });

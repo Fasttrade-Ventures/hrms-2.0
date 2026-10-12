@@ -32,7 +32,7 @@ export function ApiKeysPanel({
   const clockInExample = `curl -X POST ${baseUrl}/attendance/clock-in \\
   -H "Authorization: Bearer hrms_live_YOUR_KEY" \\
   -H "Content-Type: application/json" \\
-  -d '{"employeeNumber":"E001"}'`;
+  -d '{"email":"staff@company.com"}'`;
 
   return (
     <div className="space-y-8">
@@ -67,11 +67,11 @@ export function ApiKeysPanel({
         <div className="space-y-3">
           <p className="font-medium">Attendance</p>
           <p className="text-muted-foreground">
-            Identify the person with <span className="font-mono text-foreground">employeeNumber</span> or <span className="font-mono text-foreground">email</span>. The person must already be an active employee in this organization. This call does not ask for GPS or a selfie. The record is stored as <span className="font-mono text-foreground">virtual_office</span>.
+            Identify the person with <span className="font-mono text-foreground">email</span>. That must match the active employee’s email in BukuHR. This call does not ask for GPS or a selfie. The record is stored as <span className="font-mono text-foreground">virtual_office</span>.
           </p>
           <div className="space-y-1">
             <p>Clock in — <span className="font-mono text-xs">POST {baseUrl}/attendance/clock-in</span></p>
-            <p className="text-muted-foreground">Body: {`{ "employeeNumber": "E001" }`} or {`{ "email": "staff@company.com" }`}. Success is 201. Already clocked in is 409. Unknown staff is 404.</p>
+            <p className="text-muted-foreground">Body: {`{ "email": "staff@company.com" }`}. Success is 201. Already clocked in is 409. Unknown staff is 404.</p>
           </div>
           <div className="space-y-1">
             <p>Clock out — <span className="font-mono text-xs">POST {baseUrl}/attendance/clock-out</span></p>
@@ -87,7 +87,7 @@ export function ApiKeysPanel({
         <div className="space-y-2">
           <p className="font-medium">Staff self-service</p>
           <p className="text-muted-foreground">
-            One key with Staff self-service checked can also apply and cancel leave, submit a claim, request overtime, ask to fix a missed clock time, and read that person’s leave balance and locked payslips. Clock attendance is included. Identify the person the same way, with employee number or email. The person must already have a login in BukuHR, because the request still goes to their manager for approval.
+            One key with Staff self-service checked can also apply and cancel leave, submit a claim, request overtime, ask to fix a missed clock time, and read that person’s leave balance and locked payslips. Clock attendance is included. Identify the person with the same email. The person must already have a login in BukuHR, because the request still goes to their manager for approval.
           </p>
           <ul className="space-y-1 text-muted-foreground">
             <li><span className="font-mono text-xs text-foreground">POST {baseUrl}/leave-requests</span> — leaveTypeId, startDate, endDate, optional halfDay and reason</li>
@@ -95,8 +95,8 @@ export function ApiKeysPanel({
             <li><span className="font-mono text-xs text-foreground">POST {baseUrl}/claims</span> — claimTypeId, receiptDate, amount. Mileage uses distanceKm, origin, and destination</li>
             <li><span className="font-mono text-xs text-foreground">POST {baseUrl}/overtime</span> — workDate, hours, optional rateType (1.5, 2.0, or 3.0) and reason</li>
             <li><span className="font-mono text-xs text-foreground">POST {baseUrl}/attendance/manual</span> — requestDate, optional clockInTime, clockOutTime, and reason</li>
-            <li><span className="font-mono text-xs text-foreground">GET {baseUrl}/leave-balances?employeeNumber=E001</span></li>
-            <li><span className="font-mono text-xs text-foreground">GET {baseUrl}/payslips?employeeNumber=E001</span> — locked payslips only</li>
+            <li><span className="font-mono text-xs text-foreground">GET {baseUrl}/leave-balances?email=staff@company.com</span></li>
+            <li><span className="font-mono text-xs text-foreground">GET {baseUrl}/payslips?email=staff@company.com</span> — locked payslips only</li>
           </ul>
         </div>
       </section>
