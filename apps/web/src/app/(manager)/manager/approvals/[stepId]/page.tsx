@@ -85,13 +85,21 @@ export default async function Page({ params }: { params: Promise<{ stepId: strin
               <StatusPill label="Escalated" tone="warning" />
             )}
             <StatusPill
-              label={detail.status === "expired" ? "Expired" : detail.status.charAt(0).toUpperCase() + detail.status.slice(1)}
+              label={
+                detail.status === "expired"
+                  ? "Expired"
+                  : detail.status === "cancelled"
+                    ? "Cancelled by Employee"
+                    : detail.status === "revoked"
+                      ? "Revoked by Employee"
+                      : detail.status.charAt(0).toUpperCase() + detail.status.slice(1)
+              }
               tone={
                 detail.status === "pending"
                   ? "warning"
                   : detail.status === "approved"
                     ? "success"
-                    : detail.status === "rejected"
+                    : detail.status === "rejected" || detail.status === "revoked"
                       ? "danger"
                       : "neutral"
               }
@@ -167,12 +175,29 @@ export default async function Page({ params }: { params: Promise<{ stepId: strin
             </p>
           )}
         </div>
+      ) : detail.status === "revoked" ? (
+        <div className="rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-muted)] p-4 sm:p-5">
+          <h3 className="text-sm font-semibold text-[var(--foreground-primary)]">Revoked by Employee</h3>
+          <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+            This previously approved request was revoked by the employee. Any utilized days or expense reimbursements have been reverted.
+          </p>
+          {detail.comment && (
+            <p className="mt-2 text-xs italic text-[var(--foreground-secondary)]">
+              Reason: &ldquo;{detail.comment}&rdquo;
+            </p>
+          )}
+        </div>
       ) : (
         <div className="rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-muted)] p-4 sm:p-5">
-          <h3 className="text-sm font-semibold text-[var(--foreground-primary)]">Request Cancelled</h3>
+          <h3 className="text-sm font-semibold text-[var(--foreground-primary)]">Cancelled by Employee</h3>
           <p className="mt-1 text-sm text-[var(--foreground-muted)]">
-            This request was cancelled by the requester.
+            This request was cancelled by the employee. No approval action is required.
           </p>
+          {detail.comment && (
+            <p className="mt-2 text-xs italic text-[var(--foreground-secondary)]">
+              Reason: &ldquo;{detail.comment}&rdquo;
+            </p>
+          )}
         </div>
       )}
     </div>

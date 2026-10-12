@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { StatCard } from "@hrms/ui";
 
 import { ApprovalTimeline } from "@/components/employee/approval-timeline";
+import { OvertimeActionControls } from "@/components/employee/overtime-action-controls";
 import {
   formatDate,
   formatDateTime,
@@ -45,6 +46,18 @@ export default async function OvertimeDetailPage({
         title="Overtime request"
       />
 
+      {request.status === "cancelled" ? (
+        <div className="border border-[var(--border-primary)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--foreground-muted)]">
+          This overtime request has been cancelled.
+        </div>
+      ) : null}
+
+      {request.status === "revoked" ? (
+        <div className="border border-[var(--border-primary)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--foreground-muted)]">
+          This approved overtime has been revoked.
+        </div>
+      ) : null}
+
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="border border-[var(--border-primary)] bg-[var(--surface-card)] p-5">
           <p className="text-[13px] font-medium text-[var(--foreground-muted)]">Status</p>
@@ -57,11 +70,15 @@ export default async function OvertimeDetailPage({
         <StatCard label="Rate" value={`${request.rateType}x`} />
       </div>
 
-      <section className="space-y-3 border border-[var(--border-primary)] bg-[var(--surface-card)] p-6">
-        <h2 className="text-base font-semibold text-[var(--foreground-primary)]">Details</h2>
-        <p className="text-sm text-[var(--foreground-primary)]">
-          {request.reason?.trim() || "No reason provided."}
-        </p>
+      <section className="space-y-4 border border-[var(--border-primary)] bg-[var(--surface-card)] p-6">
+        <div className="space-y-3">
+          <h2 className="text-base font-semibold text-[var(--foreground-primary)]">Details</h2>
+          <p className="text-sm text-[var(--foreground-primary)]">
+            {request.reason?.trim() || "No reason provided."}
+          </p>
+        </div>
+
+        <OvertimeActionControls requestId={request.id} status={request.status} />
       </section>
 
       {timeline.length > 0 && (

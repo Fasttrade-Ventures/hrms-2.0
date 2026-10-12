@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { StatCard } from "@hrms/ui";
 
 import { ApprovalTimeline } from "@/components/employee/approval-timeline";
+import { ClaimActionControls } from "@/components/employee/claim-action-controls";
 import {
   formatDate,
   formatDateTime,
@@ -46,6 +47,18 @@ export default async function ClaimDetailPage({
         title={`Claim: ${request.claimTypeName}`}
       />
 
+      {request.status === "cancelled" ? (
+        <div className="border border-[var(--border-primary)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--foreground-muted)]">
+          This claim request has been cancelled.
+        </div>
+      ) : null}
+
+      {request.status === "revoked" ? (
+        <div className="border border-[var(--border-primary)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--foreground-muted)]">
+          This approved claim has been revoked.
+        </div>
+      ) : null}
+
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <div className="border border-[var(--border-primary)] bg-[var(--surface-card)] p-5">
           <p className="text-[13px] font-medium text-[var(--foreground-muted)]">Status</p>
@@ -79,11 +92,15 @@ export default async function ClaimDetailPage({
         </section>
       )}
 
-      <section className="space-y-3 border border-[var(--border-primary)] bg-[var(--surface-card)] p-6">
-        <h2 className="text-base font-semibold text-[var(--foreground-primary)]">Description</h2>
-        <p className="text-sm text-[var(--foreground-primary)]">
-          {request.description?.trim() || "No description provided."}
-        </p>
+      <section className="space-y-4 border border-[var(--border-primary)] bg-[var(--surface-card)] p-6">
+        <div className="space-y-3">
+          <h2 className="text-base font-semibold text-[var(--foreground-primary)]">Description</h2>
+          <p className="text-sm text-[var(--foreground-primary)]">
+            {request.description?.trim() || "No description provided."}
+          </p>
+        </div>
+
+        <ClaimActionControls requestId={request.id} status={request.status} />
       </section>
 
       {timeline.length > 0 && (

@@ -431,6 +431,7 @@ export async function cancelLeaveRequest(requestId: string, reason?: string): Pr
   });
 
   let approverEmployeeId: string | null = null;
+  let pendingStepId: string | null = null;
   if (request.approval_request_id) {
     const { data: appReq } = await supabase
       .from("approval_requests")
@@ -464,6 +465,7 @@ export async function cancelLeaveRequest(requestId: string, reason?: string): Pr
 
     if (pendingStep) {
       approverEmployeeId = pendingStep.approver_employee_id;
+      pendingStepId = pendingStep.id;
       await supabase
         .from("approval_steps")
         .update({
@@ -487,6 +489,7 @@ export async function cancelLeaveRequest(requestId: string, reason?: string): Pr
   if (approverEmployeeId) {
     const managerUserId = await resolveUserIdForEmployee(organizationId, approverEmployeeId);
     if (managerUserId) {
+      const actorName = session.user.fullName || session.user.email || "Employee";
       await queueNotification({
         organizationId,
         recipientUserId: managerUserId,
@@ -496,12 +499,23 @@ export async function cancelLeaveRequest(requestId: string, reason?: string): Pr
           requestId: request.approval_request_id,
           requestType: "leave",
           sourceId: requestId,
-          actorName: session.user.fullName || session.user.email || "Employee",
+          stepId: pendingStepId,
+          actorName,
           reason: reason ?? null,
-          href: `/employee/leave/${requestId}`,
+          href: pendingStepId ? `/manager/approvals/${pendingStepId}` : `/employee/leave/${requestId}`,
         },
         idempotencyKey: `leave-cancelled-${requestId}`,
       });
+
+      const { sendWebPushNotification } = await import("@/lib/notifications/web-push");
+      await sendWebPushNotification({
+        organizationId,
+        recipientUserId: managerUserId,
+        title: "Leave Request Cancelled",
+        body: reason ? `${actorName} cancelled their leave request: "${reason}"` : `${actorName} cancelled their leave request.`,
+        url: pendingStepId ? `/manager/approvals/${pendingStepId}` : "/manager/approvals",
+        tag: `leave-cancelled-${requestId}`,
+      }).catch(() => undefined);
     }
   }
 
@@ -556,6 +570,7 @@ export async function revokeLeaveRequest(requestId: string, reason?: string): Pr
   });
 
   let approverEmployeeId: string | null = null;
+  let lastStepId: string | null = null;
   if (request.approval_request_id) {
     const { data: appReq } = await supabase
       .from("approval_requests")
@@ -590,9 +605,12 @@ export async function revokeLeaveRequest(requestId: string, reason?: string): Pr
 
     if (lastStep) {
       approverEmployeeId = lastStep.approver_employee_id;
+      lastStepId = lastStep.id;
       await supabase
         .from("approval_steps")
         .update({
+          status: "revoked",
+          acted_at: now,
           comment: reason ? `Revoked by employee: ${reason}` : "Revoked by employee",
         })
         .eq("id", lastStep.id);
@@ -611,6 +629,7 @@ export async function revokeLeaveRequest(requestId: string, reason?: string): Pr
   if (approverEmployeeId) {
     const managerUserId = await resolveUserIdForEmployee(organizationId, approverEmployeeId);
     if (managerUserId) {
+      const actorName = session.user.fullName || session.user.email || "Employee";
       await queueNotification({
         organizationId,
         recipientUserId: managerUserId,
@@ -620,12 +639,23 @@ export async function revokeLeaveRequest(requestId: string, reason?: string): Pr
           requestId: request.approval_request_id,
           requestType: "leave",
           sourceId: requestId,
-          actorName: session.user.fullName || session.user.email || "Employee",
+          stepId: lastStepId,
+          actorName,
           reason: reason ?? null,
-          href: `/employee/leave/${requestId}`,
+          href: lastStepId ? `/manager/approvals/${lastStepId}` : `/employee/leave/${requestId}`,
         },
         idempotencyKey: `leave-revoked-${requestId}`,
       });
+
+      const { sendWebPushNotification } = await import("@/lib/notifications/web-push");
+      await sendWebPushNotification({
+        organizationId,
+        recipientUserId: managerUserId,
+        title: "Leave Request Revoked",
+        body: reason ? `${actorName} revoked their approved leave: "${reason}"` : `${actorName} revoked their approved leave.`,
+        url: lastStepId ? `/manager/approvals/${lastStepId}` : "/manager/approvals",
+        tag: `leave-revoked-${requestId}`,
+      }).catch(() => undefined);
     }
   }
 

@@ -32,7 +32,13 @@ export function mapApprovalInboxRow(row: Record<string, unknown>): ApprovalInbox
   const requestType = request.request_type as ApprovalRequestType;
   const payload = (request.payload ?? {}) as Record<string, unknown>;
 
-  let status = String(row.status);
+  let status = String(
+    request.status === "revoked"
+      ? "revoked"
+      : request.status === "cancelled"
+        ? "cancelled"
+        : row.status,
+  );
   const comment = String((row as { comment?: string | null }).comment ?? "");
   const cancellationReason = String(payload.cancellationReason ?? "");
   const today = new Date().toISOString().slice(0, 10);

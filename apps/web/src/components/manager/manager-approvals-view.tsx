@@ -86,7 +86,9 @@ export function ManagerApprovalsView({
       case "approved":
         return "success";
       case "rejected":
+      case "revoked":
         return "danger";
+      case "cancelled":
       case "expired":
         return "neutral";
       default:
@@ -96,6 +98,8 @@ export function ManagerApprovalsView({
 
   const getStatusLabel = (status: string) => {
     if (status === "expired") return "Expired";
+    if (status === "cancelled") return "Cancelled by Employee";
+    if (status === "revoked") return "Revoked by Employee";
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
