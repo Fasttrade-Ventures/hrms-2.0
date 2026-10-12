@@ -55,9 +55,7 @@ async function findEmployee(organizationId: string, target: AttendanceTarget) {
     .select("id, employee_number, full_name, email")
     .eq("organization_id", organizationId)
     .eq("status", "active");
-  query = parsed.employeeNumber
-    ? query.eq("employee_number", parsed.employeeNumber)
-    : query.eq("email", parsed.email!);
+  query = query.ilike("email", parsed.email.replace(/[%_\\]/g, "\\$&"));
   const { data, error } = await query.maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) throw new Error("Active employee not found.");

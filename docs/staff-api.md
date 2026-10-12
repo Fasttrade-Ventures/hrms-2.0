@@ -38,7 +38,7 @@ Authorization: Bearer hrms_live_YOUR_KEY
 
 `X-API-Key: hrms_live_YOUR_KEY` also works. Send `Content-Type: application/json` on POST calls.
 
-Identify the person with `employeeNumber` or `email` on every call except cancel. The person must already be an active employee in this organization, and must already have a BukuHR login. The request still goes to their manager for approval. Blackout dates, leave balance, overlapping leave, and claim limits are the same rules as the employee portal.
+Identify the person with `email` on every call except cancel. That email is the staff id from the virtual office, and it must match an active employee in this organization. The person must already have a BukuHR login. The request still goes to their manager for approval. Blackout dates, leave balance, overlapping leave, and claim limits are the same rules as the employee portal.
 
 ---
 
@@ -48,7 +48,7 @@ Identify the person with `employeeNumber` or `email` on every call except cancel
 
 ```json
 {
-  "employeeNumber": "E001",
+  "email": "staff@company.com",
   "leaveTypeId": "uuid-of-the-leave-type",
   "startDate": "2026-10-20",
   "endDate": "2026-10-21",
@@ -64,7 +64,7 @@ Success is **201**. `data.id` is the leave request id. Use that id to cancel.
 | 201 | Submitted for approval |
 | 400 | Missing fields, blackout, or not enough leave balance |
 | 403 | Key lacks Staff self-service, or the subscription is inactive |
-| 404 | No active employee with that number or email |
+| 404 | No active employee with that email |
 | 409 | Another pending or approved leave already covers these dates |
 
 ---
@@ -94,7 +94,7 @@ Only a pending request can be cancelled. The manager is notified. Success is **2
 
 ```json
 {
-  "employeeNumber": "E001",
+  "email": "staff@company.com",
   "claimTypeId": "uuid-of-the-claim-type",
   "amount": "45.00",
   "receiptDate": "2026-10-10",
@@ -114,7 +114,7 @@ Claims are available on Professional and Enterprise. A Core organization gets **
 
 ```json
 {
-  "employeeNumber": "E001",
+  "email": "staff@company.com",
   "workDate": "2026-10-10",
   "hours": 2,
   "rateType": "1.5",
@@ -136,7 +136,7 @@ This does not change the attendance record immediately. It asks a manager to app
 
 ```json
 {
-  "employeeNumber": "E001",
+  "email": "staff@company.com",
   "requestDate": "2026-10-10",
   "clockInTime": "09:00",
   "clockOutTime": "18:00",
@@ -152,15 +152,15 @@ Clock in and clock out from a virtual office are separate calls. See `docs/atten
 
 ## Remaining leave
 
-`GET /api/v1/leave-balances?employeeNumber=E001`
+`GET /api/v1/leave-balances?email=staff@company.com`
 
-`email` works in place of `employeeNumber`. Success is **200**. Each item has `leaveTypeId`, `leaveTypeName`, `entitlementDays`, `usedDays`, `pendingDays`, and `remainingDays`.
+Success is **200**. Each item has `leaveTypeId`, `leaveTypeName`, `entitlementDays`, `usedDays`, `pendingDays`, and `remainingDays`.
 
 ---
 
 ## Payslips
 
-`GET /api/v1/payslips?employeeNumber=E001`
+`GET /api/v1/payslips?email=staff@company.com`
 
 Returns locked payslips only. Each item has `periodLabel`, `grossPay`, `netPay`, `epfEmployee`, `socsoEmployee`, `eisEmployee`, and `pcb`. Draft or unlocked pay runs are not included.
 

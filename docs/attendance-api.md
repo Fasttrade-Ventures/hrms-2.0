@@ -55,11 +55,7 @@ X-API-Key: hrms_live_YOUR_KEY
 
 ## Identify the staff member
 
-The body uses one of these fields. The person must already be an **active** employee in the organization that owns the key.
-
-```json
-{ "employeeNumber": "E001" }
-```
+The body uses `email`. That must match an **active** employee in the organization that owns the key. The virtual office uses this same email as its staff id.
 
 ```json
 { "email": "staff@company.com" }
@@ -77,7 +73,7 @@ This call does not ask for GPS or a selfie. The saved record has `source` set to
 curl -X POST https://your-bukuhr-host/api/v1/attendance/clock-in \
   -H "Authorization: Bearer hrms_live_YOUR_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"employeeNumber":"E001"}'
+  -d '{"email":"staff@company.com"}'
 ```
 
 Success is **201**:
@@ -87,6 +83,7 @@ Success is **201**:
   "data": {
     "id": "uuid",
     "employeeId": "uuid",
+    "email": "staff@company.com",
     "employeeNumber": "E001",
     "fullName": "Staff name",
     "workDate": "2026-10-10",
@@ -103,8 +100,8 @@ Success is **201**:
 | Status | Meaning |
 |---|---|
 | 201 | Clocked in |
-| 400 | No employee number and no email |
-| 404 | No active employee with that number or email |
+| 400 | No email |
+| 404 | No active employee with that email |
 | 409 | Already clocked in |
 
 Call this when the staff member logs into the virtual office.
@@ -120,8 +117,8 @@ Same body as clock in. Success is **200**, with `clockOutAt` added.
 | Status | Meaning |
 |---|---|
 | 200 | Clocked out |
-| 400 | No employee number and no email |
-| 404 | No active employee with that number or email |
+| 400 | No email |
+| 404 | No active employee with that email |
 | 409 | Not clocked in |
 
 Call this when the staff member leaves the virtual office.
@@ -138,7 +135,7 @@ Today, in Asia/Kuala_Lumpur, when `date` is omitted.
 GET /api/v1/attendance?date=2026-10-10
 ```
 
-Success is **200**. `data` is a list of sessions. Each item has `employeeNumber`, `fullName`, `email`, `workDate`, `session`, `clockInAt`, `clockOutAt`, `status`, and `source`.
+Success is **200**. `data` is a list of sessions. Each item has `email`, `employeeNumber`, `fullName`, `workDate`, `session`, `clockInAt`, `clockOutAt`, `status`, and `source`.
 
 ---
 
