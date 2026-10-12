@@ -455,7 +455,10 @@ export function NotificationsList({
 
                   {/* Right side: time and action */}
                   <div className="flex items-center gap-4 shrink-0">
-                    <span className="text-xs text-[var(--foreground-muted)] whitespace-nowrap">
+                    <span
+                      suppressHydrationWarning
+                      className="text-xs text-[var(--foreground-muted)] whitespace-nowrap"
+                    >
                       {formatRelativeTime(row.createdAt)}
                     </span>
 
