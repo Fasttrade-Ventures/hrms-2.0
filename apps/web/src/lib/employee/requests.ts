@@ -496,7 +496,6 @@ export async function cancelClaimRequest(requestId: string, reason?: string): Pr
       .maybeSingle();
 
     if (pendingStep) {
-      approverEmployeeId = pendingStep.approver_employee_id;
       pendingStepId = pendingStep.id;
       await supabase
         .from("approval_steps")
@@ -518,10 +517,39 @@ export async function cancelClaimRequest(requestId: string, reason?: string): Pr
     metadata: { reason: reason ?? null, amount: request.amount },
   });
 
-  if (approverEmployeeId && pendingStepId) {
-    const managerUserId = await resolveUserIdForEmployee(organizationId, approverEmployeeId);
-    if (managerUserId) {
-      const actorName = session.user.fullName || session.user.email || "Employee";
+  // Collect all recipient approvers (assigned step approvers + direct manager)
+  const targetApproverIds = new Set<string>();
+  if (request.approval_request_id) {
+    const { data: allSteps } = await supabase
+      .from("approval_steps")
+      .select("approver_employee_id, escalation_employee_id, escalated_from_employee_id")
+      .eq("approval_request_id", request.approval_request_id)
+      .eq("organization_id", organizationId);
+
+    if (allSteps) {
+      for (const st of allSteps) {
+        if (st.approver_employee_id) targetApproverIds.add(st.approver_employee_id);
+        if (st.escalation_employee_id) targetApproverIds.add(st.escalation_employee_id);
+        if (st.escalated_from_employee_id) targetApproverIds.add(st.escalated_from_employee_id);
+      }
+    }
+  }
+
+  const { data: empRecord } = await supabase
+    .from("employees")
+    .select("manager_employee_id")
+    .eq("id", employeeId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  if (empRecord?.manager_employee_id) {
+    targetApproverIds.add(empRecord.manager_employee_id);
+  }
+
+  const actorName = session.user.fullName || session.user.email || "Employee";
+  for (const approverId of targetApproverIds) {
+    const managerUserId = await resolveUserIdForEmployee(organizationId, approverId);
+    if (managerUserId && managerUserId !== session.user.id) {
       await queueNotification({
         organizationId,
         recipientUserId: managerUserId,
@@ -534,9 +562,9 @@ export async function cancelClaimRequest(requestId: string, reason?: string): Pr
           stepId: pendingStepId,
           actorName,
           reason: reason ?? null,
-          href: `/manager/approvals/${pendingStepId}`,
+          href: pendingStepId ? `/manager/approvals/${pendingStepId}` : `/employee/claims/${requestId}`,
         },
-        idempotencyKey: `claim-cancelled-${requestId}`,
+        idempotencyKey: `claim-cancelled-${requestId}-${managerUserId}`,
       });
 
       const { sendWebPushNotification } = await import("@/lib/notifications/web-push");
@@ -547,7 +575,7 @@ export async function cancelClaimRequest(requestId: string, reason?: string): Pr
         body: reason
           ? `${actorName} cancelled their claim: "${reason}"`
           : `${actorName} cancelled their claim.`,
-        url: `/manager/approvals/${pendingStepId}`,
+        url: pendingStepId ? `/manager/approvals/${pendingStepId}` : "/manager/approvals",
         tag: `claim-cancelled-${requestId}`,
       }).catch(() => undefined);
     }
@@ -585,7 +613,6 @@ export async function revokeClaimRequest(requestId: string, reason?: string): Pr
 
   if (updateError) throw new Error(updateError.message);
 
-  let approverEmployeeId: string | null = null;
   let lastStepId: string | null = null;
 
   if (request.approval_request_id) {
@@ -623,7 +650,6 @@ export async function revokeClaimRequest(requestId: string, reason?: string): Pr
       .maybeSingle();
 
     if (lastStep) {
-      approverEmployeeId = lastStep.approver_employee_id;
       lastStepId = lastStep.id;
       await supabase
         .from("approval_steps")
@@ -645,10 +671,39 @@ export async function revokeClaimRequest(requestId: string, reason?: string): Pr
     metadata: { reason: reason ?? null, amount: request.amount },
   });
 
-  if (approverEmployeeId) {
-    const managerUserId = await resolveUserIdForEmployee(organizationId, approverEmployeeId);
-    if (managerUserId) {
-      const actorName = session.user.fullName || session.user.email || "Employee";
+  // Collect all recipient approvers (assigned step approvers + direct manager)
+  const targetApproverIds = new Set<string>();
+  if (request.approval_request_id) {
+    const { data: allSteps } = await supabase
+      .from("approval_steps")
+      .select("approver_employee_id, escalation_employee_id, escalated_from_employee_id")
+      .eq("approval_request_id", request.approval_request_id)
+      .eq("organization_id", organizationId);
+
+    if (allSteps) {
+      for (const st of allSteps) {
+        if (st.approver_employee_id) targetApproverIds.add(st.approver_employee_id);
+        if (st.escalation_employee_id) targetApproverIds.add(st.escalation_employee_id);
+        if (st.escalated_from_employee_id) targetApproverIds.add(st.escalated_from_employee_id);
+      }
+    }
+  }
+
+  const { data: empRecord } = await supabase
+    .from("employees")
+    .select("manager_employee_id")
+    .eq("id", employeeId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  if (empRecord?.manager_employee_id) {
+    targetApproverIds.add(empRecord.manager_employee_id);
+  }
+
+  const actorName = session.user.fullName || session.user.email || "Employee";
+  for (const approverId of targetApproverIds) {
+    const managerUserId = await resolveUserIdForEmployee(organizationId, approverId);
+    if (managerUserId && managerUserId !== session.user.id) {
       await queueNotification({
         organizationId,
         recipientUserId: managerUserId,
@@ -663,7 +718,7 @@ export async function revokeClaimRequest(requestId: string, reason?: string): Pr
           reason: reason ?? null,
           href: lastStepId ? `/manager/approvals/${lastStepId}` : `/employee/claims/${requestId}`,
         },
-        idempotencyKey: `claim-revoked-${requestId}`,
+        idempotencyKey: `claim-revoked-${requestId}-${managerUserId}`,
       });
 
       const { sendWebPushNotification } = await import("@/lib/notifications/web-push");
@@ -712,7 +767,6 @@ export async function cancelOvertimeRequest(requestId: string, reason?: string):
 
   if (updateError) throw new Error(updateError.message);
 
-  let approverEmployeeId: string | null = null;
   let pendingStepId: string | null = null;
 
   if (request.approval_request_id) {
@@ -749,7 +803,6 @@ export async function cancelOvertimeRequest(requestId: string, reason?: string):
       .maybeSingle();
 
     if (pendingStep) {
-      approverEmployeeId = pendingStep.approver_employee_id;
       pendingStepId = pendingStep.id;
       await supabase
         .from("approval_steps")
@@ -771,10 +824,39 @@ export async function cancelOvertimeRequest(requestId: string, reason?: string):
     metadata: { reason: reason ?? null, hours: request.hours },
   });
 
-  if (approverEmployeeId && pendingStepId) {
-    const managerUserId = await resolveUserIdForEmployee(organizationId, approverEmployeeId);
-    if (managerUserId) {
-      const actorName = session.user.fullName || session.user.email || "Employee";
+  // Collect all recipient approvers (assigned step approvers + direct manager)
+  const targetApproverIds = new Set<string>();
+  if (request.approval_request_id) {
+    const { data: allSteps } = await supabase
+      .from("approval_steps")
+      .select("approver_employee_id, escalation_employee_id, escalated_from_employee_id")
+      .eq("approval_request_id", request.approval_request_id)
+      .eq("organization_id", organizationId);
+
+    if (allSteps) {
+      for (const st of allSteps) {
+        if (st.approver_employee_id) targetApproverIds.add(st.approver_employee_id);
+        if (st.escalation_employee_id) targetApproverIds.add(st.escalation_employee_id);
+        if (st.escalated_from_employee_id) targetApproverIds.add(st.escalated_from_employee_id);
+      }
+    }
+  }
+
+  const { data: empRecord } = await supabase
+    .from("employees")
+    .select("manager_employee_id")
+    .eq("id", employeeId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  if (empRecord?.manager_employee_id) {
+    targetApproverIds.add(empRecord.manager_employee_id);
+  }
+
+  const actorName = session.user.fullName || session.user.email || "Employee";
+  for (const approverId of targetApproverIds) {
+    const managerUserId = await resolveUserIdForEmployee(organizationId, approverId);
+    if (managerUserId && managerUserId !== session.user.id) {
       await queueNotification({
         organizationId,
         recipientUserId: managerUserId,
@@ -787,9 +869,9 @@ export async function cancelOvertimeRequest(requestId: string, reason?: string):
           stepId: pendingStepId,
           actorName,
           reason: reason ?? null,
-          href: `/manager/approvals/${pendingStepId}`,
+          href: pendingStepId ? `/manager/approvals/${pendingStepId}` : `/employee/overtime/${requestId}`,
         },
-        idempotencyKey: `overtime-cancelled-${requestId}`,
+        idempotencyKey: `overtime-cancelled-${requestId}-${managerUserId}`,
       });
 
       const { sendWebPushNotification } = await import("@/lib/notifications/web-push");
@@ -800,7 +882,7 @@ export async function cancelOvertimeRequest(requestId: string, reason?: string):
         body: reason
           ? `${actorName} cancelled their overtime request: "${reason}"`
           : `${actorName} cancelled their overtime request.`,
-        url: `/manager/approvals/${pendingStepId}`,
+        url: pendingStepId ? `/manager/approvals/${pendingStepId}` : "/manager/approvals",
         tag: `overtime-cancelled-${requestId}`,
       }).catch(() => undefined);
     }
@@ -838,7 +920,6 @@ export async function revokeOvertimeRequest(requestId: string, reason?: string):
 
   if (updateError) throw new Error(updateError.message);
 
-  let approverEmployeeId: string | null = null;
   let lastStepId: string | null = null;
 
   if (request.approval_request_id) {
@@ -876,7 +957,6 @@ export async function revokeOvertimeRequest(requestId: string, reason?: string):
       .maybeSingle();
 
     if (lastStep) {
-      approverEmployeeId = lastStep.approver_employee_id;
       lastStepId = lastStep.id;
       await supabase
         .from("approval_steps")
@@ -898,10 +978,39 @@ export async function revokeOvertimeRequest(requestId: string, reason?: string):
     metadata: { reason: reason ?? null, hours: request.hours },
   });
 
-  if (approverEmployeeId) {
-    const managerUserId = await resolveUserIdForEmployee(organizationId, approverEmployeeId);
-    if (managerUserId) {
-      const actorName = session.user.fullName || session.user.email || "Employee";
+  // Collect all recipient approvers (assigned step approvers + direct manager)
+  const targetApproverIds = new Set<string>();
+  if (request.approval_request_id) {
+    const { data: allSteps } = await supabase
+      .from("approval_steps")
+      .select("approver_employee_id, escalation_employee_id, escalated_from_employee_id")
+      .eq("approval_request_id", request.approval_request_id)
+      .eq("organization_id", organizationId);
+
+    if (allSteps) {
+      for (const st of allSteps) {
+        if (st.approver_employee_id) targetApproverIds.add(st.approver_employee_id);
+        if (st.escalation_employee_id) targetApproverIds.add(st.escalation_employee_id);
+        if (st.escalated_from_employee_id) targetApproverIds.add(st.escalated_from_employee_id);
+      }
+    }
+  }
+
+  const { data: empRecord } = await supabase
+    .from("employees")
+    .select("manager_employee_id")
+    .eq("id", employeeId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  if (empRecord?.manager_employee_id) {
+    targetApproverIds.add(empRecord.manager_employee_id);
+  }
+
+  const actorName = session.user.fullName || session.user.email || "Employee";
+  for (const approverId of targetApproverIds) {
+    const managerUserId = await resolveUserIdForEmployee(organizationId, approverId);
+    if (managerUserId && managerUserId !== session.user.id) {
       await queueNotification({
         organizationId,
         recipientUserId: managerUserId,
@@ -916,14 +1025,14 @@ export async function revokeOvertimeRequest(requestId: string, reason?: string):
           reason: reason ?? null,
           href: lastStepId ? `/manager/approvals/${lastStepId}` : `/employee/overtime/${requestId}`,
         },
-        idempotencyKey: `overtime-revoked-${requestId}`,
+        idempotencyKey: `overtime-revoked-${requestId}-${managerUserId}`,
       });
 
       const { sendWebPushNotification } = await import("@/lib/notifications/web-push");
       await sendWebPushNotification({
         organizationId,
         recipientUserId: managerUserId,
-        title: "Overtime Request Revoked",
+        title: "Overtime Revoked",
         body: reason
           ? `${actorName} revoked their approved overtime: "${reason}"`
           : `${actorName} revoked their approved overtime.`,
