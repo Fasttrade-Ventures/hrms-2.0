@@ -75,6 +75,11 @@ export function resolveNotificationHref(
       return employeeRequestDetailHref(requestType, sourceId);
     }
     if (portal === "manager") {
+      const stepId = row.payload.stepId;
+      if (typeof stepId === "string") return `/manager/approvals/${stepId}`;
+      if (typeof row.payload.href === "string" && row.payload.href.startsWith("/manager/")) {
+        return row.payload.href;
+      }
       return "/manager/team-calendar";
     }
     return portal === "employee" ? "/employee/leave" : null;

@@ -87,6 +87,15 @@ describe("Leave cancel and revoke notifications", () => {
     expect(resolveNotificationHref(cancelRow, "employee")).toBe("/employee/leave/leave-123");
     expect(resolveNotificationHref(cancelRow, "manager")).toBe("/manager/team-calendar");
 
+    const cancelRowWithStep = {
+      id: "notif-cancel-step",
+      template: "approval.cancel",
+      payload: { requestType: "leave", sourceId: "leave-123", stepId: "step-123" },
+      status: "pending",
+      createdAt: new Date().toISOString(),
+    };
+    expect(resolveNotificationHref(cancelRowWithStep, "manager")).toBe("/manager/approvals/step-123");
+
     const revokeRow = {
       id: "notif-revoke",
       template: "approval.revoke",
@@ -97,5 +106,34 @@ describe("Leave cancel and revoke notifications", () => {
 
     expect(resolveNotificationHref(revokeRow, "employee")).toBe("/employee/leave/leave-456");
     expect(resolveNotificationHref(revokeRow, "manager")).toBe("/manager/team-calendar");
+
+    const revokeRowWithStep = {
+      id: "notif-revoke-step",
+      template: "approval.revoke",
+      payload: { requestType: "claim", sourceId: "claim-789", stepId: "step-456" },
+      status: "pending",
+      createdAt: new Date().toISOString(),
+    };
+    expect(resolveNotificationHref(revokeRowWithStep, "manager")).toBe("/manager/approvals/step-456");
+  });
+
+  it("formats notification messages for claim and overtime cancel and revoke", () => {
+    const claimCancel = formatNotificationMessage({
+      id: "notif-claim-cancel",
+      template: "approval.cancel",
+      payload: { requestType: "claim", actorName: "Siti Nur" },
+      status: "pending",
+      createdAt: new Date().toISOString(),
+    });
+    expect(claimCancel).toBe("Siti Nur cancelled their claim request.");
+
+    const otRevoke = formatNotificationMessage({
+      id: "notif-ot-revoke",
+      template: "approval.revoke",
+      payload: { requestType: "overtime", actorName: "Tan Ah Teck" },
+      status: "pending",
+      createdAt: new Date().toISOString(),
+    });
+    expect(otRevoke).toBe("Tan Ah Teck revoked their approved overtime request.");
   });
 });

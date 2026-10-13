@@ -70,6 +70,28 @@ function getNotificationText(row: NotificationRow): { title: string; message: st
       message: `Your ${label.toLowerCase()} request was rejected.`
     };
   }
+  if (row.template === "approval.cancel") {
+    const requestType = String(row.payload.requestType ?? "");
+    const label = REQUEST_TYPE_LABELS[requestType as keyof typeof REQUEST_TYPE_LABELS] ?? "Request";
+    const actorName = row.payload.actorName ? String(row.payload.actorName) : null;
+    return {
+      title: `${label} request cancelled`,
+      message: actorName
+        ? `${actorName} cancelled their ${label.toLowerCase()} request.`
+        : `Your ${label.toLowerCase()} request was cancelled.`,
+    };
+  }
+  if (row.template === "approval.revoke") {
+    const requestType = String(row.payload.requestType ?? "");
+    const label = REQUEST_TYPE_LABELS[requestType as keyof typeof REQUEST_TYPE_LABELS] ?? "Request";
+    const actorName = row.payload.actorName ? String(row.payload.actorName) : null;
+    return {
+      title: `${label} revoked by employee`,
+      message: actorName
+        ? `${actorName} revoked their approved ${label.toLowerCase()} request.`
+        : `Your ${label.toLowerCase()} request was revoked.`,
+    };
+  }
   if (row.template === "announcement.published") {
     return {
       title: "New announcement",
@@ -433,7 +455,10 @@ export function NotificationsList({
 
                   {/* Right side: time and action */}
                   <div className="flex items-center gap-4 shrink-0">
-                    <span className="text-xs text-[var(--foreground-muted)] whitespace-nowrap">
+                    <span
+                      suppressHydrationWarning
+                      className="text-xs text-[var(--foreground-muted)] whitespace-nowrap"
+                    >
                       {formatRelativeTime(row.createdAt)}
                     </span>
 

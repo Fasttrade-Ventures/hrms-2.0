@@ -13,6 +13,7 @@ import { getImpersonationState } from "@/lib/platform/impersonation";
 import { getUnreadNotificationCount } from "@/lib/notifications/inbox";
 import { createClient } from "@/lib/supabase/server";
 import type { OrgSwitcherOption } from "@/components/portal/organization-switcher";
+import { PushNotificationRegistrar } from "@/components/notifications/push-notification-registrar";
 
 const ALL_MODULE_KEYS: ModuleKey[] = [
   "announcements",
@@ -93,6 +94,7 @@ export async function PortalLayout({
       >
         {children}
       </PortalShell>
+      <PushNotificationRegistrar />
     </>
   );
 }

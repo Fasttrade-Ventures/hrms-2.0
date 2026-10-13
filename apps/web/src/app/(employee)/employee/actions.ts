@@ -550,3 +550,107 @@ export async function revokeLeaveAction(
   }
 }
 
+export async function cancelClaimAction(
+  _prev: EmployeeActionState,
+  formData: FormData,
+): Promise<EmployeeActionState> {
+  try {
+    const requestId = String(formData.get("requestId") ?? "");
+    const reason = String(formData.get("reason") ?? "").trim() || undefined;
+
+    if (!requestId) {
+      return { error: "Request ID is required." };
+    }
+
+    const { cancelClaimRequest } = await import("@/lib/employee/requests");
+    await cancelClaimRequest(requestId, reason);
+
+    revalidatePath("/employee/claims");
+    revalidatePath(`/employee/claims/${requestId}`);
+    revalidatePath("/employee/dashboard");
+    revalidatePath("/manager/approvals");
+
+    return { success: "Claim request cancelled." };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Failed to cancel claim." };
+  }
+}
+
+export async function revokeClaimAction(
+  _prev: EmployeeActionState,
+  formData: FormData,
+): Promise<EmployeeActionState> {
+  try {
+    const requestId = String(formData.get("requestId") ?? "");
+    const reason = String(formData.get("reason") ?? "").trim() || undefined;
+
+    if (!requestId) {
+      return { error: "Request ID is required." };
+    }
+
+    const { revokeClaimRequest } = await import("@/lib/employee/requests");
+    await revokeClaimRequest(requestId, reason);
+
+    revalidatePath("/employee/claims");
+    revalidatePath(`/employee/claims/${requestId}`);
+    revalidatePath("/employee/dashboard");
+    revalidatePath("/manager/approvals");
+
+    return { success: "Approved claim revoked." };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Failed to revoke claim." };
+  }
+}
+
+export async function cancelOvertimeAction(
+  _prev: EmployeeActionState,
+  formData: FormData,
+): Promise<EmployeeActionState> {
+  try {
+    const requestId = String(formData.get("requestId") ?? "");
+    const reason = String(formData.get("reason") ?? "").trim() || undefined;
+
+    if (!requestId) {
+      return { error: "Request ID is required." };
+    }
+
+    const { cancelOvertimeRequest } = await import("@/lib/employee/requests");
+    await cancelOvertimeRequest(requestId, reason);
+
+    revalidatePath("/employee/overtime");
+    revalidatePath(`/employee/overtime/${requestId}`);
+    revalidatePath("/employee/dashboard");
+    revalidatePath("/manager/approvals");
+
+    return { success: "Overtime request cancelled." };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Failed to cancel overtime request." };
+  }
+}
+
+export async function revokeOvertimeAction(
+  _prev: EmployeeActionState,
+  formData: FormData,
+): Promise<EmployeeActionState> {
+  try {
+    const requestId = String(formData.get("requestId") ?? "");
+    const reason = String(formData.get("reason") ?? "").trim() || undefined;
+
+    if (!requestId) {
+      return { error: "Request ID is required." };
+    }
+
+    const { revokeOvertimeRequest } = await import("@/lib/employee/requests");
+    await revokeOvertimeRequest(requestId, reason);
+
+    revalidatePath("/employee/overtime");
+    revalidatePath(`/employee/overtime/${requestId}`);
+    revalidatePath("/employee/dashboard");
+    revalidatePath("/manager/approvals");
+
+    return { success: "Approved overtime revoked." };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Failed to revoke overtime." };
+  }
+}
+

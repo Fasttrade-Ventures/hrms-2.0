@@ -1,3 +1,6 @@
+import { logAuditEvent } from "@/lib/audit/log-event";
+import { queueNotification } from "@/lib/notifications/queue";
+import { resolveUserIdForEmployee } from "@/lib/approvals/service";
 import { createClient } from "@/lib/supabase/server";
 import { requireEmployeeContext } from "@/lib/employee/leave";
 
@@ -423,5 +426,619 @@ export async function getReplacementCreditStats() {
     approvedYtd: Number(approvedYtd.toFixed(1)),
     rejected: Number(rejected.toFixed(1)),
   };
+}
+
+export async function cancelClaimRequest(requestId: string, reason?: string): Promise<void> {
+  const { employeeId, organizationId, session } = await requireEmployeeContext();
+  const supabase = await createClient();
+
+  const { data: request, error: fetchError } = await supabase
+    .from("claims")
+    .select("id, status, approval_request_id, amount")
+    .eq("id", requestId)
+    .eq("employee_id", employeeId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  if (fetchError) throw new Error(fetchError.message);
+  if (!request) throw new Error("Claim request not found.");
+
+  if (request.status !== "pending") {
+    throw new Error(
+      `Cannot cancel a claim request with status "${request.status}". Only pending requests can be cancelled.`,
+    );
+  }
+
+  const now = new Date().toISOString();
+
+  const { error: updateError } = await supabase
+    .from("claims")
+    .update({ status: "cancelled", updated_at: now })
+    .eq("id", requestId)
+    .eq("organization_id", organizationId);
+
+  if (updateError) throw new Error(updateError.message);
+
+  let pendingStepId: string | null = null;
+
+  if (request.approval_request_id) {
+    const { data: appReq } = await supabase
+      .from("approval_requests")
+      .select("id, payload")
+      .eq("id", request.approval_request_id)
+      .eq("organization_id", organizationId)
+      .maybeSingle();
+
+    await supabase
+      .from("approval_requests")
+      .update({
+        status: "cancelled",
+        resolved_at: now,
+        payload: {
+          ...(typeof appReq?.payload === "object" && appReq?.payload !== null
+            ? appReq.payload
+            : {}),
+          cancellationReason: reason ?? null,
+          cancelledByUserId: session.user.id,
+          cancelledAt: now,
+        },
+      })
+      .eq("id", request.approval_request_id)
+      .eq("organization_id", organizationId);
+
+    const { data: pendingStep } = await supabase
+      .from("approval_steps")
+      .select("id, approver_employee_id")
+      .eq("approval_request_id", request.approval_request_id)
+      .eq("organization_id", organizationId)
+      .eq("status", "pending")
+      .maybeSingle();
+
+    if (pendingStep) {
+      pendingStepId = pendingStep.id;
+      await supabase
+        .from("approval_steps")
+        .update({
+          status: "cancelled",
+          acted_at: now,
+          comment: reason ? `Cancelled by employee: ${reason}` : "Cancelled by employee",
+        })
+        .eq("id", pendingStep.id);
+    }
+  }
+
+  await logAuditEvent({
+    organizationId,
+    actorUserId: session.user.id,
+    action: "claim.cancelled",
+    resourceType: "claim",
+    resourceId: requestId,
+    metadata: { reason: reason ?? null, amount: request.amount },
+  });
+
+  // Collect all recipient approvers (assigned step approvers + direct manager)
+  const targetApproverIds = new Set<string>();
+  if (request.approval_request_id) {
+    const { data: allSteps } = await supabase
+      .from("approval_steps")
+      .select("approver_employee_id, escalation_employee_id, escalated_from_employee_id")
+      .eq("approval_request_id", request.approval_request_id)
+      .eq("organization_id", organizationId);
+
+    if (allSteps) {
+      for (const st of allSteps) {
+        if (st.approver_employee_id) targetApproverIds.add(st.approver_employee_id);
+        if (st.escalation_employee_id) targetApproverIds.add(st.escalation_employee_id);
+        if (st.escalated_from_employee_id) targetApproverIds.add(st.escalated_from_employee_id);
+      }
+    }
+  }
+
+  const { data: empRecord } = await supabase
+    .from("employees")
+    .select("manager_employee_id")
+    .eq("id", employeeId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  if (empRecord?.manager_employee_id) {
+    targetApproverIds.add(empRecord.manager_employee_id);
+  }
+
+  const actorName = session.user.fullName || session.user.email || "Employee";
+  for (const approverId of targetApproverIds) {
+    const managerUserId = await resolveUserIdForEmployee(organizationId, approverId);
+    if (managerUserId && managerUserId !== session.user.id) {
+      await queueNotification({
+        organizationId,
+        recipientUserId: managerUserId,
+        channel: "in_app",
+        template: "approval.cancel",
+        payload: {
+          requestId: request.approval_request_id,
+          requestType: "claim",
+          sourceId: requestId,
+          stepId: pendingStepId,
+          actorName,
+          reason: reason ?? null,
+          href: pendingStepId ? `/manager/approvals/${pendingStepId}` : `/employee/claims/${requestId}`,
+        },
+        idempotencyKey: `claim-cancelled-${requestId}-${managerUserId}`,
+      });
+
+      const { sendWebPushNotification } = await import("@/lib/notifications/web-push");
+      await sendWebPushNotification({
+        organizationId,
+        recipientUserId: managerUserId,
+        title: "Claim Request Cancelled",
+        body: reason
+          ? `${actorName} cancelled their claim: "${reason}"`
+          : `${actorName} cancelled their claim.`,
+        url: pendingStepId ? `/manager/approvals/${pendingStepId}` : "/manager/approvals",
+        tag: `claim-cancelled-${requestId}`,
+      }).catch(() => undefined);
+    }
+  }
+}
+
+export async function revokeClaimRequest(requestId: string, reason?: string): Promise<void> {
+  const { employeeId, organizationId, session } = await requireEmployeeContext();
+  const supabase = await createClient();
+
+  const { data: request, error: fetchError } = await supabase
+    .from("claims")
+    .select("id, status, approval_request_id, amount")
+    .eq("id", requestId)
+    .eq("employee_id", employeeId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  if (fetchError) throw new Error(fetchError.message);
+  if (!request) throw new Error("Claim request not found.");
+
+  if (request.status !== "approved") {
+    throw new Error(
+      `Cannot revoke a claim with status "${request.status}". Only approved claims can be revoked.`,
+    );
+  }
+
+  const now = new Date().toISOString();
+
+  const { error: updateError } = await supabase
+    .from("claims")
+    .update({ status: "revoked", updated_at: now })
+    .eq("id", requestId)
+    .eq("organization_id", organizationId);
+
+  if (updateError) throw new Error(updateError.message);
+
+  let lastStepId: string | null = null;
+
+  if (request.approval_request_id) {
+    const { data: appReq } = await supabase
+      .from("approval_requests")
+      .select("id, payload")
+      .eq("id", request.approval_request_id)
+      .eq("organization_id", organizationId)
+      .maybeSingle();
+
+    await supabase
+      .from("approval_requests")
+      .update({
+        status: "revoked",
+        resolved_at: now,
+        payload: {
+          ...(typeof appReq?.payload === "object" && appReq?.payload !== null
+            ? appReq.payload
+            : {}),
+          revokeReason: reason ?? null,
+          revokedByUserId: session.user.id,
+          revokedAt: now,
+        },
+      })
+      .eq("id", request.approval_request_id)
+      .eq("organization_id", organizationId);
+
+    const { data: lastStep } = await supabase
+      .from("approval_steps")
+      .select("id, approver_employee_id")
+      .eq("approval_request_id", request.approval_request_id)
+      .eq("organization_id", organizationId)
+      .order("step_order", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (lastStep) {
+      lastStepId = lastStep.id;
+      await supabase
+        .from("approval_steps")
+        .update({
+          status: "revoked",
+          acted_at: now,
+          comment: reason ? `Revoked by employee: ${reason}` : "Revoked by employee",
+        })
+        .eq("id", lastStep.id);
+    }
+  }
+
+  await logAuditEvent({
+    organizationId,
+    actorUserId: session.user.id,
+    action: "claim.revoked",
+    resourceType: "claim",
+    resourceId: requestId,
+    metadata: { reason: reason ?? null, amount: request.amount },
+  });
+
+  // Collect all recipient approvers (assigned step approvers + direct manager)
+  const targetApproverIds = new Set<string>();
+  if (request.approval_request_id) {
+    const { data: allSteps } = await supabase
+      .from("approval_steps")
+      .select("approver_employee_id, escalation_employee_id, escalated_from_employee_id")
+      .eq("approval_request_id", request.approval_request_id)
+      .eq("organization_id", organizationId);
+
+    if (allSteps) {
+      for (const st of allSteps) {
+        if (st.approver_employee_id) targetApproverIds.add(st.approver_employee_id);
+        if (st.escalation_employee_id) targetApproverIds.add(st.escalation_employee_id);
+        if (st.escalated_from_employee_id) targetApproverIds.add(st.escalated_from_employee_id);
+      }
+    }
+  }
+
+  const { data: empRecord } = await supabase
+    .from("employees")
+    .select("manager_employee_id")
+    .eq("id", employeeId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  if (empRecord?.manager_employee_id) {
+    targetApproverIds.add(empRecord.manager_employee_id);
+  }
+
+  const actorName = session.user.fullName || session.user.email || "Employee";
+  for (const approverId of targetApproverIds) {
+    const managerUserId = await resolveUserIdForEmployee(organizationId, approverId);
+    if (managerUserId && managerUserId !== session.user.id) {
+      await queueNotification({
+        organizationId,
+        recipientUserId: managerUserId,
+        channel: "in_app",
+        template: "approval.revoke",
+        payload: {
+          requestId: request.approval_request_id,
+          requestType: "claim",
+          sourceId: requestId,
+          stepId: lastStepId,
+          actorName,
+          reason: reason ?? null,
+          href: lastStepId ? `/manager/approvals/${lastStepId}` : `/employee/claims/${requestId}`,
+        },
+        idempotencyKey: `claim-revoked-${requestId}-${managerUserId}`,
+      });
+
+      const { sendWebPushNotification } = await import("@/lib/notifications/web-push");
+      await sendWebPushNotification({
+        organizationId,
+        recipientUserId: managerUserId,
+        title: "Claim Revoked",
+        body: reason
+          ? `${actorName} revoked their approved claim: "${reason}"`
+          : `${actorName} revoked their approved claim.`,
+        url: lastStepId ? `/manager/approvals/${lastStepId}` : "/manager/approvals",
+        tag: `claim-revoked-${requestId}`,
+      }).catch(() => undefined);
+    }
+  }
+}
+
+export async function cancelOvertimeRequest(requestId: string, reason?: string): Promise<void> {
+  const { employeeId, organizationId, session } = await requireEmployeeContext();
+  const supabase = await createClient();
+
+  const { data: request, error: fetchError } = await supabase
+    .from("overtime_requests")
+    .select("id, status, approval_request_id, hours")
+    .eq("id", requestId)
+    .eq("employee_id", employeeId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  if (fetchError) throw new Error(fetchError.message);
+  if (!request) throw new Error("Overtime request not found.");
+
+  if (request.status !== "pending") {
+    throw new Error(
+      `Cannot cancel an overtime request with status "${request.status}". Only pending requests can be cancelled.`,
+    );
+  }
+
+  const now = new Date().toISOString();
+
+  const { error: updateError } = await supabase
+    .from("overtime_requests")
+    .update({ status: "cancelled", updated_at: now })
+    .eq("id", requestId)
+    .eq("organization_id", organizationId);
+
+  if (updateError) throw new Error(updateError.message);
+
+  let pendingStepId: string | null = null;
+
+  if (request.approval_request_id) {
+    const { data: appReq } = await supabase
+      .from("approval_requests")
+      .select("id, payload")
+      .eq("id", request.approval_request_id)
+      .eq("organization_id", organizationId)
+      .maybeSingle();
+
+    await supabase
+      .from("approval_requests")
+      .update({
+        status: "cancelled",
+        resolved_at: now,
+        payload: {
+          ...(typeof appReq?.payload === "object" && appReq?.payload !== null
+            ? appReq.payload
+            : {}),
+          cancellationReason: reason ?? null,
+          cancelledByUserId: session.user.id,
+          cancelledAt: now,
+        },
+      })
+      .eq("id", request.approval_request_id)
+      .eq("organization_id", organizationId);
+
+    const { data: pendingStep } = await supabase
+      .from("approval_steps")
+      .select("id, approver_employee_id")
+      .eq("approval_request_id", request.approval_request_id)
+      .eq("organization_id", organizationId)
+      .eq("status", "pending")
+      .maybeSingle();
+
+    if (pendingStep) {
+      pendingStepId = pendingStep.id;
+      await supabase
+        .from("approval_steps")
+        .update({
+          status: "cancelled",
+          acted_at: now,
+          comment: reason ? `Cancelled by employee: ${reason}` : "Cancelled by employee",
+        })
+        .eq("id", pendingStep.id);
+    }
+  }
+
+  await logAuditEvent({
+    organizationId,
+    actorUserId: session.user.id,
+    action: "overtime.cancelled",
+    resourceType: "overtime",
+    resourceId: requestId,
+    metadata: { reason: reason ?? null, hours: request.hours },
+  });
+
+  // Collect all recipient approvers (assigned step approvers + direct manager)
+  const targetApproverIds = new Set<string>();
+  if (request.approval_request_id) {
+    const { data: allSteps } = await supabase
+      .from("approval_steps")
+      .select("approver_employee_id, escalation_employee_id, escalated_from_employee_id")
+      .eq("approval_request_id", request.approval_request_id)
+      .eq("organization_id", organizationId);
+
+    if (allSteps) {
+      for (const st of allSteps) {
+        if (st.approver_employee_id) targetApproverIds.add(st.approver_employee_id);
+        if (st.escalation_employee_id) targetApproverIds.add(st.escalation_employee_id);
+        if (st.escalated_from_employee_id) targetApproverIds.add(st.escalated_from_employee_id);
+      }
+    }
+  }
+
+  const { data: empRecord } = await supabase
+    .from("employees")
+    .select("manager_employee_id")
+    .eq("id", employeeId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  if (empRecord?.manager_employee_id) {
+    targetApproverIds.add(empRecord.manager_employee_id);
+  }
+
+  const actorName = session.user.fullName || session.user.email || "Employee";
+  for (const approverId of targetApproverIds) {
+    const managerUserId = await resolveUserIdForEmployee(organizationId, approverId);
+    if (managerUserId && managerUserId !== session.user.id) {
+      await queueNotification({
+        organizationId,
+        recipientUserId: managerUserId,
+        channel: "in_app",
+        template: "approval.cancel",
+        payload: {
+          requestId: request.approval_request_id,
+          requestType: "overtime",
+          sourceId: requestId,
+          stepId: pendingStepId,
+          actorName,
+          reason: reason ?? null,
+          href: pendingStepId ? `/manager/approvals/${pendingStepId}` : `/employee/overtime/${requestId}`,
+        },
+        idempotencyKey: `overtime-cancelled-${requestId}-${managerUserId}`,
+      });
+
+      const { sendWebPushNotification } = await import("@/lib/notifications/web-push");
+      await sendWebPushNotification({
+        organizationId,
+        recipientUserId: managerUserId,
+        title: "Overtime Request Cancelled",
+        body: reason
+          ? `${actorName} cancelled their overtime request: "${reason}"`
+          : `${actorName} cancelled their overtime request.`,
+        url: pendingStepId ? `/manager/approvals/${pendingStepId}` : "/manager/approvals",
+        tag: `overtime-cancelled-${requestId}`,
+      }).catch(() => undefined);
+    }
+  }
+}
+
+export async function revokeOvertimeRequest(requestId: string, reason?: string): Promise<void> {
+  const { employeeId, organizationId, session } = await requireEmployeeContext();
+  const supabase = await createClient();
+
+  const { data: request, error: fetchError } = await supabase
+    .from("overtime_requests")
+    .select("id, status, approval_request_id, hours")
+    .eq("id", requestId)
+    .eq("employee_id", employeeId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  if (fetchError) throw new Error(fetchError.message);
+  if (!request) throw new Error("Overtime request not found.");
+
+  if (request.status !== "approved") {
+    throw new Error(
+      `Cannot revoke an overtime request with status "${request.status}". Only approved overtime requests can be revoked.`,
+    );
+  }
+
+  const now = new Date().toISOString();
+
+  const { error: updateError } = await supabase
+    .from("overtime_requests")
+    .update({ status: "revoked", updated_at: now })
+    .eq("id", requestId)
+    .eq("organization_id", organizationId);
+
+  if (updateError) throw new Error(updateError.message);
+
+  let lastStepId: string | null = null;
+
+  if (request.approval_request_id) {
+    const { data: appReq } = await supabase
+      .from("approval_requests")
+      .select("id, payload")
+      .eq("id", request.approval_request_id)
+      .eq("organization_id", organizationId)
+      .maybeSingle();
+
+    await supabase
+      .from("approval_requests")
+      .update({
+        status: "revoked",
+        resolved_at: now,
+        payload: {
+          ...(typeof appReq?.payload === "object" && appReq?.payload !== null
+            ? appReq.payload
+            : {}),
+          revokeReason: reason ?? null,
+          revokedByUserId: session.user.id,
+          revokedAt: now,
+        },
+      })
+      .eq("id", request.approval_request_id)
+      .eq("organization_id", organizationId);
+
+    const { data: lastStep } = await supabase
+      .from("approval_steps")
+      .select("id, approver_employee_id")
+      .eq("approval_request_id", request.approval_request_id)
+      .eq("organization_id", organizationId)
+      .order("step_order", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (lastStep) {
+      lastStepId = lastStep.id;
+      await supabase
+        .from("approval_steps")
+        .update({
+          status: "revoked",
+          acted_at: now,
+          comment: reason ? `Revoked by employee: ${reason}` : "Revoked by employee",
+        })
+        .eq("id", lastStep.id);
+    }
+  }
+
+  await logAuditEvent({
+    organizationId,
+    actorUserId: session.user.id,
+    action: "overtime.revoked",
+    resourceType: "overtime",
+    resourceId: requestId,
+    metadata: { reason: reason ?? null, hours: request.hours },
+  });
+
+  // Collect all recipient approvers (assigned step approvers + direct manager)
+  const targetApproverIds = new Set<string>();
+  if (request.approval_request_id) {
+    const { data: allSteps } = await supabase
+      .from("approval_steps")
+      .select("approver_employee_id, escalation_employee_id, escalated_from_employee_id")
+      .eq("approval_request_id", request.approval_request_id)
+      .eq("organization_id", organizationId);
+
+    if (allSteps) {
+      for (const st of allSteps) {
+        if (st.approver_employee_id) targetApproverIds.add(st.approver_employee_id);
+        if (st.escalation_employee_id) targetApproverIds.add(st.escalation_employee_id);
+        if (st.escalated_from_employee_id) targetApproverIds.add(st.escalated_from_employee_id);
+      }
+    }
+  }
+
+  const { data: empRecord } = await supabase
+    .from("employees")
+    .select("manager_employee_id")
+    .eq("id", employeeId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  if (empRecord?.manager_employee_id) {
+    targetApproverIds.add(empRecord.manager_employee_id);
+  }
+
+  const actorName = session.user.fullName || session.user.email || "Employee";
+  for (const approverId of targetApproverIds) {
+    const managerUserId = await resolveUserIdForEmployee(organizationId, approverId);
+    if (managerUserId && managerUserId !== session.user.id) {
+      await queueNotification({
+        organizationId,
+        recipientUserId: managerUserId,
+        channel: "in_app",
+        template: "approval.revoke",
+        payload: {
+          requestId: request.approval_request_id,
+          requestType: "overtime",
+          sourceId: requestId,
+          stepId: lastStepId,
+          actorName,
+          reason: reason ?? null,
+          href: lastStepId ? `/manager/approvals/${lastStepId}` : `/employee/overtime/${requestId}`,
+        },
+        idempotencyKey: `overtime-revoked-${requestId}-${managerUserId}`,
+      });
+
+      const { sendWebPushNotification } = await import("@/lib/notifications/web-push");
+      await sendWebPushNotification({
+        organizationId,
+        recipientUserId: managerUserId,
+        title: "Overtime Revoked",
+        body: reason
+          ? `${actorName} revoked their approved overtime: "${reason}"`
+          : `${actorName} revoked their approved overtime.`,
+        url: lastStepId ? `/manager/approvals/${lastStepId}` : "/manager/approvals",
+        tag: `overtime-revoked-${requestId}`,
+      }).catch(() => undefined);
+    }
+  }
 }
 

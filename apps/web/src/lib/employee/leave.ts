@@ -430,7 +430,7 @@ export async function cancelLeaveRequest(requestId: string, reason?: string): Pr
     client: supabase,
   });
 
-  let approverEmployeeId: string | null = null;
+  let pendingStepId: string | null = null;
   if (request.approval_request_id) {
     const { data: appReq } = await supabase
       .from("approval_requests")
@@ -463,7 +463,7 @@ export async function cancelLeaveRequest(requestId: string, reason?: string): Pr
       .maybeSingle();
 
     if (pendingStep) {
-      approverEmployeeId = pendingStep.approver_employee_id;
+      pendingStepId = pendingStep.id;
       await supabase
         .from("approval_steps")
         .update({
@@ -484,9 +484,39 @@ export async function cancelLeaveRequest(requestId: string, reason?: string): Pr
     metadata: { reason: reason ?? null, days: request.days },
   });
 
-  if (approverEmployeeId) {
-    const managerUserId = await resolveUserIdForEmployee(organizationId, approverEmployeeId);
-    if (managerUserId) {
+  // Collect all recipient approvers (assigned step approvers + direct manager)
+  const targetApproverIds = new Set<string>();
+  if (request.approval_request_id) {
+    const { data: allSteps } = await supabase
+      .from("approval_steps")
+      .select("approver_employee_id, escalation_employee_id, escalated_from_employee_id")
+      .eq("approval_request_id", request.approval_request_id)
+      .eq("organization_id", organizationId);
+
+    if (allSteps) {
+      for (const st of allSteps) {
+        if (st.approver_employee_id) targetApproverIds.add(st.approver_employee_id);
+        if (st.escalation_employee_id) targetApproverIds.add(st.escalation_employee_id);
+        if (st.escalated_from_employee_id) targetApproverIds.add(st.escalated_from_employee_id);
+      }
+    }
+  }
+
+  const { data: empRecord } = await supabase
+    .from("employees")
+    .select("manager_employee_id")
+    .eq("id", employeeId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  if (empRecord?.manager_employee_id) {
+    targetApproverIds.add(empRecord.manager_employee_id);
+  }
+
+  const actorName = session.user.fullName || session.user.email || "Employee";
+  for (const approverId of targetApproverIds) {
+    const managerUserId = await resolveUserIdForEmployee(organizationId, approverId);
+    if (managerUserId && managerUserId !== session.user.id) {
       await queueNotification({
         organizationId,
         recipientUserId: managerUserId,
@@ -496,12 +526,23 @@ export async function cancelLeaveRequest(requestId: string, reason?: string): Pr
           requestId: request.approval_request_id,
           requestType: "leave",
           sourceId: requestId,
-          actorName: session.user.fullName || session.user.email || "Employee",
+          stepId: pendingStepId,
+          actorName,
           reason: reason ?? null,
-          href: `/employee/leave/${requestId}`,
+          href: pendingStepId ? `/manager/approvals/${pendingStepId}` : `/employee/leave/${requestId}`,
         },
-        idempotencyKey: `leave-cancelled-${requestId}`,
+        idempotencyKey: `leave-cancelled-${requestId}-${managerUserId}`,
       });
+
+      const { sendWebPushNotification } = await import("@/lib/notifications/web-push");
+      await sendWebPushNotification({
+        organizationId,
+        recipientUserId: managerUserId,
+        title: "Leave Request Cancelled",
+        body: reason ? `${actorName} cancelled their leave request: "${reason}"` : `${actorName} cancelled their leave request.`,
+        url: pendingStepId ? `/manager/approvals/${pendingStepId}` : "/manager/approvals",
+        tag: `leave-cancelled-${requestId}`,
+      }).catch(() => undefined);
     }
   }
 
@@ -555,7 +596,7 @@ export async function revokeLeaveRequest(requestId: string, reason?: string): Pr
     client: supabase,
   });
 
-  let approverEmployeeId: string | null = null;
+  let lastStepId: string | null = null;
   if (request.approval_request_id) {
     const { data: appReq } = await supabase
       .from("approval_requests")
@@ -589,10 +630,12 @@ export async function revokeLeaveRequest(requestId: string, reason?: string): Pr
       .maybeSingle();
 
     if (lastStep) {
-      approverEmployeeId = lastStep.approver_employee_id;
+      lastStepId = lastStep.id;
       await supabase
         .from("approval_steps")
         .update({
+          status: "revoked",
+          acted_at: now,
           comment: reason ? `Revoked by employee: ${reason}` : "Revoked by employee",
         })
         .eq("id", lastStep.id);
@@ -608,9 +651,39 @@ export async function revokeLeaveRequest(requestId: string, reason?: string): Pr
     metadata: { reason: reason ?? null, days: request.days },
   });
 
-  if (approverEmployeeId) {
-    const managerUserId = await resolveUserIdForEmployee(organizationId, approverEmployeeId);
-    if (managerUserId) {
+  // Collect all recipient approvers (assigned step approvers + direct manager)
+  const targetApproverIds = new Set<string>();
+  if (request.approval_request_id) {
+    const { data: allSteps } = await supabase
+      .from("approval_steps")
+      .select("approver_employee_id, escalation_employee_id, escalated_from_employee_id")
+      .eq("approval_request_id", request.approval_request_id)
+      .eq("organization_id", organizationId);
+
+    if (allSteps) {
+      for (const st of allSteps) {
+        if (st.approver_employee_id) targetApproverIds.add(st.approver_employee_id);
+        if (st.escalation_employee_id) targetApproverIds.add(st.escalation_employee_id);
+        if (st.escalated_from_employee_id) targetApproverIds.add(st.escalated_from_employee_id);
+      }
+    }
+  }
+
+  const { data: empRecord } = await supabase
+    .from("employees")
+    .select("manager_employee_id")
+    .eq("id", employeeId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  if (empRecord?.manager_employee_id) {
+    targetApproverIds.add(empRecord.manager_employee_id);
+  }
+
+  const actorName = session.user.fullName || session.user.email || "Employee";
+  for (const approverId of targetApproverIds) {
+    const managerUserId = await resolveUserIdForEmployee(organizationId, approverId);
+    if (managerUserId && managerUserId !== session.user.id) {
       await queueNotification({
         organizationId,
         recipientUserId: managerUserId,
@@ -620,12 +693,23 @@ export async function revokeLeaveRequest(requestId: string, reason?: string): Pr
           requestId: request.approval_request_id,
           requestType: "leave",
           sourceId: requestId,
-          actorName: session.user.fullName || session.user.email || "Employee",
+          stepId: lastStepId,
+          actorName,
           reason: reason ?? null,
-          href: `/employee/leave/${requestId}`,
+          href: lastStepId ? `/manager/approvals/${lastStepId}` : `/employee/leave/${requestId}`,
         },
-        idempotencyKey: `leave-revoked-${requestId}`,
+        idempotencyKey: `leave-revoked-${requestId}-${managerUserId}`,
       });
+
+      const { sendWebPushNotification } = await import("@/lib/notifications/web-push");
+      await sendWebPushNotification({
+        organizationId,
+        recipientUserId: managerUserId,
+        title: "Leave Request Revoked",
+        body: reason ? `${actorName} revoked their approved leave: "${reason}"` : `${actorName} revoked their approved leave.`,
+        url: lastStepId ? `/manager/approvals/${lastStepId}` : "/manager/approvals",
+        tag: `leave-revoked-${requestId}`,
+      }).catch(() => undefined);
     }
   }
 

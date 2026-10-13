@@ -36,7 +36,7 @@ export async function listManagerApprovals(options?: {
       query = query.eq("status", options.status);
     }
   } else {
-    query = query.in("status", ["pending", "approved", "rejected", "cancelled"]);
+    query = query.in("status", ["pending", "approved", "rejected", "cancelled", "revoked"]);
   }
 
   const { data, error } = await query

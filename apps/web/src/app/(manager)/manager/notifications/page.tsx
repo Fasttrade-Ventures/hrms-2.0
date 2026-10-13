@@ -1,6 +1,6 @@
 import { NotificationsList } from "@/components/notifications/notifications-list";
 import { requireRole } from "@/lib/auth/session";
-import { getNotificationTabCounts, listUserNotifications, markInAppNotificationsRead } from "@/lib/notifications/inbox";
+import { getNotificationTabCounts, listUserNotifications } from "@/lib/notifications/inbox";
 
 interface PageProps {
   searchParams: Promise<{ page?: string; tab?: string; filter?: string }>;
@@ -8,7 +8,6 @@ interface PageProps {
 
 export default async function Page({ searchParams }: PageProps) {
   await requireRole("manager");
-  await markInAppNotificationsRead().catch(() => undefined);
 
   const params = await searchParams;
   const page = Number(params.page ?? "1");
