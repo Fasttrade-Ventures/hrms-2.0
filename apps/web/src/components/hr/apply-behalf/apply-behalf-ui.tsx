@@ -6,8 +6,11 @@ import { useActionState, useState } from "react";
 import { EmptyState } from "@hrms/ui";
 
 import {
+  submitBehalfClaim,
   submitBehalfLate,
   submitBehalfLeave,
+  submitBehalfOvertime,
+  submitBehalfReplacementCredit,
   type ApplyBehalfActionState,
 } from "@/app/(hr)/hr/apply-behalf/actions";
 import { ApplyBehalfFilters } from "@/components/hr/apply-behalf/apply-behalf-filters";
@@ -37,6 +40,7 @@ import {
   getBehalfApplicationPath,
   type BehalfApplicationDetail,
   type BehalfApplicationRow,
+  type BehalfApplicationType,
   type BehalfListData,
 } from "@/lib/hr/apply-behalf-shared";
 import { formatDate, formatDateTime } from "@/components/employee/employee-shared";
@@ -80,7 +84,7 @@ export function ApplyBehalfList({
   basePath = "/hr/apply-behalf",
 }: {
   data: BehalfListData;
-  type: "all" | "leave" | "late";
+  type: "all" | BehalfApplicationType;
   dateFrom?: string;
   dateTo?: string;
   page: number;
@@ -104,7 +108,7 @@ export function ApplyBehalfList({
     <div className="space-y-6">
       <PortalPageHeader
         actions={<HrLinkButton href={`${basePath}/new`}>New application</HrLinkButton>}
-        description="Submit leave or late for any employee · auto-approved"
+        description="Submit requests on behalf of staff · auto-approved"
         title="Apply on behalf"
       />
 
@@ -112,9 +116,12 @@ export function ApplyBehalfList({
 
       <HrStatCards
         items={[
-          { hint: "HR submitted", label: "Behalf apps", value: data.stats.total },
-          { hint: "auto-approved", label: "Leave submitted", value: data.stats.leaveCount },
-          { hint: "auto-approved", label: "Late submitted", value: data.stats.lateCount },
+          { hint: "on behalf", label: "Total apps", value: data.stats.total },
+          { hint: "auto-approved", label: "Leave", value: data.stats.leaveCount },
+          { hint: "auto-approved", label: "Late", value: data.stats.lateCount },
+          { hint: "auto-approved", label: "Claims", value: data.stats.claimCount },
+          { hint: "auto-approved", label: "Overtime", value: data.stats.otCount },
+          { hint: "auto-approved", label: "Replacement", value: data.stats.replacementCount },
         ]}
       />
 
@@ -137,7 +144,7 @@ export function ApplyBehalfList({
               description={
                 hasDateFilter || type !== "all"
                   ? "Try adjusting your filters or date range."
-                  : "Use New application to submit leave or late for any employee."
+                  : "Use New application to submit requests on behalf of staff."
               }
               title={
                 total === 0 && (hasDateFilter || type !== "all")
@@ -175,12 +182,21 @@ export function ApplyBehalfList({
 }
 
 function BehalfRow({ row, basePath }: { row: BehalfApplicationRow; basePath: string }) {
+  const typeLabel =
+    row.type === "leave"
+      ? "Leave"
+      : row.type === "late"
+        ? "Late"
+        : row.type === "claim"
+          ? "Claim"
+          : row.type === "overtime"
+            ? "Overtime"
+            : "Replacement";
+
   return (
     <div className={BEHALF_TABLE_ROW}>
       <div className="flex w-fit items-center justify-self-start">
-        <Badge variant={row.type === "leave" ? "default" : "destructive"}>
-          {row.type === "leave" ? "Leave" : "Late"}
-        </Badge>
+        <Badge variant="outline">{typeLabel}</Badge>
       </div>
       <div className="min-w-0">
         <p className="truncate text-sm font-semibold text-foreground">{row.employeeName}</p>
@@ -191,7 +207,7 @@ function BehalfRow({ row, basePath }: { row: BehalfApplicationRow; basePath: str
         {formatAppliedAt(row.appliedAt)}
       </p>
       <div className="flex w-fit items-center justify-self-start">
-        <Badge variant="secondary">
+        <Badge variant={row.status === "approved" ? "success" : "secondary"}>
           {row.status === "approved" ? "Approved" : row.status}
         </Badge>
       </div>
@@ -229,6 +245,30 @@ export function ApplyBehalfDetail({
   listHref?: string;
 }) {
   const isLeave = application.type === "leave";
+  const isLate = application.type === "late";
+  const isClaim = application.type === "claim";
+  const isOvertime = application.type === "overtime";
+  const isReplacement = application.type === "replacement";
+
+  let title = "Application detail";
+  let typeLabel = "Application";
+
+  if (isLeave) {
+    title = application.leaveTypeName;
+    typeLabel = "Leave";
+  } else if (isLate) {
+    title = "Late report";
+    typeLabel = "Late";
+  } else if (isClaim) {
+    title = `${application.claimTypeName} (RM ${application.amount.toFixed(2)})`;
+    typeLabel = "Claim";
+  } else if (isOvertime) {
+    title = `Overtime (${application.hours}h @ ${application.rateType}x)`;
+    typeLabel = "Overtime";
+  } else if (isReplacement) {
+    title = `Replacement credit (${application.creditDays}d)`;
+    typeLabel = "Replacement";
+  }
 
   return (
     <div className="space-y-6">
@@ -239,18 +279,18 @@ export function ApplyBehalfDetail({
           </HrLinkButton>
         }
         description={`Submitted ${formatAppliedAt(application.appliedAt)} · auto-approved on behalf`}
-        title={isLeave ? application.leaveTypeName : "Late report"}
+        title={title}
       />
 
       <HrStatCards
         items={[
-          { label: "Type", value: isLeave ? "Leave" : "Late" },
+          { label: "Type", value: typeLabel },
           {
             label: "Status",
             value: application.status === "approved" ? "Approved" : application.status,
           },
           { label: "Employee", value: application.employeeName },
-          { label: "Submitted by", value: application.submittedByName ?? "HR administrator" },
+          { label: "Submitted by", value: application.submittedByName ?? "Administrator" },
         ]}
       />
 
@@ -258,12 +298,13 @@ export function ApplyBehalfDetail({
         <CardHeader className="border-b bg-muted/50">
           <CardTitle>Application details</CardTitle>
           <p className="text-xs text-muted-foreground">
-            HR-submitted {isLeave ? "leave" : "late"} request for {application.employeeNumber}
+            Submitted {typeLabel.toLowerCase()} request for {application.employeeNumber}
           </p>
         </CardHeader>
         <CardContent className="grid gap-5 pt-5 sm:grid-cols-2">
           <DetailField label="Employee" value={application.employeeName} />
-          <DetailField label="Employee no." value={application.employeeNumber || "—"} />
+          <DetailField label="Employee no." value={application.employeeNumber || "N/A"} />
+
           {isLeave ? (
             <>
               <DetailField label="Leave type" value={application.leaveTypeName} />
@@ -272,21 +313,77 @@ export function ApplyBehalfDetail({
               <DetailField label="End date" value={formatDetailDate(application.endDate)} />
               <DetailField label="Half day" value={application.halfDay ? "Yes" : "No"} />
             </>
-          ) : (
+          ) : null}
+
+          {isLate ? (
             <>
               <DetailField label="Date" value={formatDetailDate(application.requestDate)} />
               <DetailField label="Actual arrival" value={application.actualArrivalTime} />
             </>
-          )}
+          ) : null}
+
+          {isClaim ? (
+            <>
+              <DetailField label="Claim type" value={application.claimTypeName} />
+              <DetailField label="Amount" value={`RM ${application.amount.toFixed(2)}`} />
+              <DetailField label="Receipt date" value={formatDetailDate(application.receiptDate)} />
+              {application.isMileage ? (
+                <>
+                  <DetailField label="Origin" value={application.origin || "N/A"} />
+                  <DetailField label="Destination" value={application.destination || "N/A"} />
+                  <DetailField label="Distance" value={`${application.distanceKm ?? 0} km`} />
+                  <DetailField
+                    label="Rate per km"
+                    value={`RM ${(application.ratePerKm ?? 0).toFixed(2)}`}
+                  />
+                </>
+              ) : null}
+              {application.receiptFileId ? (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">Receipt document</p>
+                  <a
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+                    href={`/api/files/${application.receiptFileId}/download`}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    Download receipt
+                  </a>
+                </div>
+              ) : null}
+            </>
+          ) : null}
+
+          {isOvertime ? (
+            <>
+              <DetailField label="Work date" value={formatDetailDate(application.workDate)} />
+              <DetailField label="Hours" value={`${application.hours} hours`} />
+              <DetailField label="Rate type" value={`${application.rateType}x`} />
+            </>
+          ) : null}
+
+          {isReplacement ? (
+            <>
+              <DetailField label="Work date" value={formatDetailDate(application.workDate)} />
+              <DetailField label="Credit days" value={`${application.creditDays} days`} />
+            </>
+          ) : null}
+
           <div className="space-y-1 sm:col-span-2">
-            <p className="text-xs font-medium text-muted-foreground">Reason</p>
+            <p className="text-xs font-medium text-muted-foreground">Reason / Description</p>
             <p className="text-sm text-foreground">
-              {application.reason?.trim() || "No reason provided."}
+              {application.type === "leave" || application.type === "late" || application.type === "overtime"
+                ? application.reason?.trim() || "No reason provided."
+                : application.type === "claim"
+                  ? application.description?.trim() || "No description provided."
+                  : application.type === "replacement"
+                    ? application.description?.trim() || "No description provided."
+                    : "None"}
             </p>
           </div>
         </CardContent>
         <CardFooter className="flex flex-wrap items-center justify-between gap-3 border-t">
-          <Badge variant="secondary">
+          <Badge variant={application.status === "approved" ? "success" : "secondary"}>
             {application.status === "approved" ? "Approved" : application.status}
           </Badge>
           <Button render={<Link href={`/hr/employees/${application.employeeId}`} />} variant="link">
@@ -302,23 +399,79 @@ const initialState: ApplyBehalfActionState = {};
 
 export function ApplyBehalfForm({
   employees,
-  leaveTypes,
+  leaveTypes = [],
+  claimTypes = [],
   leaveAction = submitBehalfLeave,
   lateAction = submitBehalfLate,
+  claimAction = submitBehalfClaim,
+  overtimeAction = submitBehalfOvertime,
+  replacementAction = submitBehalfReplacementCredit,
   listHref = "/hr/apply-behalf",
 }: {
   employees: Array<{ id: string; full_name: string; employee_number: string }>;
-  leaveTypes: Array<{ id: string; name: string }>;
+  leaveTypes?: Array<{ id: string; name: string }>;
+  claimTypes?: Array<{
+    id: string;
+    name: string;
+    max_amount: number | null;
+    is_mileage?: boolean | null;
+    rate_per_km?: number | null;
+  }>;
   leaveAction?: typeof submitBehalfLeave;
   lateAction?: typeof submitBehalfLate;
+  claimAction?: typeof submitBehalfClaim;
+  overtimeAction?: typeof submitBehalfOvertime;
+  replacementAction?: typeof submitBehalfReplacementCredit;
   listHref?: string;
 }) {
-  const [kind, setKind] = useState<"leave" | "late">("leave");
+  const [kind, setKind] = useState<BehalfApplicationType>("leave");
   const [leaveState, leaveFormAction, leavePending] = useActionState(leaveAction, initialState);
   const [lateState, lateFormAction, latePending] = useActionState(lateAction, initialState);
+  const [claimState, claimFormAction, claimPending] = useActionState(claimAction, initialState);
+  const [otState, otFormAction, otPending] = useActionState(overtimeAction, initialState);
+  const [replacementState, replacementFormAction, replacementPending] = useActionState(
+    replacementAction,
+    initialState,
+  );
+
+  const [selectedClaimTypeId, setSelectedClaimTypeId] = useState<string>("");
+  const [distanceKm, setDistanceKm] = useState<string>("");
+  const [manualAmount, setManualAmount] = useState<string>("");
+
+  const selectedClaimType = claimTypes.find((ct) => ct.id === selectedClaimTypeId);
+  const isMileageClaim = Boolean(selectedClaimType?.is_mileage);
+  const mileageRate = selectedClaimType?.rate_per_km ?? 0.8;
+  const calculatedMileageAmount = isMileageClaim && Number(distanceKm) > 0
+    ? (Number(distanceKm) * mileageRate).toFixed(2)
+    : "";
+
   const today = new Date().toISOString().slice(0, 10);
-  const pending = kind === "leave" ? leavePending : latePending;
-  const state = kind === "leave" ? leaveState : lateState;
+
+  let pending = leavePending;
+  let state = leaveState;
+  let activeFormAction = leaveFormAction;
+
+  if (kind === "leave") {
+    pending = leavePending;
+    state = leaveState;
+    activeFormAction = leaveFormAction;
+  } else if (kind === "late") {
+    pending = latePending;
+    state = lateState;
+    activeFormAction = lateFormAction;
+  } else if (kind === "claim") {
+    pending = claimPending;
+    state = claimState;
+    activeFormAction = claimFormAction;
+  } else if (kind === "overtime") {
+    pending = otPending;
+    state = otState;
+    activeFormAction = otFormAction;
+  } else if (kind === "replacement") {
+    pending = replacementPending;
+    state = replacementState;
+    activeFormAction = replacementFormAction;
+  }
 
   return (
     <div className="space-y-6">
@@ -328,46 +481,96 @@ export function ApplyBehalfForm({
             Back to list
           </HrLinkButton>
         }
-        description="Requests are saved as approved — no manager queue."
+        description="Requests are saved as approved without manager routing."
         title="New application"
       />
 
       <Card className="overflow-hidden py-0">
-        <CardHeader className="flex flex-row items-center justify-between border-b bg-primary text-primary-foreground">
-          <div className="space-y-0.5">
-            <CardTitle className="text-primary-foreground">Apply on behalf</CardTitle>
-            <p className="text-xs text-primary-foreground/80">Leave or late · auto-approved</p>
+        <div className="border-b bg-muted/40 px-5 py-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-foreground">
+                {kind === "leave"
+                  ? "Leave application"
+                  : kind === "late"
+                    ? "Late arrival report"
+                    : kind === "claim"
+                      ? "Expense or mileage claim"
+                      : kind === "overtime"
+                        ? "Overtime request"
+                        : "Replacement credit"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {kind === "leave"
+                  ? "Submit a leave request on behalf of an employee."
+                  : kind === "late"
+                    ? "Record an employee late arrival with actual arrival time."
+                    : kind === "claim"
+                      ? "File an expense or mileage reimbursement claim."
+                      : kind === "overtime"
+                        ? "Record completed overtime hours and pay multiplier."
+                        : "Grant replacement rest credit days for work on off-days."}
+              </p>
+            </div>
+            <span className="inline-flex items-center gap-1.5 self-start rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary sm:self-auto">
+              <span className="size-1.5 rounded-full bg-primary" />
+              Auto-approved
+            </span>
           </div>
-          <Button
-            aria-label="Close"
-            className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
-            render={<Link href={listHref} />}
-            size="icon-sm"
-            variant="ghost"
-          >
-            ✕
-          </Button>
-        </CardHeader>
 
-        <CardContent className="space-y-5 py-5">
-          <ToggleGroup
-            onValueChange={(values) => {
-              const next = values.at(-1) as "leave" | "late" | undefined;
-              if (next) setKind(next);
-            }}
-            spacing={0}
-            value={[kind]}
-            variant="outline"
-          >
-            <ToggleGroupItem aria-label="Leave application" value="leave">
-              Leave
-            </ToggleGroupItem>
-            <ToggleGroupItem aria-label="Late application" value="late">
-              Late
-            </ToggleGroupItem>
-          </ToggleGroup>
+          <div className="mt-3.5 pt-3 border-t border-border/50">
+            <ToggleGroup
+              className="flex w-full flex-wrap sm:w-auto"
+              onValueChange={(values) => {
+                const next = values.at(-1) as BehalfApplicationType | undefined;
+                if (next) setKind(next);
+              }}
+              spacing={0}
+              value={[kind]}
+              variant="outline"
+            >
+              <ToggleGroupItem
+                aria-label="Leave application"
+                className="flex-1 sm:flex-initial text-xs px-3.5 py-1.5"
+                value="leave"
+              >
+                Leave
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                aria-label="Late application"
+                className="flex-1 sm:flex-initial text-xs px-3.5 py-1.5"
+                value="late"
+              >
+                Late
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                aria-label="Claim application"
+                className="flex-1 sm:flex-initial text-xs px-3.5 py-1.5"
+                value="claim"
+              >
+                Claim
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                aria-label="Overtime application"
+                className="flex-1 sm:flex-initial text-xs px-3.5 py-1.5"
+                value="overtime"
+              >
+                Overtime
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                aria-label="Replacement credit application"
+                className="flex-1 sm:flex-initial text-xs px-3.5 py-1.5"
+                value="replacement"
+              >
+                Replacement
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+        </div>
 
-          <form action={kind === "leave" ? leaveFormAction : lateFormAction} className="space-y-5">
+        <CardContent className="space-y-5 px-5 py-6">
+
+          <form action={activeFormAction} className="space-y-5" encType="multipart/form-data">
             <HrField id="employeeId" label="Employee">
               <HrSelect defaultValue="" id="employeeId" name="employeeId" required>
                 <option value="">-- Select employee --</option>
@@ -415,7 +618,9 @@ export function ApplyBehalfForm({
                   />
                 </HrField>
               </>
-            ) : (
+            ) : null}
+
+            {kind === "late" ? (
               <>
                 <div className="grid gap-4 md:grid-cols-2">
                   <HrField id="requestDate" label="Date">
@@ -435,7 +640,204 @@ export function ApplyBehalfForm({
                   <HrTextInput id="reason" name="reason" placeholder="Optional" />
                 </HrField>
               </>
-            )}
+            ) : null}
+
+            {kind === "claim" ? (
+              <>
+                <HrField id="claimTypeId" label="Claim type">
+                  <HrSelect
+                    id="claimTypeId"
+                    name="claimTypeId"
+                    onChange={(e) => setSelectedClaimTypeId(e.target.value)}
+                    required
+                    value={selectedClaimTypeId}
+                  >
+                    <option value="">-- Select claim type --</option>
+                    {claimTypes.map((ct) => (
+                      <option key={ct.id} value={ct.id}>
+                        {ct.name} {ct.is_mileage ? "(Mileage)" : ""}
+                        {ct.max_amount ? ` · max RM ${ct.max_amount.toFixed(2)}` : ""}
+                      </option>
+                    ))}
+                  </HrSelect>
+                </HrField>
+
+                <input
+                  name="isMileage"
+                  type="hidden"
+                  value={isMileageClaim ? "true" : "false"}
+                />
+
+                {isMileageClaim ? (
+                  <>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <HrField id="origin" label="Origin">
+                        <HrTextInput
+                          id="origin"
+                          name="origin"
+                          placeholder="e.g. HQ Office"
+                          required
+                        />
+                      </HrField>
+                      <HrField id="destination" label="Destination">
+                        <HrTextInput
+                          id="destination"
+                          name="destination"
+                          placeholder="e.g. Client Site"
+                          required
+                        />
+                      </HrField>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <HrField
+                        hint={`Rate: RM ${mileageRate.toFixed(2)}/km`}
+                        id="distanceKm"
+                        label="Distance (km)"
+                      >
+                        <HrTextInput
+                          id="distanceKm"
+                          name="distanceKm"
+                          onChange={(e) => setDistanceKm(e.target.value)}
+                          placeholder="e.g. 25"
+                          required
+                          type="number"
+                          value={distanceKm}
+                        />
+                      </HrField>
+                      <HrField id="amount" label="Calculated amount (RM)">
+                        <HrTextInput
+                          id="amount"
+                          name="amount"
+                          readOnly
+                          required
+                          value={calculatedMileageAmount}
+                        />
+                      </HrField>
+                    </div>
+                  </>
+                ) : (
+                  <HrField id="amount" label="Amount (RM)">
+                    <HrTextInput
+                      id="amount"
+                      name="amount"
+                      onChange={(e) => setManualAmount(e.target.value)}
+                      placeholder="0.00"
+                      required
+                      step="0.01"
+                      type="number"
+                      value={manualAmount}
+                    />
+                  </HrField>
+                )}
+
+                <HrField id="receiptDate" label="Receipt / expense date">
+                  <HrTextInput
+                    defaultValue={today}
+                    id="receiptDate"
+                    name="receiptDate"
+                    required
+                    type="date"
+                  />
+                </HrField>
+
+                <HrField id="receipt" label="Receipt attachment (optional)">
+                  <input
+                    accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                    className="block w-full text-xs text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-primary-foreground hover:file:opacity-90 file:cursor-pointer cursor-pointer rounded-md border border-input bg-transparent p-1.5 focus:outline-hidden focus:ring-1 focus:ring-ring"
+                    id="receipt"
+                    name="receipt"
+                    type="file"
+                  />
+                </HrField>
+
+                <HrField id="description" label="Description / notes">
+                  <HrTextInput
+                    id="description"
+                    name="description"
+                    placeholder="Optional description of the expense"
+                  />
+                </HrField>
+              </>
+            ) : null}
+
+            {kind === "overtime" ? (
+              <>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <HrField id="workDate" label="Work date">
+                    <HrTextInput
+                      defaultValue={today}
+                      id="workDate"
+                      name="workDate"
+                      required
+                      type="date"
+                    />
+                  </HrField>
+                  <HrField id="hours" label="Hours">
+                    <HrTextInput
+                      id="hours"
+                      min="0.5"
+                      name="hours"
+                      placeholder="e.g. 2.5"
+                      required
+                      step="0.5"
+                      type="number"
+                    />
+                  </HrField>
+                </div>
+
+                <HrField id="rateType" label="Rate type">
+                  <HrSelect defaultValue="1.5" id="rateType" name="rateType" required>
+                    <option value="1.5">1.5x (Normal workday OT)</option>
+                    <option value="2.0">2.0x (Rest day OT)</option>
+                    <option value="3.0">3.0x (Public holiday OT)</option>
+                  </HrSelect>
+                </HrField>
+
+                <HrField id="reason" label="Reason / project or task reference">
+                  <HrTextInput
+                    id="reason"
+                    name="reason"
+                    placeholder="e.g. Project Apollo launch or urgent production fix"
+                  />
+                </HrField>
+              </>
+            ) : null}
+
+            {kind === "replacement" ? (
+              <>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <HrField id="workDate" label="Work date (worked on)">
+                    <HrTextInput
+                      defaultValue={today}
+                      id="workDate"
+                      name="workDate"
+                      required
+                      type="date"
+                    />
+                  </HrField>
+                  <HrField id="creditDays" label="Credit days granted">
+                    <HrTextInput
+                      defaultValue="1"
+                      id="creditDays"
+                      min="0.5"
+                      name="creditDays"
+                      required
+                      step="0.5"
+                      type="number"
+                    />
+                  </HrField>
+                </div>
+
+                <HrField id="description" label="Reason / notes">
+                  <HrTextInput
+                    id="description"
+                    name="description"
+                    placeholder="e.g. Worked during Saturday company event"
+                  />
+                </HrField>
+              </>
+            ) : null}
 
             <HrFormMessage error={state.error} success={state.success} />
 
@@ -453,3 +855,4 @@ export function ApplyBehalfForm({
     </div>
   );
 }
+

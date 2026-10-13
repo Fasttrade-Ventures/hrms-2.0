@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
+import type { BehalfApplicationType } from "@/lib/hr/apply-behalf-shared";
+
 function buildListHref(
   basePath: string,
   params: {
@@ -34,7 +36,7 @@ export function ApplyBehalfFilters({
   dateTo,
   basePath = "/hr/apply-behalf",
 }: {
-  type: "all" | "leave" | "late";
+  type: "all" | BehalfApplicationType;
   dateFrom?: string;
   dateTo?: string;
   basePath?: string;
@@ -49,7 +51,7 @@ export function ApplyBehalfFilters({
           <Label className="text-xs text-muted-foreground">Type</Label>
           <ToggleGroup
             onValueChange={(values) => {
-              const next = values.at(-1) as "all" | "leave" | "late" | undefined;
+              const next = values.at(-1) as "all" | BehalfApplicationType | undefined;
               if (!next || next === type) return;
               router.push(buildListHref(basePath, { type: next, dateFrom, dateTo, page: 1 }));
             }}
@@ -65,6 +67,15 @@ export function ApplyBehalfFilters({
             </ToggleGroupItem>
             <ToggleGroupItem aria-label="Late applications" value="late">
               Late
+            </ToggleGroupItem>
+            <ToggleGroupItem aria-label="Claim applications" value="claim">
+              Claims
+            </ToggleGroupItem>
+            <ToggleGroupItem aria-label="Overtime applications" value="overtime">
+              Overtime
+            </ToggleGroupItem>
+            <ToggleGroupItem aria-label="Replacement credit applications" value="replacement">
+              Replacement
             </ToggleGroupItem>
           </ToggleGroup>
         </div>

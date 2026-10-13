@@ -3,10 +3,23 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { applyBehalfLateSchema, applyBehalfLeaveSchema } from "@hrms/validation";
+import {
+  applyBehalfClaimSchema,
+  applyBehalfLateSchema,
+  applyBehalfLeaveSchema,
+  applyBehalfOvertimeSchema,
+  applyBehalfReplacementCreditSchema,
+} from "@hrms/validation";
 
+import { requireOrganizationIdForWrite } from "@/lib/auth/organization-context";
 import { requireRole } from "@/lib/auth/session";
-import { createBehalfLate, createBehalfLeave } from "@/lib/hr/apply-behalf";
+import {
+  createBehalfClaim,
+  createBehalfLate,
+  createBehalfLeave,
+  createBehalfOvertime,
+  createBehalfReplacementCredit,
+} from "@/lib/hr/apply-behalf";
 
 export type ApplyBehalfActionState = {
   error?: string;
@@ -77,3 +90,127 @@ export async function submitBehalfLate(
     };
   }
 }
+
+export async function submitBehalfClaim(
+  _prev: ApplyBehalfActionState,
+  formData: FormData,
+): Promise<ApplyBehalfActionState> {
+  const session = await requireRole("hr_administrator");
+
+  let attachmentFileId: string | undefined = undefined;
+  const receiptFile = formData.get("receipt");
+  if (receiptFile instanceof File && receiptFile.size > 0) {
+    try {
+      const { assertDocumentUpload, uploadOrganizationFile } = await import("@/lib/files/storage");
+      const organizationId = await requireOrganizationIdForWrite();
+      assertDocumentUpload({
+        name: receiptFile.name,
+        type: receiptFile.type || "application/octet-stream",
+        size: receiptFile.size,
+      });
+      const fileBuffer = new Uint8Array(await receiptFile.arrayBuffer());
+      attachmentFileId = await uploadOrganizationFile({
+        organizationId,
+        category: "claims",
+        fileName: receiptFile.name,
+        contentType: receiptFile.type || "application/octet-stream",
+        body: fileBuffer,
+        uploadedByUserId: session.user.id,
+      });
+    } catch (uploadErr) {
+      return {
+        error: uploadErr instanceof Error ? uploadErr.message : "Failed to upload receipt file.",
+      };
+    }
+  }
+
+  const isMileage = readCheckbox(formData, "isMileage");
+  const parsed = applyBehalfClaimSchema.safeParse({
+    employeeId: String(formData.get("employeeId") ?? "").trim(),
+    claimTypeId: String(formData.get("claimTypeId") ?? "").trim(),
+    amount: String(formData.get("amount") ?? "").trim(),
+    receiptDate: String(formData.get("receiptDate") ?? "").trim(),
+    description: String(formData.get("description") ?? "").trim() || undefined,
+    isMileage,
+    distanceKm: String(formData.get("distanceKm") ?? "").trim() || undefined,
+    ratePerKm: String(formData.get("ratePerKm") ?? "").trim() || undefined,
+    origin: String(formData.get("origin") ?? "").trim() || undefined,
+    destination: String(formData.get("destination") ?? "").trim() || undefined,
+    attachmentFileId,
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid claim details." };
+  }
+
+  try {
+    await createBehalfClaim(parsed.data, session.user.id);
+    revalidatePath("/hr/apply-behalf");
+    redirect("/hr/apply-behalf?created=claim");
+  } catch (error) {
+    if (error instanceof Error && error.message === "NEXT_REDIRECT") throw error;
+    return {
+      error: error instanceof Error ? error.message : "Failed to submit claim on behalf.",
+    };
+  }
+}
+
+export async function submitBehalfOvertime(
+  _prev: ApplyBehalfActionState,
+  formData: FormData,
+): Promise<ApplyBehalfActionState> {
+  const session = await requireRole("hr_administrator");
+
+  const parsed = applyBehalfOvertimeSchema.safeParse({
+    employeeId: String(formData.get("employeeId") ?? "").trim(),
+    workDate: String(formData.get("workDate") ?? "").trim(),
+    hours: String(formData.get("hours") ?? "").trim(),
+    rateType: String(formData.get("rateType") ?? "1.5").trim(),
+    reason: String(formData.get("reason") ?? "").trim() || undefined,
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid overtime details." };
+  }
+
+  try {
+    await createBehalfOvertime(parsed.data, session.user.id);
+    revalidatePath("/hr/apply-behalf");
+    redirect("/hr/apply-behalf?created=overtime");
+  } catch (error) {
+    if (error instanceof Error && error.message === "NEXT_REDIRECT") throw error;
+    return {
+      error: error instanceof Error ? error.message : "Failed to submit overtime on behalf.",
+    };
+  }
+}
+
+export async function submitBehalfReplacementCredit(
+  _prev: ApplyBehalfActionState,
+  formData: FormData,
+): Promise<ApplyBehalfActionState> {
+  const session = await requireRole("hr_administrator");
+
+  const parsed = applyBehalfReplacementCreditSchema.safeParse({
+    employeeId: String(formData.get("employeeId") ?? "").trim(),
+    workDate: String(formData.get("workDate") ?? "").trim(),
+    creditDays: String(formData.get("creditDays") ?? "1").trim(),
+    description: String(formData.get("description") ?? "").trim() || undefined,
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid replacement credit details." };
+  }
+
+  try {
+    await createBehalfReplacementCredit(parsed.data, session.user.id);
+    revalidatePath("/hr/apply-behalf");
+    redirect("/hr/apply-behalf?created=replacement");
+  } catch (error) {
+    if (error instanceof Error && error.message === "NEXT_REDIRECT") throw error;
+    return {
+      error: error instanceof Error ? error.message : "Failed to submit replacement credit on behalf.",
+    };
+  }
+}
+

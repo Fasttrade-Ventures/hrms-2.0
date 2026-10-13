@@ -31,6 +31,9 @@ export default async function BranchApplyBehalfPage({
   let banner: string | undefined;
   if (params.created === "leave") banner = "Leave submitted on behalf and auto-approved.";
   if (params.created === "late") banner = "Late report submitted on behalf and auto-approved.";
+  if (params.created === "claim") banner = "Claim submitted on behalf and auto-approved.";
+  if (params.created === "overtime") banner = "Overtime request submitted on behalf and auto-approved.";
+  if (params.created === "replacement") banner = "Replacement credit granted on behalf and auto-approved.";
 
   return (
     <ApplyBehalfList

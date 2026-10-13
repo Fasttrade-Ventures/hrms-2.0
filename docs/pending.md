@@ -14,8 +14,8 @@ Finished work is on `main`. This file is only what is still open.
 | [HR Admin] Positions & Job Titles Catalog | Code is on `main` at `/hr/organization/positions`. Waiting for review, not a new build. |
 | Employee - Still Open | Too vague to build. Employee portal core is already shipped. Close it, or replace it with one specific gap. |
 | Next Task Phase | Too vague to build. Close it, or rename it to one card below. |
-| [Branch Admin] Apply-on-Behalf for Branch Staff | Branch admin submits claims, overtime, and replacement credit for staff in their branch. |
-| [HR Admin] Apply-on-Behalf: Claims, Overtime & Replacement Credit | HR submits those same three for any employee in the org. |
+| [Branch Admin] Apply-on-Behalf for Branch Staff | Built and verified on branch; scoped to assigned branch. Ready for review. |
+| [HR Admin] Apply-on-Behalf: Claims, Overtime & Replacement Credit | Built and verified on branch; org-wide behalf submission for Claims, OT, Replacement. Ready for review. |
 | [HR Admin] Mileage Claims & Custom Employee OT Rates | Mileage rates on claims, and overtime rates set per employee. |
 | [Manager] Multi-Level & Escalation Approval Workflows | More than one approver, then escalation. Do not tell a client this is live. |
 | [Manager] Push & In-App Notifications on Cancelled/Revoked Requests | Confirm the manager is notified when a request is cancelled or revoked. |

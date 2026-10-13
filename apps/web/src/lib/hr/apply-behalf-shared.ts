@@ -1,6 +1,8 @@
+export type BehalfApplicationType = "leave" | "late" | "claim" | "overtime" | "replacement";
+
 export type BehalfApplicationRow = {
   id: string;
-  type: "leave" | "late";
+  type: BehalfApplicationType;
   employeeId: string;
   employeeName: string;
   employeeNumber: string;
@@ -43,7 +45,65 @@ export type BehalfLateDetail = {
   submittedByName: string | null;
 };
 
-export type BehalfApplicationDetail = BehalfLeaveDetail | BehalfLateDetail;
+export type BehalfClaimDetail = {
+  type: "claim";
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  employeeNumber: string;
+  claimTypeName: string;
+  amount: number;
+  receiptDate: string;
+  description: string | null;
+  isMileage: boolean;
+  distanceKm: number | null;
+  ratePerKm: number | null;
+  origin: string | null;
+  destination: string | null;
+  receiptFileId?: string | null;
+  status: string;
+  appliedAt: string;
+  appliedOnBehalfBy: string | null;
+  submittedByName: string | null;
+};
+
+export type BehalfOvertimeDetail = {
+  type: "overtime";
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  employeeNumber: string;
+  workDate: string;
+  hours: number;
+  rateType: string;
+  reason: string | null;
+  status: string;
+  appliedAt: string;
+  appliedOnBehalfBy: string | null;
+  submittedByName: string | null;
+};
+
+export type BehalfReplacementDetail = {
+  type: "replacement";
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  employeeNumber: string;
+  workDate: string;
+  creditDays: number;
+  description: string | null;
+  status: string;
+  appliedAt: string;
+  appliedOnBehalfBy: string | null;
+  submittedByName: string | null;
+};
+
+export type BehalfApplicationDetail =
+  | BehalfLeaveDetail
+  | BehalfLateDetail
+  | BehalfClaimDetail
+  | BehalfOvertimeDetail
+  | BehalfReplacementDetail;
 
 export type BehalfListData = {
   rows: BehalfApplicationRow[];
@@ -54,13 +114,17 @@ export type BehalfListData = {
     total: number;
     leaveCount: number;
     lateCount: number;
+    claimCount: number;
+    otCount: number;
+    replacementCount: number;
   };
 };
 
 export function getBehalfApplicationPath(
-  type: "leave" | "late",
+  type: BehalfApplicationType,
   id: string,
   basePath = "/hr/apply-behalf",
 ) {
   return `${basePath}/${type}/${id}`;
 }
+
