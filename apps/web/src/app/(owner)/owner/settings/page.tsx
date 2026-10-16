@@ -35,7 +35,7 @@ function ModuleTable({ modules }: { modules: OwnerModuleSetting[] }) {
               </td>
               <td className="px-4 py-3">
                 {module.locked ? (
-                  <span className="text-xs text-[var(--foreground-muted)]">Included in tier</span>
+                  <span className="text-xs text-[var(--foreground-muted)]">Not in this package</span>
                 ) : (
                   <form action={updateModuleFlagFormAction}>
                     <input name="module" type="hidden" value={module.key} />
@@ -66,7 +66,7 @@ export default async function Page() {
   return (
     <div className="space-y-6">
       <PortalPageHeader
-        description="Core includes people & workplace essentials. Professional adds payroll, assets, performance, and time modules. Enterprise adds analytics, API, and integrations."
+        description="Turn features off without changing the package. Enterprise can toggle every feature. Professional can toggle lower and middle features. Core can toggle lower features only."
         title="Module settings"
       />
 
@@ -125,9 +125,9 @@ export default async function Page() {
 
       <section className="space-y-3">
         <div>
-          <h2 className="text-base font-semibold text-[var(--foreground-primary)]">Core</h2>
+          <h2 className="text-base font-semibold text-[var(--foreground-primary)]">Lower package</h2>
           <p className="text-sm text-[var(--foreground-secondary)]">
-            Announcements, calendar, and documents — always on for every tier.
+            Core features: announcements, calendar, and documents. Included in every package, and any package can turn them off.
           </p>
         </div>
         <ModuleTable modules={coreModules} />
@@ -135,9 +135,9 @@ export default async function Page() {
 
       <section className="space-y-3">
         <div>
-          <h2 className="text-base font-semibold text-[var(--foreground-primary)]">Professional</h2>
+          <h2 className="text-base font-semibold text-[var(--foreground-primary)]">Middle package</h2>
           <p className="text-sm text-[var(--foreground-secondary)]">
-            Payroll, assets, performance, overtime, claims, GPS, and bulk import.
+            Professional features: payroll, assets, performance, overtime, claims, GPS, and bulk import.
           </p>
         </div>
         <ModuleTable modules={professionalModules} />
@@ -145,9 +145,9 @@ export default async function Page() {
 
       <section className="space-y-3">
         <div>
-          <h2 className="text-base font-semibold text-[var(--foreground-primary)]">Enterprise</h2>
+          <h2 className="text-base font-semibold text-[var(--foreground-primary)]">High package</h2>
           <p className="text-sm text-[var(--foreground-secondary)]">
-            Analytics, recruitment, payouts, audit, API, and integrations.
+            Enterprise features: analytics, recruitment, payouts, audit, API, and integrations.
           </p>
         </div>
         <ModuleTable modules={enterpriseModules} />

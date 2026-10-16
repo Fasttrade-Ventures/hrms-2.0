@@ -1,5 +1,5 @@
 import type { EntitlementProvider, ModuleKey, ProductTier } from "./types";
-import { CORE_MODULES, ENTERPRISE_MODULES, PROFESSIONAL_MODULES } from "./types";
+import { CORE_MODULES, ENTERPRISE_MODULES, PROFESSIONAL_MODULES, tierIncludesModule } from "./types";
 
 export function createDbEntitlementProvider(config: {
   tier: ProductTier;
@@ -13,8 +13,10 @@ export function createDbEntitlementProvider(config: {
     ENTERPRISE_MODULES.forEach((m) => enabled.add(m));
   }
   for (const [key, value] of Object.entries(config.modules)) {
-    if (value) enabled.add(key as ModuleKey);
-    else enabled.delete(key as ModuleKey);
+    const moduleKey = key as ModuleKey;
+    if (!tierIncludesModule(config.tier, moduleKey)) continue;
+    if (value) enabled.add(moduleKey);
+    else enabled.delete(moduleKey);
   }
 
   return {

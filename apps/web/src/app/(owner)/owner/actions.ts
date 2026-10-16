@@ -18,8 +18,7 @@ export async function updateModuleFlagFormAction(formData: FormData): Promise<vo
   const enabled = String(formData.get("enabled") ?? "") === "true";
   const session = await requireRole("organization_owner");
   await updateOwnerModuleFlag(moduleKey, enabled, session.user.id);
-  revalidatePath("/owner/dashboard");
-  revalidatePath("/owner/settings");
+  revalidatePath("/", "layout");
 }
 
 export async function updateProductTierFormAction(formData: FormData): Promise<void> {
@@ -28,8 +27,7 @@ export async function updateProductTierFormAction(formData: FormData): Promise<v
   const tier = String(formData.get("tier") ?? "core") as ProductTier;
   const session = await requireRole("organization_owner");
   await updateOwnerProductTier(tier, session.user.id);
-  revalidatePath("/owner/dashboard");
-  revalidatePath("/owner/settings");
+  revalidatePath("/", "layout");
 }
 
 export async function updatePayrollDutySegregationFormAction(formData: FormData): Promise<void> {

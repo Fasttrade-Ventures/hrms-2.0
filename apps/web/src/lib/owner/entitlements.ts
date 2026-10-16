@@ -1,5 +1,11 @@
 import type { ModuleKey, ProductTier } from "@hrms/platform";
-import { CORE_MODULES, ENTERPRISE_MODULES, PROFESSIONAL_MODULES, isSaasMode } from "@hrms/platform";
+import {
+  CORE_MODULES,
+  ENTERPRISE_MODULES,
+  PROFESSIONAL_MODULES,
+  isSaasMode,
+  tierIncludesModule,
+} from "@hrms/platform";
 
 import { logAuditEvent } from "@/lib/audit/log-event";
 import { createClient } from "@/lib/supabase/server";
@@ -40,13 +46,6 @@ function tierForModule(key: ModuleKey): OwnerModuleSetting["tier"] {
   return "Core";
 }
 
-function defaultEnabledForTier(tier: ProductTier, key: ModuleKey): boolean {
-  if (CORE_MODULES.includes(key)) return true;
-  if (PROFESSIONAL_MODULES.includes(key)) return tier === "professional" || tier === "enterprise";
-  if (ENTERPRISE_MODULES.includes(key)) return tier === "enterprise";
-  return false;
-}
-
 export async function getOwnerEntitlementSettings(): Promise<{
   productTier: ProductTier;
   modules: OwnerModuleSetting[];
@@ -67,14 +66,14 @@ export async function getOwnerEntitlementSettings(): Promise<{
   const allModules = [...CORE_MODULES, ...PROFESSIONAL_MODULES, ...ENTERPRISE_MODULES];
 
   const modules = allModules.map((key) => {
-    const defaultEnabled = defaultEnabledForTier(data.product_tier, key);
+    const included = tierIncludesModule(data.product_tier, key);
     const explicit = flags[key];
     return {
       key,
       label: MODULE_LABELS[key],
       tier: tierForModule(key),
-      enabled: explicit === undefined ? defaultEnabled : explicit,
-      locked: tierForModule(key) === "Core",
+      enabled: included && (explicit === undefined ? true : explicit),
+      locked: !included,
     };
   });
 
@@ -125,11 +124,15 @@ export async function updateOwnerModuleFlag(
 
   const { data, error } = await supabase
     .from("organizations")
-    .select("module_flags")
+    .select("module_flags, product_tier")
     .eq("id", organizationId)
     .maybeSingle();
 
   if (error || !data) throw new Error(error?.message ?? "Organization not found.");
+
+  if (!tierIncludesModule(data.product_tier, module)) {
+    throw new Error("This feature is not included in the current package.");
+  }
 
   const moduleFlags = {
     ...((data.module_flags ?? {}) as Record<string, boolean>),

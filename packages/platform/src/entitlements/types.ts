@@ -50,3 +50,11 @@ export const ENTERPRISE_MODULES: ModuleKey[] = [
   "recruitment",
   "integrations",
 ];
+
+/** Lower = Core, middle = Professional, high = Enterprise. Higher packages include every feature below them. */
+export function tierIncludesModule(tier: ProductTier, module: ModuleKey): boolean {
+  if (CORE_MODULES.includes(module)) return true;
+  if (PROFESSIONAL_MODULES.includes(module)) return tier === "professional" || tier === "enterprise";
+  if (ENTERPRISE_MODULES.includes(module)) return tier === "enterprise";
+  return false;
+}
