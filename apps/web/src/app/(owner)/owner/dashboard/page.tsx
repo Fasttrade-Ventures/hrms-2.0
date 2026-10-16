@@ -3,6 +3,8 @@ import Link from "next/link";
 import { ListCard, StatCard, StatusPill } from "@hrms/ui";
 
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
+import { Button } from "@/components/ui/button";
+import { updateModuleFlagFormAction } from "@/app/(owner)/owner/actions";
 import { PortalIcon } from "@/components/portal/portal-icons";
 import { greetingForHour } from "@/lib/employees/self";
 import { getOwnerDashboardData } from "@/lib/owner/dashboard";
@@ -57,10 +59,17 @@ export default async function Page() {
             module: <span className="font-medium">{module.label}</span>,
             tier: <span className="text-sm text-[var(--foreground-secondary)]">{module.tier}</span>,
             status: (
-              <StatusPill
-                label={module.enabled ? "Enabled" : "Disabled"}
-                tone={module.enabled ? "success" : "neutral"}
-              />
+              <form action={updateModuleFlagFormAction} className="flex items-center justify-end gap-2">
+                <input name="module" type="hidden" value={module.key} />
+                <input name="enabled" type="hidden" value={module.enabled ? "false" : "true"} />
+                <StatusPill
+                  label={module.enabled ? "Enabled" : "Disabled"}
+                  tone={module.enabled ? "success" : "neutral"}
+                />
+                <Button size="sm" type="submit" variant="outline">
+                  {module.enabled ? "Disable" : "Enable"}
+                </Button>
+              </form>
             ),
           },
         }))}

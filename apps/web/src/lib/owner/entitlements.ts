@@ -8,8 +8,9 @@ import {
 } from "@hrms/platform";
 
 import { logAuditEvent } from "@/lib/audit/log-event";
-import { createClient } from "@/lib/supabase/server";
 import { requireOrganizationId } from "@/lib/auth/organization-context";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 
 export type OwnerModuleSetting = {
@@ -39,6 +40,23 @@ const MODULE_LABELS: Record<ModuleKey, string> = {
   recruitment: "Recruitment",
   integrations: "Integrations",
 };
+
+async function saveOrganizationSettings(
+  organizationId: string,
+  values: Record<string, unknown>,
+): Promise<void> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("organizations")
+    .update({ ...values, updated_at: new Date().toISOString() })
+    .eq("id", organizationId)
+    .select("id")
+    .maybeSingle();
+
+  if (error || !data) {
+    throw new Error(error?.message ?? "Could not save organization settings.");
+  }
+}
 
 function tierForModule(key: ModuleKey): OwnerModuleSetting["tier"] {
   if (ENTERPRISE_MODULES.includes(key)) return "Enterprise";
@@ -88,18 +106,9 @@ export async function updateOwnerPayrollDutySegregation(
   enabled: boolean,
   actorUserId?: string | null,
 ): Promise<void> {
-  const supabase = await createClient();
   const organizationId = await requireOrganizationId();
 
-  const { error } = await supabase
-    .from("organizations")
-    .update({
-      payroll_duty_segregation: enabled,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", organizationId);
-
-  if (error) throw new Error(error.message);
+  await saveOrganizationSettings(organizationId, { payroll_duty_segregation: enabled });
 
   await logAuditEvent({
     actorUserId: actorUserId ?? null,
@@ -139,12 +148,7 @@ export async function updateOwnerModuleFlag(
     [module]: enabled,
   };
 
-  const { error: updateError } = await supabase
-    .from("organizations")
-    .update({ module_flags: moduleFlags, updated_at: new Date().toISOString() })
-    .eq("id", organizationId);
-
-  if (updateError) throw new Error(updateError.message);
+  await saveOrganizationSettings(organizationId, { module_flags: moduleFlags });
 
   await logAuditEvent({
     actorUserId: actorUserId ?? null,
@@ -163,15 +167,9 @@ export async function updateOwnerProductTier(
     throw new Error("Product tier can only be changed by Platform in SaaS mode.");
   }
 
-  const supabase = await createClient();
   const organizationId = await requireOrganizationId();
 
-  const { error } = await supabase
-    .from("organizations")
-    .update({ product_tier: tier, updated_at: new Date().toISOString() })
-    .eq("id", organizationId);
-
-  if (error) throw new Error(error.message);
+  await saveOrganizationSettings(organizationId, { product_tier: tier });
 
   await logAuditEvent({
     actorUserId: actorUserId ?? null,
