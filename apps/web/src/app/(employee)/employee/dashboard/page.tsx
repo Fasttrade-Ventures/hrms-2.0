@@ -16,6 +16,7 @@ import {
 } from "@/lib/employee/attendance";
 import { getLeaveBalances, listLeaveRequests, requireEmployeeContext, type LeaveBalanceRow } from "@/lib/employee/leave";
 import { getMyDocumentComplianceSummary } from "@/lib/employee/documents";
+import { hasModule } from "@/lib/entitlements";
 import {
   listClaims,
   listOvertimeRequests,
@@ -44,6 +45,7 @@ export default async function Page() {
   const firstName = firstNameFromFullName(employee?.fullName, employee?.email);
 
   const employeeContext = employee ? await requireEmployeeContext().catch(() => null) : null;
+  const announcementsEnabled = await hasModule("announcements");
 
   const todayAttendance = await getTodayAttendance().catch(() => null);
   const requireSelfie = employeeContext
@@ -350,7 +352,7 @@ export default async function Page() {
             </div>
           )}
 
-          {/* Announcements Card */}
+          {announcementsEnabled ? (
           <div className="rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-card)] shadow-[var(--shadow-card)] p-4 flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-semibold text-[var(--foreground-primary)]">Announcements</h4>
@@ -374,6 +376,7 @@ export default async function Page() {
               )}
             </div>
           </div>
+          ) : null}
 
           {/* Birthdays Banner */}
           <div className="rounded-[var(--radius-xl)] bg-[var(--surface-accent-soft)] p-3.5 flex items-center gap-3">

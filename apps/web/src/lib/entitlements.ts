@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import type { EntitlementProvider, ModuleKey } from "@hrms/platform";
 import { createDbEntitlementProvider, createEnvEntitlementProvider } from "@hrms/platform";
 
+import { dashboardPathForRoles } from "@/lib/auth/redirect";
+import { getSession } from "@/lib/auth/session";
 import { getEffectiveOrganizationId } from "@/lib/auth/organization-context";
 import { getImpersonationOrgId } from "@/lib/platform/impersonation-cookie";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -35,9 +37,10 @@ export const getEntitlements = cache(async (): Promise<EntitlementProvider> => {
 
 export async function requireModule(module: ModuleKey): Promise<void> {
   const entitlements = await getEntitlements();
-  if (!entitlements.hasModule(module)) {
-    redirect(`/unauthorized?reason=module&module=${module}`);
-  }
+  if (entitlements.hasModule(module)) return;
+
+  const session = await getSession();
+  redirect(session ? dashboardPathForRoles(session.membership.roles) : "/auth/login");
 }
 
 export async function requireProfessionalTier(): Promise<void> {

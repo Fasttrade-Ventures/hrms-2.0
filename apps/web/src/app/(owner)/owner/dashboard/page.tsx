@@ -88,18 +88,22 @@ export default async function Page() {
           >
             Module settings
           </Link>
-          <Link
-            className="rounded-[var(--radius-md)] border border-[var(--border-primary)] px-4 py-2 text-sm font-medium hover:bg-[var(--surface-muted)]"
-            href="/hr/payroll"
-          >
-            Payroll
-          </Link>
-          <Link
-            className="rounded-[var(--radius-md)] border border-[var(--border-primary)] px-4 py-2 text-sm font-medium hover:bg-[var(--surface-muted)]"
-            href="/hr/audit"
-          >
-            Audit log
-          </Link>
+          {data.modules.some((module) => module.key === "payroll" && module.enabled) ? (
+            <Link
+              className="rounded-[var(--radius-md)] border border-[var(--border-primary)] px-4 py-2 text-sm font-medium hover:bg-[var(--surface-muted)]"
+              href="/hr/payroll"
+            >
+              Payroll
+            </Link>
+          ) : null}
+          {data.modules.some((module) => module.key === "audit" && module.enabled) ? (
+            <Link
+              className="rounded-[var(--radius-md)] border border-[var(--border-primary)] px-4 py-2 text-sm font-medium hover:bg-[var(--surface-muted)]"
+              href="/hr/audit"
+            >
+              Audit log
+            </Link>
+          ) : null}
         </div>
       </div>
     </div>

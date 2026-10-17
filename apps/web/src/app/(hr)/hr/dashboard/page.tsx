@@ -11,14 +11,14 @@ import {
   listDashboardAnnouncementItems,
 } from "@/lib/announcements/queries";
 import { requireEmployeeContext } from "@/lib/employee/leave";
-import { requireModule } from "@/lib/entitlements";
+import { hasModule } from "@/lib/entitlements";
 import { getHrDashboardData } from "@/lib/hr/dashboard";
 
 export default async function Page() {
-  await requireModule("announcements");
+  const announcementsEnabled = await hasModule("announcements");
   const data = await getHrDashboardData();
   const employeeContext = await requireEmployeeContext().catch(() => null);
-  const announcementFeed = employeeContext
+  const announcementFeed = announcementsEnabled && employeeContext
     ? await getAnnouncementViewer({
         organizationId: employeeContext.organizationId,
         employeeId: employeeContext.employeeId,
@@ -78,11 +78,13 @@ export default async function Page() {
             presentPct={data.workforce.presentPct}
           />
           <HrComplianceWatch rows={data.compliance} />
-          <AnnouncementDashboardWidget
-            basePath="/hr/announcements"
-            items={announcementFeed.latest}
-            pinnedItems={announcementFeed.pinned}
-          />
+          {announcementsEnabled ? (
+            <AnnouncementDashboardWidget
+              basePath="/hr/announcements"
+              items={announcementFeed.latest}
+              pinnedItems={announcementFeed.pinned}
+            />
+          ) : null}
         </div>
       </div>
     </div>

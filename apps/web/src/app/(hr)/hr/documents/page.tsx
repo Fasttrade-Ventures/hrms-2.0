@@ -1,10 +1,12 @@
 import { DocumentsHub } from "@/components/hr/documents/documents-hub";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
+import { requireModule } from "@/lib/entitlements";
 import { getDocumentsHubStats } from "@/lib/hr/documents";
 import { requireRoleOrPermission } from "@/lib/auth/session";
 
 export default async function DocumentsHubPage() {
   await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["document_custodian"]);
+  await requireModule("documents");
   const stats = await getDocumentsHubStats();
   return (
     <div className="space-y-6">

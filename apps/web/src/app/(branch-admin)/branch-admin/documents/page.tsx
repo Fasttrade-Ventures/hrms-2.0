@@ -7,6 +7,7 @@ import { UploadDocumentDialog } from "@/components/hr/documents/upload-document-
 import { HrLinkButton, HrPagination } from "@/components/hr/hr-ui.client";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { requireBranchAdminContext } from "@/lib/branch-admin/context";
+import { requireModule } from "@/lib/entitlements";
 import { listBranchDocuments } from "@/lib/branch-admin/documents";
 import { listDocumentFolders } from "@/lib/hr/document-folders";
 import { listRequiredDocuments } from "@/lib/hr/documents";
@@ -17,6 +18,7 @@ export default async function BranchDocumentsPage({
 }: {
   searchParams: Promise<{ page?: string }>;
 }) {
+  await requireModule("documents");
   const context = await requireBranchAdminContext();
   const query = await searchParams;
   const page = Number(query.page ?? "1") || 1;
