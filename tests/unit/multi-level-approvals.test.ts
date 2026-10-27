@@ -48,10 +48,10 @@ describe("Multi-Level Approval Chains", () => {
     });
 
     expect(chain).toHaveLength(1);
-    expect(chain[0].stepOrder).toBe(1);
-    expect(chain[0].stepLabel).toBe("Line Manager");
-    expect(chain[0].approverEmployeeId).toBe("mgr-1");
-    expect(chain[0].timeoutDays).toBe(3);
+    expect(chain[0]!.stepOrder).toBe(1);
+    expect(chain[0]!.stepLabel).toBe("Line Manager");
+    expect(chain[0]!.approverEmployeeId).toBe("mgr-1");
+    expect(chain[0]!.timeoutDays).toBe(3);
   });
 
   it("resolves multi-stage chain (Line Manager -> Department Head -> HR Admin)", async () => {
@@ -156,19 +156,19 @@ describe("Multi-Level Approval Chains", () => {
     });
 
     expect(chain).toHaveLength(3);
-    expect(chain[0].stepOrder).toBe(1);
-    expect(chain[0].stepLabel).toBe("Line Manager Review");
-    expect(chain[0].approverEmployeeId).toBe("mgr-1");
-    expect(chain[0].timeoutDays).toBe(2);
+    expect(chain[0]!.stepOrder).toBe(1);
+    expect(chain[0]!.stepLabel).toBe("Line Manager Review");
+    expect(chain[0]!.approverEmployeeId).toBe("mgr-1");
+    expect(chain[0]!.timeoutDays).toBe(2);
 
-    expect(chain[1].stepOrder).toBe(2);
-    expect(chain[1].stepLabel).toBe("Head of Department Review");
-    expect(chain[1].approverEmployeeId).toBe("hod-1");
-    expect(chain[1].timeoutDays).toBe(3);
+    expect(chain[1]!.stepOrder).toBe(2);
+    expect(chain[1]!.stepLabel).toBe("Head of Department Review");
+    expect(chain[1]!.approverEmployeeId).toBe("hod-1");
+    expect(chain[1]!.timeoutDays).toBe(3);
 
-    expect(chain[2].stepOrder).toBe(3);
-    expect(chain[2].stepLabel).toBe("HR Verification");
-    expect(chain[2].approverEmployeeId).toBe("hr-1");
+    expect(chain[2]!.stepOrder).toBe(3);
+    expect(chain[2]!.stepLabel).toBe("HR Verification");
+    expect(chain[2]!.approverEmployeeId).toBe("hr-1");
   });
 
   it("maps stepOrder, stepLabel, and escalation indicators into inbox rows", () => {
@@ -187,8 +187,8 @@ describe("Multi-Level Approval Chains", () => {
         submitted_at: "2026-10-06T00:00:00Z",
         payload: {
           leaveTypeName: "Annual Leave",
-          startDate: "2026-10-20",
-          endDate: "2026-10-22",
+          startDate: "2029-10-20",
+          endDate: "2029-10-22",
         },
         employees: {
           full_name: "Farah Lee",
