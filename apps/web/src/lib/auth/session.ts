@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -56,7 +57,7 @@ async function loadMembership(userId: string): Promise<UserMembership | null> {
   return selected ? mapMembershipRow(selected) : null;
 }
 
-export async function getSession(): Promise<AuthSession | null> {
+export const getSession = cache(async (): Promise<AuthSession | null> => {
   try {
     const supabase = await createClient();
     const {
@@ -88,7 +89,7 @@ export async function getSession(): Promise<AuthSession | null> {
     console.warn("[session] Could not retrieve session from Supabase:", err instanceof Error ? err.message : err);
     return null;
   }
-}
+});
 
 export async function requireAuth(): Promise<AuthSession> {
   const session = await getSession();
