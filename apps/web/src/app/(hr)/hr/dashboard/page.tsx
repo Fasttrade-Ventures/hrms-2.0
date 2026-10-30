@@ -15,9 +15,11 @@ import { hasModule } from "@/lib/entitlements";
 import { getHrDashboardData } from "@/lib/hr/dashboard";
 
 export default async function Page() {
-  const announcementsEnabled = await hasModule("announcements");
-  const data = await getHrDashboardData();
-  const employeeContext = await requireEmployeeContext().catch(() => null);
+  const [announcementsEnabled, data, employeeContext] = await Promise.all([
+    hasModule("announcements"),
+    getHrDashboardData(),
+    requireEmployeeContext().catch(() => null),
+  ]);
   const announcementFeed = announcementsEnabled && employeeContext
     ? await getAnnouncementViewer({
         organizationId: employeeContext.organizationId,

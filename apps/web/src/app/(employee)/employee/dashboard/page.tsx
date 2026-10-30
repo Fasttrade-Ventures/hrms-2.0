@@ -41,13 +41,14 @@ type ActivityItem = {
 
 export default async function Page() {
   const hour = new Date().getHours();
-  const employee = await getCurrentEmployeeDetail().catch(() => null);
+  const [employee, employeeContext, announcementsEnabled, todayAttendance] = await Promise.all([
+    getCurrentEmployeeDetail().catch(() => null),
+    requireEmployeeContext().catch(() => null),
+    hasModule("announcements"),
+    getTodayAttendance().catch(() => null),
+  ]);
   const firstName = firstNameFromFullName(employee?.fullName, employee?.email);
 
-  const employeeContext = employee ? await requireEmployeeContext().catch(() => null) : null;
-  const announcementsEnabled = await hasModule("announcements");
-
-  const todayAttendance = await getTodayAttendance().catch(() => null);
   const requireSelfie = employeeContext
     ? await getClockInSelfieRequired(employeeContext.organizationId).catch(() => false)
     : false;

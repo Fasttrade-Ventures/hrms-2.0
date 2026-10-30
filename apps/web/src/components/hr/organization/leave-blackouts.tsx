@@ -62,13 +62,15 @@ export function LeaveBlackoutsList({
             <OrgTableCell variant="muted">
               {blackout.leaveTypeNames.length ? blackout.leaveTypeNames.join(", ") : "All leave types"}
             </OrgTableCell>
-            <OrgTableCell>
-              <OrgDeleteButton
-                confirmDescription="Employees will be able to apply for leave in this range again."
-                confirmTitle={`Delete ${blackout.name}?`}
-                label="Delete"
-                onDelete={() => deleteLeaveBlackout(blackout.id)}
-              />
+            <OrgTableCell className="text-right whitespace-nowrap">
+              <div className="flex items-center justify-end">
+                <OrgDeleteButton
+                  confirmDescription="Employees will be able to apply for leave in this range again."
+                  confirmTitle={`Delete ${blackout.name}?`}
+                  label="Delete"
+                  onDelete={() => deleteLeaveBlackout(blackout.id)}
+                />
+              </div>
             </OrgTableCell>
           </OrgTableRow>
         ))}

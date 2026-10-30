@@ -24,21 +24,28 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-const ORG_TABLE_GRID =
-  "md:grid md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,0.85fr)_minmax(0,0.75fr)_5rem_4.5rem] md:items-center md:gap-x-3";
-
-const ORG_TABLE_ROW = `px-3.5 py-2.5 ${ORG_TABLE_GRID}`;
-
-export function OrgTableRow({ children }: { children: ReactNode }) {
-  return <div className={ORG_TABLE_ROW}>{children}</div>;
+export function OrgTableRow({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <tr className={cn("transition-colors hover:bg-muted/30", className)}>
+      {children}
+    </tr>
+  );
 }
 
 export function OrgTableCell({
   children,
   variant = "secondary",
+  className,
 }: {
   children: ReactNode;
   variant?: "name" | "secondary" | "muted";
+  className?: string;
 }) {
   const variantClass = {
     name: "font-semibold text-foreground",
@@ -46,37 +53,57 @@ export function OrgTableCell({
     muted: "text-muted-foreground",
   }[variant];
 
-  return <p className={cn("min-w-0 truncate text-sm", variantClass)}>{children}</p>;
+  return (
+    <td className={cn("px-4 py-3.5 align-middle text-sm", className)}>
+      <div className={cn("min-w-0", variantClass)}>{children}</div>
+    </td>
+  );
 }
 
-export function OrgTableStatus({ label = "Active" }: { label?: string }) {
+export function OrgTableStatus({
+  label = "Active",
+  className,
+}: {
+  label?: string;
+  className?: string;
+}) {
   const isInactive = label.trim().toLowerCase() === "inactive";
   const isActive = label.trim().toLowerCase() === "active";
 
   return (
-    <div className="flex w-fit items-center justify-self-start">
-      <Badge
-        className={cn(
-          isActive &&
-            "border-emerald-500/30 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300",
-          isInactive &&
-            "border-rose-500/30 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-300",
-        )}
-        variant={isActive || isInactive ? "outline" : "secondary"}
-      >
-        {label}
-      </Badge>
-    </div>
+    <td className={cn("px-4 py-3.5 align-middle whitespace-nowrap", className)}>
+      <div className="flex w-fit items-center">
+        <Badge
+          className={cn(
+            isActive &&
+              "border-emerald-500/30 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300",
+            isInactive &&
+              "border-rose-500/30 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-300",
+          )}
+          variant={isActive || isInactive ? "outline" : "secondary"}
+        >
+          {label}
+        </Badge>
+      </div>
+    </td>
   );
 }
 
-export function OrgTableEditLink({ href }: { href: string }) {
+export function OrgTableEditLink({
+  href,
+  className,
+}: {
+  href: string;
+  className?: string;
+}) {
   return (
-    <div className="flex items-center justify-self-start">
-      <HrLinkButton href={href} size="sm" variant="outline">
-        Edit
-      </HrLinkButton>
-    </div>
+    <td className={cn("px-4 py-3.5 align-middle text-right whitespace-nowrap", className)}>
+      <div className="flex items-center justify-end">
+        <HrLinkButton href={href} size="sm" variant="outline">
+          Edit
+        </HrLinkButton>
+      </div>
+    </td>
   );
 }
 
@@ -109,50 +136,67 @@ export function OrgTableShell({
 }) {
   return (
     <HrTableCard>
-      <div
-        className={cn(
-          "hidden border-b bg-muted/50 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground",
-          ORG_TABLE_ROW,
-        )}
-      >
-        {headers.map((header) => {
-          const { label, sortKey } =
-            typeof header === "string" ? { label: header, sortKey: undefined } : header;
-
-          if (!sortKey || !getSortHref) {
-            return (
-              <span className="truncate" key={label}>
-                {label}
-              </span>
-            );
-          }
-
-          const isActive = sort?.key === sortKey;
-          const nextOrder = isActive && sort.order === "asc" ? "desc" : "asc";
-
-          return (
-            <Link
-              className={cn(
-                "inline-flex min-w-0 items-center gap-1 truncate hover:text-foreground",
-                isActive && "text-foreground",
-              )}
-              href={getSortHref(sortKey, nextOrder)}
-              key={sortKey}
-            >
-              <span className="truncate">{label}</span>
-              <span aria-hidden className="text-[10px] normal-case">
-                {isActive ? (sort.order === "asc" ? "↑" : "↓") : "↕"}
-              </span>
-            </Link>
-          );
-        })}
-      </div>
       {isEmpty ? (
         <div className="p-8">
           <EmptyState description={emptyDescription} title={emptyTitle} />
         </div>
       ) : (
-        <div className="divide-y divide-border">{children}</div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-border bg-muted/50 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <tr>
+                {headers.map((header, index) => {
+                  const isLast = index === headers.length - 1;
+                  const { label, sortKey } =
+                    typeof header === "string" ? { label: header, sortKey: undefined } : header;
+                  const isAction = label.toLowerCase() === "action";
+                  const alignRight = isLast || isAction;
+
+                  if (!sortKey || !getSortHref) {
+                    return (
+                      <th
+                        className={cn(
+                          "px-4 py-3 font-semibold whitespace-nowrap",
+                          alignRight ? "text-right" : "text-left",
+                        )}
+                        key={label}
+                      >
+                        <span className="truncate">{label}</span>
+                      </th>
+                    );
+                  }
+
+                  const isActive = sort?.key === sortKey;
+                  const nextOrder = isActive && sort.order === "asc" ? "desc" : "asc";
+
+                  return (
+                    <th
+                      className={cn(
+                        "px-4 py-3 font-semibold whitespace-nowrap",
+                        alignRight ? "text-right" : "text-left",
+                      )}
+                      key={sortKey}
+                    >
+                      <Link
+                        className={cn(
+                          "inline-flex min-w-0 items-center gap-1 truncate hover:text-foreground",
+                          isActive && "text-foreground",
+                        )}
+                        href={getSortHref(sortKey, nextOrder)}
+                      >
+                        <span className="truncate">{label}</span>
+                        <span aria-hidden className="text-[10px] normal-case">
+                          {isActive ? (sort.order === "asc" ? "↑" : "↓") : "↕"}
+                        </span>
+                      </Link>
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">{children}</tbody>
+          </table>
+        </div>
       )}
     </HrTableCard>
   );

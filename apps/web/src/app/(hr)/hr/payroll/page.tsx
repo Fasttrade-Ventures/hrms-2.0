@@ -8,9 +8,11 @@ import { requireModule } from "@/lib/entitlements";
 import { listPayruns } from "@/lib/payroll/queries";
 
 export default async function Page() {
-  await requireModule("payroll");
-  await requireRole("hr_administrator");
-  const payruns = await listPayruns().catch(() => []);
+  const [, , payruns] = await Promise.all([
+    requireModule("payroll"),
+    requireRole("hr_administrator"),
+    listPayruns().catch(() => []),
+  ]);
 
   return (
     <div className="space-y-8">

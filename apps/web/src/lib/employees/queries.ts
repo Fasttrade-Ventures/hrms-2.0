@@ -199,56 +199,6 @@ export async function getEmployeeDirectory(
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  const [leaveRes, allForStatsRes] = await Promise.all([
-    supabase
-      .from("leave_requests")
-      .select("employee_id")
-      .eq("organization_id", organizationId)
-      .eq("status", "approved")
-      .lte("start_date", today)
-      .gte("end_date", today),
-    supabase
-      .from("employees")
-      .select(
-        "id, status, branch_id, branches(name), organization_memberships(user_id)",
-      )
-      .eq("organization_id", organizationId)
-      .neq("status", "terminated"),
-  ]);
-
-  const onLeaveIds = new Set((leaveRes.data ?? []).map((row) => row.employee_id));
-
-  let statsRows = allForStatsRes.data ?? [];
-  if (filters.branchIds && filters.branchIds.length > 0) {
-    const scope = new Set(filters.branchIds);
-    statsRows = statsRows.filter((row) => row.branch_id && scope.has(row.branch_id));
-  } else if (filters.branchId && filters.branchId !== "all") {
-    statsRows = statsRows.filter((row) => row.branch_id === filters.branchId);
-  }
-  const activeCount = statsRows.filter((row) => row.status === "active").length;
-  const inactiveCount = statsRows.filter((row) => row.status === "inactive").length;
-  const onLeaveCount = statsRows.filter(
-    (row) => row.status === "active" && onLeaveIds.has(row.id),
-  ).length;
-  const invitesOpen = statsRows.filter((row) => {
-    const membership = Array.isArray(row.organization_memberships)
-      ? row.organization_memberships[0]
-      : row.organization_memberships;
-    return row.status === "active" && !membership?.user_id;
-  }).length;
-
-  const branchCounts = new Map<string, EmployeeBranchFilter>();
-  for (const row of statsRows) {
-    if (row.status !== "active" || !row.branch_id) continue;
-    const name = (row.branches as { name?: string } | null)?.name ?? "Branch";
-    const existing = branchCounts.get(row.branch_id);
-    if (existing) {
-      existing.count += 1;
-    } else {
-      branchCounts.set(row.branch_id, { id: row.branch_id, name, count: 1 });
-    }
-  }
-
   let query = supabase
     .from("employees")
     .select(
@@ -283,7 +233,58 @@ export async function getEmployeeDirectory(
     );
   }
 
-  const { data, error, count } = await query;
+  const [leaveRes, allForStatsRes, queryRes] = await Promise.all([
+    supabase
+      .from("leave_requests")
+      .select("employee_id")
+      .eq("organization_id", organizationId)
+      .eq("status", "approved")
+      .lte("start_date", today)
+      .gte("end_date", today),
+    supabase
+      .from("employees")
+      .select(
+        "id, status, branch_id, branches(name), organization_memberships(user_id)",
+      )
+      .eq("organization_id", organizationId)
+      .neq("status", "terminated"),
+    query,
+  ]);
+
+  const { data, count, error } = queryRes;
+
+  const onLeaveIds = new Set((leaveRes.data ?? []).map((row) => row.employee_id));
+
+  let statsRows = allForStatsRes.data ?? [];
+  if (filters.branchIds && filters.branchIds.length > 0) {
+    const scope = new Set(filters.branchIds);
+    statsRows = statsRows.filter((row) => row.branch_id && scope.has(row.branch_id));
+  } else if (filters.branchId && filters.branchId !== "all") {
+    statsRows = statsRows.filter((row) => row.branch_id === filters.branchId);
+  }
+  const activeCount = statsRows.filter((row) => row.status === "active").length;
+  const inactiveCount = statsRows.filter((row) => row.status === "inactive").length;
+  const onLeaveCount = statsRows.filter(
+    (row) => row.status === "active" && onLeaveIds.has(row.id),
+  ).length;
+  const invitesOpen = statsRows.filter((row) => {
+    const membership = Array.isArray(row.organization_memberships)
+      ? row.organization_memberships[0]
+      : row.organization_memberships;
+    return row.status === "active" && !membership?.user_id;
+  }).length;
+
+  const branchCounts = new Map<string, EmployeeBranchFilter>();
+  for (const row of statsRows) {
+    if (row.status !== "active" || !row.branch_id) continue;
+    const name = (row.branches as { name?: string } | null)?.name ?? "Branch";
+    const existing = branchCounts.get(row.branch_id);
+    if (existing) {
+      existing.count += 1;
+    } else {
+      branchCounts.set(row.branch_id, { id: row.branch_id, name, count: 1 });
+    }
+  }
 
   if (error) {
     throw new Error(error.message);

@@ -316,15 +316,17 @@ export async function listManagerCalendarDays(input: {
   month: number;
 }): Promise<{ events: CalendarDayEvent[]; branchContext: EmployeeBranchContext }> {
   const { gridStart, gridEnd } = calendarMonthBounds(input.year, input.month);
-  const branchContext = await getEmployeeBranchContext(input.managerEmployeeId);
   const supabase = await createClient();
 
-  const { data: reports, error: reportsError } = await supabase
-    .from("employees")
-    .select("id")
-    .eq("organization_id", input.organizationId)
-    .eq("manager_employee_id", input.managerEmployeeId)
-    .eq("status", "active");
+  const [branchContext, { data: reports, error: reportsError }] = await Promise.all([
+    getEmployeeBranchContext(input.managerEmployeeId),
+    supabase
+      .from("employees")
+      .select("id")
+      .eq("organization_id", input.organizationId)
+      .eq("manager_employee_id", input.managerEmployeeId)
+      .eq("status", "active"),
+  ]);
 
   if (reportsError) throw new Error(reportsError.message);
 
