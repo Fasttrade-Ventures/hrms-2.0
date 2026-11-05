@@ -432,6 +432,29 @@ export async function deletePayGroupAction(
   }
 }
 
+export async function setEmployeePcbManualAmountAction(
+  _prev: HrActionState,
+  formData: FormData,
+): Promise<HrActionState> {
+  const employeeId = String(formData.get("employeeId") ?? "");
+  const mode = String(formData.get("pcbMode") ?? "auto");
+  const raw = String(formData.get("pcbManualAmount") ?? "");
+  try {
+    const session = await guardPayroll();
+    const { setEmployeePcbManualAmount } = await import("@/lib/payroll/compensation");
+    if (mode === "auto") {
+      await setEmployeePcbManualAmount(employeeId, null, session.user.id);
+    } else {
+      const amount = Number(raw);
+      await setEmployeePcbManualAmount(employeeId, amount, session.user.id);
+    }
+    revalidateEmployee(employeeId);
+    return { success: "PCB setting saved." };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Failed to save PCB." };
+  }
+}
+
 export async function setPayrollComponentActiveAction(
   _prev: HrActionState,
   formData: FormData,

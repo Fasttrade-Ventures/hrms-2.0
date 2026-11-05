@@ -66,6 +66,7 @@ export async function getEmployeePayrollSectionData(
       ytdEpf: 0,
       ytdPcb: 0,
       openingBalance: false,
+      pcbManualAmount: null,
     },
   };
 }

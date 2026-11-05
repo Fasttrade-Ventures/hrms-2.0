@@ -1,4 +1,4 @@
-import { requireRole } from "@/lib/auth/session";
+import { requireRole, requireRoleOrPermission } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizationId } from "@/lib/auth/organization-context";
 
@@ -43,6 +43,7 @@ export type EmployeeTaxProfile = {
   ytdEpf: number;
   ytdPcb: number;
   openingBalance: boolean;
+  pcbManualAmount: number | null;
 };
 
 export async function listAllowanceComponents(): Promise<AllowanceComponentOption[]> {
@@ -218,15 +219,14 @@ export async function deleteRecurringAllowance(allowanceId: string): Promise<voi
   if (error) throw new Error(error.message);
 }
 
-export async function ensureEmployeeTaxProfile(employeeId: string): Promise<void> {
-  await requireRole("hr_administrator");
-  const organizationId = await requireOrganizationId();
+async function ensureEmployeeTaxProfileRow(employeeId: string, organizationId: string): Promise<void> {
   const supabase = await createClient();
 
   const { data: existing } = await supabase
     .from("employee_tax_profiles")
     .select("employee_id")
     .eq("employee_id", employeeId)
+    .eq("organization_id", organizationId)
     .maybeSingle();
 
   if (existing) return;
@@ -259,6 +259,12 @@ export async function ensureEmployeeTaxProfile(employeeId: string): Promise<void
   if (error) throw new Error(error.message);
 }
 
+export async function ensureEmployeeTaxProfile(employeeId: string): Promise<void> {
+  await requireRole("hr_administrator");
+  const organizationId = await requireOrganizationId();
+  await ensureEmployeeTaxProfileRow(employeeId, organizationId);
+}
+
 export async function getEmployeeTaxProfile(employeeId: string): Promise<EmployeeTaxProfile | null> {
   await requireRole("hr_administrator");
   const organizationId = await requireOrganizationId();
@@ -269,7 +275,7 @@ export async function getEmployeeTaxProfile(employeeId: string): Promise<Employe
     .from("employees")
     .select(
       `employee_profiles(marital_status),
-       employee_tax_profiles(marital_status, spouse_working, zakat_annual, zakat_monthly, tp1_payload),
+       employee_tax_profiles(marital_status, spouse_working, zakat_annual, zakat_monthly, tp1_payload, pcb_manual_amount),
        employee_dependents(dependent_type)`,
     )
     .eq("organization_id", organizationId)
@@ -306,6 +312,10 @@ export async function getEmployeeTaxProfile(employeeId: string): Promise<Employe
     ytdEpf: Number(ytd?.ytd_epf_employee ?? 0),
     ytdPcb: Number(ytd?.ytd_pcb ?? 0),
     openingBalance: Boolean(ytd?.opening_balance),
+    pcbManualAmount:
+      tax?.pcb_manual_amount === null || tax?.pcb_manual_amount === undefined
+        ? null
+        : Number(tax.pcb_manual_amount),
   };
 }
 
@@ -317,13 +327,24 @@ export async function upsertEmployeeTaxProfile(
     zakatAnnual: number;
     zakatMonthly?: number;
     otherReliefs?: number;
+    pcbManualAmount?: number | null;
   },
 ): Promise<void> {
   await requireRole("hr_administrator");
   const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
-  const { error } = await supabase.from("employee_tax_profiles").upsert({
+  const row: {
+    employee_id: string;
+    organization_id: string;
+    marital_status: string | null;
+    spouse_working: boolean | null;
+    zakat_annual: number;
+    zakat_monthly: number;
+    tp1_payload: { otherReliefs: number };
+    updated_at: string;
+    pcb_manual_amount?: number | null;
+  } = {
     employee_id: employeeId,
     organization_id: organizationId,
     marital_status: input.maritalStatus ?? null,
@@ -332,8 +353,39 @@ export async function upsertEmployeeTaxProfile(
     zakat_monthly: input.zakatMonthly ?? 0,
     tp1_payload: { otherReliefs: input.otherReliefs ?? 0 },
     updated_at: new Date().toISOString(),
-  });
+  };
 
+  if (input.pcbManualAmount !== undefined) {
+    row.pcb_manual_amount = input.pcbManualAmount;
+  }
+
+  const { error } = await supabase.from("employee_tax_profiles").upsert(row);
+
+  if (error) throw new Error(error.message);
+}
+
+export async function setEmployeePcbManualAmount(
+  employeeId: string,
+  amount: number | null,
+  userId: string,
+): Promise<void> {
+  await requireRoleOrPermission(["hr_administrator"], ["payroll_processor"]);
+  const organizationId = await requireOrganizationId();
+  if (amount !== null && (Number.isNaN(amount) || amount < 0)) {
+    throw new Error("PCB amount must be zero or greater.");
+  }
+  const supabase = await createClient();
+  await ensureEmployeeTaxProfileRow(employeeId, organizationId);
+  const { error } = await supabase
+    .from("employee_tax_profiles")
+    .update({
+      pcb_manual_amount: amount,
+      pcb_manual_updated_at: new Date().toISOString(),
+      pcb_manual_updated_by: userId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("employee_id", employeeId)
+    .eq("organization_id", organizationId);
   if (error) throw new Error(error.message);
 }
 
