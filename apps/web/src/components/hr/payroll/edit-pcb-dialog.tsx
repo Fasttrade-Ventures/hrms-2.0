@@ -70,6 +70,7 @@ export function EditPcbDialog({
         <Button
           className="h-8 shrink-0 px-2 text-xs"
           disabled={pending}
+          formNoValidate
           name="clear"
           size="sm"
           type="submit"
