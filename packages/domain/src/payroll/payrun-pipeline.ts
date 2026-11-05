@@ -155,6 +155,10 @@ export function computeEmployeePayrun(input: EmployeePayrunInput): EmployeePayru
     .add(eisEmp)
     .add(lindungEmployee)
     .add(zakatDeduction);
+  // Manual PCB: net is adjusted from the auto-PCB rounded anchor (not
+  // roundRinggit(gross − baseDeductions − manualPcb)). Net rounds to whole
+  // ringgit while auto PCB keeps sen; re-rounding with manual PCB would shift
+  // net when only PCB changes. Delta: round(... − autoPcb) + autoPcb − pcb.
   const net =
     input.pcbManualAmount != null
       ? roundRinggit(gross.sub(baseDeductions).sub(autoPcb)).add(autoPcb).sub(pcb)
