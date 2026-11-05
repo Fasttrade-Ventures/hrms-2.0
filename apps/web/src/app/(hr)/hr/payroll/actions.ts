@@ -25,10 +25,7 @@ export type HrActionState = {
   downloadFileName?: string;
 };
 
-function exportReadyState(result: {
-  downloadPath: string;
-  fileName: string;
-}): HrActionState {
+function exportReadyState(result: { downloadPath: string; fileName: string }): HrActionState {
   return {
     success: "Export file is ready.",
     downloadHref: result.downloadPath,
@@ -193,8 +190,7 @@ export async function updateEmployeeTaxProfileAction(
 
     await upsertEmployeeTaxProfile(employeeId, {
       maritalStatus: String(formData.get("maritalStatus") ?? "") || null,
-      spouseWorking:
-        spouseWorkingRaw === "yes" ? true : spouseWorkingRaw === "no" ? false : null,
+      spouseWorking: spouseWorkingRaw === "yes" ? true : spouseWorkingRaw === "no" ? false : null,
       zakatAnnual: Number(formData.get("zakatAnnual") ?? 0),
       zakatMonthly: Number(formData.get("zakatMonthly") ?? 0),
       otherReliefs: Number(formData.get("otherReliefs") ?? 0),
@@ -298,13 +294,38 @@ export async function editPayrunLineAction(
   }
 }
 
+export async function overridePayrunPcbAction(
+  _prev: HrActionState,
+  formData: FormData,
+): Promise<HrActionState> {
+  const payrunItemId = String(formData.get("payrunItemId") ?? "");
+  const payrunId = String(formData.get("payrunId") ?? "");
+  const clear = String(formData.get("clear") ?? "") === "1";
+  const amountRaw = String(formData.get("amount") ?? "");
+  try {
+    const session = await guardPayroll();
+    const { overridePayrunPcb } = await import("@/lib/payroll/edit");
+    await overridePayrunPcb(payrunItemId, clear ? null : Number(amountRaw), session.user.id);
+    revalidatePath("/hr/payroll");
+    if (payrunId) revalidatePath(`/hr/payroll/${payrunId}`);
+    return {
+      success: clear
+        ? "PCB cleared — using auto calculation."
+        : "PCB updated for this and future payruns. Net recalculated.",
+    };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Failed to update PCB." };
+  }
+}
+
 export async function exportBankAction(
   _prev: HrActionState,
   formData: FormData,
 ): Promise<HrActionState> {
   const payrunId = String(formData.get("payrunId") ?? "");
   const branchId = String(formData.get("branchId") ?? "") || null;
-  const format = String(formData.get("format") ?? "bank_csv") as "bank_csv" | "bank_maybank" | "bank_cimb";
+  const format = String(formData.get("format") ?? "bank_csv") as
+    "bank_csv" | "bank_maybank" | "bank_cimb";
 
   try {
     const session = await guardPayroll();
@@ -323,16 +344,24 @@ export async function exportStatutoryAction(
 ): Promise<HrActionState> {
   const payrunId = String(formData.get("payrunId") ?? "");
   const branchId = String(formData.get("branchId") ?? "") || null;
-  const statutoryType = String(formData.get("statutoryType") ?? "epf") as "epf" | "socso" | "pcb" | "hrdf";
+  const statutoryType = String(formData.get("statutoryType") ?? "epf") as
+    "epf" | "socso" | "pcb" | "hrdf";
 
   try {
     const session = await guardPayroll();
     const { generateStatutoryExport } = await import("@/lib/payroll/exports");
-    const result = await generateStatutoryExport(payrunId, branchId, statutoryType, session.user.id);
+    const result = await generateStatutoryExport(
+      payrunId,
+      branchId,
+      statutoryType,
+      session.user.id,
+    );
     revalidatePath(`/hr/payroll/${payrunId}`);
     return exportReadyState(result);
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Failed to generate statutory export." };
+    return {
+      error: error instanceof Error ? error.message : "Failed to generate statutory export.",
+    };
   }
 }
 
