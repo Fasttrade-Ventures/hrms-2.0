@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import {
   generateEaPdfAction,
+  setEmployeePcbManualAmountAction,
   updateEmployeeTaxProfileAction,
   type HrActionState,
 } from "@/app/(hr)/hr/payroll/actions";
@@ -23,10 +24,57 @@ export function EmployeeTaxProfilePanel({
 }) {
   const [state, action, pending] = useActionState(updateEmployeeTaxProfileAction, initialState);
   const [eaState, eaAction, eaPending] = useActionState(generateEaPdfAction, initialState);
+  const [pcbState, pcbAction, pcbPending] = useActionState(
+    setEmployeePcbManualAmountAction,
+    initialState,
+  );
+  const [pcbMode, setPcbMode] = useState<"auto" | "manual">(
+    taxProfile.pcbManualAmount === null ? "auto" : "manual",
+  );
   const year = new Date().getFullYear();
 
   return (
     <div className="space-y-5">
+      <PortalSectionCard title="PCB">
+        <form action={pcbAction} className="space-y-4">
+          <input name="employeeId" type="hidden" value={employeeId} />
+          <label className="block space-y-1 text-sm">
+            <span className="text-muted-foreground">Calculation</span>
+            <select
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3"
+              name="pcbMode"
+              onChange={(event) => setPcbMode(event.target.value === "manual" ? "manual" : "auto")}
+              value={pcbMode}
+            >
+              <option value="auto">Auto (calculated each payrun)</option>
+              <option value="manual">Use manual amount</option>
+            </select>
+          </label>
+          {pcbMode === "manual" ? (
+            <label className="block space-y-1 text-sm">
+              <span className="text-muted-foreground">PCB amount (RM)</span>
+              <HrTextInput
+                defaultValue={taxProfile.pcbManualAmount ?? ""}
+                min={0}
+                name="pcbManualAmount"
+                required
+                step="0.01"
+                type="number"
+              />
+            </label>
+          ) : null}
+          <p className="text-xs text-muted-foreground">
+            Manual amount applies to this and future payruns until cleared. Payslips still show PCB.
+          </p>
+          <div className="space-y-2">
+            <HrFormMessage error={pcbState.error} success={pcbState.success} />
+            <HrPrimaryButton disabled={pcbPending} type="submit">
+              {pcbPending ? "Saving…" : "Save PCB setting"}
+            </HrPrimaryButton>
+          </div>
+        </form>
+      </PortalSectionCard>
+
       <PortalSectionCard title="TP1 — Current year reliefs">
         <form action={action} className="grid gap-4 md:grid-cols-2">
           <input name="employeeId" type="hidden" value={employeeId} />

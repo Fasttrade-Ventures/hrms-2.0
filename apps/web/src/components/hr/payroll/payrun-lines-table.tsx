@@ -3,6 +3,7 @@
 import type { CSSProperties, ReactNode } from "react";
 
 import { EditLineDialog } from "@/components/hr/payroll/edit-line-dialog";
+import { EditPcbDialog } from "@/components/hr/payroll/edit-pcb-dialog";
 import type { PayrunLineItem } from "@/lib/payroll/queries";
 import { cn } from "@/lib/utils";
 
@@ -53,7 +54,7 @@ function getColumns(editable: boolean): ColumnDef[] {
 function getGridStyle(editable: boolean): CSSProperties {
   return {
     gridTemplateColumns: editable
-      ? "minmax(12rem, 2fr) minmax(5.5rem, 0.9fr) minmax(9.5rem, 1.2fr) minmax(5rem, 0.8fr) minmax(5.5rem, 0.9fr) minmax(5.5rem, 0.9fr) minmax(5rem, 0.8fr) minmax(4.5rem, 0.7fr) minmax(4.5rem, 0.7fr) minmax(6rem, 1fr)"
+      ? "minmax(12rem, 2fr) minmax(5.5rem, 0.9fr) minmax(9.5rem, 1.2fr) minmax(5rem, 0.8fr) minmax(5.5rem, 0.9fr) minmax(5.5rem, 0.9fr) minmax(5rem, 0.8fr) minmax(15rem, 1.8fr) minmax(4.5rem, 0.7fr) minmax(6rem, 1fr)"
       : "minmax(13rem, 2.2fr) minmax(6rem, 1fr) minmax(5.5rem, 0.9fr) minmax(6rem, 1fr) minmax(6rem, 1fr) minmax(5rem, 0.9fr) minmax(5rem, 0.9fr) minmax(5rem, 0.9fr) minmax(6.5rem, 1.1fr)",
   };
 }
@@ -188,6 +189,15 @@ function buildRowCells(
         />
       </div>
     );
+    cells.pcb = (
+      <div className="flex justify-end">
+        <EditPcbDialog
+          currentAmount={Number(item.pcb)}
+          payrunId={options.payrunId}
+          payrunItemId={item.id}
+        />
+      </div>
+    );
   }
 
   return cells;
@@ -273,8 +283,8 @@ export function PayrunLinesTable({
           <div className="text-right">
             {editable ? (
               <p className="text-xs text-muted-foreground">
-                Change basic salary in the <span className="font-medium text-foreground">Basic</span>{" "}
-                column.
+                Change basic salary or <span className="font-medium text-foreground">PCB</span> on
+                draft lines.
               </p>
             ) : null}
             <p className="text-xs text-muted-foreground">EE = employee · ER = employer</p>
@@ -284,7 +294,7 @@ export function PayrunLinesTable({
 
       {items.length > 0 ? (
         <div className="w-full overflow-x-auto">
-          <div className={editable ? "min-w-[70rem]" : "min-w-[62rem]"}>
+          <div className={editable ? "min-w-[82rem]" : "min-w-[62rem]"}>
             <GridRow
               className="border-b border-[var(--border-primary)] bg-[var(--surface-muted)]/60"
               compact
