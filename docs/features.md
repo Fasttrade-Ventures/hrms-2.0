@@ -178,6 +178,7 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | SOCSO / EIS (PERKESO schedules) | Core | ✅ | Golden tests |
 | LINDUNG 24 Jam (from Jun 2026) | Core | ✅ | Optional ER component |
 | PCB / MTD (LHDN 2026 computerized) | Core | ✅ | Golden tests |
+| PCB manual override (sticky total) | Pro | ✅ | Default auto MTD; HR may set fixed PCB on tax profile or draft; payslip still shows PCB |
 | HRD Corp levy | Core | ✅ | Per-branch toggle |
 | YTD rules | Core | ✅ | Updated on lock + TP3 opening |
 | Exact decimal arithmetic | Core | ✅ | `decimal.js` in domain |
