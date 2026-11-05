@@ -10,15 +10,25 @@ import { cn } from "@/lib/utils";
 
 const initialState: HrActionState = {};
 
+function formatRm(amount: number) {
+  return amount.toLocaleString("en-MY", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
 export function EditPcbDialog({
   payrunId,
   payrunItemId,
   currentAmount,
+  autoAmount,
   manualAmount,
 }: {
   payrunId?: string;
   payrunItemId: string;
   currentAmount: number;
+  /** LHDN auto PCB for this period (shown even when a manual override is active). */
+  autoAmount: number | null;
   manualAmount: number | null;
 }) {
   const [state, action, pending] = useActionState(overridePayrunPcbAction, initialState);
@@ -26,6 +36,13 @@ export function EditPcbDialog({
   const [pcbMode, setPcbMode] = useState<"auto" | "manual">(
     manualAmount === null ? "auto" : "manual",
   );
+
+  const resolvedAuto =
+    autoAmount !== null && Number.isFinite(autoAmount)
+      ? autoAmount
+      : manualAmount === null
+        ? currentAmount
+        : null;
 
   useEffect(() => {
     if (state.success) {
@@ -36,10 +53,30 @@ export function EditPcbDialog({
   }, [state.success]);
 
   return (
-    <form action={action} className="flex flex-col items-end">
+    <form action={action} className="flex flex-col items-end gap-1">
       {payrunId ? <input name="payrunId" type="hidden" value={payrunId} /> : null}
       <input name="payrunItemId" type="hidden" value={payrunItemId} />
       <input name="clear" type="hidden" value={pcbMode === "auto" ? "1" : "0"} />
+      <p className="text-xs tabular-nums text-foreground">
+        {pcbMode === "auto" ? (
+          <>
+            Auto{" "}
+            <span className="font-medium">
+              RM {formatRm(resolvedAuto ?? currentAmount)}
+            </span>
+          </>
+        ) : (
+          <>
+            Applied{" "}
+            <span className="font-medium">RM {formatRm(currentAmount)}</span>
+            {resolvedAuto !== null ? (
+              <span className="ml-1 text-muted-foreground">
+                (auto RM {formatRm(resolvedAuto)})
+              </span>
+            ) : null}
+          </>
+        )}
+      </p>
       <div className="flex items-center justify-end gap-1.5">
         <select
           aria-label="PCB calculation"

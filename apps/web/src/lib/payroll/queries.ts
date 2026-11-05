@@ -30,6 +30,7 @@ export type PayrunLineItem = {
   eisEmployee: string;
   eisEmployer: string;
   pcb: string;
+  pcbAutoAmount: number | null;
   pcbManualAmount: number | null;
   hrdfEmployer: string;
   netPay: string;
@@ -182,7 +183,7 @@ export async function getPayrunDetail(
     supabase
       .from("payroll_payrun_items")
       .select(
-        "id, gross_pay, epf_employee, epf_employer, socso_employee, socso_employer, eis_employee, eis_employer, pcb, hrdf_employer, net_pay, requires_resolution, employees(employee_number, full_name, email, employee_tax_profiles(pcb_manual_amount)), branches(name)",
+        "id, gross_pay, epf_employee, epf_employer, socso_employee, socso_employer, eis_employee, eis_employer, pcb, pcb_auto_amount, hrdf_employer, net_pay, requires_resolution, employees(employee_number, full_name, email, employee_tax_profiles(pcb_manual_amount)), branches(name)",
         { count: "exact" },
       )
       .eq("payrun_id", payrunId)
@@ -258,6 +259,10 @@ export async function getPayrunDetail(
       eisEmployee: row.eis_employee,
       eisEmployer: row.eis_employer,
       pcb: row.pcb,
+      pcbAutoAmount:
+        row.pcb_auto_amount === null || row.pcb_auto_amount === undefined
+          ? null
+          : Number(row.pcb_auto_amount),
       pcbManualAmount:
         taxProfile?.pcb_manual_amount === null || taxProfile?.pcb_manual_amount === undefined
           ? null

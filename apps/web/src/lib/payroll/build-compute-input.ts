@@ -128,6 +128,7 @@ export function payrunItemPatchFromResult(result: EmployeePayrunResult) {
     eis_employee: result.eisEmployee.toFixed(2),
     eis_employer: result.eisEmployer.toFixed(2),
     pcb: result.pcb.toFixed(2),
+    pcb_auto_amount: result.pcbAuto.toFixed(2),
     hrdf_employer: result.hrdfEmployer.toFixed(2),
     lindung_employee: result.lindungEmployee.toFixed(2),
     lindung_employer: result.lindungEmployer.toFixed(2),

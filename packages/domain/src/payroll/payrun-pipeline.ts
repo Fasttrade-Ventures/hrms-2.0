@@ -60,6 +60,8 @@ export type EmployeePayrunResult = {
   eisEmployee: Money;
   eisEmployer: Money;
   pcb: Money;
+  /** Always the LHDN auto amount, even when `pcb` is a manual override. */
+  pcbAuto: Money;
   hrdfEmployer: Money;
   lindungEmployee: Money;
   lindungEmployer: Money;
@@ -175,6 +177,7 @@ export function computeEmployeePayrun(input: EmployeePayrunInput): EmployeePayru
     eisEmployee: eisEmp,
     eisEmployer: eisEr,
     pcb,
+    pcbAuto: autoPcb,
     hrdfEmployer,
     lindungEmployee,
     lindungEmployer,
