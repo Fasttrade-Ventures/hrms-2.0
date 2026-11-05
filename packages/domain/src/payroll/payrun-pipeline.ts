@@ -1,5 +1,12 @@
 import { money, roundRinggit, type Money } from "../money";
-import { eisEmployee, eisEmployer, epfContributableWage, epfEmployee, epfEmployer, type EpfWageRounding } from "./malaysia-statutory";
+import {
+  eisEmployee,
+  eisEmployer,
+  epfContributableWage,
+  epfEmployee,
+  epfEmployer,
+  type EpfWageRounding,
+} from "./malaysia-statutory";
 import { pcbMtdFull } from "./pcb-mtd";
 import { detectSocsoCategory, lookupSocsoContribution, type SocsoCategory } from "./socso";
 import type { StatutoryRuleContext } from "./statutory-context";
@@ -77,11 +84,7 @@ function resolveEpfRates(
   };
 }
 
-function detectAnomalies(input: {
-  gross: Money;
-  epfEmployee: Money;
-  net: Money;
-}): string[] {
+function detectAnomalies(input: { gross: Money; epfEmployee: Money; net: Money }): string[] {
   const flags: string[] = [];
   if (input.net.lt(0)) flags.push("negative_net");
   if (input.gross.gt(0) && input.epfEmployee.div(input.gross).gt(0.2)) {
@@ -91,7 +94,10 @@ function detectAnomalies(input: {
 }
 
 function sumFlagged(lines: PayrunLine[], flag: keyof ComponentFlags): Money {
-  return lines.reduce((total, line) => (line.flags[flag] ? total.add(line.amount) : total), money(0));
+  return lines.reduce(
+    (total, line) => (line.flags[flag] ? total.add(line.amount) : total),
+    money(0),
+  );
 }
 
 export function computeEmployeePayrun(input: EmployeePayrunInput): EmployeePayrunResult {
@@ -134,8 +140,7 @@ export function computeEmployeePayrun(input: EmployeePayrunInput): EmployeePayru
     asOf: input.asOf,
     maritalCategory: input.maritalCategory,
   });
-  const pcb =
-    input.pcbManualAmount != null ? input.pcbManualAmount : autoPcb;
+  const pcb = input.pcbManualAmount != null ? input.pcbManualAmount : autoPcb;
 
   const hrdfBase = hrdfWageBase.gt(0) ? hrdfWageBase : statutoryBase;
   const hrdfEmployer = input.hrdfEnabled ? roundRinggit(hrdfBase.mul(input.hrdfRate)) : money(0);
@@ -155,14 +160,7 @@ export function computeEmployeePayrun(input: EmployeePayrunInput): EmployeePayru
     .add(eisEmp)
     .add(lindungEmployee)
     .add(zakatDeduction);
-  // Manual PCB: net is adjusted from the auto-PCB rounded anchor (not
-  // roundRinggit(gross − baseDeductions − manualPcb)). Net rounds to whole
-  // ringgit while auto PCB keeps sen; re-rounding with manual PCB would shift
-  // net when only PCB changes. Delta: round(... − autoPcb) + autoPcb − pcb.
-  const net =
-    input.pcbManualAmount != null
-      ? roundRinggit(gross.sub(baseDeductions).sub(autoPcb)).add(autoPcb).sub(pcb)
-      : roundRinggit(gross.sub(baseDeductions).sub(pcb));
+  const net = roundRinggit(gross.sub(baseDeductions.add(pcb)));
   const anomalyFlags = detectAnomalies({ gross, epfEmployee: epfEmp, net });
 
   return {
