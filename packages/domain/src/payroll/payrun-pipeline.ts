@@ -38,6 +38,7 @@ export type EmployeePayrunInput = {
   isForeignWorker?: boolean;
   maritalCategory?: "single" | "married";
   statutoryRules?: StatutoryRuleContext;
+  pcbManualAmount?: Money | null;
 };
 
 export type EmployeePayrunResult = {
@@ -122,7 +123,7 @@ export function computeEmployeePayrun(input: EmployeePayrunInput): EmployeePayru
   const eisEr = eisEmployer(eisWage, input.eisEligible, rules);
 
   const pcbGross = pcbWageBase.gt(0) ? pcbWageBase : statutoryBase;
-  const pcb = pcbMtdFull({
+  const autoPcb = pcbMtdFull({
     frequency: input.frequency,
     periodGross: pcbGross,
     periodEpf: epfEmp,
@@ -133,6 +134,8 @@ export function computeEmployeePayrun(input: EmployeePayrunInput): EmployeePayru
     asOf: input.asOf,
     maritalCategory: input.maritalCategory,
   });
+  const pcb =
+    input.pcbManualAmount != null ? input.pcbManualAmount : autoPcb;
 
   const hrdfBase = hrdfWageBase.gt(0) ? hrdfWageBase : statutoryBase;
   const hrdfEmployer = input.hrdfEnabled ? roundRinggit(hrdfBase.mul(input.hrdfRate)) : money(0);
@@ -147,8 +150,15 @@ export function computeEmployeePayrun(input: EmployeePayrunInput): EmployeePayru
       : money(0);
   const zakatDeduction = input.zakatMonthly.gt(0) ? roundRinggit(input.zakatMonthly) : money(0);
 
-  const deductions = epfEmp.add(socso.employee).add(eisEmp).add(pcb).add(lindungEmployee).add(zakatDeduction);
-  const net = roundRinggit(gross.sub(deductions));
+  const baseDeductions = epfEmp
+    .add(socso.employee)
+    .add(eisEmp)
+    .add(lindungEmployee)
+    .add(zakatDeduction);
+  const net =
+    input.pcbManualAmount != null
+      ? roundRinggit(gross.sub(baseDeductions).sub(autoPcb)).add(autoPcb).sub(pcb)
+      : roundRinggit(gross.sub(baseDeductions).sub(pcb));
   const anomalyFlags = detectAnomalies({ gross, epfEmployee: epfEmp, net });
 
   return {

@@ -60,4 +60,40 @@ describe("computeEmployeePayrun", () => {
     });
     expect(withChildren.pcb.lt(withoutChildren.pcb)).toBe(true);
   });
+
+  it("uses pcbManualAmount instead of auto PCB when set", () => {
+    const auto = computeEmployeePayrun(baseInput);
+    const manual = computeEmployeePayrun({
+      ...baseInput,
+      pcbManualAmount: money(350),
+    });
+
+    expect(auto.pcb.toNumber()).not.toBe(350);
+    expect(manual.pcb.toNumber()).toBe(350);
+    expect(manual.gross.toNumber()).toBe(auto.gross.toNumber());
+    expect(manual.net.toNumber()).toBe(
+      auto.net.add(auto.pcb).sub(money(350)).toNumber(),
+    );
+  });
+
+  it("allows pcbManualAmount of zero", () => {
+    const auto = computeEmployeePayrun(baseInput);
+    const manual = computeEmployeePayrun({
+      ...baseInput,
+      pcbManualAmount: money(0),
+    });
+
+    expect(manual.pcb.toNumber()).toBe(0);
+    expect(manual.net.toNumber()).toBe(auto.net.add(auto.pcb).toNumber());
+  });
+
+  it("falls back to auto PCB when pcbManualAmount is null or omitted", () => {
+    const omitted = computeEmployeePayrun(baseInput);
+    const explicitNull = computeEmployeePayrun({
+      ...baseInput,
+      pcbManualAmount: null,
+    });
+
+    expect(explicitNull.pcb.toNumber()).toBe(omitted.pcb.toNumber());
+  });
 });
