@@ -1,5 +1,12 @@
 import { money, roundRinggit, type Money } from "../money";
-import { eisEmployee, eisEmployer, epfContributableWage, epfEmployee, epfEmployer, type EpfWageRounding } from "./malaysia-statutory";
+import {
+  eisEmployee,
+  eisEmployer,
+  epfContributableWage,
+  epfEmployee,
+  epfEmployer,
+  type EpfWageRounding,
+} from "./malaysia-statutory";
 import { pcbMtdFull } from "./pcb-mtd";
 import { detectSocsoCategory, lookupSocsoContribution, type SocsoCategory } from "./socso";
 import type { StatutoryRuleContext } from "./statutory-context";
@@ -38,6 +45,7 @@ export type EmployeePayrunInput = {
   isForeignWorker?: boolean;
   maritalCategory?: "single" | "married";
   statutoryRules?: StatutoryRuleContext;
+  pcbManualAmount?: Money | null;
 };
 
 export type EmployeePayrunResult = {
@@ -76,11 +84,7 @@ function resolveEpfRates(
   };
 }
 
-function detectAnomalies(input: {
-  gross: Money;
-  epfEmployee: Money;
-  net: Money;
-}): string[] {
+function detectAnomalies(input: { gross: Money; epfEmployee: Money; net: Money }): string[] {
   const flags: string[] = [];
   if (input.net.lt(0)) flags.push("negative_net");
   if (input.gross.gt(0) && input.epfEmployee.div(input.gross).gt(0.2)) {
@@ -90,7 +94,10 @@ function detectAnomalies(input: {
 }
 
 function sumFlagged(lines: PayrunLine[], flag: keyof ComponentFlags): Money {
-  return lines.reduce((total, line) => (line.flags[flag] ? total.add(line.amount) : total), money(0));
+  return lines.reduce(
+    (total, line) => (line.flags[flag] ? total.add(line.amount) : total),
+    money(0),
+  );
 }
 
 export function computeEmployeePayrun(input: EmployeePayrunInput): EmployeePayrunResult {
@@ -122,7 +129,7 @@ export function computeEmployeePayrun(input: EmployeePayrunInput): EmployeePayru
   const eisEr = eisEmployer(eisWage, input.eisEligible, rules);
 
   const pcbGross = pcbWageBase.gt(0) ? pcbWageBase : statutoryBase;
-  const pcb = pcbMtdFull({
+  const autoPcb = pcbMtdFull({
     frequency: input.frequency,
     periodGross: pcbGross,
     periodEpf: epfEmp,
@@ -133,6 +140,7 @@ export function computeEmployeePayrun(input: EmployeePayrunInput): EmployeePayru
     asOf: input.asOf,
     maritalCategory: input.maritalCategory,
   });
+  const pcb = input.pcbManualAmount != null ? input.pcbManualAmount : autoPcb;
 
   const hrdfBase = hrdfWageBase.gt(0) ? hrdfWageBase : statutoryBase;
   const hrdfEmployer = input.hrdfEnabled ? roundRinggit(hrdfBase.mul(input.hrdfRate)) : money(0);
@@ -147,8 +155,12 @@ export function computeEmployeePayrun(input: EmployeePayrunInput): EmployeePayru
       : money(0);
   const zakatDeduction = input.zakatMonthly.gt(0) ? roundRinggit(input.zakatMonthly) : money(0);
 
-  const deductions = epfEmp.add(socso.employee).add(eisEmp).add(pcb).add(lindungEmployee).add(zakatDeduction);
-  const net = roundRinggit(gross.sub(deductions));
+  const baseDeductions = epfEmp
+    .add(socso.employee)
+    .add(eisEmp)
+    .add(lindungEmployee)
+    .add(zakatDeduction);
+  const net = roundRinggit(gross.sub(baseDeductions.add(pcb)));
   const anomalyFlags = detectAnomalies({ gross, epfEmployee: epfEmp, net });
 
   return {

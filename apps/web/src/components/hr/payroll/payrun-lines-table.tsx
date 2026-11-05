@@ -3,6 +3,7 @@
 import type { CSSProperties, ReactNode } from "react";
 
 import { EditLineDialog } from "@/components/hr/payroll/edit-line-dialog";
+import { EditPcbDialog } from "@/components/hr/payroll/edit-pcb-dialog";
 import type { PayrunLineItem } from "@/lib/payroll/queries";
 import { cn } from "@/lib/utils";
 
@@ -53,7 +54,7 @@ function getColumns(editable: boolean): ColumnDef[] {
 function getGridStyle(editable: boolean): CSSProperties {
   return {
     gridTemplateColumns: editable
-      ? "minmax(12rem, 2fr) minmax(5.5rem, 0.9fr) minmax(9.5rem, 1.2fr) minmax(5rem, 0.8fr) minmax(5.5rem, 0.9fr) minmax(5.5rem, 0.9fr) minmax(5rem, 0.8fr) minmax(4.5rem, 0.7fr) minmax(4.5rem, 0.7fr) minmax(6rem, 1fr)"
+      ? "minmax(12rem, 2fr) minmax(5.5rem, 0.9fr) minmax(9.5rem, 1.2fr) minmax(5rem, 0.8fr) minmax(5.5rem, 0.9fr) minmax(5.5rem, 0.9fr) minmax(5rem, 0.8fr) minmax(15rem, 1.8fr) minmax(4.5rem, 0.7fr) minmax(6rem, 1fr)"
       : "minmax(13rem, 2.2fr) minmax(6rem, 1fr) minmax(5.5rem, 0.9fr) minmax(6rem, 1fr) minmax(6rem, 1fr) minmax(5rem, 0.9fr) minmax(5rem, 0.9fr) minmax(5rem, 0.9fr) minmax(6.5rem, 1.1fr)",
   };
 }
@@ -97,13 +98,7 @@ function GridCell({
   const textAlign = align ?? (NUMERIC_COLUMN_KEYS.has(columnKey) ? "right" : "left");
 
   return (
-    <div
-      className={cn(
-        "min-w-0",
-        textAlign === "right" ? "text-right" : "text-left",
-        className,
-      )}
-    >
+    <div className={cn("min-w-0", textAlign === "right" ? "text-right" : "text-left", className)}>
       {children}
     </div>
   );
@@ -134,10 +129,7 @@ function EmployeeCell({ item }: { item: PayrunLineItem }) {
   return (
     <div className="min-w-0 pr-2">
       <p
-        className={cn(
-          "truncate text-sm font-medium",
-          item.requiresResolution && "text-amber-700",
-        )}
+        className={cn("truncate text-sm font-medium", item.requiresResolution && "text-amber-700")}
         title={`${item.employeeNumber} · ${item.employeeName}`}
       >
         {item.employeeName}
@@ -151,10 +143,7 @@ function EmployeeCell({ item }: { item: PayrunLineItem }) {
   );
 }
 
-function buildRowCells(
-  item: PayrunLineItem,
-  options: { editable: boolean; payrunId?: string },
-) {
+function buildRowCells(item: PayrunLineItem, options: { editable: boolean; payrunId?: string }) {
   const basicAmount = Number(item.basicPay ?? item.grossPay);
   const otAmount = Number(item.overtimePay ?? 0);
 
@@ -183,6 +172,16 @@ function buildRowCells(
         <EditLineDialog
           componentCode="BASIC"
           currentAmount={basicAmount}
+          payrunId={options.payrunId}
+          payrunItemId={item.id}
+        />
+      </div>
+    );
+    cells.pcb = (
+      <div className="flex justify-end">
+        <EditPcbDialog
+          currentAmount={Number(item.pcb)}
+          manualAmount={item.pcbManualAmount}
           payrunId={options.payrunId}
           payrunItemId={item.id}
         />
@@ -237,13 +236,17 @@ export function PayrunLinesTable({
 
   const totalsCells: Record<string, ReactNode> = {
     employee: (
-      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Totals</span>
+      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Totals
+      </span>
     ),
     gross: <span className="text-xs font-semibold tabular-nums">{formatAmount(totals.gross)}</span>,
     overtime: (
       <span className="text-xs font-semibold tabular-nums">
         {totals.overtime && totals.overtime > 0 ? (
-          <span className="text-emerald-600 dark:text-emerald-400">{formatAmount(totals.overtime)}</span>
+          <span className="text-emerald-600 dark:text-emerald-400">
+            {formatAmount(totals.overtime)}
+          </span>
         ) : (
           "-"
         )}
@@ -253,7 +256,11 @@ export function PayrunLinesTable({
     socso: <StatutoryCell employee={totals.socsoEmployee} employer={totals.socsoEmployer} />,
     eis: <StatutoryCell employee={totals.eisEmployee} employer={totals.eisEmployer} />,
     pcb: <span className="text-xs font-semibold tabular-nums">{formatAmount(totals.pcb)}</span>,
-    hrdf: <span className="text-xs font-semibold tabular-nums">{formatAmount(totals.hrdfEmployer)}</span>,
+    hrdf: (
+      <span className="text-xs font-semibold tabular-nums">
+        {formatAmount(totals.hrdfEmployer)}
+      </span>
+    ),
     net: <span className="text-sm font-semibold tabular-nums">{formatAmount(totals.net)}</span>,
     basicEdit: null,
   };
@@ -273,8 +280,8 @@ export function PayrunLinesTable({
           <div className="text-right">
             {editable ? (
               <p className="text-xs text-muted-foreground">
-                Change basic salary in the <span className="font-medium text-foreground">Basic</span>{" "}
-                column.
+                Change basic salary or <span className="font-medium text-foreground">PCB</span> on
+                draft lines.
               </p>
             ) : null}
             <p className="text-xs text-muted-foreground">EE = employee · ER = employer</p>
@@ -284,7 +291,7 @@ export function PayrunLinesTable({
 
       {items.length > 0 ? (
         <div className="w-full overflow-x-auto">
-          <div className={editable ? "min-w-[70rem]" : "min-w-[62rem]"}>
+          <div className={editable ? "min-w-[82rem]" : "min-w-[62rem]"}>
             <GridRow
               className="border-b border-[var(--border-primary)] bg-[var(--surface-muted)]/60"
               compact

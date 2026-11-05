@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { money } from "../money";
+import { money, roundRinggit } from "../money";
 import { computeEmployeePayrun } from "./payrun-pipeline";
 
 const flags = { isEpf: true, isSocso: true, isEis: true, isPcb: true, isHrdf: true };
@@ -23,6 +23,18 @@ const baseInput = {
   lindungRate: 0.0075,
   lindungEmployerRate: 0,
 };
+
+function expectedNetWithPcb(
+  result: ReturnType<typeof computeEmployeePayrun>,
+  pcb: ReturnType<typeof money>,
+) {
+  const baseDeductions = result.epfEmployee
+    .add(result.socsoEmployee)
+    .add(result.eisEmployee)
+    .add(result.lindungEmployee)
+    .add(result.zakatDeduction);
+  return roundRinggit(result.gross.sub(baseDeductions.add(pcb)));
+}
 
 describe("computeEmployeePayrun", () => {
   it("computes statutory stack for basic salary", () => {
@@ -59,5 +71,38 @@ describe("computeEmployeePayrun", () => {
       tp1: { ...baseInput.tp1, children: money(4000) },
     });
     expect(withChildren.pcb.lt(withoutChildren.pcb)).toBe(true);
+  });
+
+  it("uses pcbManualAmount instead of auto PCB when set", () => {
+    const auto = computeEmployeePayrun(baseInput);
+    const manual = computeEmployeePayrun({
+      ...baseInput,
+      pcbManualAmount: money(350),
+    });
+
+    expect(auto.pcb.toNumber()).not.toBe(350);
+    expect(manual.pcb.toNumber()).toBe(350);
+    expect(manual.gross.toNumber()).toBe(auto.gross.toNumber());
+    expect(manual.net.toNumber()).toBe(expectedNetWithPcb(manual, money(350)).toNumber());
+  });
+
+  it("allows pcbManualAmount of zero", () => {
+    const manual = computeEmployeePayrun({
+      ...baseInput,
+      pcbManualAmount: money(0),
+    });
+
+    expect(manual.pcb.toNumber()).toBe(0);
+    expect(manual.net.toNumber()).toBe(expectedNetWithPcb(manual, money(0)).toNumber());
+  });
+
+  it("falls back to auto PCB when pcbManualAmount is null or omitted", () => {
+    const omitted = computeEmployeePayrun(baseInput);
+    const explicitNull = computeEmployeePayrun({
+      ...baseInput,
+      pcbManualAmount: null,
+    });
+
+    expect(explicitNull.pcb.toNumber()).toBe(omitted.pcb.toNumber());
   });
 });

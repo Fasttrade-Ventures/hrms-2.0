@@ -63,7 +63,7 @@ export async function spotCheckFirstPayrunLine(payrunId: string): Promise<Payrun
        employees(employee_number, full_name,
          employee_profiles(basic_salary, epf_employee_rate, epf_employer_rate, eis_eligible, date_of_birth, marital_status, is_foreign_worker),
          employee_compensation(voluntary_epf_extra_rate, socso_category_override),
-         employee_tax_profiles(marital_status, spouse_working, zakat_annual, zakat_monthly, tp1_payload),
+         employee_tax_profiles(marital_status, spouse_working, zakat_annual, zakat_monthly, tp1_payload, pcb_manual_amount),
          employee_dependents(dependent_type)
        )`,
     )

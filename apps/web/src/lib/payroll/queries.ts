@@ -2,7 +2,6 @@ import { requireRole } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-
 export type PayrunListItem = {
   id: string;
   periodYear: number;
@@ -31,6 +30,7 @@ export type PayrunLineItem = {
   eisEmployee: string;
   eisEmployer: string;
   pcb: string;
+  pcbManualAmount: number | null;
   hrdfEmployer: string;
   netPay: string;
   requiresResolution: boolean;
@@ -75,7 +75,9 @@ export type PayGroupOption = {
   cutoffDay: number;
 };
 
-export async function listPayrunBranches(payrunId: string): Promise<Array<{ id: string; name: string }>> {
+export async function listPayrunBranches(
+  payrunId: string,
+): Promise<Array<{ id: string; name: string }>> {
   await requireRole("hr_administrator", "director");
   const organizationId = await requireOrganizationId();
   const supabase = await createClient();
@@ -180,7 +182,7 @@ export async function getPayrunDetail(
     supabase
       .from("payroll_payrun_items")
       .select(
-        "id, gross_pay, epf_employee, epf_employer, socso_employee, socso_employer, eis_employee, eis_employer, pcb, hrdf_employer, net_pay, requires_resolution, employees(employee_number, full_name, email), branches(name)",
+        "id, gross_pay, epf_employee, epf_employer, socso_employee, socso_employer, eis_employee, eis_employer, pcb, hrdf_employer, net_pay, requires_resolution, employees(employee_number, full_name, email, employee_tax_profiles(pcb_manual_amount)), branches(name)",
         { count: "exact" },
       )
       .eq("payrun_id", payrunId)
@@ -226,6 +228,17 @@ export async function getPayrunDetail(
 
   const mappedItems: PayrunLineItem[] = (items ?? []).map((row) => {
     const employee = Array.isArray(row.employees) ? row.employees[0] : row.employees;
+    const taxProfileRelation = (
+      employee as {
+        employee_tax_profiles?:
+          | { pcb_manual_amount?: string | number | null }
+          | Array<{ pcb_manual_amount?: string | number | null }>
+          | null;
+      } | null
+    )?.employee_tax_profiles;
+    const taxProfile = Array.isArray(taxProfileRelation)
+      ? taxProfileRelation[0]
+      : taxProfileRelation;
     const branch = Array.isArray(row.branches) ? row.branches[0] : row.branches;
     return {
       id: row.id,
@@ -245,6 +258,10 @@ export async function getPayrunDetail(
       eisEmployee: row.eis_employee,
       eisEmployer: row.eis_employer,
       pcb: row.pcb,
+      pcbManualAmount:
+        taxProfile?.pcb_manual_amount === null || taxProfile?.pcb_manual_amount === undefined
+          ? null
+          : Number(taxProfile.pcb_manual_amount),
       hrdfEmployer: row.hrdf_employer,
       netPay: row.net_pay,
       requiresResolution: row.requires_resolution,

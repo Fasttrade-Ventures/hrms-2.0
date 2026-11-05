@@ -98,6 +98,13 @@ export function buildEmployeePayrunComputeInput(input: {
     epfWageRounding: input.branch?.epf_wage_rounding === "ceil_rm50" ? "ceil_rm50" : "none",
     isForeignWorker: Boolean(input.profile?.is_foreign_worker),
     maritalCategory: tp1.maritalCategory,
+    pcbManualAmount:
+      input.taxProfile &&
+      input.taxProfile.pcb_manual_amount !== undefined &&
+      input.taxProfile.pcb_manual_amount !== null &&
+      String(input.taxProfile.pcb_manual_amount) !== ""
+        ? money(String(input.taxProfile.pcb_manual_amount))
+        : null,
   };
 }
 

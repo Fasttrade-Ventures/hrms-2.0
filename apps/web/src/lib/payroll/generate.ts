@@ -95,7 +95,7 @@ export async function generateDraftPayrun(input: CreatePayrunInput): Promise<str
       `id, branch_id, join_date, pay_group_id,
        employee_profiles(basic_salary, epf_employee_rate, epf_employer_rate, eis_eligible, date_of_birth, marital_status, is_foreign_worker),
        employee_compensation(pay_basis, basic_salary, hourly_rate, daily_rate, ot_hourly_rate, voluntary_epf_extra_rate, socso_category_override),
-       employee_tax_profiles(marital_status, spouse_working, zakat_annual, zakat_monthly, tp1_payload),
+       employee_tax_profiles(marital_status, spouse_working, zakat_annual, zakat_monthly, tp1_payload, pcb_manual_amount),
        employee_dependents(dependent_type)`,
     )
     .eq("organization_id", organizationId)

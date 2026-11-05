@@ -1,7 +1,6 @@
-import { requireRole } from "@/lib/auth/session";
+import { requireRole, requireRoleOrPermission } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizationId } from "@/lib/auth/organization-context";
-
 
 export type EmployeeCompensation = {
   payBasis: "monthly" | "hourly" | "daily";
@@ -43,6 +42,7 @@ export type EmployeeTaxProfile = {
   ytdEpf: number;
   ytdPcb: number;
   openingBalance: boolean;
+  pcbManualAmount: number | null;
 };
 
 export async function listAllowanceComponents(): Promise<AllowanceComponentOption[]> {
@@ -63,7 +63,9 @@ export async function listAllowanceComponents(): Promise<AllowanceComponentOptio
   return (data ?? []).map((row) => ({ id: row.id, code: row.code, name: row.name }));
 }
 
-export async function getEmployeeCompensation(employeeId: string): Promise<EmployeeCompensation | null> {
+export async function getEmployeeCompensation(
+  employeeId: string,
+): Promise<EmployeeCompensation | null> {
   await requireRole("hr_administrator");
   const organizationId = await requireOrganizationId();
   const supabase = await createClient();
@@ -87,7 +89,9 @@ export async function getEmployeeCompensation(employeeId: string): Promise<Emplo
     ? employee.employee_compensation[0]
     : employee.employee_compensation;
 
-  const payBasis = (compensation?.pay_basis ?? profile?.pay_basis ?? "monthly") as EmployeeCompensation["payBasis"];
+  const payBasis = (compensation?.pay_basis ??
+    profile?.pay_basis ??
+    "monthly") as EmployeeCompensation["payBasis"];
 
   return {
     payBasis,
@@ -96,7 +100,8 @@ export async function getEmployeeCompensation(employeeId: string): Promise<Emplo
     dailyRate: compensation?.daily_rate != null ? Number(compensation.daily_rate) : null,
     otHourlyRate: compensation?.ot_hourly_rate != null ? Number(compensation.ot_hourly_rate) : null,
     voluntaryEpfExtraRate: Number(compensation?.voluntary_epf_extra_rate ?? 0),
-    socsoCategoryOverride: (compensation?.socso_category_override as "cat1" | "cat2" | null) ?? null,
+    socsoCategoryOverride:
+      (compensation?.socso_category_override as "cat1" | "cat2" | null) ?? null,
     epfEmployeeRate: Number(profile?.epf_employee_rate ?? 11),
     epfEmployerRate: Number(profile?.epf_employer_rate ?? 13),
     eisEligible: profile?.eis_eligible ?? true,
@@ -195,7 +200,10 @@ export async function upsertRecurringAllowance(
   };
 
   if (input.id) {
-    const { error } = await supabase.from("employee_recurring_allowances").update(row).eq("id", input.id);
+    const { error } = await supabase
+      .from("employee_recurring_allowances")
+      .update(row)
+      .eq("id", input.id);
     if (error) throw new Error(error.message);
     return;
   }
@@ -218,15 +226,17 @@ export async function deleteRecurringAllowance(allowanceId: string): Promise<voi
   if (error) throw new Error(error.message);
 }
 
-export async function ensureEmployeeTaxProfile(employeeId: string): Promise<void> {
-  await requireRole("hr_administrator");
-  const organizationId = await requireOrganizationId();
+async function ensureEmployeeTaxProfileRow(
+  employeeId: string,
+  organizationId: string,
+): Promise<void> {
   const supabase = await createClient();
 
   const { data: existing } = await supabase
     .from("employee_tax_profiles")
     .select("employee_id")
     .eq("employee_id", employeeId)
+    .eq("organization_id", organizationId)
     .maybeSingle();
 
   if (existing) return;
@@ -259,7 +269,15 @@ export async function ensureEmployeeTaxProfile(employeeId: string): Promise<void
   if (error) throw new Error(error.message);
 }
 
-export async function getEmployeeTaxProfile(employeeId: string): Promise<EmployeeTaxProfile | null> {
+export async function ensureEmployeeTaxProfile(employeeId: string): Promise<void> {
+  await requireRole("hr_administrator");
+  const organizationId = await requireOrganizationId();
+  await ensureEmployeeTaxProfileRow(employeeId, organizationId);
+}
+
+export async function getEmployeeTaxProfile(
+  employeeId: string,
+): Promise<EmployeeTaxProfile | null> {
   await requireRole("hr_administrator");
   const organizationId = await requireOrganizationId();
   const supabase = await createClient();
@@ -269,7 +287,7 @@ export async function getEmployeeTaxProfile(employeeId: string): Promise<Employe
     .from("employees")
     .select(
       `employee_profiles(marital_status),
-       employee_tax_profiles(marital_status, spouse_working, zakat_annual, zakat_monthly, tp1_payload),
+       employee_tax_profiles(marital_status, spouse_working, zakat_annual, zakat_monthly, tp1_payload, pcb_manual_amount),
        employee_dependents(dependent_type)`,
     )
     .eq("organization_id", organizationId)
@@ -306,6 +324,10 @@ export async function getEmployeeTaxProfile(employeeId: string): Promise<Employe
     ytdEpf: Number(ytd?.ytd_epf_employee ?? 0),
     ytdPcb: Number(ytd?.ytd_pcb ?? 0),
     openingBalance: Boolean(ytd?.opening_balance),
+    pcbManualAmount:
+      tax?.pcb_manual_amount === null || tax?.pcb_manual_amount === undefined
+        ? null
+        : Number(tax.pcb_manual_amount),
   };
 }
 
@@ -317,13 +339,24 @@ export async function upsertEmployeeTaxProfile(
     zakatAnnual: number;
     zakatMonthly?: number;
     otherReliefs?: number;
+    pcbManualAmount?: number | null;
   },
 ): Promise<void> {
   await requireRole("hr_administrator");
   const organizationId = await requireOrganizationId();
   const supabase = await createClient();
 
-  const { error } = await supabase.from("employee_tax_profiles").upsert({
+  const row: {
+    employee_id: string;
+    organization_id: string;
+    marital_status: string | null;
+    spouse_working: boolean | null;
+    zakat_annual: number;
+    zakat_monthly: number;
+    tp1_payload: { otherReliefs: number };
+    updated_at: string;
+    pcb_manual_amount?: number | null;
+  } = {
     employee_id: employeeId,
     organization_id: organizationId,
     marital_status: input.maritalStatus ?? null,
@@ -332,8 +365,39 @@ export async function upsertEmployeeTaxProfile(
     zakat_monthly: input.zakatMonthly ?? 0,
     tp1_payload: { otherReliefs: input.otherReliefs ?? 0 },
     updated_at: new Date().toISOString(),
-  });
+  };
 
+  if (input.pcbManualAmount !== undefined) {
+    row.pcb_manual_amount = input.pcbManualAmount;
+  }
+
+  const { error } = await supabase.from("employee_tax_profiles").upsert(row);
+
+  if (error) throw new Error(error.message);
+}
+
+export async function setEmployeePcbManualAmount(
+  employeeId: string,
+  amount: number | null,
+  userId: string,
+): Promise<void> {
+  await requireRoleOrPermission(["hr_administrator"], ["payroll_processor"]);
+  const organizationId = await requireOrganizationId();
+  if (amount !== null && (!Number.isFinite(amount) || amount < 0)) {
+    throw new Error("PCB amount must be zero or greater.");
+  }
+  const supabase = await createClient();
+  await ensureEmployeeTaxProfileRow(employeeId, organizationId);
+  const { error } = await supabase
+    .from("employee_tax_profiles")
+    .update({
+      pcb_manual_amount: amount,
+      pcb_manual_updated_at: new Date().toISOString(),
+      pcb_manual_updated_by: userId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("employee_id", employeeId)
+    .eq("organization_id", organizationId);
   if (error) throw new Error(error.message);
 }
 
