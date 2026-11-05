@@ -340,12 +340,14 @@ export async function overridePayrunPcb(
   });
   const result = computeEmployeePayrun(computeInput);
 
-  await supabase
+  const { error: itemUpdateError } = await supabase
     .from("payroll_payrun_items")
     .update(payrunItemPatchFromResult(result))
     .eq("id", payrunItemId);
 
-  await supabase
+  if (itemUpdateError) throw new Error(itemUpdateError.message);
+
+  const { error: statutoryDeleteError } = await supabase
     .from("payroll_item_components")
     .delete()
     .eq("payrun_item_id", payrunItemId)
@@ -355,6 +357,8 @@ export async function overridePayrunPcb(
         .map((code) => componentIdByCode.get(code))
         .filter((id): id is string => Boolean(id)),
     );
+
+  if (statutoryDeleteError) throw new Error(statutoryDeleteError.message);
 
   const statutoryRows = buildPayrunItemComponentRows(
     payrunItemId,
@@ -368,11 +372,16 @@ export async function overridePayrunPcb(
   });
 
   if (statutoryRows.length > 0) {
-    await supabase.from("payroll_item_components").insert(statutoryRows);
+    const { error: statutoryInsertError } = await supabase
+      .from("payroll_item_components")
+      .insert(statutoryRows);
+    if (statutoryInsertError) throw new Error(statutoryInsertError.message);
   }
 
-  await supabase
+  const { error: payrunUpdateError } = await supabase
     .from("payroll_payruns")
     .update({ last_edited_by: userId })
     .eq("id", item.payrun_id);
+
+  if (payrunUpdateError) throw new Error(payrunUpdateError.message);
 }
