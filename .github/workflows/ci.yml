@@ -177,8 +177,9 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
-          supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" --password "${{ secrets.SUPABASE_DB_PASSWORD }}"
-          supabase db push --include-all --password "${{ secrets.SUPABASE_DB_PASSWORD }}"
+          # Supabase CLI v3: hosted changes need --remote and non-interactive --yes
+          supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}"
+          supabase db push --remote --yes --include-all --password "${{ secrets.SUPABASE_DB_PASSWORD }}"
 
   deploy-caprover:
     name: Safe Production Deploy (CapRover)
