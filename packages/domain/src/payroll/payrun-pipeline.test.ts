@@ -82,6 +82,7 @@ describe("computeEmployeePayrun", () => {
 
     expect(auto.pcb.toNumber()).not.toBe(350);
     expect(manual.pcb.toNumber()).toBe(350);
+    expect(manual.pcbAuto.toNumber()).toBe(auto.pcb.toNumber());
     expect(manual.gross.toNumber()).toBe(auto.gross.toNumber());
     expect(manual.net.toNumber()).toBe(expectedNetWithPcb(manual, money(350)).toNumber());
   });

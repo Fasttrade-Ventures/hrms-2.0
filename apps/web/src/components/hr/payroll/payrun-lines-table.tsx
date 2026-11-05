@@ -180,6 +180,7 @@ function buildRowCells(item: PayrunLineItem, options: { editable: boolean; payru
     cells.pcb = (
       <div className="flex justify-end">
         <EditPcbDialog
+          autoAmount={item.pcbAutoAmount}
           currentAmount={Number(item.pcb)}
           manualAmount={item.pcbManualAmount}
           payrunId={options.payrunId}
