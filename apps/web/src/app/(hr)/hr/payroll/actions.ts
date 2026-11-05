@@ -52,6 +52,17 @@ function revalidateEmployee(employeeId: string) {
   revalidatePath(`/hr/employees/${employeeId}`);
 }
 
+function parsePcbAmount(raw: string): number {
+  if (raw.trim() === "") {
+    throw new Error("Enter a PCB amount or choose auto.");
+  }
+  const amount = Number(raw);
+  if (!Number.isFinite(amount)) {
+    throw new Error("Enter a valid PCB amount or choose auto.");
+  }
+  return amount;
+}
+
 export async function createPayrunAction(
   _prev: HrActionState,
   formData: FormData,
@@ -300,12 +311,17 @@ export async function overridePayrunPcbAction(
 ): Promise<HrActionState> {
   const payrunItemId = String(formData.get("payrunItemId") ?? "");
   const payrunId = String(formData.get("payrunId") ?? "");
-  const clear = String(formData.get("clear") ?? "") === "1";
+  const clear =
+    String(formData.get("clear") ?? "") === "1" || String(formData.get("pcbMode") ?? "") === "auto";
   const amountRaw = String(formData.get("amount") ?? "");
   try {
     const session = await guardPayroll();
     const { overridePayrunPcb } = await import("@/lib/payroll/edit");
-    await overridePayrunPcb(payrunItemId, clear ? null : Number(amountRaw), session.user.id);
+    await overridePayrunPcb(
+      payrunItemId,
+      clear ? null : parsePcbAmount(amountRaw),
+      session.user.id,
+    );
     revalidatePath("/hr/payroll");
     if (payrunId) revalidatePath(`/hr/payroll/${payrunId}`);
     return {
@@ -474,7 +490,7 @@ export async function setEmployeePcbManualAmountAction(
     if (mode === "auto") {
       await setEmployeePcbManualAmount(employeeId, null, session.user.id);
     } else {
-      const amount = Number(raw);
+      const amount = parsePcbAmount(raw);
       await setEmployeePcbManualAmount(employeeId, amount, session.user.id);
     }
     revalidateEmployee(employeeId);

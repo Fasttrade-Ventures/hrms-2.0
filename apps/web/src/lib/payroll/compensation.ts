@@ -2,7 +2,6 @@ import { requireRole, requireRoleOrPermission } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizationId } from "@/lib/auth/organization-context";
 
-
 export type EmployeeCompensation = {
   payBasis: "monthly" | "hourly" | "daily";
   basicSalary: number;
@@ -64,7 +63,9 @@ export async function listAllowanceComponents(): Promise<AllowanceComponentOptio
   return (data ?? []).map((row) => ({ id: row.id, code: row.code, name: row.name }));
 }
 
-export async function getEmployeeCompensation(employeeId: string): Promise<EmployeeCompensation | null> {
+export async function getEmployeeCompensation(
+  employeeId: string,
+): Promise<EmployeeCompensation | null> {
   await requireRole("hr_administrator");
   const organizationId = await requireOrganizationId();
   const supabase = await createClient();
@@ -88,7 +89,9 @@ export async function getEmployeeCompensation(employeeId: string): Promise<Emplo
     ? employee.employee_compensation[0]
     : employee.employee_compensation;
 
-  const payBasis = (compensation?.pay_basis ?? profile?.pay_basis ?? "monthly") as EmployeeCompensation["payBasis"];
+  const payBasis = (compensation?.pay_basis ??
+    profile?.pay_basis ??
+    "monthly") as EmployeeCompensation["payBasis"];
 
   return {
     payBasis,
@@ -97,7 +100,8 @@ export async function getEmployeeCompensation(employeeId: string): Promise<Emplo
     dailyRate: compensation?.daily_rate != null ? Number(compensation.daily_rate) : null,
     otHourlyRate: compensation?.ot_hourly_rate != null ? Number(compensation.ot_hourly_rate) : null,
     voluntaryEpfExtraRate: Number(compensation?.voluntary_epf_extra_rate ?? 0),
-    socsoCategoryOverride: (compensation?.socso_category_override as "cat1" | "cat2" | null) ?? null,
+    socsoCategoryOverride:
+      (compensation?.socso_category_override as "cat1" | "cat2" | null) ?? null,
     epfEmployeeRate: Number(profile?.epf_employee_rate ?? 11),
     epfEmployerRate: Number(profile?.epf_employer_rate ?? 13),
     eisEligible: profile?.eis_eligible ?? true,
@@ -196,7 +200,10 @@ export async function upsertRecurringAllowance(
   };
 
   if (input.id) {
-    const { error } = await supabase.from("employee_recurring_allowances").update(row).eq("id", input.id);
+    const { error } = await supabase
+      .from("employee_recurring_allowances")
+      .update(row)
+      .eq("id", input.id);
     if (error) throw new Error(error.message);
     return;
   }
@@ -219,7 +226,10 @@ export async function deleteRecurringAllowance(allowanceId: string): Promise<voi
   if (error) throw new Error(error.message);
 }
 
-async function ensureEmployeeTaxProfileRow(employeeId: string, organizationId: string): Promise<void> {
+async function ensureEmployeeTaxProfileRow(
+  employeeId: string,
+  organizationId: string,
+): Promise<void> {
   const supabase = await createClient();
 
   const { data: existing } = await supabase
@@ -265,7 +275,9 @@ export async function ensureEmployeeTaxProfile(employeeId: string): Promise<void
   await ensureEmployeeTaxProfileRow(employeeId, organizationId);
 }
 
-export async function getEmployeeTaxProfile(employeeId: string): Promise<EmployeeTaxProfile | null> {
+export async function getEmployeeTaxProfile(
+  employeeId: string,
+): Promise<EmployeeTaxProfile | null> {
   await requireRole("hr_administrator");
   const organizationId = await requireOrganizationId();
   const supabase = await createClient();
@@ -371,7 +383,7 @@ export async function setEmployeePcbManualAmount(
 ): Promise<void> {
   await requireRoleOrPermission(["hr_administrator"], ["payroll_processor"]);
   const organizationId = await requireOrganizationId();
-  if (amount !== null && (Number.isNaN(amount) || amount < 0)) {
+  if (amount !== null && (!Number.isFinite(amount) || amount < 0)) {
     throw new Error("PCB amount must be zero or greater.");
   }
   const supabase = await createClient();

@@ -98,13 +98,7 @@ function GridCell({
   const textAlign = align ?? (NUMERIC_COLUMN_KEYS.has(columnKey) ? "right" : "left");
 
   return (
-    <div
-      className={cn(
-        "min-w-0",
-        textAlign === "right" ? "text-right" : "text-left",
-        className,
-      )}
-    >
+    <div className={cn("min-w-0", textAlign === "right" ? "text-right" : "text-left", className)}>
       {children}
     </div>
   );
@@ -135,10 +129,7 @@ function EmployeeCell({ item }: { item: PayrunLineItem }) {
   return (
     <div className="min-w-0 pr-2">
       <p
-        className={cn(
-          "truncate text-sm font-medium",
-          item.requiresResolution && "text-amber-700",
-        )}
+        className={cn("truncate text-sm font-medium", item.requiresResolution && "text-amber-700")}
         title={`${item.employeeNumber} · ${item.employeeName}`}
       >
         {item.employeeName}
@@ -152,10 +143,7 @@ function EmployeeCell({ item }: { item: PayrunLineItem }) {
   );
 }
 
-function buildRowCells(
-  item: PayrunLineItem,
-  options: { editable: boolean; payrunId?: string },
-) {
+function buildRowCells(item: PayrunLineItem, options: { editable: boolean; payrunId?: string }) {
   const basicAmount = Number(item.basicPay ?? item.grossPay);
   const otAmount = Number(item.overtimePay ?? 0);
 
@@ -193,6 +181,7 @@ function buildRowCells(
       <div className="flex justify-end">
         <EditPcbDialog
           currentAmount={Number(item.pcb)}
+          manualAmount={item.pcbManualAmount}
           payrunId={options.payrunId}
           payrunItemId={item.id}
         />
@@ -247,13 +236,17 @@ export function PayrunLinesTable({
 
   const totalsCells: Record<string, ReactNode> = {
     employee: (
-      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Totals</span>
+      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Totals
+      </span>
     ),
     gross: <span className="text-xs font-semibold tabular-nums">{formatAmount(totals.gross)}</span>,
     overtime: (
       <span className="text-xs font-semibold tabular-nums">
         {totals.overtime && totals.overtime > 0 ? (
-          <span className="text-emerald-600 dark:text-emerald-400">{formatAmount(totals.overtime)}</span>
+          <span className="text-emerald-600 dark:text-emerald-400">
+            {formatAmount(totals.overtime)}
+          </span>
         ) : (
           "-"
         )}
@@ -263,7 +256,11 @@ export function PayrunLinesTable({
     socso: <StatutoryCell employee={totals.socsoEmployee} employer={totals.socsoEmployer} />,
     eis: <StatutoryCell employee={totals.eisEmployee} employer={totals.eisEmployer} />,
     pcb: <span className="text-xs font-semibold tabular-nums">{formatAmount(totals.pcb)}</span>,
-    hrdf: <span className="text-xs font-semibold tabular-nums">{formatAmount(totals.hrdfEmployer)}</span>,
+    hrdf: (
+      <span className="text-xs font-semibold tabular-nums">
+        {formatAmount(totals.hrdfEmployer)}
+      </span>
+    ),
     net: <span className="text-sm font-semibold tabular-nums">{formatAmount(totals.net)}</span>,
     basicEdit: null,
   };
