@@ -153,6 +153,17 @@ export async function createEmployeeRecord(
     }
   }
 
+  const spouseDependent = input.dependents?.find((dependent) => dependent.dependentType === "spouse");
+  if (spouseDependent) {
+    const { syncSpouseWorkingToTaxProfile } = await import("@/lib/employees/sync-spouse-working");
+    await syncSpouseWorkingToTaxProfile(
+      admin,
+      organizationId,
+      employee.id,
+      spouseDependent.isWorking ?? null,
+    );
+  }
+
   if (input.emergencyContacts?.length) {
     const { error: emergencyError } = await admin.from("employee_emergency_contacts").insert(
       input.emergencyContacts.map((contact) => ({

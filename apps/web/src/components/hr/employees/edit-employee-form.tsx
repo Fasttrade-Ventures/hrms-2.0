@@ -703,7 +703,13 @@ export function EditEmployeeForm({
                 </HrField>
                 <HrField id="spouseWorking" label="Working?">
                   <HrSelect
-                    defaultValue={spouse?.isWorking ? "yes" : "no"}
+                    defaultValue={
+                      spouse?.isWorking === null || spouse?.isWorking === undefined
+                        ? "no"
+                        : spouse.isWorking
+                          ? "yes"
+                          : "no"
+                    }
                     id="spouseWorking"
                     name="spouseWorking"
                   >
