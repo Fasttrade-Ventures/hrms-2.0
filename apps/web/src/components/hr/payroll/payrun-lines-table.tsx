@@ -54,7 +54,7 @@ function getColumns(editable: boolean): ColumnDef[] {
 function getGridStyle(editable: boolean): CSSProperties {
   return {
     gridTemplateColumns: editable
-      ? "minmax(12rem, 2fr) minmax(5.5rem, 0.9fr) minmax(9.5rem, 1.2fr) minmax(5rem, 0.8fr) minmax(5.5rem, 0.9fr) minmax(5.5rem, 0.9fr) minmax(5rem, 0.8fr) minmax(15rem, 1.8fr) minmax(4.5rem, 0.7fr) minmax(6rem, 1fr)"
+      ? "minmax(11rem, 1.8fr) minmax(5.5rem, 0.85fr) minmax(8.5rem, 1.1fr) minmax(4.75rem, 0.75fr) minmax(5.25rem, 0.85fr) minmax(5.25rem, 0.85fr) minmax(4.75rem, 0.75fr) minmax(13.5rem, 2fr) minmax(4.25rem, 0.65fr) minmax(5.75rem, 0.95fr)"
       : "minmax(13rem, 2.2fr) minmax(6rem, 1fr) minmax(5.5rem, 0.9fr) minmax(6rem, 1fr) minmax(6rem, 1fr) minmax(5rem, 0.9fr) minmax(5rem, 0.9fr) minmax(5rem, 0.9fr) minmax(6.5rem, 1.1fr)",
   };
 }
@@ -73,7 +73,7 @@ function GridRow({
   return (
     <div
       className={cn(
-        "grid w-full items-center gap-x-3 px-4",
+        "grid w-full items-start gap-x-3 px-4",
         compact ? "py-2.5" : "py-3.5",
         className,
       )}
@@ -178,7 +178,7 @@ function buildRowCells(item: PayrunLineItem, options: { editable: boolean; payru
       </div>
     );
     cells.pcb = (
-      <div className="flex justify-end">
+      <div className="min-w-0 overflow-hidden">
         <EditPcbDialog
           autoAmount={item.pcbAutoAmount}
           currentAmount={Number(item.pcb)}

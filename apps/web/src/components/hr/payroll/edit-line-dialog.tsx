@@ -41,7 +41,7 @@ export function EditLineDialog({
         <Input
           aria-label={`Basic salary for ${componentCode}`}
           className="h-8 w-20 rounded-md bg-background px-2 text-right text-xs tabular-nums"
-          defaultValue={currentAmount}
+          defaultValue={Number(currentAmount).toFixed(2)}
           min={0}
           name="amount"
           step="0.01"
