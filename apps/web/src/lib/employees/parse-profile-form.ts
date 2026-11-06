@@ -33,12 +33,20 @@ export function parseEmployeeProfileFormData(formData: FormData): {
 
   const dependents: CreateEmployeeInput["dependents"] = [];
   const spouseName = String(formData.get("spouseName") ?? "").trim();
+  const spouseWorkingRaw = String(formData.get("spouseWorking") ?? "");
+  const spouseWorking = spouseWorkingRaw === "yes";
+  if (spouseWorking && !spouseName) {
+    return {
+      success: false,
+      error: "Enter the spouse name before saving spouse working as Yes.",
+    };
+  }
   if (spouseName) {
     dependents.push({
       dependentType: "spouse",
       fullName: spouseName,
       icNumber: String(formData.get("spouseIc") ?? "").trim() || null,
-      isWorking: String(formData.get("spouseWorking") ?? "") === "yes",
+      isWorking: spouseWorking,
       dateOfBirth: null,
     });
   }

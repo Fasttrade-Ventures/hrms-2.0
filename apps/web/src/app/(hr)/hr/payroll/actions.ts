@@ -50,6 +50,7 @@ async function guardPayrollLocker() {
 
 function revalidateEmployee(employeeId: string) {
   revalidatePath(`/hr/employees/${employeeId}`);
+  revalidatePath(`/hr/employees/${employeeId}/edit`);
 }
 
 function parsePcbAmount(raw: string): number {

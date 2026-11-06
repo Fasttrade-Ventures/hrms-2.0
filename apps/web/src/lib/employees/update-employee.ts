@@ -145,6 +145,15 @@ export async function updateEmployeeFullProfile(
     if (error) throw new Error(error.message);
   }
 
+  const spouseDependent = input.dependents?.find((dependent) => dependent.dependentType === "spouse");
+  const { syncSpouseWorkingToTaxProfile } = await import("@/lib/employees/sync-spouse-working");
+  await syncSpouseWorkingToTaxProfile(
+    admin,
+    organizationId,
+    employeeId,
+    spouseDependent ? (spouseDependent.isWorking ?? null) : null,
+  );
+
   await admin.from("employee_emergency_contacts").delete().eq("employee_id", employeeId);
   if (input.emergencyContacts?.length) {
     const { error } = await admin.from("employee_emergency_contacts").insert(

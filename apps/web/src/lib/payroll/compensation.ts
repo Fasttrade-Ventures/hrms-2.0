@@ -288,7 +288,7 @@ export async function getEmployeeTaxProfile(
     .select(
       `employee_profiles(marital_status),
        employee_tax_profiles(marital_status, spouse_working, zakat_annual, zakat_monthly, tp1_payload, pcb_manual_amount),
-       employee_dependents(dependent_type)`,
+       employee_dependents(dependent_type, is_working)`,
     )
     .eq("organization_id", organizationId)
     .eq("id", employeeId)
@@ -303,6 +303,9 @@ export async function getEmployeeTaxProfile(
     ? employee.employee_tax_profiles[0]
     : employee.employee_tax_profiles;
   const dependents = employee.employee_dependents ?? [];
+  const spouseDependent = dependents.find((row) => row.dependent_type === "spouse") as
+    | { dependent_type: string; is_working?: boolean | null }
+    | undefined;
   const childCount = dependents.filter((row) => row.dependent_type === "child").length;
   const tp1Payload = (tax?.tp1_payload ?? {}) as { otherReliefs?: number };
 
@@ -315,7 +318,7 @@ export async function getEmployeeTaxProfile(
 
   return {
     maritalStatus: tax?.marital_status ?? profile?.marital_status ?? null,
-    spouseWorking: tax?.spouse_working ?? null,
+    spouseWorking: tax?.spouse_working ?? spouseDependent?.is_working ?? null,
     childCount,
     zakatAnnual: Number(tax?.zakat_annual ?? 0),
     zakatMonthly: Number(tax?.zakat_monthly ?? 0),
@@ -374,6 +377,16 @@ export async function upsertEmployeeTaxProfile(
   const { error } = await supabase.from("employee_tax_profiles").upsert(row);
 
   if (error) throw new Error(error.message);
+
+  if (input.spouseWorking !== undefined) {
+    const { syncSpouseWorkingToDependent } = await import("@/lib/employees/sync-spouse-working");
+    await syncSpouseWorkingToDependent(
+      supabase,
+      organizationId,
+      employeeId,
+      input.spouseWorking ?? null,
+    );
+  }
 }
 
 export async function setEmployeePcbManualAmount(
