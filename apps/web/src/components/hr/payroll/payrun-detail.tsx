@@ -149,7 +149,14 @@ export function PayrunDetailView({
         />
       ) : null}
 
-      {readOnly ? null : <PayrunExportPanel branches={branches} payrunId={payrun.id} status={payrun.status} />}
+      {readOnly ? null : (
+        <PayrunExportPanel
+          branches={branches}
+          country={payrun.country}
+          payrunId={payrun.id}
+          status={payrun.status}
+        />
+      )}
 
       {readOnly || !bukucloudSyncStatus ? null : (
         <PayrunBukucloudPanel

@@ -1,0 +1,27 @@
+export type PayrollCountry = "MY" | "AU";
+
+export const STATUTORY_EXPORT_OPTIONS = [
+  { value: "epf", label: "EPF" },
+  { value: "socso", label: "SOCSO + EIS" },
+  { value: "pcb", label: "PCB" },
+  { value: "hrdf", label: "HRDF" },
+] as const;
+
+/** Statutory export files offered on a pay run. Australian companies have none. */
+export function statutoryExportOptionsFor(country: PayrollCountry) {
+  return country === "MY" ? STATUTORY_EXPORT_OPTIONS : [];
+}
+
+/** Description line on the payroll hub. */
+export function payrollHubDescription(country: PayrollCountry): string {
+  return country === "MY"
+    ? "Malaysia payroll payruns with EPF, SOCSO, EIS, and PCB."
+    : "Payroll payruns for your Australian company.";
+}
+
+/** Empty-state text on the payroll hub. */
+export function payrollEmptyDescription(country: PayrollCountry): string {
+  return country === "MY"
+    ? "Generate a draft payrun to calculate statutory deductions for active employees."
+    : "Generate a draft payrun to calculate pay for active employees.";
+}

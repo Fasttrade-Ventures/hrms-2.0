@@ -5,13 +5,16 @@ import { HrLinkButton } from "@/components/hr/hr-ui.client";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { requireRole } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
+import { getOrganizationDisplay } from "@/lib/organization-display";
+import { payrollEmptyDescription, payrollHubDescription } from "@/lib/payroll/export-options";
 import { listPayruns } from "@/lib/payroll/queries";
 
 export default async function Page() {
-  const [, , payruns] = await Promise.all([
+  const [, , payruns, { country }] = await Promise.all([
     requireModule("payroll"),
     requireRole("hr_administrator"),
     listPayruns().catch(() => []),
+    getOrganizationDisplay(),
   ]);
 
   return (
@@ -20,7 +23,7 @@ export default async function Page() {
         actions={
           <HrLinkButton href="/hr/payroll/new">Create payrun</HrLinkButton>
         }
-        description="Malaysia payroll payruns with EPF, SOCSO, EIS, and PCB."
+        description={payrollHubDescription(country)}
         title="Payroll"
       />
 
@@ -29,7 +32,7 @@ export default async function Page() {
           action={
             <HrLinkButton href="/hr/payroll/new">Create payrun</HrLinkButton>
           }
-          description="Generate a draft payrun to calculate statutory deductions for active employees."
+          description={payrollEmptyDescription(country)}
           title="No payruns"
         />
       ) : (
