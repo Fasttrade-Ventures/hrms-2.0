@@ -27,6 +27,22 @@ describe("australianHolidays2026", () => {
     }
   });
 
+  it("adds Anzac Day holiday 2026-04-27 only for NSW, WA and ACT (Fair Work)", () => {
+    const withSubstitute = ["NSW", "WA", "ACT"] as const;
+    const withoutSubstitute = ["VIC", "QLD", "SA", "TAS", "NT"] as const;
+    for (const state of withSubstitute) {
+      expect(australianHolidays2026(state).map((h) => h.holidayDate)).toContain("2026-04-27");
+    }
+    for (const state of withoutSubstitute) {
+      expect(australianHolidays2026(state).map((h) => h.holidayDate)).not.toContain("2026-04-27");
+    }
+    for (const state of AUSTRALIAN_STATES) {
+      const dates = australianHolidays2026(state).map((h) => h.holidayDate);
+      expect(dates).toContain("2026-04-25");
+      expect(dates).toContain("2026-12-28");
+    }
+  });
+
   it("includes NSW state days", () => {
     const rows = australianHolidays2026("NSW");
     expect(rows.find((h) => h.name === "King's Birthday")?.holidayDate).toBe("2026-06-08");
