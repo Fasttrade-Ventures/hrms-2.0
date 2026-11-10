@@ -14,6 +14,8 @@ import {
   restoreReplacementCredits,
 } from "@/lib/leave/replacement-credit";
 import { queueNotification } from "@/lib/notifications/queue";
+import { formatMoney } from "@/lib/money";
+import { loadOrganizationCurrency } from "@/lib/organization-display";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const OT_RATES = new Set(["1.5", "2.0", "3.0"]);
@@ -402,7 +404,12 @@ export async function submitClaimFromApi(
   }
   if (!amount || amount <= 0) throw new Error("amount is required.");
   if (claimType.max_amount != null && amount > Number(claimType.max_amount)) {
-    throw new Error(`Amount exceeds the maximum of RM ${Number(claimType.max_amount).toFixed(2)}.`);
+    throw new Error(
+      `Amount exceeds the maximum of ${formatMoney(
+        Number(claimType.max_amount),
+        await loadOrganizationCurrency(admin, organizationId),
+      )}.`,
+    );
   }
 
   const { data, error } = await admin

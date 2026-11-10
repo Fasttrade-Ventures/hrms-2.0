@@ -21,12 +21,83 @@ export const MALAYSIAN_STATE_VALUES = [
   "Wilayah Persekutuan Putrajaya",
 ] as const;
 
-const malaysianStateSchema = z.enum(MALAYSIAN_STATE_VALUES);
+export const AUSTRALIAN_STATE_VALUES = ["NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT"] as const;
 
-const optionalMalaysianStateSchema = z
-  .union([malaysianStateSchema, z.literal("")])
+export const organizationCountrySchema = z.enum(["MY", "AU"]);
+export type OrganizationCountryValue = z.infer<typeof organizationCountrySchema>;
+
+/** Hours in a standard working day by country. Leave is still stored in days. */
+export const STANDARD_DAY_HOURS: Record<OrganizationCountryValue, number> = {
+  MY: 8,
+  AU: 7.6,
+};
+
+export const ORGANIZATION_CURRENCY: Record<OrganizationCountryValue, "MYR" | "AUD"> = {
+  MY: "MYR",
+  AU: "AUD",
+};
+
+/** Whether `state` is a valid state or territory for the organization country. */
+export function isStateValidForCountry(
+  country: OrganizationCountryValue,
+  state: string | null | undefined,
+): boolean {
+  if (!state) return true;
+  const allowed: readonly string[] =
+    country === "AU" ? AUSTRALIAN_STATE_VALUES : MALAYSIAN_STATE_VALUES;
+  return allowed.includes(state);
+}
+
+const branchStateSchema = z
+  .string()
+  .trim()
+  .max(100)
   .optional()
   .transform((value) => (value ? value : null));
+
+/** ABN is exactly 11 digits. Spaces are ignored. */
+export const abnSchema = z
+  .string()
+  .transform((value) => value.replace(/\s+/g, ""))
+  .refine((value) => /^\d{11}$/.test(value), { message: "ABN must be exactly 11 digits." });
+
+export const organizationCompanySettingsSchema = z
+  .object({
+    country: organizationCountrySchema,
+    abn: z.string().optional().default(""),
+    state: branchStateSchema,
+  })
+  .superRefine((value, ctx) => {
+    if (value.country === "AU") {
+      if (!abnSchema.safeParse(value.abn).success) {
+        ctx.addIssue({ code: "custom", path: ["abn"], message: "ABN must be exactly 11 digits." });
+      }
+      if (!value.state) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["state"],
+          message: "Choose an Australian state or territory.",
+        });
+      }
+    }
+    if (!isStateValidForCountry(value.country, value.state)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["state"],
+        message:
+          value.country === "AU"
+            ? "State must be an Australian state or territory."
+            : "State must be a Malaysian state.",
+      });
+    }
+  })
+  .transform((value) => ({
+    country: value.country,
+    currency: ORGANIZATION_CURRENCY[value.country],
+    abn: value.country === "AU" ? value.abn.replace(/\s+/g, "") : null,
+    state: value.state,
+    standardDayHours: STANDARD_DAY_HOURS[value.country],
+  }));
 
 function isHolidayYearAllowed(year: number) {
   const currentYear = new Date().getFullYear();
@@ -44,9 +115,11 @@ export const weekendModeSchema = z.enum(["sat_sun", "fri_sat", "sun_only"]);
 
 export const epfWageRoundingSchema = z.enum(["none", "ceil_rm50"]);
 
-export const createBranchSchema = z.object({
+const createBranchObjectSchema = z.object({
   name: z.string().min(1).max(200),
-  state: optionalMalaysianStateSchema,
+  /** Organization country. Decides which state list is accepted. Defaults to Malaysia. */
+  country: organizationCountrySchema.default("MY"),
+  state: branchStateSchema,
   weekendMode: weekendModeSchema.default("sat_sun"),
   payrollCutoffDay: z.coerce.number().int().min(1).max(28).default(6),
   hrdfEnabled: z.coerce.boolean().default(false),
@@ -80,6 +153,19 @@ export const createBranchSchema = z.object({
     .transform((value) => (value === "" || value == null ? null : value)),
   geofenceRadiusM: z.coerce.number().int().min(25).max(5000).default(100),
   geofenceOutsideAction: z.enum(["flag", "block"]).default("flag"),
+});
+
+export const createBranchSchema = createBranchObjectSchema.superRefine((value, ctx) => {
+  if (!isStateValidForCountry(value.country, value.state)) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["state"],
+      message:
+        value.country === "AU"
+          ? "State must be an Australian state or territory."
+          : "State must be a Malaysian state.",
+    });
+  }
 });
 
 export const updateBranchSchema = createBranchSchema;

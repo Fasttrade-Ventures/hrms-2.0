@@ -11,8 +11,12 @@ export function generatePayslipPdf(data: {
   eisEmployee: number;
   eisEmployer: number;
   pcb: number;
+  /** Omitted means Malaysia. Australian payslips show no EPF, SOCSO, EIS or PCB. */
+  country?: "MY" | "AU";
 }): Uint8Array {
   let stream = "";
+  const isAu = data.country === "AU";
+  const amount = (value: number) => `${isAu ? "A$" : "RM "}${value.toFixed(2)}`;
 
   // 1. Draw Green Header Bar
   stream += "0.11 0.23 0.16 rg\n"; // Deep forest green fill (#1b3a28)
@@ -50,33 +54,37 @@ export function generatePayslipPdf(data: {
 
   // Table rows
   stream += "0.11 0.23 0.16 rg\n";
-  stream += `BT\n/F1 9 Tf\n50 550 Td (Basic Salary) Tj\nET\nBT\n/F1 9 Tf\n140 550 Td (RM ${data.grossPay.toFixed(2)}) Tj\nET\n`;
+  stream += `BT\n/F1 9 Tf\n50 550 Td (Basic Salary) Tj\nET\nBT\n/F1 9 Tf\n140 550 Td (${amount(data.grossPay)}) Tj\nET\n`;
 
-  stream += `BT\n/F1 9 Tf\n230 550 Td (EPF) Tj\nET\nBT\n/F1 9 Tf\n320 550 Td (RM ${data.epfEmployee.toFixed(2)}) Tj\nET\n`;
-  stream += `BT\n/F1 9 Tf\n410 550 Td (EPF) Tj\nET\nBT\n/F1 9 Tf\n500 550 Td (RM ${data.epfEmployer.toFixed(2)}) Tj\nET\n`;
+  if (!isAu) {
+    stream += `BT\n/F1 9 Tf\n230 550 Td (EPF) Tj\nET\nBT\n/F1 9 Tf\n320 550 Td (${amount(data.epfEmployee)}) Tj\nET\n`;
+    stream += `BT\n/F1 9 Tf\n410 550 Td (EPF) Tj\nET\nBT\n/F1 9 Tf\n500 550 Td (${amount(data.epfEmployer)}) Tj\nET\n`;
 
-  stream += `BT\n/F1 9 Tf\n230 532 Td (SOCSO) Tj\nET\nBT\n/F1 9 Tf\n320 532 Td (RM ${data.socsoEmployee.toFixed(2)}) Tj\nET\n`;
-  stream += `BT\n/F1 9 Tf\n410 532 Td (SOCSO) Tj\nET\nBT\n/F1 9 Tf\n500 532 Td (RM ${data.socsoEmployer.toFixed(2)}) Tj\nET\n`;
+    stream += `BT\n/F1 9 Tf\n230 532 Td (SOCSO) Tj\nET\nBT\n/F1 9 Tf\n320 532 Td (${amount(data.socsoEmployee)}) Tj\nET\n`;
+    stream += `BT\n/F1 9 Tf\n410 532 Td (SOCSO) Tj\nET\nBT\n/F1 9 Tf\n500 532 Td (${amount(data.socsoEmployer)}) Tj\nET\n`;
 
-  stream += `BT\n/F1 9 Tf\n230 514 Td (EIS) Tj\nET\nBT\n/F1 9 Tf\n320 514 Td (RM ${data.eisEmployee.toFixed(2)}) Tj\nET\n`;
-  stream += `BT\n/F1 9 Tf\n410 514 Td (EIS) Tj\nET\nBT\n/F1 9 Tf\n500 514 Td (RM ${data.eisEmployer.toFixed(2)}) Tj\nET\n`;
+    stream += `BT\n/F1 9 Tf\n230 514 Td (EIS) Tj\nET\nBT\n/F1 9 Tf\n320 514 Td (${amount(data.eisEmployee)}) Tj\nET\n`;
+    stream += `BT\n/F1 9 Tf\n410 514 Td (EIS) Tj\nET\nBT\n/F1 9 Tf\n500 514 Td (${amount(data.eisEmployer)}) Tj\nET\n`;
 
-  stream += `BT\n/F1 9 Tf\n230 496 Td (PCB (Tax)) Tj\nET\nBT\n/F1 9 Tf\n320 496 Td (RM ${data.pcb.toFixed(2)}) Tj\nET\n`;
+    stream += `BT\n/F1 9 Tf\n230 496 Td (PCB (Tax)) Tj\nET\nBT\n/F1 9 Tf\n320 496 Td (${amount(data.pcb)}) Tj\nET\n`;
+  }
 
   // Draw another divider
   stream += "0.84 0.82 0.77 RG\n0.5 w\n50 480 m 545 480 l S\n";
 
   // Totals
-  stream += `BT\n/F2 9 Tf\n0.11 0.23 0.16 rg\n50 455 Td (Gross Pay:) Tj\nET\nBT\n/F2 9 Tf\n0.11 0.23 0.16 rg\n140 455 Td (RM ${data.grossPay.toFixed(2)}) Tj\nET\n`;
+  stream += `BT\n/F2 9 Tf\n0.11 0.23 0.16 rg\n50 455 Td (Gross Pay:) Tj\nET\nBT\n/F2 9 Tf\n0.11 0.23 0.16 rg\n140 455 Td (${amount(data.grossPay)}) Tj\nET\n`;
 
-  const totalDeductions = data.epfEmployee + data.socsoEmployee + data.eisEmployee + data.pcb;
-  stream += `BT\n/F2 9 Tf\n0.11 0.23 0.16 rg\n230 455 Td (Total Deductions:) Tj\nET\nBT\n/F2 9 Tf\n0.11 0.23 0.16 rg\n320 455 Td (RM ${totalDeductions.toFixed(2)}) Tj\nET\n`;
+  const totalDeductions = isAu
+    ? data.grossPay - data.netPay
+    : data.epfEmployee + data.socsoEmployee + data.eisEmployee + data.pcb;
+  stream += `BT\n/F2 9 Tf\n0.11 0.23 0.16 rg\n230 455 Td (Total Deductions:) Tj\nET\nBT\n/F2 9 Tf\n0.11 0.23 0.16 rg\n320 455 Td (${amount(totalDeductions)}) Tj\nET\n`;
 
   // Draw Net Pay highlight box
   stream += "0.11 0.23 0.16 rg\n"; // Deep forest green background
   stream += "50 395 495 36 re f\n"; // Solid green block
   stream += `BT\n/F2 11 Tf\n1.0 1.0 1.0 rg\n70 409 Td (NET PAY RECEIVED:) Tj\nET\n`;
-  stream += `BT\n/F2 11 Tf\n1.0 1.0 1.0 rg\n250 409 Td (RM ${data.netPay.toFixed(2)}) Tj\nET\n`;
+  stream += `BT\n/F2 11 Tf\n1.0 1.0 1.0 rg\n250 409 Td (${amount(data.netPay)}) Tj\nET\n`;
 
   // Footer note
   stream += "BT\n/F1 8 Tf\n0.48 0.56 0.49 rg\n50 330 Td (* This is a computer-generated document and does not require a physical signature.) Tj\nET\n";

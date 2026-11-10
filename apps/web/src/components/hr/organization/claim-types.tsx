@@ -24,10 +24,17 @@ import {
 import { HrLinkButton } from "@/components/hr/hr-ui.client";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import type { ClaimTypeRow } from "@/lib/hr/organization";
+import { currencySymbolLabel, formatMoney, type DisplayCurrency } from "@/lib/money";
 
 const initialState: OrgActionState = {};
 
-export function ClaimTypesList({ claimTypes }: { claimTypes: ClaimTypeRow[] }) {
+export function ClaimTypesList({
+  claimTypes,
+  currency = "MYR",
+}: {
+  claimTypes: ClaimTypeRow[];
+  currency?: DisplayCurrency;
+}) {
   const mileageCount = claimTypes.filter((row) => row.isMileage).length;
   const taxableCount = claimTypes.filter((row) => row.payrollTreatment === "taxable").length;
   const reimbCount = claimTypes.filter((row) => row.payrollTreatment === "reimbursement").length;
@@ -72,12 +79,12 @@ export function ClaimTypesList({ claimTypes }: { claimTypes: ClaimTypeRow[] }) {
                     Mileage
                   </span>
                   <span className="text-xs text-[var(--foreground-muted)]">
-                    RM {Number(claimType.ratePerKm ?? 0).toFixed(2)} / km
+                    {formatMoney(Number(claimType.ratePerKm ?? 0), currency)} / km
                   </span>
                 </span>
               ) : (
                 <span className="text-xs text-[var(--foreground-muted)]">
-                  Standard receipt {claimType.maxAmount != null ? `· Max RM ${claimType.maxAmount.toFixed(2)}` : "· No limit"}
+                  Standard receipt {claimType.maxAmount != null ? `· Max ${formatMoney(claimType.maxAmount, currency)}` : "· No limit"}
                 </span>
               )}
             </OrgTableCell>
@@ -94,7 +101,7 @@ export function ClaimTypesList({ claimTypes }: { claimTypes: ClaimTypeRow[] }) {
   );
 }
 
-export function ClaimTypeCreateForm() {
+export function ClaimTypeCreateForm({ currency = "MYR" }: { currency?: DisplayCurrency }) {
   const [state, formAction, pending] = useActionState(createClaimType, initialState);
   const [isMileage, setIsMileage] = useState(false);
 
@@ -137,7 +144,7 @@ export function ClaimTypeCreateForm() {
           </div>
 
           {isMileage ? (
-            <HrField id="ratePerKm" key="fieldRatePerKm" label="Reimbursement rate per km (RM)">
+            <HrField id="ratePerKm" key="fieldRatePerKm" label={`Reimbursement rate per km (${currencySymbolLabel(currency)})`}>
               <HrTextInput
                 defaultValue="0.80"
                 id="ratePerKm"
@@ -151,7 +158,7 @@ export function ClaimTypeCreateForm() {
               />
             </HrField>
           ) : (
-            <HrField id="maxAmount" key="fieldMaxAmount" label="Maximum claim amount (RM)">
+            <HrField id="maxAmount" key="fieldMaxAmount" label={`Maximum claim amount (${currencySymbolLabel(currency)})`}>
               <HrTextInput
                 id="maxAmount"
                 key="maxAmount"
@@ -185,7 +192,13 @@ export function ClaimTypeCreateForm() {
   );
 }
 
-export function ClaimTypeEditForm({ claimType }: { claimType: ClaimTypeRow }) {
+export function ClaimTypeEditForm({
+  claimType,
+  currency = "MYR",
+}: {
+  claimType: ClaimTypeRow;
+  currency?: DisplayCurrency;
+}) {
   const boundUpdate = updateClaimType.bind(null, claimType.id);
   const boundDelete = deleteClaimType.bind(null, claimType.id);
   const [state, formAction, pending] = useActionState(boundUpdate, initialState);
@@ -231,7 +244,7 @@ export function ClaimTypeEditForm({ claimType }: { claimType: ClaimTypeRow }) {
           </div>
 
           {isMileage ? (
-            <HrField id="ratePerKm" key="fieldEditRatePerKm" label="Reimbursement rate per km (RM)">
+            <HrField id="ratePerKm" key="fieldEditRatePerKm" label={`Reimbursement rate per km (${currencySymbolLabel(currency)})`}>
               <HrTextInput
                 defaultValue={claimType.ratePerKm != null ? String(claimType.ratePerKm) : "0.80"}
                 id="ratePerKm"
@@ -245,7 +258,7 @@ export function ClaimTypeEditForm({ claimType }: { claimType: ClaimTypeRow }) {
               />
             </HrField>
           ) : (
-            <HrField id="maxAmount" key="fieldEditMaxAmount" label="Maximum claim amount (RM)">
+            <HrField id="maxAmount" key="fieldEditMaxAmount" label={`Maximum claim amount (${currencySymbolLabel(currency)})`}>
               <HrTextInput
                 defaultValue={claimType.maxAmount != null ? String(claimType.maxAmount) : ""}
                 id="maxAmount"

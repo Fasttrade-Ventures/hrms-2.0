@@ -11,6 +11,7 @@ import {
   type RecurringAllowance,
 } from "@/lib/payroll/compensation";
 import { ensurePayrollComponents } from "@/lib/payroll/seed";
+import { currencyOrDefault, type DisplayCurrency } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
 
 export type EmployeePayrollSectionData = {
@@ -18,6 +19,8 @@ export type EmployeePayrollSectionData = {
   allowances: RecurringAllowance[];
   allowanceComponents: AllowanceComponentOption[];
   taxProfile: EmployeeTaxProfile;
+  country: "MY" | "AU";
+  currency: DisplayCurrency;
 };
 
 export async function getEmployeePayrollSectionData(
@@ -37,9 +40,17 @@ export async function getEmployeePayrollSectionData(
     getEmployeeTaxProfile(employee.id).catch(() => null),
   ]);
 
+  const { data: organization } = await supabase
+    .from("organizations")
+    .select("country, currency")
+    .eq("id", organizationId)
+    .maybeSingle();
+
   const childCount = employee.dependents.filter((row) => row.dependentType === "child").length;
 
   return {
+    country: organization?.country === "AU" ? "AU" : "MY",
+    currency: currencyOrDefault(organization?.currency),
     compensation: compensation ?? {
       payBasis: employee.profile.payBasis ?? "monthly",
       basicSalary: employee.profile.basicSalary,

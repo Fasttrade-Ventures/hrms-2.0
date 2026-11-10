@@ -3,6 +3,7 @@ import {
   money,
   type EmployeePayrunInput,
   type EmployeePayrunResult,
+  type OrganizationCountry,
   type PayFrequency,
 } from "@hrms/domain";
 
@@ -53,6 +54,8 @@ export function buildEmployeePayrunComputeInput(input: {
   frequency: PayFrequency;
   asOf: string;
   ytd?: YtdRow;
+  /** `organizations.country`. Omitted means Malaysia. */
+  country?: OrganizationCountry;
 }): EmployeePayrunInput {
   const dependents = Array.isArray(input.dependents)
     ? input.dependents
@@ -67,6 +70,7 @@ export function buildEmployeePayrunComputeInput(input: {
   });
 
   return {
+    country: input.country ?? "MY",
     lines: input.lines,
     dateOfBirth: input.profile?.date_of_birth ?? "1990-01-01",
     asOf: input.asOf,

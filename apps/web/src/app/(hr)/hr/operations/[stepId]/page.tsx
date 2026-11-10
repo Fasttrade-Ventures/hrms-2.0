@@ -9,6 +9,7 @@ import { PortalSectionCard } from "@/components/portal/portal-section";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { getHrApprovalDetail } from "@/lib/hr/operations";
 import { requireRole } from "@/lib/auth/session";
+import { formatMoney, type DisplayCurrency } from "@/lib/money";
 
 function formatFieldLabel(key: string): string {
   const customLabels: Record<string, string> = {
@@ -32,7 +33,7 @@ function formatFieldLabel(key: string): string {
     .trim();
 }
 
-function formatFieldValue(key: string, value: unknown): string {
+function formatFieldValue(key: string, value: unknown, currency: DisplayCurrency): string {
   if (value === null || value === undefined || value === "") return "—";
   if (key === "isMileage") {
     return value === true || value === "true" ? "Distance-based Mileage" : "Standard Expense";
@@ -41,11 +42,11 @@ function formatFieldValue(key: string, value: unknown): string {
     return `${value} km`;
   }
   if (key === "ratePerKm") {
-    return `RM ${Number(value).toFixed(2)} / km`;
+    return `${formatMoney(Number(value), currency)} / km`;
   }
   if (key === "amount" && (typeof value === "number" || typeof value === "string")) {
     const num = Number(value);
-    if (!Number.isNaN(num)) return `RM ${num.toFixed(2)}`;
+    if (!Number.isNaN(num)) return formatMoney(num, currency);
   }
   if (typeof value === "boolean") {
     return value ? "Yes" : "No";
@@ -109,7 +110,7 @@ export default async function HrOperationDetailPage({
               <div className="rounded-[var(--radius-md)] bg-[var(--surface-muted)] px-3 py-2.5" key={key}>
                 <dt className="text-xs text-[var(--foreground-muted)]">{formatFieldLabel(key)}</dt>
                 <dd className="mt-1 font-medium text-[var(--foreground-primary)]">
-                  {formatFieldValue(key, value)}
+                  {formatFieldValue(key, value, detail.currency ?? "MYR")}
                 </dd>
               </div>
             ))}

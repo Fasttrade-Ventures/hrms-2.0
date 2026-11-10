@@ -13,6 +13,12 @@ import type { StatutoryRuleContext } from "./statutory-context";
 import { DEFAULT_STATUTORY_RULES } from "./statutory-context";
 import type { PayFrequency } from "./ytd";
 
+export type OrganizationCountry = "MY" | "AU";
+
+export function isMalaysia(country: string): boolean {
+  return country === "MY";
+}
+
 export type ComponentFlags = {
   isEpf: boolean;
   isSocso: boolean;
@@ -46,6 +52,8 @@ export type EmployeePayrunInput = {
   maritalCategory?: "single" | "married";
   statutoryRules?: StatutoryRuleContext;
   pcbManualAmount?: Money | null;
+  /** Organization country. Omitted means Malaysia. */
+  country?: OrganizationCountry;
 };
 
 export type EmployeePayrunResult = {
@@ -102,7 +110,54 @@ function sumFlagged(lines: PayrunLine[], flag: keyof ComponentFlags): Money {
   );
 }
 
+/**
+ * Non-Malaysian organizations (Australia): no EPF, SOCSO, EIS, PCB or HRDF.
+ * Pay-component lines still sum into gross. Lindung and zakat behave as before.
+ * BukuHR does not calculate award rates, PAYG or superannuation.
+ */
+function computeNonMalaysiaPayrun(input: EmployeePayrunInput): EmployeePayrunResult {
+  const gross = input.lines.reduce((total, line) => total.add(line.amount), money(0));
+  const epfWageBase = sumFlagged(input.lines, "isEpf");
+  const socsoWageBase = sumFlagged(input.lines, "isSocso");
+  const statutoryBase = epfWageBase.gt(0) ? epfWageBase : gross;
+  const lindungBase = socsoWageBase.gt(0) ? socsoWageBase : statutoryBase;
+  const lindungEmployee = input.lindungEnabled
+    ? roundRinggit(lindungBase.mul(input.lindungRate))
+    : money(0);
+  const lindungEmployer =
+    input.lindungEnabled && input.lindungEmployerRate > 0
+      ? roundRinggit(lindungBase.mul(input.lindungEmployerRate))
+      : money(0);
+  const zakatDeduction = input.zakatMonthly.gt(0) ? roundRinggit(input.zakatMonthly) : money(0);
+  const net = roundRinggit(gross.sub(lindungEmployee.add(zakatDeduction)));
+
+  return {
+    gross,
+    epfWageBase: gross,
+    socsoWageBase: gross,
+    pcbWageBase: gross,
+    epfEmployee: money(0),
+    epfEmployer: money(0),
+    socsoEmployee: money(0),
+    socsoEmployer: money(0),
+    eisEmployee: money(0),
+    eisEmployer: money(0),
+    pcb: money(0),
+    pcbAuto: money(0),
+    hrdfEmployer: money(0),
+    lindungEmployee,
+    lindungEmployer,
+    zakatDeduction,
+    anomalyFlags: detectAnomalies({ gross, epfEmployee: money(0), net }),
+    net,
+    requiresResolution: net.lt(0),
+  };
+}
+
 export function computeEmployeePayrun(input: EmployeePayrunInput): EmployeePayrunResult {
+  if (!isMalaysia(input.country ?? "MY")) {
+    return computeNonMalaysiaPayrun(input);
+  }
   const rules = input.statutoryRules ?? DEFAULT_STATUTORY_RULES;
   const gross = input.lines.reduce((total, line) => total.add(line.amount), money(0));
   const epfWageBase = sumFlagged(input.lines, "isEpf");

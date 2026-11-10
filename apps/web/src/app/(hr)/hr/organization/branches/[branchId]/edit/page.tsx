@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 
 import { BranchForm } from "@/components/hr/organization/branches";
 import { requireRole } from "@/lib/auth/session";
-import { getBranch } from "@/lib/hr/organization";
+import { getBranch, getOrganizationCountry } from "@/lib/hr/organization";
 
 export default async function EditBranchPage({
   params,
@@ -11,7 +11,7 @@ export default async function EditBranchPage({
 }) {
   await requireRole("hr_administrator");
   const { branchId } = await params;
-  const branch = await getBranch(branchId);
+  const [branch, country] = await Promise.all([getBranch(branchId), getOrganizationCountry()]);
   if (!branch) notFound();
-  return <BranchForm branch={branch} />;
+  return <BranchForm branch={branch} country={country} />;
 }

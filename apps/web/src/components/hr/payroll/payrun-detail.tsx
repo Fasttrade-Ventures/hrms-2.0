@@ -110,13 +110,20 @@ export function PayrunDetailView({
         </div>
       )}
 
-      <PayrunTotalsSummary employeeCount={payrun.itemTotal} totals={payrun.totals} />
+      <PayrunTotalsSummary
+        country={payrun.country}
+        currency={payrun.currency}
+        employeeCount={payrun.itemTotal}
+        totals={payrun.totals}
+      />
 
       {readOnly || payrun.itemTotal === 0 ? null : (
-        <PayrunCalculatorCompare payrunId={payrun.id} />
+        <PayrunCalculatorCompare currency={payrun.currency} payrunId={payrun.id} />
       )}
 
       <PayrunLinesTable
+        country={payrun.country}
+        currency={payrun.currency}
         editable={!readOnly && payrun.status === "draft"}
         items={payrun.items}
         payrunId={payrun.id}
@@ -156,6 +163,7 @@ export function PayrunDetailView({
       {readOnly || payrun.status !== "locked" ? null : (
         <PayrunPayoutPanel
           batch={payoutBatch?.batch ?? null}
+          currency={payrun.currency}
           items={payoutBatch?.items ?? []}
           payoutsEnabled={payoutsEnabled}
           payrunId={payrun.id}

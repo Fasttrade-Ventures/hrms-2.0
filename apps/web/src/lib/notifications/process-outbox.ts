@@ -106,6 +106,7 @@ export async function processNotificationOutbox(limit = 25): Promise<{
             eis_employee,
             eis_employer,
             pcb,
+            organization_id,
             employees (
               full_name,
               employee_number
@@ -119,7 +120,19 @@ export async function processNotificationOutbox(limit = 25): Promise<{
           const employeeName = employee?.full_name ?? "Employee";
           const employeeNumber = employee?.employee_number ?? "";
 
+          const itemOrganizationId = String(
+            (item as { organization_id?: string }).organization_id ?? payload.organizationId ?? "",
+          );
+          const { data: itemOrganization } = itemOrganizationId
+            ? await admin
+                .from("organizations")
+                .select("country")
+                .eq("id", itemOrganizationId)
+                .maybeSingle()
+            : { data: null };
+
           const pdfBuffer = generatePayslipPdf({
+            country: itemOrganization?.country === "AU" ? "AU" : "MY",
             employeeName,
             employeeNumber,
             periodLabel,

@@ -9,6 +9,7 @@ import {
 } from "@/app/(hr)/hr/payroll/payout-actions";
 import { HrFormMessage, HrGhostButton, HrPrimaryButton } from "@/components/hr/employees/form-fields";
 import { PortalSectionCard } from "@/components/portal/portal-section";
+import { formatMoney, type DisplayCurrency } from "@/lib/money";
 import { StatusPill } from "@hrms/ui";
 
 const initialState: PayoutActionState = {};
@@ -46,8 +47,10 @@ export function PayrunPayoutPanel({
   batch,
   items,
   payoutsEnabled,
+  currency = "MYR",
 }: {
   payrunId: string;
+  currency?: DisplayCurrency;
   batch: PayoutBatch | null;
   items: PayoutItem[];
   payoutsEnabled: boolean;
@@ -120,7 +123,7 @@ export function PayrunPayoutPanel({
                 <tr className="border-b" key={item.id}>
                   <td className="py-2 pr-4">{employee?.full_name ?? "—"}</td>
                   <td className="py-2 pr-4 font-mono text-xs">{item.reference}</td>
-                  <td className="py-2 pr-4">RM {Number(item.amount).toFixed(2)}</td>
+                  <td className="py-2 pr-4">{formatMoney(Number(item.amount), currency)}</td>
                   <td className="py-2 pr-4">
                     <StatusPill label={item.status} tone={itemTone(item.status)} />
                   </td>

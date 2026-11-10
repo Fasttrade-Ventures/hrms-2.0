@@ -6,6 +6,7 @@ import type { ModuleKey, ProductTier } from "@hrms/platform";
 
 import { requireRole } from "@/lib/auth/session";
 import {
+  updateOwnerCompanySettings,
   updateOwnerModuleFlag,
   updateOwnerPayrollDutySegregation,
   updateOwnerProductTier,
@@ -35,4 +36,29 @@ export async function updatePayrollDutySegregationFormAction(formData: FormData)
   const enabled = String(formData.get("enabled") ?? "") === "true";
   await updateOwnerPayrollDutySegregation(enabled, session.user.id);
   revalidatePath("/owner/settings");
+}
+
+export type CompanySettingsState = { error?: string; success?: string };
+
+export async function updateCompanySettingsAction(
+  _prevState: CompanySettingsState,
+  formData: FormData,
+): Promise<CompanySettingsState> {
+  const session = await requireRole("organization_owner");
+
+  try {
+    await updateOwnerCompanySettings(
+      {
+        country: String(formData.get("country") ?? "MY"),
+        abn: String(formData.get("abn") ?? ""),
+        state: String(formData.get("state") ?? "").trim(),
+      },
+      session.user.id,
+    );
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Could not save company settings." };
+  }
+
+  revalidatePath("/", "layout");
+  return { success: "Company settings saved." };
 }

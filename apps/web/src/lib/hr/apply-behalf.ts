@@ -11,6 +11,8 @@ import { logEmployeeEvent } from "@/lib/audit/log-employee-event";
 import { calculateLeaveDays } from "@/lib/employee/leave";
 import { requireRole } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { formatMoney } from "@/lib/money";
+import { loadOrganizationCurrency } from "@/lib/organization-display";
 import { createClient } from "@/lib/supabase/server";
 import {
   requireOrganizationId,
@@ -270,6 +272,7 @@ export async function listBehalfApplications(
     return data ?? [];
   }
 
+  const currency = await loadOrganizationCurrency(supabase, organizationId);
   const [leaveData, lateData, claimData, otData, replacementData] = await Promise.all([
     fetchLeaveRecords(),
     fetchLateRecords(),
@@ -314,14 +317,14 @@ export async function listBehalfApplications(
   const claimRows: BehalfApplicationRow[] = claimData.map((row) => {
     const employee = row.employees as { full_name?: string; employee_number?: string } | null;
     const claimType = row.claim_types as { name?: string } | null;
-    const amountNum = Number(row.amount).toFixed(2);
+    const amountLabel = formatMoney(Number(row.amount), currency);
     return {
       id: row.id,
       type: "claim" as const,
       employeeId: row.employee_id,
       employeeName: employee?.full_name ?? "Employee",
       employeeNumber: employee?.employee_number ?? "",
-      details: `${claimType?.name ?? "Claim"} RM ${amountNum} (${row.receipt_date})`,
+      details: `${claimType?.name ?? "Claim"} ${amountLabel} (${row.receipt_date})`,
       status: row.status,
       appliedAt: row.created_at,
       appliedOnBehalfBy: row.applied_on_behalf_by,
@@ -636,7 +639,10 @@ export async function createBehalfClaim(
 
   if (claimType.max_amount != null && finalAmount > Number(claimType.max_amount)) {
     throw new Error(
-      `Amount exceeds maximum allowed (RM ${Number(claimType.max_amount).toFixed(2)}).`,
+      `Amount exceeds maximum allowed (${formatMoney(
+        Number(claimType.max_amount),
+        await loadOrganizationCurrency(admin, organizationId),
+      )}).`,
     );
   }
 

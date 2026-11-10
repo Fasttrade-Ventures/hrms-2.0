@@ -58,6 +58,8 @@ export async function provisionTenant(
       name: company,
       slug,
       product_tier: input.productTier ?? "core",
+      country: "MY",
+      currency: "MYR",
     })
     .select("id")
     .single();

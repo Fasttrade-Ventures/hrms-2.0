@@ -4,6 +4,7 @@ import type { CSSProperties, ReactNode } from "react";
 
 import { EditLineDialog } from "@/components/hr/payroll/edit-line-dialog";
 import { EditPcbDialog } from "@/components/hr/payroll/edit-pcb-dialog";
+import { currencySymbolLabel, type DisplayCurrency } from "@/lib/money";
 import type { PayrunLineItem } from "@/lib/payroll/queries";
 import { cn } from "@/lib/utils";
 
@@ -28,30 +29,51 @@ const NUMERIC_COLUMN_KEYS = new Set([
 
 type ColumnDef = { key: string; label: string; align?: "left" | "right" };
 
-function getColumns(editable: boolean): ColumnDef[] {
+function getColumns(
+  editable: boolean,
+  showStatutory: boolean,
+  currency: DisplayCurrency,
+): ColumnDef[] {
   const columns: ColumnDef[] = [
     { key: "employee", label: "Employee", align: "left" },
     { key: "gross", label: "Gross", align: "right" },
   ];
 
   if (editable) {
-    columns.push({ key: "basicEdit", label: "Basic (RM)", align: "right" });
+    columns.push({
+      key: "basicEdit",
+      label: `Basic (${currencySymbolLabel(currency)})`,
+      align: "right",
+    });
   }
 
-  columns.push(
-    { key: "overtime", label: "OT (RM)", align: "right" },
-    { key: "epf", label: "EPF", align: "right" },
-    { key: "socso", label: "SOCSO", align: "right" },
-    { key: "eis", label: "EIS", align: "right" },
-    { key: "pcb", label: "PCB", align: "right" },
-    { key: "hrdf", label: "HRDF", align: "right" },
-    { key: "net", label: "Net", align: "right" },
-  );
+  columns.push({
+    key: "overtime",
+    label: `OT (${currencySymbolLabel(currency)})`,
+    align: "right",
+  });
+  if (showStatutory) {
+    columns.push(
+      { key: "epf", label: "EPF", align: "right" },
+      { key: "socso", label: "SOCSO", align: "right" },
+      { key: "eis", label: "EIS", align: "right" },
+      { key: "pcb", label: "PCB", align: "right" },
+      { key: "hrdf", label: "HRDF", align: "right" },
+    );
+  }
+  columns.push({ key: "net", label: "Net", align: "right" });
 
   return columns;
 }
 
-function getGridStyle(editable: boolean): CSSProperties {
+function getGridStyle(editable: boolean, showStatutory: boolean): CSSProperties {
+  if (!showStatutory) {
+    return {
+      gridTemplateColumns: editable
+        ? "minmax(13rem, 2.2fr) minmax(6rem, 1fr) minmax(8.5rem, 1.1fr) minmax(6rem, 1fr) minmax(6.5rem, 1.1fr)"
+        : "minmax(13rem, 2.2fr) minmax(6rem, 1fr) minmax(6rem, 1fr) minmax(6.5rem, 1.1fr)",
+    };
+  }
   return {
     gridTemplateColumns: editable
       ? "minmax(11rem, 1.8fr) minmax(5.5rem, 0.85fr) minmax(8.5rem, 1.1fr) minmax(4.75rem, 0.75fr) minmax(5.25rem, 0.85fr) minmax(5.25rem, 0.85fr) minmax(4.75rem, 0.75fr) minmax(13.5rem, 2fr) minmax(4.25rem, 0.65fr) minmax(5.75rem, 0.95fr)"
@@ -61,11 +83,13 @@ function getGridStyle(editable: boolean): CSSProperties {
 
 function GridRow({
   editable,
+  showStatutory,
   compact,
   className,
   children,
 }: {
   editable: boolean;
+  showStatutory: boolean;
   compact?: boolean;
   className?: string;
   children: ReactNode;
@@ -77,7 +101,7 @@ function GridRow({
         compact ? "py-2.5" : "py-3.5",
         className,
       )}
-      style={getGridStyle(editable)}
+      style={getGridStyle(editable, showStatutory)}
     >
       {children}
     </div>
@@ -202,8 +226,13 @@ export function PayrunLinesTable({
   editable = false,
   payrunId,
   totalsOverride,
+  country = "MY",
+  currency = "MYR",
 }: {
   items: PayrunLineItem[];
+  /** Australian companies do not show EPF, SOCSO, EIS, PCB or HRDF. */
+  country?: "MY" | "AU";
+  currency?: DisplayCurrency;
   editable?: boolean;
   payrunId?: string;
   totalsOverride?: {
@@ -220,7 +249,8 @@ export function PayrunLinesTable({
     net: number;
   };
 }) {
-  const columns = getColumns(editable);
+  const showStatutory = country === "MY";
+  const columns = getColumns(editable, showStatutory, currency);
   const totals = totalsOverride ?? {
     gross: sumField(items, "grossPay"),
     overtime: sumField(items, "overtimePay" as keyof PayrunLineItem),
@@ -281,22 +311,35 @@ export function PayrunLinesTable({
           <div className="text-right">
             {editable ? (
               <p className="text-xs text-muted-foreground">
-                Change basic salary or <span className="font-medium text-foreground">PCB</span> on
-                draft lines.
+                {showStatutory ? (
+                  <>
+                    Change basic salary or <span className="font-medium text-foreground">PCB</span>{" "}
+                    on draft lines.
+                  </>
+                ) : (
+                  "Change basic salary on draft lines."
+                )}
               </p>
             ) : null}
-            <p className="text-xs text-muted-foreground">EE = employee · ER = employer</p>
+            {showStatutory ? (
+              <p className="text-xs text-muted-foreground">EE = employee · ER = employer</p>
+            ) : null}
           </div>
         </div>
       </div>
 
       {items.length > 0 ? (
         <div className="w-full overflow-x-auto">
-          <div className={editable ? "min-w-[82rem]" : "min-w-[62rem]"}>
+          <div
+            className={
+              showStatutory ? (editable ? "min-w-[82rem]" : "min-w-[62rem]") : "min-w-[36rem]"
+            }
+          >
             <GridRow
               className="border-b border-[var(--border-primary)] bg-[var(--surface-muted)]/60"
               compact
               editable={editable}
+              showStatutory={showStatutory}
             >
               {columns.map((column) => (
                 <GridCell columnKey={column.key} key={column.key} align={column.align}>
@@ -311,7 +354,12 @@ export function PayrunLinesTable({
               {items.map((item) => {
                 const cells = buildRowCells(item, { editable, payrunId });
                 return (
-                  <GridRow compact={editable} editable={editable} key={item.id}>
+                  <GridRow
+                    compact={editable}
+                    editable={editable}
+                    key={item.id}
+                    showStatutory={showStatutory}
+                  >
                     {columns.map((column) => (
                       <GridCell columnKey={column.key} key={column.key} align={column.align}>
                         {cells[column.key]}
@@ -326,6 +374,7 @@ export function PayrunLinesTable({
               className="border-t border-[var(--border-primary)] bg-[var(--surface-muted)]/50"
               compact
               editable={editable}
+              showStatutory={showStatutory}
             >
               {columns.map((column) => (
                 <GridCell columnKey={column.key} key={column.key} align={column.align}>

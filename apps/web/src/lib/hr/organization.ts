@@ -2,9 +2,16 @@ import { requireRole } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import type { ListHolidaysInput } from "@hrms/validation";
 import { requireOrganizationId } from "@/lib/auth/organization-context";
+import { loadOrganizationCountry } from "@/lib/payroll/organization-country";
 
 export async function getOrganizationId(): Promise<string> {
   return requireOrganizationId();
+}
+
+export async function getOrganizationCountry(): Promise<"MY" | "AU"> {
+  const organizationId = await requireOrganizationId();
+  const supabase = await createClient();
+  return loadOrganizationCountry(supabase, organizationId);
 }
 
 export type OrgHubModule = {

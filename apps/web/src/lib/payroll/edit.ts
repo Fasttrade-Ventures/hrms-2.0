@@ -6,6 +6,7 @@ import {
   payrunItemPatchFromResult,
 } from "@/lib/payroll/build-compute-input";
 import { buildPayrunItemComponentRows } from "@/lib/payroll/item-components";
+import { loadOrganizationCountry } from "@/lib/payroll/organization-country";
 import { ensurePayrollComponents } from "@/lib/payroll/seed";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizationId } from "@/lib/auth/organization-context";
@@ -171,6 +172,7 @@ export async function editPayrunLine(
     frequency,
     asOf: payrun.earning_period_end,
     ytd,
+    country: await loadOrganizationCountry(supabase, organizationId),
   });
   const result = computeEmployeePayrun(computeInput);
 
@@ -337,6 +339,7 @@ export async function overridePayrunPcb(
     frequency,
     asOf: payrun.earning_period_end,
     ytd,
+    country: await loadOrganizationCountry(supabase, organizationId),
   });
   const result = computeEmployeePayrun(computeInput);
 

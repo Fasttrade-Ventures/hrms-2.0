@@ -1,4 +1,5 @@
 import { requireEmployeeContext } from "@/lib/employee/leave";
+import { currencyOrDefault, type DisplayCurrency } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
 
 export type PayslipRow = {
@@ -13,6 +14,8 @@ export type PayslipRow = {
 };
 
 export type PayslipDetail = PayslipRow & {
+  country: "MY" | "AU";
+  currency: DisplayCurrency;
   epfEmployee: number;
   epfEmployer: number;
   socsoEmployee: number;
@@ -32,6 +35,17 @@ function periodLabel(year: number, month: number): string {
     month: "long",
     year: "numeric",
   });
+}
+
+export async function getPayslipCurrency(): Promise<DisplayCurrency> {
+  const { organizationId } = await requireEmployeeContext();
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("organizations")
+    .select("currency")
+    .eq("id", organizationId)
+    .maybeSingle();
+  return currencyOrDefault(data?.currency);
 }
 
 export async function listPayslips(): Promise<PayslipRow[]> {
@@ -142,7 +156,15 @@ export async function getPayslip(itemId: string): Promise<PayslipDetail | null> 
     ];
   });
 
+  const { data: organization } = await supabase
+    .from("organizations")
+    .select("country, currency")
+    .eq("id", organizationId)
+    .maybeSingle();
+
   return {
+    country: organization?.country === "AU" ? "AU" : "MY",
+    currency: currencyOrDefault(organization?.currency),
     id: data.id,
     periodYear: payrun.period_year ?? 0,
     periodMonth: payrun.period_month ?? 0,

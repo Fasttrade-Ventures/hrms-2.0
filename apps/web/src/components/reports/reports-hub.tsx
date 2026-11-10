@@ -41,9 +41,11 @@ const QUICK_EXPORTS = [
 export function ReportsHub({
   portal,
   basePath,
+  country = "MY",
 }: {
   portal: "hr" | "director" | "branch-admin";
   basePath: string;
+  country?: "MY" | "AU";
 }) {
   const payrollHref = portal === "hr" ? "/hr/payroll" : undefined;
   const showQuickExports = portal === "hr";
@@ -130,7 +132,9 @@ export function ReportsHub({
             <div>
               <p className="font-medium">Payroll & statutory</p>
               <p className="text-sm text-muted-foreground">
-                EPF, SOCSO, PCB, and pay-run exports are generated from Payroll.
+                {country === "MY"
+                  ? "EPF, SOCSO, PCB, and pay-run exports are generated from Payroll."
+                  : "Pay-run exports are generated from Payroll."}
               </p>
             </div>
             <Button render={<Link href={payrollHref} />} size="sm">

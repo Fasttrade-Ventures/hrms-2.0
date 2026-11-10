@@ -5,6 +5,7 @@ import {
   buildEmployeePayrunComputeInput,
   payrunItemPatchFromResult,
 } from "@/lib/payroll/build-compute-input";
+import { loadOrganizationCountry } from "@/lib/payroll/organization-country";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizationId } from "@/lib/auth/organization-context";
 
@@ -141,6 +142,7 @@ export async function spotCheckFirstPayrunLine(payrunId: string): Promise<Payrun
   const frequency =
     payGroup?.cycle === "weekly" ? "weekly" : payGroup?.cycle === "biweekly" ? "biweekly" : "monthly";
 
+  const country = await loadOrganizationCountry(supabase, organizationId);
   const computeInput = buildEmployeePayrunComputeInput({
     lines,
     profile: profile ?? null,
@@ -151,11 +153,16 @@ export async function spotCheckFirstPayrunLine(payrunId: string): Promise<Payrun
     frequency,
     asOf: payrun?.earning_period_end ?? new Date().toISOString().slice(0, 10),
     ytd: ytd ?? null,
+    country,
   });
   const result = computeEmployeePayrun(computeInput);
   const computed = payrunItemPatchFromResult(result);
 
-  const fields = COMPARE_FIELDS.map(({ key, label }) => {
+  const compareFields =
+    country === "AU"
+      ? COMPARE_FIELDS.filter(({ key }) => key === "gross_pay" || key === "net_pay")
+      : COMPARE_FIELDS;
+  const fields = compareFields.map(({ key, label }) => {
     const stored = Number((item as Record<string, unknown>)[key] ?? 0).toFixed(2);
     const calculated = String(computed[key] ?? "0.00");
     return {

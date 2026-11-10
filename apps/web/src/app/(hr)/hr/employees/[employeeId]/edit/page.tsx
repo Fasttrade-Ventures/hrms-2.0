@@ -78,6 +78,8 @@ export default async function EditEmployeePage({
         allowanceComponents={payroll.allowanceComponents}
         allowances={payroll.allowances}
         compensation={payroll.compensation}
+        country={payroll.country}
+        currency={payroll.currency}
         employeeId={employee.id}
         taxProfile={payroll.taxProfile}
       />

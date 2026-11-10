@@ -10,6 +10,8 @@ import { createLeaveRequest } from "@/lib/employee/leave";
 import { requireEmployeeContext } from "@/lib/employee/leave";
 import { submitEmployeeRequest } from "@/lib/employee/submit-request";
 import { requireModule } from "@/lib/entitlements";
+import { formatMoney } from "@/lib/money";
+import { loadOrganizationCurrency } from "@/lib/organization-display";
 import { createClient } from "@/lib/supabase/server";
 import { uploadOrganizationFile } from "@/lib/files/storage";
 import { checkRateLimitDurable } from "@/lib/rate-limit";
@@ -162,7 +164,10 @@ export async function submitClaim(
 
     if (claimType.max_amount != null && finalAmount > Number(claimType.max_amount)) {
       return {
-        error: `Amount exceeds maximum allowed (RM ${Number(claimType.max_amount).toFixed(2)}).`,
+        error: `Amount exceeds maximum allowed (${formatMoney(
+          Number(claimType.max_amount),
+          await loadOrganizationCurrency(supabase, organizationId),
+        )}).`,
       };
     }
 

@@ -1,6 +1,30 @@
 /** Default business timezone for Malaysian SME deployments. */
 export const DEFAULT_ORG_TIMEZONE = "Asia/Kuala_Lumpur";
 
+/** IANA timezone for each Australian state or territory. */
+export const AUSTRALIAN_STATE_TIMEZONES = {
+  NSW: "Australia/Sydney",
+  ACT: "Australia/Sydney",
+  VIC: "Australia/Melbourne",
+  QLD: "Australia/Brisbane",
+  SA: "Australia/Adelaide",
+  WA: "Australia/Perth",
+  TAS: "Australia/Hobart",
+  NT: "Australia/Darwin",
+} as const;
+
+export function timezoneForAustralianState(state: string): string | null {
+  return (AUSTRALIAN_STATE_TIMEZONES as Record<string, string>)[state] ?? null;
+}
+
+/** Timezone saved on the organization: from the state for AU, Kuala Lumpur for MY. */
+export function orgTimezoneForCountry(country: "MY" | "AU", state: string | null): string {
+  if (country === "AU") {
+    return (state ? timezoneForAustralianState(state) : null) ?? "Australia/Sydney";
+  }
+  return DEFAULT_ORG_TIMEZONE;
+}
+
 /** Calendar date (YYYY-MM-DD) in the org timezone. */
 export function orgLocalDateString(date = new Date(), timeZone = DEFAULT_ORG_TIMEZONE): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone }).format(date);

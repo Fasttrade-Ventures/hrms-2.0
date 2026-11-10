@@ -3,7 +3,6 @@ import { EmptyState, ListCard } from "@hrms/ui";
 import { ClaimSubmissionForm } from "@/components/employee/claim-submission-form";
 import {
   formatDate,
-  formatCurrency,
   RequestStatusPill,
 } from "@/components/employee/employee-shared";
 import { PortalIcon } from "@/components/portal/portal-icons";
@@ -11,12 +10,15 @@ import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { listClaimTypes } from "@/lib/employee/catalog";
 import { listClaims } from "@/lib/employee/requests";
 import { requireModule } from "@/lib/entitlements";
+import { formatMoney } from "@/lib/money";
+import { getOrganizationDisplay } from "@/lib/organization-display";
 
 export default async function Page() {
   await requireModule("claims");
-  const [claimTypes, claims] = await Promise.all([
+  const [claimTypes, claims, { currency }] = await Promise.all([
     listClaimTypes(),
     listClaims(),
+    getOrganizationDisplay(),
   ]);
   const today = new Date().toISOString().slice(0, 10);
 
@@ -24,7 +26,7 @@ export default async function Page() {
     <div className="space-y-8">
       <PortalPageHeader description="Submit expense claims and mileage travel claims for approval." title="Claims" />
 
-      <ClaimSubmissionForm claimTypes={claimTypes} today={today} />
+      <ClaimSubmissionForm claimTypes={claimTypes} currency={currency} today={today} />
 
       <ListCard
         columns={[
@@ -67,7 +69,7 @@ export default async function Page() {
               </div>
             ),
             date: formatDate(claim.receiptDate),
-            amount: formatCurrency(claim.amount),
+            amount: formatMoney(claim.amount, currency),
             status: <RequestStatusPill status={claim.status} />,
           },
           action: (

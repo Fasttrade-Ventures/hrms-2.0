@@ -28,6 +28,7 @@ import { requireRole } from "@/lib/auth/session";
 import { fetchMalaysiaHolidaysForState } from "@/lib/hr/malaysia-holidays-api";
 import { persistHolidaySync } from "@/lib/hr/sync-state-holidays";
 import { getOrganizationId } from "@/lib/hr/organization";
+import { loadOrganizationCountry } from "@/lib/payroll/organization-country";
 import { createClient } from "@/lib/supabase/server";
 import { createAssetCategory, updateAssetCategory } from "@/lib/assets/categories";
 
@@ -135,13 +136,14 @@ export async function createBranch(
   await requireRole("hr_administrator");
   const organizationId = await getOrganizationId();
 
-  const parsed = createBranchSchema.safeParse(readBranchForm(formData));
+  const supabase = await createClient();
+  const country = await loadOrganizationCountry(supabase, organizationId);
+  const parsed = createBranchSchema.safeParse({ ...readBranchForm(formData), country });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid branch details." };
   }
 
-  const supabase = await createClient();
   const { error } = await supabase.from("branches").insert({
     organization_id: organizationId,
     ...branchPayload(parsed.data),
@@ -161,13 +163,14 @@ export async function updateBranch(
   await requireRole("hr_administrator");
   const organizationId = await getOrganizationId();
 
-  const parsed = updateBranchSchema.safeParse(readBranchForm(formData));
+  const supabase = await createClient();
+  const country = await loadOrganizationCountry(supabase, organizationId);
+  const parsed = updateBranchSchema.safeParse({ ...readBranchForm(formData), country });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid branch details." };
   }
 
-  const supabase = await createClient();
   const { error } = await supabase
     .from("branches")
     .update(branchPayload(parsed.data))

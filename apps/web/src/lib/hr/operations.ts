@@ -2,6 +2,7 @@ import { mapApprovalDetail, mapApprovalInboxRow } from "@/lib/approvals/inbox";
 import { escalateOverdueApprovalSteps } from "@/lib/approvals/escalation";
 import type { ApprovalDetail, ApprovalInboxRow } from "@/lib/approvals/types";
 import { requireRole } from "@/lib/auth/session";
+import { loadOrganizationCurrency } from "@/lib/organization-display";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizationId } from "@/lib/auth/organization-context";
 
@@ -44,7 +45,10 @@ export async function listOrgApprovals(options?: {
     .limit(options?.limit ?? 200);
 
   if (error) throw new Error(error.message);
-  const rows = (data ?? []).map((row) => mapApprovalInboxRow(row as Record<string, unknown>));
+  const currency = await loadOrganizationCurrency(supabase, organizationId);
+  const rows = (data ?? []).map((row) =>
+    mapApprovalInboxRow(row as Record<string, unknown>, currency),
+  );
 
   if (options?.status === "expired") {
     return rows.filter((r) => r.status === "expired");
@@ -72,7 +76,10 @@ export async function getHrApprovalDetail(stepId: string): Promise<ApprovalDetai
   if (error) throw new Error(error.message);
   if (!data) return null;
 
-  return mapApprovalDetail(data as Record<string, unknown>);
+  return mapApprovalDetail(
+    data as Record<string, unknown>,
+    await loadOrganizationCurrency(supabase, organizationId),
+  );
 }
 
 export async function countOrgPendingApprovals(): Promise<number> {
