@@ -9,6 +9,7 @@ import {
   type OrgActionState,
 } from "@/app/(hr)/hr/organization/actions";
 import { ImportHolidaysDialog } from "@/components/hr/organization/import-holidays-dialog";
+import { LoadAustralianHolidaysDialog } from "@/components/hr/organization/load-australian-holidays-dialog";
 import {
   HrField,
   HrSelect,
@@ -88,7 +89,9 @@ export function HolidaysList({
   total,
   yearTotal,
   orgWideCount,
+  country = "MY",
 }: {
+  country?: "MY" | "AU";
   holidays: HolidayRow[];
   branches: BranchImportOption[];
   branchFilters: HolidayBranchFilter[];
@@ -103,6 +106,7 @@ export function HolidaysList({
   orgWideCount: number;
 }) {
   const [importOpen, setImportOpen] = useState(false);
+  const isAu = country === "AU";
   const years = getHolidayYearOptions();
   const { minYear, maxYear } = getHolidayYearRange();
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
@@ -124,14 +128,25 @@ export function HolidaysList({
             <HrLinkButton href="/hr/organization" variant="outline">
               Back to hub
             </HrLinkButton>
-            <Button
-              disabled={branches.length === 0}
-              onClick={() => setImportOpen(true)}
-              type="button"
-              variant="outline"
-            >
-              Import holidays
-            </Button>
+            {isAu ? (
+              <Button
+                disabled={branches.length === 0}
+                onClick={() => setImportOpen(true)}
+                type="button"
+                variant="outline"
+              >
+                Load 2026 holidays for this state
+              </Button>
+            ) : (
+              <Button
+                disabled={branches.length === 0}
+                onClick={() => setImportOpen(true)}
+                type="button"
+                variant="outline"
+              >
+                Import holidays
+              </Button>
+            )}
             <HrLinkButton href="/hr/organization/holidays/create">Add holiday</HrLinkButton>
           </div>
         }
@@ -139,12 +154,20 @@ export function HolidaysList({
         title="Holidays"
       />
 
-      <ImportHolidaysDialog
-        branches={branches}
-        defaultYear={year}
-        onClose={() => setImportOpen(false)}
-        open={importOpen}
-      />
+      {isAu ? (
+        <LoadAustralianHolidaysDialog
+          branches={branches}
+          onClose={() => setImportOpen(false)}
+          open={importOpen}
+        />
+      ) : (
+        <ImportHolidaysDialog
+          branches={branches}
+          defaultYear={year}
+          onClose={() => setImportOpen(false)}
+          open={importOpen}
+        />
+      )}
 
       <Card className="py-0">
         <CardContent className="flex flex-col gap-3 py-4">

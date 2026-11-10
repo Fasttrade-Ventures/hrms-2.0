@@ -5,14 +5,26 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 
 import { formatDate, RequestStatusPill } from "@/components/employee/employee-shared";
+import { daysToHours } from "@hrms/domain";
 import type { LeaveRequestRow } from "@/lib/employee/leave";
+
+/** Australia shows hours (standardDayHours set). Malaysia shows days. */
+function formatLeaveAmount(days: number, standardDayHours?: number): string {
+  if (standardDayHours) {
+    const hours = daysToHours(days, standardDayHours);
+    return `${hours} Hour${hours === 1 ? "" : "s"}`;
+  }
+  return `${days} Day${days > 1 ? "s" : ""}`;
+}
 
 export function RecentLeaveCard({
   requests,
   initialViewAll = false,
+  standardDayHours,
 }: {
   requests: LeaveRequestRow[];
   initialViewAll?: boolean;
+  standardDayHours?: number;
 }) {
   const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(initialViewAll);
@@ -76,7 +88,7 @@ export function RecentLeaveCard({
                 <span className="text-[10px] text-[var(--foreground-muted)] font-medium">
                   {formatDate(req.startDate)}
                   {req.endDate !== req.startDate ? ` – ${formatDate(req.endDate)}` : ""}
-                  {` · ${req.days} Day${req.days > 1 ? "s" : ""}`}
+                  {` · ${formatLeaveAmount(req.days, standardDayHours)}`}
                 </span>
               </div>
               <RequestStatusPill status={req.status} />
@@ -193,7 +205,7 @@ export function RecentLeaveCard({
                     <span className="text-xs text-[var(--foreground-muted)] font-medium">
                       {formatDate(req.startDate)}
                       {req.endDate !== req.startDate ? ` – ${formatDate(req.endDate)}` : ""}
-                      {` · ${req.days} Day${req.days > 1 ? "s" : ""}`}
+                      {` · ${formatLeaveAmount(req.days, standardDayHours)}`}
                       {req.halfDay ? " (Half Day)" : ""}
                     </span>
                     {req.reason && (

@@ -1,7 +1,7 @@
 import { HolidaysList } from "@/components/hr/organization/holidays";
 import { requireRole } from "@/lib/auth/session";
 import { isHolidayYearAllowed } from "@/lib/hr/holiday-window";
-import { getHolidayDirectory, listBranchesForImport } from "@/lib/hr/organization";
+import { getHolidayDirectory, getOrganizationCountry, listBranchesForImport } from "@/lib/hr/organization";
 import { DEFAULT_LIST_PAGE_SIZE } from "@/lib/pagination";
 import { listHolidaysSchema } from "@hrms/validation";
 
@@ -32,15 +32,17 @@ export default async function HolidaysPage({
     pageSize: DEFAULT_LIST_PAGE_SIZE,
   });
 
-  const [directory, branches] = await Promise.all([
+  const [directory, branches, country] = await Promise.all([
     getHolidayDirectory(filters),
     listBranchesForImport(),
+    getOrganizationCountry(),
   ]);
 
   return (
     <HolidaysList
       branchId={filters.branchId}
       branches={branches}
+      country={country}
       branchFilters={directory.branchFilters}
       holidays={directory.holidays}
       order={filters.order}
