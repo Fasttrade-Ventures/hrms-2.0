@@ -127,6 +127,14 @@ export async function createEmployeeRecord(
     epf_employer_rate: input.epfEmployerRate ?? 13,
     eis_eligible: input.eisEligible ?? true,
     profile_photo_path: input.profilePhotoPath ?? null,
+    employment_basis: input.employmentBasis ?? null,
+    hourly_rate: input.hourlyRate ?? null,
+    bsb: input.bsb ?? null,
+    super_fund_name: input.superFundName ?? null,
+    super_usi: input.superUsi ?? null,
+    super_member_number: input.superMemberNumber ?? null,
+    tax_free_threshold: input.taxFreeThreshold ?? false,
+    study_loan: input.studyLoan ?? false,
   });
 
   if (profileError) {

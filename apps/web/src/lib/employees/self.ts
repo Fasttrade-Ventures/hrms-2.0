@@ -70,7 +70,15 @@ export async function getCurrentEmployeeDetail(): Promise<EmployeeDetail | null>
         epf_employee_rate,
         epf_employer_rate,
         eis_eligible,
-        profile_photo_path
+        profile_photo_path,
+        employment_basis,
+        hourly_rate,
+        bsb,
+        super_fund_name,
+        super_usi,
+        super_member_number,
+        tax_free_threshold,
+        study_loan
       ),
       employee_emergency_contacts(id, name, relationship, phone),
       employee_dependents(id, dependent_type, full_name, ic_number, is_working, date_of_birth),
@@ -175,6 +183,14 @@ export async function getCurrentEmployeeDetail(): Promise<EmployeeDetail | null>
       voluntaryEpfExtraRate: Number(compensation?.voluntary_epf_extra_rate ?? 0),
       profilePhotoPath: profile?.profile_photo_path ?? null,
       profilePhotoUrl: getEmployeeProfilePhotoUrl(profile?.profile_photo_path ?? null),
+      employmentBasis: profile?.employment_basis ?? null,
+      hourlyRate: profile?.hourly_rate === null || profile?.hourly_rate === undefined ? null : Number(profile.hourly_rate),
+      bsb: profile?.bsb ?? null,
+      superFundName: profile?.super_fund_name ?? null,
+      superUsi: profile?.super_usi ?? null,
+      superMemberNumber: profile?.super_member_number ?? null,
+      taxFreeThreshold: profile?.tax_free_threshold ?? false,
+      studyLoan: profile?.study_loan ?? false,
     },
     dependents: (employee.employee_dependents ?? []).map(
       (dependent: {

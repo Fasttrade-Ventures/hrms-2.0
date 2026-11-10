@@ -23,6 +23,7 @@ import { updateEmployeeFullProfile } from "@/lib/employees/update-employee";
 import { requireRole } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizationId } from "@/lib/auth/organization-context";
+import { getOrganizationCountry } from "@/lib/hr/organization";
 
 export type EmployeeActionState = {
   error?: string;
@@ -41,7 +42,7 @@ export async function createEmployee(
   formData: FormData,
 ): Promise<EmployeeActionState> {
   const session = await requireRole("hr_administrator");
-  const parsed = parseEmployeeProfileFormData(formData);
+  const parsed = parseEmployeeProfileFormData(formData, await getOrganizationCountry());
 
   if (!parsed.success) {
     return { error: parsed.error };
@@ -78,7 +79,7 @@ export async function updateEmployeeFull(
   formData: FormData,
 ): Promise<EmployeeActionState> {
   const session = await requireRole("hr_administrator");
-  const parsed = parseEmployeeProfileFormData(formData);
+  const parsed = parseEmployeeProfileFormData(formData, await getOrganizationCountry());
 
   if (!parsed.success) {
     return { error: parsed.error };

@@ -64,6 +64,8 @@ export default async function EditEmployeePage({
       />
       <EditEmployeeForm
         banner={banner}
+        country={payroll.country}
+        currency={payroll.currency}
         branches={options.branches}
         departments={options.departments}
         employee={employee}

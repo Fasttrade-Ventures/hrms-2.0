@@ -8,12 +8,19 @@ import {
 } from "@/components/employee/employee-profile";
 import { getEmployeePayrollDeclarations } from "@/lib/employee/payroll-declarations";
 import { getCurrentEmployeeDetail } from "@/lib/employees/self";
+import { getOrganizationDisplay } from "@/lib/organization-display";
 
 export default async function Page() {
   const employee = await getCurrentEmployeeDetail();
 
   if (!employee) {
     redirect("/auth/login?error=no_membership");
+  }
+
+  // Zakat, PCB and extra EPF declarations are Malaysian only.
+  const { country } = await getOrganizationDisplay();
+  if (country === "AU") {
+    redirect("/employee/profile");
   }
 
   const declarations = await getEmployeePayrollDeclarations().catch(() => null);
