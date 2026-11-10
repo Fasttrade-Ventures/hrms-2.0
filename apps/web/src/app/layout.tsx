@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
+import { InstallPrompt } from "@/components/pwa/install-prompt";
+
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,6 +18,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "BukuHR",
   description: "BukuHR people operations",
+  // The manifest itself is emitted by app/manifest.ts at /manifest.webmanifest.
+  appleWebApp: { capable: true, title: "BukuHR", statusBarStyle: "default" },
+  icons: { apple: "/icons/icon-192.png" },
 };
 
 export default function RootLayout({
@@ -37,6 +42,7 @@ export default function RootLayout({
           }}
         />
         {children}
+        <InstallPrompt />
       </body>
     </html>
   );
