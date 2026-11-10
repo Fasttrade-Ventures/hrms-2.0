@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   payrollEmptyDescription,
   payrollHubDescription,
+  showAuPayFile,
   statutoryExportOptionsFor,
 } from "@/lib/payroll/export-options";
 
@@ -35,5 +36,12 @@ describe("payroll hub wording by country", () => {
     for (const word of ["EPF", "SOCSO", "EIS", "PCB", "HRDF", "Malaysia", "statutory"]) {
       expect(text).not.toContain(word);
     }
+  });
+});
+
+describe("Xero and MYOB pay file by country", () => {
+  it("is shown for AU and hidden for MY", () => {
+    expect(showAuPayFile("AU")).toBe(true);
+    expect(showAuPayFile("MY")).toBe(false);
   });
 });

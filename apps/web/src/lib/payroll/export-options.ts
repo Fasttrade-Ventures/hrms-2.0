@@ -25,3 +25,8 @@ export function payrollEmptyDescription(country: PayrollCountry): string {
     ? "Generate a draft payrun to calculate statutory deductions for active employees."
     : "Generate a draft payrun to calculate pay for active employees.";
 }
+
+/** The Xero and MYOB pay file is offered to Australian companies only. */
+export function showAuPayFile(country: PayrollCountry): boolean {
+  return country === "AU";
+}
