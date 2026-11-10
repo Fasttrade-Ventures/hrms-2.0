@@ -71,9 +71,12 @@ export function buildAuPayFileCsv(lines: AuPayFileLine[]): string {
   return [AU_PAY_FILE_HEADER, ...lines.map((line) => lineToCells(line).join(","))].join("\n");
 }
 
-/** "personal", "sick", or "carer" means Personal leave. Everything else is Annual leave. */
+/**
+ * "personal", "sick", "carer", "medical", or "hospital" means Personal leave.
+ * Everything else is Annual leave.
+ */
 export function auLeaveEarningName(leaveTypeName: string): "Annual leave" | "Personal leave" {
-  return /personal|sick|carer/i.test(leaveTypeName) ? "Personal leave" : "Annual leave";
+  return /personal|sick|carer|medical|hospital/i.test(leaveTypeName) ? "Personal leave" : "Annual leave";
 }
 
 export type AuPayFileEmployee = {
@@ -122,13 +125,48 @@ export type MapAuPayFileInput = {
   allowances: AuPayFileAllowance[];
 };
 
-/** Maps already-filtered period rows to pay file lines. Employees without a stored rate are skipped. */
+/**
+ * Maps already-filtered period rows to pay file lines.
+ * Employees with no activity in the period stay out of the file. An employee who has
+ * ordinary hours, overtime, paid leave, or an allowance but no stored hourly rate makes
+ * this throw, naming each such employee, so their time is never dropped silently.
+ */
 export function mapAuPayFileLines(input: MapAuPayFileInput): AuPayFileLine[] {
   const rated = new Map<string, AuPayFileEmployee & { hourlyRate: number }>();
+  const unrated = new Map<string, AuPayFileEmployee>();
   for (const employee of input.employees) {
     if (employee.hourlyRate !== null && Number.isFinite(employee.hourlyRate) && employee.hourlyRate > 0) {
       rated.set(employee.id, { ...employee, hourlyRate: employee.hourlyRate });
+    } else {
+      unrated.set(employee.id, employee);
     }
+  }
+
+  const missingRate = new Set<string>();
+  const flagIfUnrated = (employeeId: string) => {
+    if (unrated.has(employeeId)) missingRate.add(employeeId);
+  };
+  for (const session of input.sessions) {
+    if (!session.clockInAt || !session.clockOutAt) continue;
+    const ms = Date.parse(session.clockOutAt) - Date.parse(session.clockInAt);
+    if (Number.isFinite(ms) && ms > 0) flagIfUnrated(session.employeeId);
+  }
+  for (const request of input.overtime) {
+    if (request.hours > 0) flagIfUnrated(request.employeeId);
+  }
+  for (const leave of input.leave) {
+    if (!leave.isUnpaid && leave.days > 0) flagIfUnrated(leave.employeeId);
+  }
+  for (const allowance of input.allowances) {
+    if (allowance.amount !== 0) flagIfUnrated(allowance.employeeId);
+  }
+  if (missingRate.size > 0) {
+    const names = [...unrated.values()]
+      .filter((employee) => missingRate.has(employee.id))
+      .map((employee) => `${employee.fullName} (${employee.employeeNumber})`);
+    throw new Error(
+      `Cannot build the pay file. No hourly rate is set for ${names.join(", ")}. Set an hourly rate on the employee record, then download again.`,
+    );
   }
 
   const head = (employee: AuPayFileEmployee) => ({

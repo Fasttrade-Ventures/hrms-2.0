@@ -82,6 +82,8 @@ describe("auLeaveEarningName", () => {
     ["Personal Leave", "Personal leave"],
     ["Sick leave", "Personal leave"],
     ["CARER'S leave", "Personal leave"],
+    ["Medical Leave", "Personal leave"],
+    ["Hospitalization Leave", "Personal leave"],
     ["Annual Leave", "Annual leave"],
     ["Long service", "Annual leave"],
   ])("maps %s to %s", (name, expected) => {
@@ -113,16 +115,52 @@ describe("mapAuPayFileLines", () => {
     ]);
   });
 
-  it("skips an employee without an hourly rate", () => {
+  it("throws a message naming an employee who has time but no hourly rate", () => {
+    expect(() =>
+      mapAuPayFileLines({
+        ...period,
+        employees,
+        sessions: [
+          { employeeId: "e2", clockInAt: "2026-11-03T08:00:00.000Z", clockOutAt: "2026-11-03T16:00:00.000Z" },
+        ],
+        overtime: [],
+        leave: [],
+        allowances: [],
+      }),
+    ).toThrow(/No Rate \(E002\)/);
+  });
+
+  it.each([
+    ["overtime", { overtime: [{ employeeId: "e2", hours: 2, rateType: "1.5", hourlyRate: null }] }],
+    [
+      "paid leave",
+      { leave: [{ employeeId: "e2", days: 1, leaveTypeName: "Annual leave", isUnpaid: false }] },
+    ],
+    ["an allowance", { allowances: [{ employeeId: "e2", amount: 20 }] }],
+  ])("throws for an unrated employee with %s", (_label, activity) => {
+    expect(() =>
+      mapAuPayFileLines({
+        ...period,
+        employees,
+        sessions: [],
+        overtime: [],
+        leave: [],
+        allowances: [],
+        ...activity,
+      }),
+    ).toThrow(/No Rate \(E002\)/);
+  });
+
+  it("keeps an unrated employee with no activity out of the file", () => {
     const lines = mapAuPayFileLines({
       ...period,
       employees,
       sessions: [
-        { employeeId: "e2", clockInAt: "2026-11-03T08:00:00.000Z", clockOutAt: "2026-11-03T16:00:00.000Z" },
+        { employeeId: "e2", clockInAt: "2026-11-03T08:00:00.000Z", clockOutAt: null },
       ],
-      overtime: [{ employeeId: "e2", hours: 2, rateType: "1.5", hourlyRate: null }],
-      leave: [{ employeeId: "e2", days: 1, leaveTypeName: "Annual leave", isUnpaid: false }],
-      allowances: [{ employeeId: "e2", amount: 20 }],
+      overtime: [],
+      leave: [{ employeeId: "e2", days: 3, leaveTypeName: "Leave without pay", isUnpaid: true }],
+      allowances: [],
     });
     expect(lines).toEqual([]);
   });

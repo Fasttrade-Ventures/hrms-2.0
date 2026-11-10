@@ -1,12 +1,16 @@
+import { notFound } from "next/navigation";
+
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { YearEndPanel } from "@/components/hr/payroll/year-end-panel";
 import { requireRole } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
+import { getOrganizationCountry } from "@/lib/hr/organization";
 import { listBranchesForSettings } from "@/lib/payroll/settings";
 
 export default async function PayrollYearEndPage() {
   await requireModule("payroll");
   await requireRole("hr_administrator");
+  if ((await getOrganizationCountry()) === "AU") notFound();
   const branches = await listBranchesForSettings();
 
   return (

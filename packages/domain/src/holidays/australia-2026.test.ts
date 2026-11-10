@@ -63,6 +63,31 @@ describe("australianHolidays2026", () => {
     expect(byState("NT", "May Day")).toBe("2026-05-04");
   });
 
+  it("includes the six state-wide days in the right states only", () => {
+    const expected = [
+      ["SA", "Adelaide Cup Day", "2026-03-09"],
+      ["WA", "Western Australia Day", "2026-06-01"],
+      ["ACT", "Reconciliation Day", "2026-06-01"],
+      ["NT", "Picnic Day", "2026-08-03"],
+      ["VIC", "Friday before the AFL Grand Final", "2026-09-25"],
+      ["VIC", "Melbourne Cup Day", "2026-11-03"],
+    ] as const;
+    for (const [state, name, date] of expected) {
+      for (const other of AUSTRALIAN_STATES) {
+        const row = australianHolidays2026(other).find((h) => h.name === name);
+        if (other === state) expect(row?.holidayDate).toBe(date);
+        else expect(row).toBeUndefined();
+      }
+    }
+  });
+
+  it("does not add regional days", () => {
+    const names = AUSTRALIAN_STATES.flatMap((state) => australianHolidays2026(state).map((h) => h.name));
+    for (const regional of ["Royal Hobart Regatta", "Royal Queensland Show", "Recreation Day"]) {
+      expect(names).not.toContain(regional);
+    }
+  });
+
   it("does not add Easter Saturday where the state does not observe it", () => {
     for (const state of ["WA", "TAS"] as const) {
       expect(australianHolidays2026(state).map((h) => h.holidayDate)).not.toContain("2026-04-04");

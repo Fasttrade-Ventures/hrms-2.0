@@ -1,14 +1,18 @@
+import { notFound } from "next/navigation";
+
 import { ListCard } from "@hrms/ui";
 
 import { formatDate } from "@/components/employee/employee-shared";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { requireRole } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
+import { getOrganizationCountry } from "@/lib/hr/organization";
 import { listStatutoryRuleVersions } from "@/lib/payroll/settings";
 
 export default async function StatutoryRulesPage() {
   await requireModule("payroll");
   await requireRole("hr_administrator");
+  if ((await getOrganizationCountry()) === "AU") notFound();
   const rules = await listStatutoryRuleVersions();
 
   return (

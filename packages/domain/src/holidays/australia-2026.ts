@@ -10,9 +10,10 @@
  * - Tasmania: https://worksafe.tas.gov.au/topics/laws-and-compliance/public-holidays
  * - Victoria: https://business.vic.gov.au/business-information/public-holidays/victorian-public-holidays-2026
  *
- * Only state-wide days are listed. Regional and local days (for example Melbourne Cup,
- * Royal Queensland Show, Royal Hobart Regatta, Picnic Day, Reconciliation Day, Western
- * Australia Day, Adelaide Cup Day, Friday before the AFL Grand Final) are not loaded here.
+ * Only state-wide days are listed. These include Adelaide Cup Day (SA), Western Australia
+ * Day (WA), Reconciliation Day (ACT), Picnic Day (NT), the Friday before the AFL Grand Final
+ * (VIC) and Melbourne Cup Day (VIC). Regional and local days (Royal Hobart Regatta, Royal
+ * Queensland Show, Recreation Day) are not loaded here.
  */
 
 export const AUSTRALIAN_STATES = ["NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT"] as const;
@@ -63,6 +64,8 @@ const STATE_DAYS_2026: Record<AustralianState, readonly AustralianHoliday[]> = {
   VIC: [
     { holidayDate: "2026-03-09", name: "Labour Day" },
     { holidayDate: "2026-06-08", name: "King's Birthday" },
+    { holidayDate: "2026-09-25", name: "Friday before the AFL Grand Final" },
+    { holidayDate: "2026-11-03", name: "Melbourne Cup Day" },
   ],
   QLD: [
     { holidayDate: "2026-05-04", name: "Labour Day" },
@@ -71,10 +74,12 @@ const STATE_DAYS_2026: Record<AustralianState, readonly AustralianHoliday[]> = {
   SA: [
     { holidayDate: "2026-06-08", name: "King's Birthday" },
     { holidayDate: "2026-10-05", name: "Labour Day" },
+    { holidayDate: "2026-03-09", name: "Adelaide Cup Day" },
   ],
   WA: [
     { holidayDate: "2026-03-02", name: "Labour Day" },
     { holidayDate: "2026-09-28", name: "King's Birthday" },
+    { holidayDate: "2026-06-01", name: "Western Australia Day" },
   ],
   TAS: [
     { holidayDate: "2026-03-09", name: "Eight Hours Day" },
@@ -83,11 +88,13 @@ const STATE_DAYS_2026: Record<AustralianState, readonly AustralianHoliday[]> = {
   NT: [
     { holidayDate: "2026-05-04", name: "May Day" },
     { holidayDate: "2026-06-08", name: "King's Birthday" },
+    { holidayDate: "2026-08-03", name: "Picnic Day" },
   ],
   ACT: [
     { holidayDate: "2026-03-09", name: "Canberra Day" },
     { holidayDate: "2026-06-08", name: "King's Birthday" },
     { holidayDate: "2026-10-05", name: "Labour Day" },
+    { holidayDate: "2026-06-01", name: "Reconciliation Day" },
   ],
 };
 

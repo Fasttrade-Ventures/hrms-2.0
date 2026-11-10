@@ -8,6 +8,7 @@ import { PortalShell } from "@/components/portal-shell";
 import { listUserMemberships, requireRole, requireRoleOrPermission } from "@/lib/auth/session";
 import { getEntitlements } from "@/lib/entitlements";
 import { getHrTopbarMeta } from "@/lib/hr/topbar";
+import { getOrganizationCountry } from "@/lib/hr/organization";
 import { filterNavForSpecialist, getPortalNavSectionsForEntitlements, getPortalIntegrationsHref } from "@/lib/portal-nav";
 import { getImpersonationState } from "@/lib/platform/impersonation";
 import { getUnreadNotificationCount } from "@/lib/notifications/inbox";
@@ -55,19 +56,23 @@ export async function PortalLayout({
         ? await requireRoleOrPermission([], requiredPermissions)
         : await requireRole(...(requiredRoles ?? []));
 
-  const [pageSubtitle, unreadNotificationCount, impersonation, entitlements, orgSwitcher] =
+  const [pageSubtitle, unreadNotificationCount, impersonation, entitlements, orgSwitcher, country] =
     await Promise.all([
       portal === "HR Administrator" ? getHrTopbarMeta().catch(() => undefined) : Promise.resolve(undefined),
       getUnreadNotificationCount().catch(() => 0),
       getImpersonationState(session).catch(() => null),
       getEntitlements(),
       loadOrgSwitcherOptions(session.user.id, session.membership.organizationId),
+      portal === "HR Administrator"
+        ? getOrganizationCountry().catch(() => undefined)
+        : Promise.resolve(undefined),
     ]);
 
   const navSections = filterNavForSpecialist(
     getPortalNavSectionsForEntitlements(portal, {
       hasModule: (module) => entitlements.hasModule(module),
       tier: entitlements.tier,
+      country,
     }),
     session.membership.roles,
     session.membership.permissions,

@@ -22,8 +22,10 @@ function redirectPublic(url: URL, request: NextRequest) {
 /** Stay well under Vercel middleware invocation limits when Auth/DB is slow or unreachable. */
 const AUTH_TIMEOUT_MS = 2_500;
 
-function isPublicPath(pathname: string): boolean {
+export function isPublicPath(pathname: string): boolean {
   if (pathname === "/") return true;
+  // The PWA manifest is fetched without cookies, so it must never redirect to login.
+  if (pathname === "/manifest.webmanifest") return true;
   if (pathname === "/api/health") return true;
   if (pathname.startsWith("/api/cron/")) return true;
   if (pathname.startsWith("/api/webhooks/")) return true;

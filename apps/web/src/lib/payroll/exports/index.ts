@@ -2,6 +2,7 @@ import { requireRole } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
 
 import { buildBankCsv, buildCimbFile, buildMaybankFile, mapBankRows } from "./bank";
+import { assertMalaysianOrganization } from "./country-guard";
 import { resolveBranchEmployerCodes } from "./branch-codes";
 import { storePayrollExport } from "./store";
 import {
@@ -77,6 +78,7 @@ export async function generateStatutoryExport(
 ) {
   await requireModule("payroll");
   await requireRole("hr_administrator");
+  await assertMalaysianOrganization();
   const payrun = await assertExportablePayrun(payrunId);
   const items = await loadPayrunBranchItems(payrunId, branchId);
   const rows = mapStatutoryRows(items);
