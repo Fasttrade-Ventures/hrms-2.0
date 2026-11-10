@@ -3,10 +3,10 @@ import { redirect } from "next/navigation";
 
 import { StatCard } from "@hrms/ui";
 
-import { formatCurrency } from "@/components/employee/employee-shared";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { getPayslip } from "@/lib/employee/payslips";
 import { requireModule } from "@/lib/entitlements";
+import { formatMoney } from "@/lib/money";
 
 export default async function PayslipDetailPage({
   params,
@@ -20,6 +20,9 @@ export default async function PayslipDetailPage({
   if (!payslip) {
     redirect(`/unauthorized?from=/employee/payslips/${itemId}`);
   }
+
+  const showStatutory = payslip.country === "MY";
+  const money = (amount: number) => formatMoney(amount, payslip.currency);
 
   return (
     <div className="space-y-6">
@@ -37,30 +40,36 @@ export default async function PayslipDetailPage({
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Gross pay" value={formatCurrency(payslip.grossPay)} />
-        <StatCard label="Net pay" value={formatCurrency(payslip.netPay)} />
-        <StatCard label="EPF (employee)" value={formatCurrency(payslip.epfEmployee)} />
-        <StatCard label="PCB" value={formatCurrency(payslip.pcb)} />
+        <StatCard label="Gross pay" value={money(payslip.grossPay)} />
+        <StatCard label="Net pay" value={money(payslip.netPay)} />
+        {showStatutory ? (
+          <>
+            <StatCard label="EPF (employee)" value={money(payslip.epfEmployee)} />
+            <StatCard label="PCB" value={money(payslip.pcb)} />
+          </>
+        ) : null}
       </div>
 
-      <section className="grid gap-4 border border-[var(--border-primary)] bg-[var(--surface-card)] p-6 md:grid-cols-2">
-        <div>
-          <p className="text-[13px] text-[var(--foreground-muted)]">SOCSO (employee)</p>
-          <p className="text-sm">{formatCurrency(payslip.socsoEmployee)}</p>
-        </div>
-        <div>
-          <p className="text-[13px] text-[var(--foreground-muted)]">EIS (employee)</p>
-          <p className="text-sm">{formatCurrency(payslip.eisEmployee)}</p>
-        </div>
-        <div>
-          <p className="text-[13px] text-[var(--foreground-muted)]">EPF (employer)</p>
-          <p className="text-sm">{formatCurrency(payslip.epfEmployer)}</p>
-        </div>
-        <div>
-          <p className="text-[13px] text-[var(--foreground-muted)]">SOCSO (employer)</p>
-          <p className="text-sm">{formatCurrency(payslip.socsoEmployer)}</p>
-        </div>
-      </section>
+      {showStatutory ? (
+        <section className="grid gap-4 border border-[var(--border-primary)] bg-[var(--surface-card)] p-6 md:grid-cols-2">
+          <div>
+            <p className="text-[13px] text-[var(--foreground-muted)]">SOCSO (employee)</p>
+            <p className="text-sm">{money(payslip.socsoEmployee)}</p>
+          </div>
+          <div>
+            <p className="text-[13px] text-[var(--foreground-muted)]">EIS (employee)</p>
+            <p className="text-sm">{money(payslip.eisEmployee)}</p>
+          </div>
+          <div>
+            <p className="text-[13px] text-[var(--foreground-muted)]">EPF (employer)</p>
+            <p className="text-sm">{money(payslip.epfEmployer)}</p>
+          </div>
+          <div>
+            <p className="text-[13px] text-[var(--foreground-muted)]">SOCSO (employer)</p>
+            <p className="text-sm">{money(payslip.socsoEmployer)}</p>
+          </div>
+        </section>
+      ) : null}
 
       <section className="grid gap-6 border border-[var(--border-primary)] bg-[var(--surface-card)] p-6 md:grid-cols-3">
         <div>
@@ -69,7 +78,7 @@ export default async function PayslipDetailPage({
             {payslip.components.earnings.map((row) => (
               <li key={row.code} className="flex justify-between gap-4">
                 <span>{row.name}</span>
-                <span className="tabular-nums">{formatCurrency(row.amount)}</span>
+                <span className="tabular-nums">{money(row.amount)}</span>
               </li>
             ))}
           </ul>
@@ -80,7 +89,7 @@ export default async function PayslipDetailPage({
             {payslip.components.deductions.map((row) => (
               <li key={row.code} className="flex justify-between gap-4">
                 <span>{row.name}</span>
-                <span className="tabular-nums">{formatCurrency(row.amount)}</span>
+                <span className="tabular-nums">{money(row.amount)}</span>
               </li>
             ))}
           </ul>
@@ -91,7 +100,7 @@ export default async function PayslipDetailPage({
             {payslip.components.employer.map((row) => (
               <li key={row.code} className="flex justify-between gap-4">
                 <span>{row.name}</span>
-                <span className="tabular-nums">{formatCurrency(row.amount)}</span>
+                <span className="tabular-nums">{money(row.amount)}</span>
               </li>
             ))}
           </ul>

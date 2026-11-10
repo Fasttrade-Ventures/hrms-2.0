@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { ApplyBehalfDetail } from "@/components/hr/apply-behalf/apply-behalf-ui";
 import { requireRole } from "@/lib/auth/session";
+import { getOrganizationDisplay } from "@/lib/organization-display";
 import { getBehalfClaimDetail } from "@/lib/hr/apply-behalf";
 
 export default async function BehalfClaimDetailPage({
@@ -11,11 +12,14 @@ export default async function BehalfClaimDetailPage({
 }) {
   await requireRole("hr_administrator");
   const { id } = await params;
-  const application = await getBehalfClaimDetail(id);
+  const [application, { currency }] = await Promise.all([
+    getBehalfClaimDetail(id),
+    getOrganizationDisplay(),
+  ]);
 
   if (!application) {
     notFound();
   }
 
-  return <ApplyBehalfDetail application={application} />;
+  return <ApplyBehalfDetail application={application} currency={currency} />;
 }

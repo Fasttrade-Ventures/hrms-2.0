@@ -26,6 +26,27 @@ export const dependentSchema = z.object({
   dateOfBirth: optionalDate,
 });
 
+export const employmentBasisSchema = z.enum(["full_time", "part_time", "casual"]);
+
+/**
+ * Australian employee tax, bank and super details. Required when the organization is Australian.
+ * A missing tax-free-threshold or study-loan checkbox means false.
+ */
+export const auEmployeeSchema = z.object({
+  employmentBasis: employmentBasisSchema,
+  hourlyRate: z.coerce.number().positive(),
+  taxNumber: z.string().regex(/^\d{8,9}$/),
+  bsb: z.string().regex(/^\d{6}$/),
+  bankAccountNumber: z.string().min(1).max(20),
+  superFundName: z.string().min(1).max(200),
+  superUsi: z.string().min(1).max(20),
+  superMemberNumber: z.string().min(1).max(30),
+  taxFreeThreshold: z.coerce.boolean(),
+  studyLoan: z.coerce.boolean(),
+});
+
+export type AuEmployeeInput = z.infer<typeof auEmployeeSchema>;
+
 export const createEmployeeSchema = z.object({
   // Employment
   fullName: z.string().min(1).max(200),
@@ -77,6 +98,16 @@ export const createEmployeeSchema = z.object({
   voluntaryEpfExtraRate: z.coerce.number().min(0).max(100).optional(),
   profilePhotoPath: optionalText,
   removeProfilePhoto: z.boolean().optional(),
+
+  // Australia (validated against auEmployeeSchema when the organization is AU)
+  employmentBasis: employmentBasisSchema.optional().nullable(),
+  hourlyRate: z.coerce.number().optional().nullable(),
+  bsb: z.string().max(20).optional().nullable(),
+  superFundName: optionalText,
+  superUsi: z.string().max(20).optional().nullable(),
+  superMemberNumber: z.string().max(30).optional().nullable(),
+  taxFreeThreshold: z.boolean().optional(),
+  studyLoan: z.boolean().optional(),
 
   // Family
   dependents: z.array(dependentSchema).optional(),

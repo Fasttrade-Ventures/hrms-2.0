@@ -17,6 +17,8 @@ import {
 import { getLeaveBalances, listLeaveRequests, requireEmployeeContext, type LeaveBalanceRow } from "@/lib/employee/leave";
 import { getMyDocumentComplianceSummary } from "@/lib/employee/documents";
 import { hasModule } from "@/lib/entitlements";
+import { formatMoney } from "@/lib/money";
+import { getOrganizationDisplay } from "@/lib/organization-display";
 import {
   listClaims,
   listOvertimeRequests,
@@ -48,6 +50,8 @@ export default async function Page() {
     getTodayAttendance().catch(() => null),
   ]);
   const firstName = firstNameFromFullName(employee?.fullName, employee?.email);
+
+  const { currency } = await getOrganizationDisplay().catch(() => ({ currency: "MYR" as const }));
 
   const requireSelfie = employeeContext
     ? await getClockInSelfieRequired(employeeContext.organizationId).catch(() => false)
@@ -158,7 +162,7 @@ export default async function Page() {
     ...claims.map((c) => ({
       id: c.id,
       type: "claim" as const,
-      title: `${c.claimTypeName} · RM ${Number(c.amount).toFixed(2)}`,
+      title: `${c.claimTypeName} · ${formatMoney(Number(c.amount), currency)}`,
       meta: `${formatDate(c.createdAt)} · Receipt Attached`,
       status: c.status,
       createdAt: c.createdAt,

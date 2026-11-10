@@ -17,6 +17,17 @@ import {
   tenureLabel,
 } from "@/lib/employees/display-labels";
 import type { EmployeeDetail } from "@/lib/employees/queries";
+import { formatMoney, type DisplayCurrency } from "@/lib/money";
+
+const EMPLOYMENT_BASIS_LABELS = {
+  full_time: "Full-time",
+  part_time: "Part-time",
+  casual: "Casual",
+} as const;
+
+function yesNo(value: boolean): string {
+  return value ? "Yes" : "No";
+}
 
 function ProfileField({ label, value }: { label: string; value: string }) {
   return (
@@ -67,7 +78,16 @@ function SubPanel({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-export function EmployeeProfileView({ employee }: { employee: EmployeeDetail }) {
+export function EmployeeProfileView({
+  employee,
+  country = "MY",
+  currency = "MYR",
+}: {
+  employee: EmployeeDetail;
+  country?: "MY" | "AU";
+  currency?: DisplayCurrency;
+}) {
+  const isAu = country === "AU";
   const assignment =
     [employee.branchName, employee.departmentName].filter(Boolean).join(" · ") || "Unassigned";
   const spouse = employee.dependents.find((item) => item.dependentType === "spouse");
@@ -164,7 +184,9 @@ export function EmployeeProfileView({ employee }: { employee: EmployeeDetail }) 
         <ProfileSection title="Personal">
           <div className="grid gap-4 sm:grid-cols-2">
             <ProfileField label="Mobile" value={employee.profile.phone ?? "—"} />
-            <ProfileField label="NRIC no" value={employee.profile.icNumber ?? "—"} />
+            {isAu ? null : (
+              <ProfileField label="NRIC no" value={employee.profile.icNumber ?? "—"} />
+            )}
             <ProfileField label="Date of birth" value={formatProfileDate(employee.profile.dateOfBirth)} />
             <ProfileField label="Gender" value={formatGender(employee.profile.gender)} />
             <ProfileField label="Race" value={employee.profile.race ?? "—"} />
@@ -197,36 +219,80 @@ export function EmployeeProfileView({ employee }: { employee: EmployeeDetail }) 
             <ProfileField label="Postcode" value={employee.profile.postcode ?? "—"} />
             <ProfileField
               label="Country"
-              value={employee.profile.country === "MY" ? "Malaysia" : employee.profile.country ?? "—"}
+              value={
+                employee.profile.country === "MY"
+                  ? "Malaysia"
+                  : employee.profile.country === "AU"
+                    ? "Australia"
+                    : (employee.profile.country ?? "—")
+              }
             />
           </div>
           <p className="mt-4 text-sm text-muted-foreground">{formatAddress(employee.profile)}</p>
         </ProfileSection>
 
-        <ProfileSection title="Payroll & statutory">
+        <ProfileSection title={isAu ? "Payroll & tax" : "Payroll & statutory"}>
           <div className="grid gap-4 sm:grid-cols-2">
             <ProfileField label="Pay basis" value={formatPayBasis(employee.profile.payBasis)} />
             <ProfileField
               label="Basic salary"
-              value={formatCurrency(employee.profile.basicSalary)}
+              value={isAu ? formatMoney(employee.profile.basicSalary, currency) : formatCurrency(employee.profile.basicSalary)}
             />
-            <ProfileField
-              label="Working days / month"
-              value={String(employee.profile.workingDaysPerMonth)}
-            />
-            <ProfileField label="Bank" value={employee.profile.bankName ?? "—"} />
-            <ProfileField label="Account no" value={employee.profile.bankAccountNumber ?? "—"} />
-            <ProfileField label="EPF no" value={employee.profile.epfNumber ?? "—"} />
-            <ProfileField
-              label="EPF employee rate"
-              value={`${employee.profile.epfEmployeeRate}%`}
-            />
-            <ProfileField
-              label="EPF employer rate"
-              value={`${employee.profile.epfEmployerRate}%`}
-            />
-            <ProfileField label="SOCSO no" value={employee.profile.socsoNumber ?? "—"} />
-            <ProfileField label="Tax no" value={employee.profile.taxNumber ?? "—"} />
+            {isAu ? (
+              <>
+                <ProfileField
+                  label="Employment basis"
+                  value={
+                    employee.profile.employmentBasis
+                      ? EMPLOYMENT_BASIS_LABELS[employee.profile.employmentBasis]
+                      : "—"
+                  }
+                />
+                <ProfileField
+                  label="Hourly rate"
+                  value={
+                    employee.profile.hourlyRate === null
+                      ? "—"
+                      : formatMoney(employee.profile.hourlyRate, currency)
+                  }
+                />
+                <ProfileField label="Tax File Number" value={employee.profile.taxNumber ?? "—"} />
+                <ProfileField label="Bank" value={employee.profile.bankName ?? "—"} />
+                <ProfileField label="BSB" value={employee.profile.bsb ?? "—"} />
+                <ProfileField label="Account no" value={employee.profile.bankAccountNumber ?? "—"} />
+                <ProfileField label="Super fund" value={employee.profile.superFundName ?? "—"} />
+                <ProfileField label="Super fund USI" value={employee.profile.superUsi ?? "—"} />
+                <ProfileField
+                  label="Super member number"
+                  value={employee.profile.superMemberNumber ?? "—"}
+                />
+                <ProfileField
+                  label="Tax-free threshold"
+                  value={yesNo(employee.profile.taxFreeThreshold)}
+                />
+                <ProfileField label="Study loan" value={yesNo(employee.profile.studyLoan)} />
+              </>
+            ) : (
+              <>
+                <ProfileField
+                  label="Working days / month"
+                  value={String(employee.profile.workingDaysPerMonth)}
+                />
+                <ProfileField label="Bank" value={employee.profile.bankName ?? "—"} />
+                <ProfileField label="Account no" value={employee.profile.bankAccountNumber ?? "—"} />
+                <ProfileField label="EPF no" value={employee.profile.epfNumber ?? "—"} />
+                <ProfileField
+                  label="EPF employee rate"
+                  value={`${employee.profile.epfEmployeeRate}%`}
+                />
+                <ProfileField
+                  label="EPF employer rate"
+                  value={`${employee.profile.epfEmployerRate}%`}
+                />
+                <ProfileField label="SOCSO no" value={employee.profile.socsoNumber ?? "—"} />
+                <ProfileField label="Tax no" value={employee.profile.taxNumber ?? "—"} />
+              </>
+            )}
           </div>
         </ProfileSection>
 

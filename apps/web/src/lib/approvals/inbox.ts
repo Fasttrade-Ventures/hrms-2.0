@@ -1,18 +1,21 @@
+import { currencyPrefix, type DisplayCurrency } from "@/lib/money";
 import { REQUEST_TYPE_LABELS, type ApprovalDetail, type ApprovalInboxRow, type ApprovalRequestType } from "./types";
 
 export function summarizeApprovalPayload(
   requestType: ApprovalRequestType,
   payload: Record<string, unknown>,
+  currency: DisplayCurrency = "MYR",
 ): string {
+  const prefix = currencyPrefix(currency);
   switch (requestType) {
     case "leave":
       return `${payload.leaveTypeName ?? "Leave"} · ${payload.startDate ?? ""} → ${payload.endDate ?? ""}`;
     case "claim":
       if (payload.isMileage && payload.distanceKm) {
         const tripInfo = payload.origin && payload.destination ? ` (${payload.distanceKm} km: ${payload.origin} → ${payload.destination})` : ` (${payload.distanceKm} km)`;
-        return `${payload.claimTypeName ?? "Mileage Claim"} · RM ${payload.amount ?? "0"}${tripInfo}`;
+        return `${payload.claimTypeName ?? "Mileage Claim"} · ${prefix}${payload.amount ?? "0"}${tripInfo}`;
       }
-      return `${payload.claimTypeName ?? "Claim"} · RM ${payload.amount ?? "0"}`;
+      return `${payload.claimTypeName ?? "Claim"} · ${prefix}${payload.amount ?? "0"}`;
     case "overtime":
       return `${payload.workDate ?? ""} · ${payload.hours ?? "0"}h @ ${payload.rateType ?? "1.5"}x`;
     case "replacement_credit":
@@ -26,7 +29,10 @@ export function summarizeApprovalPayload(
   }
 }
 
-export function mapApprovalInboxRow(row: Record<string, unknown>): ApprovalInboxRow {
+export function mapApprovalInboxRow(
+  row: Record<string, unknown>,
+  currency: DisplayCurrency = "MYR",
+): ApprovalInboxRow {
   const request = row.approval_requests as Record<string, unknown>;
   const requester = request.employees as Record<string, unknown> | null;
   const requestType = request.request_type as ApprovalRequestType;
@@ -63,7 +69,7 @@ export function mapApprovalInboxRow(row: Record<string, unknown>): ApprovalInbox
     requesterName: String(requester?.full_name ?? requester?.email ?? "Employee"),
     requesterEmployeeNumber: String(requester?.employee_number ?? "-"),
     submittedAt: String(request.submitted_at ?? request.created_at ?? ""),
-    summary: summarizeApprovalPayload(requestType, payload),
+    summary: summarizeApprovalPayload(requestType, payload, currency),
     status,
     stepOrder: row.step_order != null ? Number(row.step_order) : undefined,
     stepLabel: row.step_label != null ? String(row.step_label) : undefined,
@@ -72,12 +78,16 @@ export function mapApprovalInboxRow(row: Record<string, unknown>): ApprovalInbox
   };
 }
 
-export function mapApprovalDetail(row: Record<string, unknown>): ApprovalDetail {
-  const base = mapApprovalInboxRow(row);
+export function mapApprovalDetail(
+  row: Record<string, unknown>,
+  currency: DisplayCurrency = "MYR",
+): ApprovalDetail {
+  const base = mapApprovalInboxRow(row, currency);
   const request = row.approval_requests as Record<string, unknown>;
 
   return {
     ...base,
+    currency,
     payload: (request.payload ?? {}) as Record<string, unknown>,
     comment: (row as { comment?: string | null }).comment ?? null,
   };

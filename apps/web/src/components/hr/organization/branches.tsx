@@ -2,6 +2,9 @@
 
 import { useActionState, useMemo } from "react";
 
+import { isMalaysia } from "@hrms/domain";
+import { AUSTRALIAN_STATE_VALUES } from "@hrms/validation";
+
 import {
   createBranch,
   deleteBranch,
@@ -41,7 +44,14 @@ function weekendLabel(mode: BranchRow["weekendMode"]) {
   }
 }
 
-export function BranchesList({ branches }: { branches: BranchRow[] }) {
+export function BranchesList({
+  branches,
+  country = "MY",
+}: {
+  branches: BranchRow[];
+  country?: "MY" | "AU";
+}) {
+  const isMy = isMalaysia(country);
   const totalEmployees = branches.reduce((sum, row) => sum + row.employeeCount, 0);
 
   return (
@@ -74,7 +84,11 @@ export function BranchesList({ branches }: { branches: BranchRow[] }) {
       <OrgTableShell
         emptyDescription="Create your first branch to assign employees and holidays."
         emptyTitle="No branches yet"
-        headers={["Name", "Weekend", "Cutoff day", "HRDF", "LINDUNG", "Staff", "Status", "Action"]}
+        headers={
+          isMy
+            ? ["Name", "Weekend", "Cutoff day", "HRDF", "LINDUNG", "Staff", "Status", "Action"]
+            : ["Name", "Weekend", "Cutoff day", "Staff", "Status", "Action"]
+        }
         isEmpty={branches.length === 0}
       >
         {branches.map((branch) => (
@@ -89,8 +103,14 @@ export function BranchesList({ branches }: { branches: BranchRow[] }) {
             </OrgTableCell>
             <OrgTableCell>{weekendLabel(branch.weekendMode)}</OrgTableCell>
             <OrgTableCell>{branch.payrollCutoffDay}</OrgTableCell>
-            <OrgTableCell>{branch.hrdfEnabled ? `Yes (${(branch.hrdfRate * 100).toFixed(2)}%)` : "No"}</OrgTableCell>
-            <OrgTableCell>{branch.lindungEnabled ? "Yes" : "No"}</OrgTableCell>
+            {isMy ? (
+              <>
+                <OrgTableCell>
+                  {branch.hrdfEnabled ? `Yes (${(branch.hrdfRate * 100).toFixed(2)}%)` : "No"}
+                </OrgTableCell>
+                <OrgTableCell>{branch.lindungEnabled ? "Yes" : "No"}</OrgTableCell>
+              </>
+            ) : null}
             <OrgTableCell variant="muted">{branch.employeeCount}</OrgTableCell>
             <OrgTableStatus />
             <OrgTableEditLink href={`/hr/organization/branches/${branch.id}/edit`} />
@@ -101,7 +121,15 @@ export function BranchesList({ branches }: { branches: BranchRow[] }) {
   );
 }
 
-export function BranchForm({ branch }: { branch?: BranchRow }) {
+export function BranchForm({
+  branch,
+  country = "MY",
+}: {
+  branch?: BranchRow;
+  country?: "MY" | "AU";
+}) {
+  const isMy = isMalaysia(country);
+  const stateOptions: readonly string[] = isMy ? MALAYSIAN_STATE_OPTIONS : AUSTRALIAN_STATE_VALUES;
   const boundUpdate = useMemo(
     () => (branch ? updateBranch.bind(null, branch.id) : createBranch),
     [branch],
@@ -130,13 +158,17 @@ export function BranchForm({ branch }: { branch?: BranchRow }) {
             <HrTextInput defaultValue={branch?.name ?? ""} id="name" name="name" required />
           </HrField>
           <HrField
-            hint="Used to import Malaysia public holidays for this branch."
+            hint={
+              isMy
+                ? "Used to import Malaysia public holidays for this branch."
+                : "Australian state or territory for this branch."
+            }
             id="state"
             label="State / territory"
           >
             <HrSelect defaultValue={branch?.state ?? ""} id="state" name="state">
               <option value="">Not set</option>
-              {MALAYSIAN_STATE_OPTIONS.map((state) => (
+              {stateOptions.map((state) => (
                 <option key={state} value={state}>
                   {state}
                 </option>
@@ -145,7 +177,11 @@ export function BranchForm({ branch }: { branch?: BranchRow }) {
           </HrField>
           <div className="grid gap-4 md:grid-cols-2">
             <HrField id="weekendMode" label="Weekend mode">
-              <HrSelect defaultValue={branch?.weekendMode ?? "sat_sun"} id="weekendMode" name="weekendMode">
+              <HrSelect
+                defaultValue={branch?.weekendMode ?? "sat_sun"}
+                id="weekendMode"
+                name="weekendMode"
+              >
                 <option value="sat_sun">Saturday–Sunday</option>
                 <option value="fri_sat">Friday–Saturday</option>
                 <option value="sun_only">Sunday only</option>
@@ -164,41 +200,50 @@ export function BranchForm({ branch }: { branch?: BranchRow }) {
             </HrField>
           </div>
 
-          <div className="space-y-4 rounded-lg border border-[var(--border-primary)] bg-[var(--surface-muted)]/40 p-4">
-            <div>
-              <p className="text-sm font-medium text-foreground">HRDF (HRD Corp levy)</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Enable only for branches registered with HRD Corp. Levy is calculated on payrun generation.
-              </p>
-            </div>
-            <HrCheckbox
-              defaultChecked={branch?.hrdfEnabled ?? false}
-              id="hrdfEnabled"
-              label="This branch is HRDF-registered"
-              name="hrdfEnabled"
-            />
-            <div className="grid gap-4 md:grid-cols-2">
-              <HrField id="hrdfRegistrationNumber" label="HRDF registration number">
-                <HrTextInput
-                  defaultValue={branch?.hrdfRegistrationNumber ?? ""}
-                  id="hrdfRegistrationNumber"
-                  name="hrdfRegistrationNumber"
-                  placeholder="Optional"
+          {isMy ? (
+            <>
+              <div className="space-y-4 rounded-lg border border-[var(--border-primary)] bg-[var(--surface-muted)]/40 p-4">
+                <div>
+                  <p className="text-sm font-medium text-foreground">HRDF (HRD Corp levy)</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Enable only for branches registered with HRD Corp. Levy is calculated on payrun
+                    generation.
+                  </p>
+                </div>
+                <HrCheckbox
+                  defaultChecked={branch?.hrdfEnabled ?? false}
+                  id="hrdfEnabled"
+                  label="This branch is HRDF-registered"
+                  name="hrdfEnabled"
                 />
-              </HrField>
-              <HrField hint="Default is 1% (HRD Corp standard)." id="hrdfRatePercent" label="Levy rate (%)">
-                <HrTextInput
-                  defaultValue={String((branch?.hrdfRate ?? 0.01) * 100)}
-                  id="hrdfRatePercent"
-                  max={100}
-                  min={0}
-                  name="hrdfRatePercent"
-                  step="0.01"
-                  type="number"
-                />
-              </HrField>
-            </div>
-          </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <HrField id="hrdfRegistrationNumber" label="HRDF registration number">
+                    <HrTextInput
+                      defaultValue={branch?.hrdfRegistrationNumber ?? ""}
+                      id="hrdfRegistrationNumber"
+                      name="hrdfRegistrationNumber"
+                      placeholder="Optional"
+                    />
+                  </HrField>
+                  <HrField
+                    hint="Default is 1% (HRD Corp standard)."
+                    id="hrdfRatePercent"
+                    label="Levy rate (%)"
+                  >
+                    <HrTextInput
+                      defaultValue={String((branch?.hrdfRate ?? 0.01) * 100)}
+                      id="hrdfRatePercent"
+                      max={100}
+                      min={0}
+                      name="hrdfRatePercent"
+                      step="0.01"
+                      type="number"
+                    />
+                  </HrField>
+                </div>
+              </div>
+            </>
+          ) : null}
 
           <div className="space-y-4 rounded-lg border border-[var(--border-primary)] bg-[var(--surface-muted)]/40 p-4">
             <div>
@@ -256,79 +301,86 @@ export function BranchForm({ branch }: { branch?: BranchRow }) {
             </div>
           </div>
 
-          <div className="space-y-4 rounded-lg border border-[var(--border-primary)] bg-[var(--surface-muted)]/40 p-4">
-            <div>
-              <p className="text-sm font-medium text-foreground">Statutory employer registration</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Used on EPF and SOCSO export files. Leave blank to use organisation defaults.
-              </p>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <HrField id="epfEmployerNumber" label="EPF employer number">
-                <HrTextInput
-                  defaultValue={branch?.epfEmployerNumber ?? ""}
-                  id="epfEmployerNumber"
-                  name="epfEmployerNumber"
-                  placeholder="Optional"
-                />
-              </HrField>
-              <HrField id="socsoEmployerCode" label="SOCSO employer code">
-                <HrTextInput
-                  defaultValue={branch?.socsoEmployerCode ?? ""}
-                  id="socsoEmployerCode"
-                  name="socsoEmployerCode"
-                  placeholder="Optional"
-                />
-              </HrField>
-              <HrField
-                hint="Third Schedule rounding for EPF wage base."
-                id="epfWageRounding"
-                label="EPF wage rounding"
-              >
-                <HrSelect
-                  defaultValue={branch?.epfWageRounding ?? "none"}
-                  id="epfWageRounding"
-                  name="epfWageRounding"
-                >
-                  <option value="none">None</option>
-                  <option value="ceil_rm50">Ceil to nearest RM 50</option>
-                </HrSelect>
-              </HrField>
-              <HrField
-                hint="Optional employer LINDUNG rate. Leave blank for 0%."
-                id="lindungEmployerRatePercent"
-                label="LINDUNG employer rate (%)"
-              >
-                <HrTextInput
-                  defaultValue={
-                    branch?.lindungEmployerRate ? String(branch.lindungEmployerRate * 100) : ""
-                  }
-                  id="lindungEmployerRatePercent"
-                  max={100}
-                  min={0}
-                  name="lindungEmployerRatePercent"
-                  placeholder="Optional"
-                  step="0.01"
-                  type="number"
-                />
-              </HrField>
-            </div>
-          </div>
+          {isMy ? (
+            <>
+              <div className="space-y-4 rounded-lg border border-[var(--border-primary)] bg-[var(--surface-muted)]/40 p-4">
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    Statutory employer registration
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Used on EPF and SOCSO export files. Leave blank to use organisation defaults.
+                  </p>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <HrField id="epfEmployerNumber" label="EPF employer number">
+                    <HrTextInput
+                      defaultValue={branch?.epfEmployerNumber ?? ""}
+                      id="epfEmployerNumber"
+                      name="epfEmployerNumber"
+                      placeholder="Optional"
+                    />
+                  </HrField>
+                  <HrField id="socsoEmployerCode" label="SOCSO employer code">
+                    <HrTextInput
+                      defaultValue={branch?.socsoEmployerCode ?? ""}
+                      id="socsoEmployerCode"
+                      name="socsoEmployerCode"
+                      placeholder="Optional"
+                    />
+                  </HrField>
+                  <HrField
+                    hint="Third Schedule rounding for EPF wage base."
+                    id="epfWageRounding"
+                    label="EPF wage rounding"
+                  >
+                    <HrSelect
+                      defaultValue={branch?.epfWageRounding ?? "none"}
+                      id="epfWageRounding"
+                      name="epfWageRounding"
+                    >
+                      <option value="none">None</option>
+                      <option value="ceil_rm50">Ceil to nearest RM 50</option>
+                    </HrSelect>
+                  </HrField>
+                  <HrField
+                    hint="Optional employer LINDUNG rate. Leave blank for 0%."
+                    id="lindungEmployerRatePercent"
+                    label="LINDUNG employer rate (%)"
+                  >
+                    <HrTextInput
+                      defaultValue={
+                        branch?.lindungEmployerRate ? String(branch.lindungEmployerRate * 100) : ""
+                      }
+                      id="lindungEmployerRatePercent"
+                      max={100}
+                      min={0}
+                      name="lindungEmployerRatePercent"
+                      placeholder="Optional"
+                      step="0.01"
+                      type="number"
+                    />
+                  </HrField>
+                </div>
+              </div>
 
-          <div className="space-y-4 rounded-lg border border-[var(--border-primary)] bg-[var(--surface-muted)]/40 p-4">
-            <div>
-              <p className="text-sm font-medium text-foreground">LINDUNG 24 Jam (PERKESO)</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Optional employee-borne coverage. When enabled, 0.75% of SOCSO wage base is deducted each payrun.
-              </p>
-            </div>
-            <HrCheckbox
-              defaultChecked={branch?.lindungEnabled ?? false}
-              id="lindungEnabled"
-              label="Enable LINDUNG deductions for this branch"
-              name="lindungEnabled"
-            />
-          </div>
+              <div className="space-y-4 rounded-lg border border-[var(--border-primary)] bg-[var(--surface-muted)]/40 p-4">
+                <div>
+                  <p className="text-sm font-medium text-foreground">LINDUNG 24 Jam (PERKESO)</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Optional employee-borne coverage. When enabled, 0.75% of SOCSO wage base is
+                    deducted each payrun.
+                  </p>
+                </div>
+                <HrCheckbox
+                  defaultChecked={branch?.lindungEnabled ?? false}
+                  id="lindungEnabled"
+                  label="Enable LINDUNG deductions for this branch"
+                  name="lindungEnabled"
+                />
+              </div>
+            </>
+          ) : null}
 
           <OrgFormActions
             cancelHref="/hr/organization/branches"

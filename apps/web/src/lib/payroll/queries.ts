@@ -1,6 +1,7 @@
 import { requireRole } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizationId } from "@/lib/auth/organization-context";
+import { currencyOrDefault, type DisplayCurrency } from "@/lib/money";
 
 export type PayrunListItem = {
   id: string;
@@ -48,6 +49,9 @@ export type PayrunDetail = {
   scope: string;
   payrunType: string;
   payGroupName: string | null;
+  /** Organization country and currency, for display. */
+  country: "MY" | "AU";
+  currency: DisplayCurrency;
   lockedAt: string | null;
   flaggedCount: number;
   itemTotal: number;
@@ -175,6 +179,12 @@ export async function getPayrunDetail(
 
   if (error) throw new Error(error.message);
   if (!payrun) return null;
+
+  const { data: organization } = await supabase
+    .from("organizations")
+    .select("country, currency")
+    .eq("id", organizationId)
+    .maybeSingle();
 
   const [
     { data: items, error: itemsError, count: itemCount },
@@ -305,6 +315,8 @@ export async function getPayrunDetail(
     scope: payrun.scope,
     payrunType: payrun.payrun_type,
     payGroupName: (payGroup as { name?: string } | null)?.name ?? null,
+    country: organization?.country === "AU" ? "AU" : "MY",
+    currency: currencyOrDefault(organization?.currency),
     lockedAt: payrun.locked_at,
     flaggedCount: flaggedCount ?? 0,
     itemTotal: itemCount ?? mappedItems.length,

@@ -151,14 +151,43 @@ export function filterNavForSpecialist(
     .filter((section) => section.items.length > 0);
 }
 
+/** Malaysian-only screens: CP8D and EA year-end exports, and KWSP, PERKESO and LHDN rule packs. */
+export const MALAYSIA_ONLY_NAV_HREFS: readonly string[] = [
+  "/hr/payroll/year-end",
+  "/hr/organization/statutory-rules",
+];
+
+/** Removes Malaysian-only items (at any depth) when the organization is Australian. */
+export function filterNavForCountry(
+  sections: PortalNavSection[],
+  country: "MY" | "AU" | undefined,
+): PortalNavSection[] {
+  if (country !== "AU") return sections;
+  const prune = (item: PortalNavItem): PortalNavItem | null => {
+    if (MALAYSIA_ONLY_NAV_HREFS.includes(item.href)) return null;
+    if (!item.children) return item;
+    return { ...item, children: item.children.map(prune).filter((c): c is PortalNavItem => c !== null) };
+  };
+  return sections
+    .map((section) => ({
+      ...section,
+      items: section.items.map(prune).filter((item): item is PortalNavItem => item !== null),
+    }))
+    .filter((section) => section.items.length > 0);
+}
+
 export function getPortalNavSectionsForEntitlements(
   portal: string,
   options: {
     hasModule: (module: ModuleKey) => boolean;
     tier: ProductTier;
+    country?: "MY" | "AU";
   },
 ): PortalNavSection[] {
-  let sections = filterPortalNavSections(getPortalNavSections(portal), options);
+  let sections = filterNavForCountry(
+    filterPortalNavSections(getPortalNavSections(portal), options),
+    options.country,
+  );
 
   if (portal === "Platform Admin" && !isSaasMode()) {
     sections = sections

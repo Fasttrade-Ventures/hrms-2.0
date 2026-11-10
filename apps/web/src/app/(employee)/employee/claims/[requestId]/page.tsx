@@ -8,12 +8,13 @@ import { ClaimActionControls } from "@/components/employee/claim-action-controls
 import {
   formatDate,
   formatDateTime,
-  formatCurrency,
   RequestStatusPill,
 } from "@/components/employee/employee-shared";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { getClaim, getApprovalTimeline } from "@/lib/employee/requests";
 import { requireModule } from "@/lib/entitlements";
+import { formatMoney } from "@/lib/money";
+import { getOrganizationDisplay } from "@/lib/organization-display";
 
 export default async function ClaimDetailPage({
   params,
@@ -22,7 +23,10 @@ export default async function ClaimDetailPage({
 }) {
   await requireModule("claims");
   const { requestId } = await params;
-  const request = await getClaim(requestId);
+  const [request, { currency }] = await Promise.all([
+    getClaim(requestId),
+    getOrganizationDisplay(),
+  ]);
 
   if (!request) {
     notFound();
@@ -66,13 +70,13 @@ export default async function ClaimDetailPage({
             <RequestStatusPill status={request.status} />
           </div>
         </div>
-        <StatCard label="Amount" value={formatCurrency(request.amount)} />
+        <StatCard label="Amount" value={formatMoney(request.amount, currency)} />
         <StatCard label={request.isMileage ? "Travel date" : "Receipt date"} value={formatDate(request.receiptDate)} />
         {request.isMileage && request.distanceKm != null && (
           <StatCard label="Distance" value={`${request.distanceKm} km`} />
         )}
         {request.isMileage && request.ratePerKm != null && (
-          <StatCard label="Applied rate" value={`RM ${request.ratePerKm.toFixed(2)} / km`} />
+          <StatCard label="Applied rate" value={`${formatMoney(request.ratePerKm, currency)} / km`} />
         )}
       </div>
 

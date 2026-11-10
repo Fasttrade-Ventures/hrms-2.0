@@ -21,7 +21,10 @@ import {
   HrSelect,
   HrTextInput,
 } from "@/components/hr/employees/form-fields";
+import { AuEmployeeFields } from "@/components/hr/employees/au-employee-fields";
 import { Button } from "@/components/ui/button";
+import { currencySymbolLabel, type DisplayCurrency } from "@/lib/money";
+import { AUSTRALIAN_STATE_VALUES } from "@hrms/validation";
 import { Label } from "@/components/ui/label";
 import {
   MALAYSIAN_RACE_OPTIONS,
@@ -42,6 +45,8 @@ export function CreateEmployeeForm({
   shifts,
   payGroups,
   leaveTypes,
+  country = "MY",
+  currency = "MYR",
 }: {
   suggestedEmployeeNumber: string;
   joinDate: string;
@@ -52,7 +57,10 @@ export function CreateEmployeeForm({
   shifts: Option[];
   payGroups: Option[];
   leaveTypes: Option[];
+  country?: "MY" | "AU";
+  currency?: DisplayCurrency;
 }) {
+  const isAu = country === "AU";
   const [state, formAction, pending] = useActionState(createEmployee, initialState);
   const [tab, setTab] = useState<EmployeeFormTabId>("employment");
   const [childCount, setChildCount] = useState(0);
@@ -248,9 +256,11 @@ export function CreateEmployeeForm({
                 type="email"
               />
             </HrField>
-            <HrField id="icNumber" label="NRIC no">
-              <HrTextInput id="icNumber" name="icNumber" />
-            </HrField>
+            {isAu ? null : (
+              <HrField id="icNumber" label="NRIC no">
+                <HrTextInput id="icNumber" name="icNumber" />
+              </HrField>
+            )}
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
@@ -316,7 +326,7 @@ export function CreateEmployeeForm({
             <HrField id="state" label="State">
               <HrSelect defaultValue="" id="state" name="state">
                 <option value="">-- Select --</option>
-                {MALAYSIAN_STATE_OPTIONS.map((option) => (
+                {(isAu ? AUSTRALIAN_STATE_VALUES : MALAYSIAN_STATE_OPTIONS).map((option) => (
                   <option key={option} value={option}>
                     {option}
                   </option>
@@ -327,8 +337,8 @@ export function CreateEmployeeForm({
               <HrTextInput id="postcode" name="postcode" />
             </HrField>
             <HrField id="country" label="Country">
-              <HrSelect defaultValue="MY" id="country" name="country">
-                <option value="MY">Malaysia</option>
+              <HrSelect defaultValue={isAu ? "AU" : "MY"} id="country" name="country">
+                {isAu ? <option value="AU">Australia</option> : <option value="MY">Malaysia</option>}
               </HrSelect>
             </HrField>
           </div>
@@ -345,7 +355,7 @@ export function CreateEmployeeForm({
               <HrField id="workingDaysPerMonth" label="Working days/mo">
                 <HrTextInput defaultValue="21" id="workingDaysPerMonth" name="workingDaysPerMonth" type="number" />
               </HrField>
-              <HrField id="basicSalary" label="Basic salary (RM)">
+              <HrField id="basicSalary" label={`Basic salary (${currencySymbolLabel(currency)})`}>
                 <HrTextInput id="basicSalary" name="basicSalary" placeholder="0.00" />
               </HrField>
             </div>
@@ -353,59 +363,69 @@ export function CreateEmployeeForm({
               <HrField id="bankName" label="Bank name">
                 <HrTextInput id="bankName" name="bankName" />
               </HrField>
-              <HrField id="bankAccountNumber" label="Bank account no">
-                <HrTextInput id="bankAccountNumber" name="bankAccountNumber" />
-              </HrField>
-              <HrField id="epfNumber" label="EPF no">
-                <HrTextInput id="epfNumber" name="epfNumber" />
-              </HrField>
-              <HrField id="socsoNumber" label="SOCSO no">
-                <HrTextInput id="socsoNumber" name="socsoNumber" />
-              </HrField>
-              <HrField id="taxNumber" label="Tax no">
-                <HrTextInput id="taxNumber" name="taxNumber" />
-              </HrField>
+              {isAu ? null : (
+                <>
+                  <HrField id="bankAccountNumber" label="Bank account no">
+                    <HrTextInput id="bankAccountNumber" name="bankAccountNumber" />
+                  </HrField>
+                  <HrField id="epfNumber" label="EPF no">
+                    <HrTextInput id="epfNumber" name="epfNumber" />
+                  </HrField>
+                  <HrField id="socsoNumber" label="SOCSO no">
+                    <HrTextInput id="socsoNumber" name="socsoNumber" />
+                  </HrField>
+                  <HrField id="taxNumber" label="Tax no">
+                    <HrTextInput id="taxNumber" name="taxNumber" />
+                  </HrField>
+                </>
+              )}
             </div>
-            <p className="text-sm text-muted-foreground">
-              EPF rates apply on the next payrun. Extra EPF is added on top of the statutory employee
-              rate.
-            </p>
-            <div className="grid gap-4 md:grid-cols-3">
-              <HrField id="epfEmployeeRate" label="EPF employee rate (%)">
-                <HrTextInput
-                  defaultValue="11"
-                  id="epfEmployeeRate"
-                  max={100}
-                  min={0}
-                  name="epfEmployeeRate"
-                  step="0.01"
-                  type="number"
-                />
-              </HrField>
-              <HrField id="epfEmployerRate" label="EPF employer rate (%)">
-                <HrTextInput
-                  defaultValue="13"
-                  id="epfEmployerRate"
-                  max={100}
-                  min={0}
-                  name="epfEmployerRate"
-                  step="0.01"
-                  type="number"
-                />
-              </HrField>
-              <HrField id="voluntaryEpfExtraRate" label="Extra EPF on top (%)">
-                <HrTextInput
-                  defaultValue="0"
-                  id="voluntaryEpfExtraRate"
-                  max={100}
-                  min={0}
-                  name="voluntaryEpfExtraRate"
-                  step="0.01"
-                  type="number"
-                />
-              </HrField>
-            </div>
-            <HrCheckbox defaultChecked id="eisEligible" label="Eligible for EIS" name="eisEligible" />
+            {isAu ? (
+              <AuEmployeeFields />
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  EPF rates apply on the next payrun. Extra EPF is added on top of the statutory employee
+                  rate.
+                </p>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <HrField id="epfEmployeeRate" label="EPF employee rate (%)">
+                    <HrTextInput
+                      defaultValue="11"
+                      id="epfEmployeeRate"
+                      max={100}
+                      min={0}
+                      name="epfEmployeeRate"
+                      step="0.01"
+                      type="number"
+                    />
+                  </HrField>
+                  <HrField id="epfEmployerRate" label="EPF employer rate (%)">
+                    <HrTextInput
+                      defaultValue="13"
+                      id="epfEmployerRate"
+                      max={100}
+                      min={0}
+                      name="epfEmployerRate"
+                      step="0.01"
+                      type="number"
+                    />
+                  </HrField>
+                  <HrField id="voluntaryEpfExtraRate" label="Extra EPF on top (%)">
+                    <HrTextInput
+                      defaultValue="0"
+                      id="voluntaryEpfExtraRate"
+                      max={100}
+                      min={0}
+                      name="voluntaryEpfExtraRate"
+                      step="0.01"
+                      type="number"
+                    />
+                  </HrField>
+                </div>
+                <HrCheckbox defaultChecked id="eisEligible" label="Eligible for EIS" name="eisEligible" />
+              </>
+            )}
         </EmployeeFormPayrollSection>
       </EmployeeFormTabPanel>
 

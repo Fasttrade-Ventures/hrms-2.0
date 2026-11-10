@@ -8,8 +8,13 @@ import {
   upsertRecurringAllowanceAction,
   type HrActionState,
 } from "@/app/(hr)/hr/payroll/actions";
-import { HrFormMessage, HrGhostButton, HrPrimaryButton } from "@/components/hr/employees/form-fields";
+import {
+  HrFormMessage,
+  HrGhostButton,
+  HrPrimaryButton,
+} from "@/components/hr/employees/form-fields";
 import { PortalSectionCard } from "@/components/portal/portal-section";
+import { currencySymbolLabel, formatMoney, type DisplayCurrency } from "@/lib/money";
 import type {
   AllowanceComponentOption,
   EmployeeCompensation,
@@ -23,23 +28,40 @@ export function EmployeeCompensationPanel({
   compensation,
   allowances,
   allowanceComponents,
+  country = "MY",
+  currency = "MYR",
 }: {
+  country?: "MY" | "AU";
+  currency?: DisplayCurrency;
   employeeId: string;
   compensation: EmployeeCompensation;
   allowances: RecurringAllowance[];
   allowanceComponents: AllowanceComponentOption[];
 }) {
-  const [compState, compAction, compPending] = useActionState(updateEmployeeCompensationAction, initialState);
-  const [allowState, allowAction, allowPending] = useActionState(upsertRecurringAllowanceAction, initialState);
-  const [deleteState, deleteAction, deletePending] = useActionState(deleteRecurringAllowanceAction, initialState);
+  const [compState, compAction, compPending] = useActionState(
+    updateEmployeeCompensationAction,
+    initialState,
+  );
+  const [allowState, allowAction, allowPending] = useActionState(
+    upsertRecurringAllowanceAction,
+    initialState,
+  );
+  const [deleteState, deleteAction, deletePending] = useActionState(
+    deleteRecurringAllowanceAction,
+    initialState,
+  );
 
+  const isMy = country === "MY";
+  const unit = currencySymbolLabel(currency);
   const today = new Date().toISOString().slice(0, 10);
 
   return (
     <div className="space-y-5">
       <PortalSectionCard title="Compensation">
         <p className="mb-4 text-sm text-muted-foreground">
-          EPF employee and employer rates apply to this staff member on the next payrun.
+          {isMy
+            ? "EPF employee and employer rates apply to this staff member on the next payrun."
+            : "Salary and rates apply to this staff member on the next payrun."}
         </p>
         <form action={compAction} className="grid gap-4 md:grid-cols-2">
           <input name="employeeId" type="hidden" value={employeeId} />
@@ -56,7 +78,7 @@ export function EmployeeCompensationPanel({
             </select>
           </label>
           <label className="space-y-1 text-sm">
-            <span className="text-muted-foreground">Basic salary (RM)</span>
+            <span className="text-muted-foreground">Basic salary ({unit})</span>
             <input
               className="flex h-9 w-full rounded-md border border-input bg-background px-3"
               defaultValue={compensation.basicSalary}
@@ -66,7 +88,7 @@ export function EmployeeCompensationPanel({
             />
           </label>
           <label className="space-y-1 text-sm">
-            <span className="text-muted-foreground">Hourly rate (RM)</span>
+            <span className="text-muted-foreground">Hourly rate ({unit})</span>
             <input
               className="flex h-9 w-full rounded-md border border-input bg-background px-3"
               defaultValue={compensation.hourlyRate ?? ""}
@@ -76,7 +98,7 @@ export function EmployeeCompensationPanel({
             />
           </label>
           <label className="space-y-1 text-sm">
-            <span className="text-muted-foreground">Daily rate (RM)</span>
+            <span className="text-muted-foreground">Daily rate ({unit})</span>
             <input
               className="flex h-9 w-full rounded-md border border-input bg-background px-3"
               defaultValue={compensation.dailyRate ?? ""}
@@ -86,7 +108,7 @@ export function EmployeeCompensationPanel({
             />
           </label>
           <label className="space-y-1 text-sm">
-            <span className="text-muted-foreground">Hourly OT rate override (RM)</span>
+            <span className="text-muted-foreground">Hourly OT rate override ({unit})</span>
             <p className="text-xs text-muted-foreground">
               Optional. Leave blank to use standard salary formula: basic / 26 * multiplier * hours.
             </p>
@@ -99,64 +121,86 @@ export function EmployeeCompensationPanel({
               type="number"
             />
           </label>
-          <label className="space-y-1 text-sm">
-            <span className="text-muted-foreground">Extra EPF on top of statutory (%)</span>
-            <p className="text-xs text-muted-foreground">
-              Added to the employee EPF rate below. Employee total rate = statutory + extra.
-            </p>
-            <input
-              className="flex h-9 w-full rounded-md border border-input bg-background px-3"
-              defaultValue={compensation.voluntaryEpfExtraRate}
-              name="voluntaryEpfExtraRate"
-              step="0.01"
-              type="number"
-            />
-          </label>
-          <label className="space-y-1 text-sm">
-            <span className="text-muted-foreground">EPF employee rate: statutory (%)</span>
-            <input
-              className="flex h-9 w-full rounded-md border border-input bg-background px-3"
-              defaultValue={compensation.epfEmployeeRate}
-              max={100}
-              min={0}
-              name="epfEmployeeRate"
-              step="0.01"
-              type="number"
-            />
-          </label>
-          <label className="space-y-1 text-sm">
-            <span className="text-muted-foreground">EPF employer rate (%)</span>
-            <input
-              className="flex h-9 w-full rounded-md border border-input bg-background px-3"
-              defaultValue={compensation.epfEmployerRate}
-              max={100}
-              min={0}
-              name="epfEmployerRate"
-              step="0.01"
-              type="number"
-            />
-          </label>
-          <label className="flex items-center gap-2 text-sm md:col-span-2">
-            <input
-              className="size-4 rounded border border-input"
-              defaultChecked={compensation.eisEligible}
-              name="eisEligible"
-              type="checkbox"
-            />
-            <span className="text-muted-foreground">EIS eligible</span>
-          </label>
-          <label className="space-y-1 text-sm">
-            <span className="text-muted-foreground">SOCSO category override</span>
-            <select
-              className="flex h-9 w-full rounded-md border border-input bg-background px-3"
-              defaultValue={compensation.socsoCategoryOverride ?? ""}
-              name="socsoCategoryOverride"
-            >
-              <option value="">Auto (by age)</option>
-              <option value="cat1">Category 1</option>
-              <option value="cat2">Category 2</option>
-            </select>
-          </label>
+          {isMy ? (
+            <>
+              <label className="space-y-1 text-sm">
+                <span className="text-muted-foreground">Extra EPF on top of statutory (%)</span>
+                <p className="text-xs text-muted-foreground">
+                  Added to the employee EPF rate below. Employee total rate = statutory + extra.
+                </p>
+                <input
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3"
+                  defaultValue={compensation.voluntaryEpfExtraRate}
+                  name="voluntaryEpfExtraRate"
+                  step="0.01"
+                  type="number"
+                />
+              </label>
+              <label className="space-y-1 text-sm">
+                <span className="text-muted-foreground">EPF employee rate: statutory (%)</span>
+                <input
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3"
+                  defaultValue={compensation.epfEmployeeRate}
+                  max={100}
+                  min={0}
+                  name="epfEmployeeRate"
+                  step="0.01"
+                  type="number"
+                />
+              </label>
+              <label className="space-y-1 text-sm">
+                <span className="text-muted-foreground">EPF employer rate (%)</span>
+                <input
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3"
+                  defaultValue={compensation.epfEmployerRate}
+                  max={100}
+                  min={0}
+                  name="epfEmployerRate"
+                  step="0.01"
+                  type="number"
+                />
+              </label>
+              <label className="flex items-center gap-2 text-sm md:col-span-2">
+                <input
+                  className="size-4 rounded border border-input"
+                  defaultChecked={compensation.eisEligible}
+                  name="eisEligible"
+                  type="checkbox"
+                />
+                <span className="text-muted-foreground">EIS eligible</span>
+              </label>
+              <label className="space-y-1 text-sm">
+                <span className="text-muted-foreground">SOCSO category override</span>
+                <select
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3"
+                  defaultValue={compensation.socsoCategoryOverride ?? ""}
+                  name="socsoCategoryOverride"
+                >
+                  <option value="">Auto (by age)</option>
+                  <option value="cat1">Category 1</option>
+                  <option value="cat2">Category 2</option>
+                </select>
+              </label>
+            </>
+          ) : (
+            <>
+              <input
+                name="voluntaryEpfExtraRate"
+                type="hidden"
+                value={compensation.voluntaryEpfExtraRate}
+              />
+              <input name="epfEmployeeRate" type="hidden" value={compensation.epfEmployeeRate} />
+              <input name="epfEmployerRate" type="hidden" value={compensation.epfEmployerRate} />
+              {compensation.eisEligible ? (
+                <input name="eisEligible" type="hidden" value="on" />
+              ) : null}
+              <input
+                name="socsoCategoryOverride"
+                type="hidden"
+                value={compensation.socsoCategoryOverride ?? ""}
+              />
+            </>
+          )}
           <div className="md:col-span-2 space-y-2">
             <HrFormMessage error={compState.error} success={compState.success} />
             <HrPrimaryButton disabled={compPending} type="submit">
@@ -180,7 +224,7 @@ export function EmployeeCompensationPanel({
                     <span className="text-muted-foreground">({allowance.componentCode})</span>
                   </p>
                   <p className="text-muted-foreground">
-                    RM {allowance.amount.toFixed(2)} · from {allowance.effectiveFrom}
+                    {formatMoney(allowance.amount, currency)} · from {allowance.effectiveFrom}
                     {allowance.effectiveTo ? ` to ${allowance.effectiveTo}` : ""}
                   </p>
                 </div>
@@ -216,7 +260,7 @@ export function EmployeeCompensationPanel({
             </select>
           </label>
           <label className="space-y-1 text-sm">
-            <span className="text-muted-foreground">Amount (RM)</span>
+            <span className="text-muted-foreground">Amount ({unit})</span>
             <input
               className="flex h-9 w-full rounded-md border border-input bg-background px-3"
               min="0"
@@ -245,8 +289,14 @@ export function EmployeeCompensationPanel({
             />
           </label>
           <div className="md:col-span-2 space-y-2">
-            <HrFormMessage error={allowState.error ?? deleteState.error} success={allowState.success ?? deleteState.success} />
-            <HrPrimaryButton disabled={allowPending || allowanceComponents.length === 0} type="submit">
+            <HrFormMessage
+              error={allowState.error ?? deleteState.error}
+              success={allowState.success ?? deleteState.success}
+            />
+            <HrPrimaryButton
+              disabled={allowPending || allowanceComponents.length === 0}
+              type="submit"
+            >
               {allowPending ? "Adding…" : "Add allowance"}
             </HrPrimaryButton>
           </div>

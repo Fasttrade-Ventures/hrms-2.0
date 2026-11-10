@@ -1,5 +1,5 @@
 import type { LeaveRequestInput } from "@hrms/validation";
-import { countWorkingDays, transition } from "@hrms/domain";
+import { countWorkingDays, hoursToDays, transition } from "@hrms/domain";
 
 import { submitForApproval, resolveUserIdForEmployee } from "@/lib/approvals/service";
 import { logAuditEvent } from "@/lib/audit/log-event";
@@ -273,7 +273,10 @@ export function calculateLeaveDays(
   });
 }
 
-export async function createLeaveRequest(input: LeaveRequestInput): Promise<string> {
+export async function createLeaveRequest(
+  input: LeaveRequestInput,
+  options?: { hours?: number },
+): Promise<string> {
   const session = await requireAuth();
   const { employeeId, organizationId } = await requireEmployeeContext();
   const supabase = await createClient();
@@ -291,7 +294,30 @@ export async function createLeaveRequest(input: LeaveRequestInput): Promise<stri
 
   const { loadLeaveHolidayDates } = await import("@/lib/leave/holidays");
   const holidays = await loadLeaveHolidayDates(organizationId);
-  const days = calculateLeaveDays(input, { holidays });
+  const { loadLeaveUnits } = await import("@/lib/leave/units");
+  const units = await loadLeaveUnits(supabase, organizationId);
+  let days: number;
+  let halfDay = input.halfDay;
+  if (units.country === "AU") {
+    // Australia enters hours. Leave is still stored in days (hours / standard day hours).
+    const hours = options?.hours;
+    if (hours === undefined || !Number.isFinite(hours) || hours <= 0) {
+      throw new Error("Enter the number of leave hours.");
+    }
+    const available = calculateLeaveDays({ ...input, halfDay: false }, { holidays });
+    // leave_requests.days is numeric(6,2).
+    days = Math.round(hoursToDays(hours, units.standardDayHours) * 100) / 100;
+    if (days <= 0) throw new Error("Enter the number of leave hours.");
+    if (days > available) {
+      throw new Error("Leave hours are more than the working hours in the selected dates.");
+    }
+    halfDay = input.startDate === input.endDate && days < 1;
+  } else {
+    if (options?.hours !== undefined) {
+      throw new Error("Leave is entered in days for this organization.");
+    }
+    days = calculateLeaveDays(input, { holidays });
+  }
 
   const { assertLeaveDatesAllowed } = await import("@/lib/leave/blackout");
   await assertLeaveDatesAllowed(organizationId, input.leaveTypeId, input.startDate, input.endDate);
@@ -330,7 +356,7 @@ export async function createLeaveRequest(input: LeaveRequestInput): Promise<stri
       leave_type_id: input.leaveTypeId,
       start_date: input.startDate,
       end_date: input.endDate,
-      half_day: input.halfDay,
+      half_day: halfDay,
       days,
       reason: input.reason ?? null,
       status: "draft",

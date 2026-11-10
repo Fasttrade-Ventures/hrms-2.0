@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { money, roundRinggit } from "../money";
-import { computeEmployeePayrun } from "./payrun-pipeline";
+import { computeEmployeePayrun, isMalaysia } from "./payrun-pipeline";
 
 const flags = { isEpf: true, isSocso: true, isEis: true, isPcb: true, isHrdf: true };
 
@@ -105,5 +105,34 @@ describe("computeEmployeePayrun", () => {
     });
 
     expect(explicitNull.pcb.toNumber()).toBe(omitted.pcb.toNumber());
+  });
+
+  it("skips Malaysian statutory when the organization country is AU", () => {
+    const result = computeEmployeePayrun({ ...baseInput, country: "AU" });
+    expect(result.epfEmployee.toNumber()).toBe(0);
+    expect(result.epfEmployer.toNumber()).toBe(0);
+    expect(result.socsoEmployee.toNumber()).toBe(0);
+    expect(result.socsoEmployer.toNumber()).toBe(0);
+    expect(result.eisEmployee.toNumber()).toBe(0);
+    expect(result.eisEmployer.toNumber()).toBe(0);
+    expect(result.pcb.toNumber()).toBe(0);
+    expect(result.pcbAuto.toNumber()).toBe(0);
+    expect(result.hrdfEmployer.toNumber()).toBe(0);
+    expect(result.gross.toNumber()).toBe(5000);
+  });
+
+  it("treats an omitted country as MY", () => {
+    const result = computeEmployeePayrun({ ...baseInput, country: "MY" });
+    expect(result.epfEmployee.toNumber()).toBeGreaterThan(0);
+    expect(result.socsoEmployee.toNumber()).toBeGreaterThan(0);
+  });
+});
+
+describe("isMalaysia", () => {
+  it("is true only for MY", () => {
+    expect(isMalaysia("MY")).toBe(true);
+    expect(isMalaysia("AU")).toBe(false);
+    expect(isMalaysia("SG")).toBe(false);
+    expect(isMalaysia("")).toBe(false);
   });
 });

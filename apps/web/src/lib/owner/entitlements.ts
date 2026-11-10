@@ -1,4 +1,5 @@
 import type { ModuleKey, ProductTier } from "@hrms/platform";
+import { isStateValidForCountry, organizationCompanySettingsSchema } from "@hrms/validation";
 import {
   CORE_MODULES,
   ENTERPRISE_MODULES,
@@ -7,6 +8,7 @@ import {
   tierIncludesModule,
 } from "@hrms/platform";
 
+import { orgTimezoneForCountry } from "@/lib/datetime/org-timezone";
 import { logAuditEvent } from "@/lib/audit/log-event";
 import { requireOrganizationId } from "@/lib/auth/organization-context";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -177,5 +179,106 @@ export async function updateOwnerProductTier(
     resourceType: "organization",
     resourceId: organizationId,
     metadata: { tier },
+  });
+}
+
+export type OwnerCompanySettings = {
+  country: "MY" | "AU";
+  currency: "MYR" | "AUD";
+  abn: string;
+  standardDayHours: number;
+  timezone: string;
+  /** State on the head office branch (oldest branch). */
+  state: string;
+};
+
+export async function getOwnerCompanySettings(): Promise<OwnerCompanySettings> {
+  const supabase = await createClient();
+  const organizationId = await requireOrganizationId();
+
+  const [{ data, error }, { data: branches }] = await Promise.all([
+    supabase
+      .from("organizations")
+      .select("country, currency, abn, standard_day_hours, timezone")
+      .eq("id", organizationId)
+      .maybeSingle(),
+    supabase
+      .from("branches")
+      .select("state")
+      .eq("organization_id", organizationId)
+      .order("created_at")
+      .limit(1),
+  ]);
+
+  if (error || !data) throw new Error(error?.message ?? "Organization not found.");
+
+  return {
+    country: data.country === "AU" ? "AU" : "MY",
+    currency: data.currency === "AUD" ? "AUD" : "MYR",
+    abn: data.abn ?? "",
+    standardDayHours: Number(data.standard_day_hours ?? 8),
+    timezone: data.timezone ?? "Asia/Kuala_Lumpur",
+    state: branches?.[0]?.state ?? "",
+  };
+}
+
+/**
+ * Saves country, currency, ABN, standard day hours and timezone on the organization,
+ * and the state on the head office branch. Timezone comes from the state for AU.
+ * Branches whose state does not belong to the new country are cleared.
+ */
+export async function updateOwnerCompanySettings(
+  input: { country: string; abn: string; state: string },
+  actorUserId?: string | null,
+): Promise<void> {
+  const parsed = organizationCompanySettingsSchema.safeParse(input);
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "Invalid company settings.");
+  }
+
+  const settings = parsed.data;
+  const organizationId = await requireOrganizationId();
+
+  await saveOrganizationSettings(organizationId, {
+    country: settings.country,
+    currency: settings.currency,
+    abn: settings.abn,
+    standard_day_hours: settings.standardDayHours,
+    timezone: orgTimezoneForCountry(settings.country, settings.state),
+  });
+
+  const admin = createAdminClient();
+  const { data: branches, error: branchesError } = await admin
+    .from("branches")
+    .select("id, state")
+    .eq("organization_id", organizationId)
+    .order("created_at");
+  if (branchesError) throw new Error(branchesError.message);
+
+  const [headOffice, ...others] = branches ?? [];
+  const updates: { id: string; state: string | null }[] = [];
+  if (headOffice && (settings.state || !isStateValidForCountry(settings.country, headOffice.state))) {
+    updates.push({ id: headOffice.id, state: settings.state });
+  }
+  for (const branch of others) {
+    if (!isStateValidForCountry(settings.country, branch.state)) {
+      updates.push({ id: branch.id, state: null });
+    }
+  }
+  for (const update of updates) {
+    const { error } = await admin
+      .from("branches")
+      .update({ state: update.state })
+      .eq("id", update.id)
+      .eq("organization_id", organizationId);
+    if (error) throw new Error(error.message);
+  }
+
+  await logAuditEvent({
+    actorUserId: actorUserId ?? null,
+    action: "organization.company_settings_updated",
+    resourceType: "organization",
+    resourceId: organizationId,
+    metadata: { country: settings.country, currency: settings.currency },
   });
 }

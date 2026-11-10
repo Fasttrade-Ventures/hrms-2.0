@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 
+import { currencySymbolLabel } from "@/lib/money";
+import { loadOrganizationCountry } from "@/lib/payroll/organization-country";
 import { paginateRows } from "./context";
 import type { ReportFilters } from "./types";
 import { requireOrganizationId } from "@/lib/auth/organization-context";
@@ -73,6 +75,9 @@ export async function listAssetRegisterRows(filters: ReportFilters): Promise<{
   }
 
   const { rows, total } = paginateRows(flatRows, filters);
+  const currencyLabel = currencySymbolLabel(
+    (await loadOrganizationCountry(supabase, organizationId)) === "AU" ? "AUD" : "MYR",
+  );
   return {
     columns: [
       { key: "name", label: "Asset" },
@@ -81,7 +86,7 @@ export async function listAssetRegisterRows(filters: ReportFilters): Promise<{
       { key: "status", label: "Status" },
       { key: "assignee", label: "Assignee" },
       { key: "branch", label: "Branch" },
-      { key: "purchaseValue", label: "Value (RM)" },
+      { key: "purchaseValue", label: `Value (${currencyLabel})` },
       { key: "warrantyExpiry", label: "Warranty expiry" },
     ],
     rows,

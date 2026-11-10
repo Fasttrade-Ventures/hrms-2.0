@@ -7,6 +7,7 @@ import {
   submitBranchBehalfReplacementCredit,
 } from "@/app/(branch-admin)/branch-admin/apply-behalf/actions";
 import { requireBranchAdminContext } from "@/lib/branch-admin/context";
+import { getOrganizationDisplay } from "@/lib/organization-display";
 import {
   listActiveEmployeesForBehalf,
   listClaimTypesForBehalf,
@@ -16,16 +17,18 @@ import {
 export default async function BranchNewApplyBehalfPage() {
   const context = await requireBranchAdminContext();
 
-  const [employees, leaveTypes, claimTypes] = await Promise.all([
+  const [employees, leaveTypes, claimTypes, { currency }] = await Promise.all([
     listActiveEmployeesForBehalf({ branchIds: context.branchIds }),
     listLeaveTypesForBehalf(),
     listClaimTypesForBehalf(),
+    getOrganizationDisplay(),
   ]);
 
   return (
     <ApplyBehalfForm
       claimAction={submitBranchBehalfClaim}
       claimTypes={claimTypes}
+      currency={currency}
       employees={employees}
       lateAction={submitBranchBehalfLate}
       leaveAction={submitBranchBehalfLeave}

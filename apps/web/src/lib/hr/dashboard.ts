@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { firstNameFromFullName, getCurrentEmployeeDetail, greetingForHour } from "@/lib/employees/self";
 import { getComplianceWatchRows } from "@/lib/hr/documents";
 import { requireOrganizationId } from "@/lib/auth/organization-context";
+import { currencyPrefix } from "@/lib/money";
+import { loadOrganizationCurrency } from "@/lib/organization-display";
 
 
 export type HrActionQueueRow = {
@@ -158,12 +160,14 @@ export async function getHrDashboardData(): Promise<HrDashboardData> {
       : row.employee_profiles;
     payoutTotal += Number((profile as { basic_salary?: string | number } | null)?.basic_salary ?? 0);
   }
+  const currency = await loadOrganizationCurrency(supabase, organizationId);
+  const prefix = currencyPrefix(currency);
   const estimatedPayout =
     payoutTotal > 0
       ? payoutTotal >= 1000
-        ? `RM ${Math.round(payoutTotal / 1000)}k`
-        : `RM ${Math.round(payoutTotal)}`
-      : "RM 0";
+        ? `${prefix}${Math.round(payoutTotal / 1000)}k`
+        : `${prefix}${Math.round(payoutTotal)}`
+      : `${prefix}0`;
 
   const onLeaveCount = new Set((leaveTodayRes.data ?? []).map((r) => r.employee_id)).size;
   const presentCount = attendanceRes.count ?? 0;
@@ -202,7 +206,7 @@ export async function getHrDashboardData(): Promise<HrDashboardData> {
       type: requestTypeLabel(String(requestData.request_type)),
       typeTone: requestTypeTone(String(requestData.request_type)),
       employeeName,
-      details: summarizeQueueDetails(String(requestData.request_type), payload),
+      details: summarizeQueueDetails(String(requestData.request_type), payload, currency),
       timeLabel: formatRelativeTime(submittedAt),
       href: actionReviewHref(stepId),
     };
@@ -236,12 +240,16 @@ export async function getHrDashboardData(): Promise<HrDashboardData> {
   };
 }
 
-function summarizeQueueDetails(type: string, payload: Record<string, unknown>): string {
+function summarizeQueueDetails(
+  type: string,
+  payload: Record<string, unknown>,
+  currency: "MYR" | "AUD",
+): string {
   if (type === "leave") {
     return `${payload.leaveTypeName ?? "Leave"} · manager pending`;
   }
   if (type === "claim") {
-    return `Claim · RM ${payload.amount ?? "0"}`;
+    return `Claim · ${currencyPrefix(currency)}${payload.amount ?? "0"}`;
   }
   if (type === "overtime") {
     return `OT · ${payload.hours ?? "0"}h`;

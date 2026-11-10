@@ -1,4 +1,6 @@
-// Service Worker for BukuHR Web Push Notifications
+// Service Worker for BukuHR Web Push Notifications.
+// Online-only by design: no fetch handler and no Cache API, so pages and API
+// calls (clock-in, leave) always use the live session.
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -24,8 +26,8 @@ self.addEventListener("push", (event) => {
   const title = payload.title || "BukuHR Notification";
   const options = {
     body: payload.body || "",
-    icon: "/favicon.ico",
-    badge: "/favicon.ico",
+    icon: "/icons/icon-192.png",
+    badge: "/icons/icon-192.png",
     tag: payload.tag || "bukuhr-notification",
     data: {
       url: payload.url || "/manager/approvals",

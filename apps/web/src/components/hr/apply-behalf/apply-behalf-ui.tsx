@@ -44,6 +44,7 @@ import {
   type BehalfListData,
 } from "@/lib/hr/apply-behalf-shared";
 import { formatDate, formatDateTime } from "@/components/employee/employee-shared";
+import { currencySymbolLabel, formatMoney, type DisplayCurrency } from "@/lib/money";
 
 const BEHALF_TABLE_GRID =
   "md:grid md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.15fr)_minmax(0,1.5fr)_minmax(0,1fr)_5rem_4.5rem] md:items-center md:gap-x-3";
@@ -240,9 +241,11 @@ function DetailField({ label, value }: { label: string; value: string }) {
 export function ApplyBehalfDetail({
   application,
   listHref = "/hr/apply-behalf",
+  currency = "MYR",
 }: {
   application: BehalfApplicationDetail;
   listHref?: string;
+  currency?: DisplayCurrency;
 }) {
   const isLeave = application.type === "leave";
   const isLate = application.type === "late";
@@ -260,7 +263,7 @@ export function ApplyBehalfDetail({
     title = "Late report";
     typeLabel = "Late";
   } else if (isClaim) {
-    title = `${application.claimTypeName} (RM ${application.amount.toFixed(2)})`;
+    title = `${application.claimTypeName} (${formatMoney(application.amount, currency)})`;
     typeLabel = "Claim";
   } else if (isOvertime) {
     title = `Overtime (${application.hours}h @ ${application.rateType}x)`;
@@ -325,7 +328,7 @@ export function ApplyBehalfDetail({
           {isClaim ? (
             <>
               <DetailField label="Claim type" value={application.claimTypeName} />
-              <DetailField label="Amount" value={`RM ${application.amount.toFixed(2)}`} />
+              <DetailField label="Amount" value={formatMoney(application.amount, currency)} />
               <DetailField label="Receipt date" value={formatDetailDate(application.receiptDate)} />
               {application.isMileage ? (
                 <>
@@ -334,7 +337,7 @@ export function ApplyBehalfDetail({
                   <DetailField label="Distance" value={`${application.distanceKm ?? 0} km`} />
                   <DetailField
                     label="Rate per km"
-                    value={`RM ${(application.ratePerKm ?? 0).toFixed(2)}`}
+                    value={formatMoney(application.ratePerKm ?? 0, currency)}
                   />
                 </>
               ) : null}
@@ -407,7 +410,9 @@ export function ApplyBehalfForm({
   overtimeAction = submitBehalfOvertime,
   replacementAction = submitBehalfReplacementCredit,
   listHref = "/hr/apply-behalf",
+  currency = "MYR",
 }: {
+  currency?: DisplayCurrency;
   employees: Array<{ id: string; full_name: string; employee_number: string }>;
   leaveTypes?: Array<{ id: string; name: string }>;
   claimTypes?: Array<{
@@ -656,7 +661,7 @@ export function ApplyBehalfForm({
                     {claimTypes.map((ct) => (
                       <option key={ct.id} value={ct.id}>
                         {ct.name} {ct.is_mileage ? "(Mileage)" : ""}
-                        {ct.max_amount ? ` · max RM ${ct.max_amount.toFixed(2)}` : ""}
+                        {ct.max_amount ? ` · max ${formatMoney(ct.max_amount, currency)}` : ""}
                       </option>
                     ))}
                   </HrSelect>
@@ -691,7 +696,7 @@ export function ApplyBehalfForm({
 
                     <div className="grid gap-4 md:grid-cols-2">
                       <HrField
-                        hint={`Rate: RM ${mileageRate.toFixed(2)}/km`}
+                        hint={`Rate: ${formatMoney(mileageRate, currency)}/km`}
                         id="distanceKm"
                         label="Distance (km)"
                       >
@@ -705,7 +710,7 @@ export function ApplyBehalfForm({
                           value={distanceKm}
                         />
                       </HrField>
-                      <HrField id="amount" label="Calculated amount (RM)">
+                      <HrField id="amount" label={`Calculated amount (${currencySymbolLabel(currency)})`}>
                         <HrTextInput
                           id="amount"
                           name="amount"
@@ -717,7 +722,7 @@ export function ApplyBehalfForm({
                     </div>
                   </>
                 ) : (
-                  <HrField id="amount" label="Amount (RM)">
+                  <HrField id="amount" label={`Amount (${currencySymbolLabel(currency)})`}>
                     <HrTextInput
                       id="amount"
                       name="amount"

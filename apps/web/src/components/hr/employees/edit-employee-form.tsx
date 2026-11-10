@@ -30,7 +30,10 @@ import {
   HrSelect,
   HrTextInput,
 } from "@/components/hr/employees/form-fields";
+import { AuEmployeeFields } from "@/components/hr/employees/au-employee-fields";
 import { Label } from "@/components/ui/label";
+import { currencySymbolLabel, type DisplayCurrency } from "@/lib/money";
+import { AUSTRALIAN_STATE_VALUES } from "@hrms/validation";
 import type { EmployeeDetail } from "@/lib/employees/queries";
 import {
   MALAYSIAN_RACE_OPTIONS,
@@ -53,6 +56,8 @@ export function EditEmployeeForm({
   payGroups,
   leaveTypes,
   banner,
+  country = "MY",
+  currency = "MYR",
 }: {
   employee: EmployeeDetail;
   branches: Option[];
@@ -63,7 +68,10 @@ export function EditEmployeeForm({
   payGroups: Option[];
   leaveTypes: Option[];
   banner?: string;
+  country?: "MY" | "AU";
+  currency?: DisplayCurrency;
 }) {
+  const isAu = country === "AU";
   const router = useRouter();
   const boundAction = useMemo(() => updateEmployeeFull.bind(null, employee.id), [employee.id]);
   const [state, formAction, pending] = useActionState(boundAction, initialState);
@@ -483,13 +491,15 @@ export function EditEmployeeForm({
                   type="email"
                 />
               </HrField>
-              <HrField id="icNumber" label="NRIC no">
-                <HrTextInput
-                  defaultValue={employee.profile.icNumber ?? ""}
-                  id="icNumber"
-                  name="icNumber"
-                />
-              </HrField>
+              {isAu ? null : (
+                <HrField id="icNumber" label="NRIC no">
+                  <HrTextInput
+                    defaultValue={employee.profile.icNumber ?? ""}
+                    id="icNumber"
+                    name="icNumber"
+                  />
+                </HrField>
+              )}
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
@@ -577,7 +587,10 @@ export function EditEmployeeForm({
               <HrField id="state" label="State">
                 <HrSelect defaultValue={employee.profile.state ?? ""} id="state" name="state">
                   <option value="">-- Select --</option>
-                  {withCurrentDemographicsOption(MALAYSIAN_STATE_OPTIONS, employee.profile.state).map(
+                  {withCurrentDemographicsOption(
+                    isAu ? AUSTRALIAN_STATE_VALUES : MALAYSIAN_STATE_OPTIONS,
+                    employee.profile.state,
+                  ).map(
                     (option) => (
                       <option key={option} value={option}>
                         {option}
@@ -595,12 +608,20 @@ export function EditEmployeeForm({
               </HrField>
               <HrField id="country" label="Country">
                 <HrSelect
-                  defaultValue={employee.profile.country ?? "MY"}
+                  defaultValue={
+                    isAu
+                      ? employee.profile.country && employee.profile.country !== "MY"
+                        ? employee.profile.country
+                        : "AU"
+                      : (employee.profile.country ?? "MY")
+                  }
                   id="country"
                   name="country"
                 >
-                  <option value="MY">Malaysia</option>
-                  {employee.profile.country && employee.profile.country !== "MY" ? (
+                  {isAu ? <option value="AU">Australia</option> : <option value="MY">Malaysia</option>}
+                  {employee.profile.country &&
+                  employee.profile.country !== "MY" &&
+                  employee.profile.country !== "AU" ? (
                     <option value={employee.profile.country}>{employee.profile.country}</option>
                   ) : null}
                 </HrSelect>
@@ -628,7 +649,7 @@ export function EditEmployeeForm({
                     type="number"
                   />
                 </HrField>
-                <HrField id="basicSalary" label="Basic salary (RM)">
+                <HrField id="basicSalary" label={`Basic salary (${currencySymbolLabel(currency)})`}>
                   <HrTextInput
                     defaultValue={
                       employee.profile.basicSalary ? String(employee.profile.basicSalary) : ""
@@ -647,37 +668,59 @@ export function EditEmployeeForm({
                     name="bankName"
                   />
                 </HrField>
-                <HrField id="bankAccountNumber" label="Bank account no">
-                  <HrTextInput
-                    defaultValue={employee.profile.bankAccountNumber ?? ""}
-                    id="bankAccountNumber"
-                    name="bankAccountNumber"
-                  />
-                </HrField>
-                <HrField id="epfNumber" label="EPF no">
-                  <HrTextInput
-                    defaultValue={employee.profile.epfNumber ?? ""}
-                    id="epfNumber"
-                    name="epfNumber"
-                  />
-                </HrField>
-                <HrField id="socsoNumber" label="SOCSO no">
-                  <HrTextInput
-                    defaultValue={employee.profile.socsoNumber ?? ""}
-                    id="socsoNumber"
-                    name="socsoNumber"
-                  />
-                </HrField>
-                <HrField id="taxNumber" label="Tax no">
-                  <HrTextInput
-                    defaultValue={employee.profile.taxNumber ?? ""}
-                    id="taxNumber"
-                    name="taxNumber"
-                  />
-                </HrField>
+                {isAu ? null : (
+                  <>
+                    <HrField id="bankAccountNumber" label="Bank account no">
+                      <HrTextInput
+                        defaultValue={employee.profile.bankAccountNumber ?? ""}
+                        id="bankAccountNumber"
+                        name="bankAccountNumber"
+                      />
+                    </HrField>
+                    <HrField id="epfNumber" label="EPF no">
+                      <HrTextInput
+                        defaultValue={employee.profile.epfNumber ?? ""}
+                        id="epfNumber"
+                        name="epfNumber"
+                      />
+                    </HrField>
+                    <HrField id="socsoNumber" label="SOCSO no">
+                      <HrTextInput
+                        defaultValue={employee.profile.socsoNumber ?? ""}
+                        id="socsoNumber"
+                        name="socsoNumber"
+                      />
+                    </HrField>
+                    <HrField id="taxNumber" label="Tax no">
+                      <HrTextInput
+                        defaultValue={employee.profile.taxNumber ?? ""}
+                        id="taxNumber"
+                        name="taxNumber"
+                      />
+                    </HrField>
+                  </>
+                )}
               </div>
+              {isAu ? (
+                <AuEmployeeFields
+                  values={{
+                    employmentBasis: employee.profile.employmentBasis,
+                    hourlyRate: employee.profile.hourlyRate,
+                    taxNumber: employee.profile.taxNumber,
+                    bsb: employee.profile.bsb,
+                    bankAccountNumber: employee.profile.bankAccountNumber,
+                    superFundName: employee.profile.superFundName,
+                    superUsi: employee.profile.superUsi,
+                    superMemberNumber: employee.profile.superMemberNumber,
+                    taxFreeThreshold: employee.profile.taxFreeThreshold,
+                    studyLoan: employee.profile.studyLoan,
+                  }}
+                />
+              ) : null}
               <p className="text-sm text-muted-foreground">
-                For EPF rates, allowances, and tax (TP1/TP3), use{" "}
+                {isAu
+                  ? "For allowances, use "
+                  : "For EPF rates, allowances, and tax (TP1/TP3), use "}
                 <span className="font-medium text-foreground">Payroll configuration</span> below — each
                 section saves separately.
               </p>

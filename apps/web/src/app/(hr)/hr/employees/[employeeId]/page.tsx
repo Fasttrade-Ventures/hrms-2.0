@@ -58,7 +58,7 @@ export default async function ViewEmployeePage({
         title={employee.fullName}
       />
 
-      <EmployeeProfileView employee={employee} />
+      <EmployeeProfileView country={payroll.country} currency={payroll.currency} employee={employee} />
 
       <EmployeeChecklistPanel employeeId={employee.id} />
       <SpecialistAccessPanel employeeId={employee.id} />
@@ -67,6 +67,8 @@ export default async function ViewEmployeePage({
         allowanceComponents={payroll.allowanceComponents}
         allowances={payroll.allowances}
         compensation={payroll.compensation}
+        country={payroll.country}
+        currency={payroll.currency}
         employeeId={employee.id}
         taxProfile={payroll.taxProfile}
       />

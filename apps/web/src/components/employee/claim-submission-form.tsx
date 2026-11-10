@@ -8,6 +8,7 @@ import {
   HrSelect,
   HrTextInput,
 } from "@/components/employee/employee-request-form";
+import { currencySymbolLabel, formatMoney, type DisplayCurrency } from "@/lib/money";
 
 export type ClaimTypeOption = {
   id: string;
@@ -20,9 +21,11 @@ export type ClaimTypeOption = {
 export function ClaimSubmissionForm({
   claimTypes,
   today,
+  currency = "MYR",
 }: {
   claimTypes: ClaimTypeOption[];
   today: string;
+  currency?: DisplayCurrency;
 }) {
   const [selectedTypeId, setSelectedTypeId] = useState<string>("");
   const [distance, setDistance] = useState<string>("");
@@ -70,9 +73,9 @@ export function ClaimSubmissionForm({
               <option key={type.id} value={type.id}>
                 {type.name}
                 {type.is_mileage
-                  ? ` (Mileage @ RM ${Number(type.rate_per_km ?? 0).toFixed(2)}/km)`
+                  ? ` (Mileage @ ${formatMoney(Number(type.rate_per_km ?? 0), currency)}/km)`
                   : type.max_amount
-                    ? ` (max RM ${type.max_amount})`
+                    ? ` (max ${formatMoney(Number(type.max_amount), currency)})`
                     : ""}
               </option>
             ))}
@@ -122,19 +125,19 @@ export function ClaimSubmissionForm({
             </HrField>
 
             <div className="flex flex-col justify-center rounded-[var(--radius-md)] border border-[var(--border-primary)] bg-[var(--surface-muted)] p-3.5">
-              <span className="text-xs text-[var(--foreground-muted)]">Calculated Total (RM)</span>
+              <span className="text-xs text-[var(--foreground-muted)]">Calculated Total ({currencySymbolLabel(currency)})</span>
               <div className="mt-1 flex items-baseline gap-2">
                 <span className="text-lg font-semibold text-[var(--foreground-primary)]">
-                  RM {calculatedMileageAmount}
+                  {formatMoney(Number(calculatedMileageAmount), currency)}
                 </span>
                 <span className="text-xs text-[var(--foreground-secondary)]">
-                  ({distanceNum} km × RM {ratePerKm.toFixed(2)}/km)
+                  ({distanceNum} km × {formatMoney(ratePerKm, currency)}/km)
                 </span>
               </div>
             </div>
           </>
         ) : (
-          <HrField id="amount" label="Amount (MYR)">
+          <HrField id="amount" label={`Amount (${currency})`}>
             <HrTextInput
               id="amount"
               name="amount"

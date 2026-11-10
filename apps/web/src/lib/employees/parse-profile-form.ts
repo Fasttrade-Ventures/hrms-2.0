@@ -1,4 +1,6 @@
-import { createEmployeeSchema, type CreateEmployeeInput } from "@hrms/validation";
+import { auEmployeeSchema, createEmployeeSchema, type CreateEmployeeInput } from "@hrms/validation";
+
+import type { OrganizationCountry } from "@hrms/domain";
 
 function readOptionalUuid(formData: FormData, name: string): string | null {
   const value = String(formData.get(name) ?? "").trim();
@@ -14,7 +16,25 @@ function emptyToNull(value: FormDataEntryValue | null) {
   return text ? text : null;
 }
 
-export function parseEmployeeProfileFormData(formData: FormData): {
+const AU_FIELD_ERRORS: Record<string, string> = {
+  employmentBasis: "Choose an employment basis (full-time, part-time or casual).",
+  hourlyRate: "Enter an hourly rate greater than zero.",
+  taxNumber: "Tax File Number must be 8 or 9 digits.",
+  bsb: "BSB must be 6 digits.",
+  bankAccountNumber: "Enter the bank account number (up to 20 characters).",
+  superFundName: "Enter the super fund name.",
+  superUsi: "Enter the super fund USI.",
+  superMemberNumber: "Enter the super member number.",
+};
+
+function australianFieldError(field: PropertyKey | undefined): string {
+  return (typeof field === "string" && AU_FIELD_ERRORS[field]) || "Invalid Australian employee details.";
+}
+
+export function parseEmployeeProfileFormData(
+  formData: FormData,
+  country: OrganizationCountry = "MY",
+): {
   success: true;
   data: CreateEmployeeInput;
 } | {
@@ -68,6 +88,8 @@ export function parseEmployeeProfileFormData(formData: FormData): {
     .map((value) => String(value))
     .filter(Boolean);
 
+  const isAu = country === "AU";
+
   const parsed = createEmployeeSchema.safeParse({
     fullName: String(formData.get("fullName") ?? "").trim(),
     email: String(formData.get("email") ?? "").trim(),
@@ -90,7 +112,7 @@ export function parseEmployeeProfileFormData(formData: FormData): {
     portalRole: String(formData.get("portalRole") ?? "employee").trim() || "employee",
     sendActivationEmail: readCheckbox(formData, "sendActivationEmail"),
     phone: emptyToNull(formData.get("phone")),
-    icNumber: emptyToNull(formData.get("icNumber")),
+    icNumber: isAu ? null : emptyToNull(formData.get("icNumber")),
     dateOfBirth: emptyToNull(formData.get("dateOfBirth")),
     gender: emptyToNull(formData.get("gender")),
     race: emptyToNull(formData.get("race")),
@@ -107,13 +129,27 @@ export function parseEmployeeProfileFormData(formData: FormData): {
     basicSalary: String(formData.get("basicSalary") ?? "").trim() || undefined,
     bankName: emptyToNull(formData.get("bankName")),
     bankAccountNumber: emptyToNull(formData.get("bankAccountNumber")),
-    epfNumber: emptyToNull(formData.get("epfNumber")),
-    socsoNumber: emptyToNull(formData.get("socsoNumber")),
+    epfNumber: isAu ? null : emptyToNull(formData.get("epfNumber")),
+    socsoNumber: isAu ? null : emptyToNull(formData.get("socsoNumber")),
     taxNumber: emptyToNull(formData.get("taxNumber")),
-    epfEmployeeRate: String(formData.get("epfEmployeeRate") ?? "").trim() || undefined,
-    epfEmployerRate: String(formData.get("epfEmployerRate") ?? "").trim() || undefined,
-    eisEligible: readCheckbox(formData, "eisEligible"),
-    voluntaryEpfExtraRate: String(formData.get("voluntaryEpfExtraRate") ?? "").trim() || undefined,
+    epfEmployeeRate: isAu ? undefined : String(formData.get("epfEmployeeRate") ?? "").trim() || undefined,
+    epfEmployerRate: isAu ? undefined : String(formData.get("epfEmployerRate") ?? "").trim() || undefined,
+    eisEligible: isAu ? undefined : readCheckbox(formData, "eisEligible"),
+    voluntaryEpfExtraRate: isAu
+      ? undefined
+      : String(formData.get("voluntaryEpfExtraRate") ?? "").trim() || undefined,
+    ...(isAu
+      ? {
+          employmentBasis: emptyToNull(formData.get("employmentBasis")),
+          hourlyRate: emptyToNull(formData.get("hourlyRate")),
+          bsb: emptyToNull(formData.get("bsb")),
+          superFundName: emptyToNull(formData.get("superFundName")),
+          superUsi: emptyToNull(formData.get("superUsi")),
+          superMemberNumber: emptyToNull(formData.get("superMemberNumber")),
+          taxFreeThreshold: readCheckbox(formData, "taxFreeThreshold"),
+          studyLoan: readCheckbox(formData, "studyLoan"),
+        }
+      : {}),
     profilePhotoPath: emptyToNull(formData.get("profilePhotoPath")),
     removeProfilePhoto: readCheckbox(formData, "removeProfilePhoto"),
     dependents,
@@ -122,6 +158,33 @@ export function parseEmployeeProfileFormData(formData: FormData): {
 
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid employee details." };
+  }
+
+  if (isAu) {
+    const au = auEmployeeSchema.safeParse({
+      employmentBasis: parsed.data.employmentBasis ?? undefined,
+      hourlyRate: parsed.data.hourlyRate ?? undefined,
+      taxNumber: parsed.data.taxNumber ?? undefined,
+      bsb: parsed.data.bsb ?? undefined,
+      bankAccountNumber: parsed.data.bankAccountNumber ?? undefined,
+      superFundName: parsed.data.superFundName ?? undefined,
+      superUsi: parsed.data.superUsi ?? undefined,
+      superMemberNumber: parsed.data.superMemberNumber ?? undefined,
+      taxFreeThreshold: parsed.data.taxFreeThreshold ?? false,
+      studyLoan: parsed.data.studyLoan ?? false,
+    });
+    if (!au.success) {
+      return { success: false, error: australianFieldError(au.error.issues[0]?.path[0]) };
+    }
+    return {
+      success: true,
+      data: {
+        ...parsed.data,
+        ...au.data,
+        taxFreeThreshold: au.data.taxFreeThreshold,
+        studyLoan: au.data.studyLoan,
+      },
+    };
   }
 
   return { success: true, data: parsed.data };

@@ -10,6 +10,8 @@ import {
   requireEmployeeContext,
 } from "@/lib/employee/leave";
 import { loadLeaveHolidayDates } from "@/lib/leave/holidays";
+import { loadLeaveUnits, type LeaveUnits } from "@/lib/leave/units";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function Page({
   searchParams,
@@ -22,9 +24,11 @@ export default async function Page({
   const defaultEndDate = query.endDate ?? query.startDate ?? today;
 
   let holidays: string[] = [];
+  let units: LeaveUnits = { country: "MY", standardDayHours: 8 };
   try {
     const { organizationId } = await requireEmployeeContext();
     holidays = await loadLeaveHolidayDates(organizationId);
+    units = await loadLeaveUnits(await createClient(), organizationId);
   } catch {
     holidays = [];
   }
@@ -68,12 +72,17 @@ export default async function Page({
             leaveTypes={leaveTypes}
             existingRequests={requests}
             holidays={holidays}
+            units={units}
           />
         </div>
 
         {/* Side/Right Column (1/3 width) */}
         <div className="space-y-4">
-          <RecentLeaveCard requests={requests} initialViewAll={query.view === "all"} />
+          <RecentLeaveCard
+            requests={requests}
+            initialViewAll={query.view === "all"}
+            standardDayHours={units.country === "AU" ? units.standardDayHours : undefined}
+          />
         </div>
       </div>
     </div>

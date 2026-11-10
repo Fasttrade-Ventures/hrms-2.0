@@ -2,22 +2,19 @@ import Link from "next/link";
 
 import { EmptyState, ListCard } from "@hrms/ui";
 
-import { formatCurrency } from "@/components/employee/employee-shared";
 import { PortalIcon } from "@/components/portal/portal-icons";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
-import { listPayslips } from "@/lib/employee/payslips";
+import { getPayslipCurrency, listPayslips } from "@/lib/employee/payslips";
 import { requireModule } from "@/lib/entitlements";
+import { formatMoney } from "@/lib/money";
 
 export default async function Page() {
   await requireModule("payroll");
-  const payslips = await listPayslips();
+  const [payslips, currency] = await Promise.all([listPayslips(), getPayslipCurrency()]);
 
   return (
     <div className="space-y-6">
-      <PortalPageHeader
-        description="View payslips from locked payroll runs."
-        title="Payslips"
-      />
+      <PortalPageHeader description="View payslips from locked payroll runs." title="Payslips" />
 
       <ListCard
         columns={[
@@ -44,11 +41,14 @@ export default async function Page() {
                 {payslip.periodLabel}
               </Link>
             ),
-            gross: formatCurrency(payslip.grossPay),
-            net: formatCurrency(payslip.netPay),
+            gross: formatMoney(payslip.grossPay, currency),
+            net: formatMoney(payslip.netPay, currency),
           },
           action: (
-            <Link className="text-sm text-[var(--accent-primary)]" href={`/employee/payslips/${payslip.id}`}>
+            <Link
+              className="text-sm text-[var(--accent-primary)]"
+              href={`/employee/payslips/${payslip.id}`}
+            >
               View
             </Link>
           ),

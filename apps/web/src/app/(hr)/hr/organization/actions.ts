@@ -23,11 +23,19 @@ import {
   updateLeaveTypeSchema,
   updateShiftSchema,
 } from "@hrms/validation";
+import {
+  SET_BRANCH_STATE_FIRST,
+  australianHolidays2026,
+  holidayRowsToInsert,
+  normalizeAustralianState,
+} from "@hrms/domain";
 
 import { requireRole } from "@/lib/auth/session";
 import { fetchMalaysiaHolidaysForState } from "@/lib/hr/malaysia-holidays-api";
 import { persistHolidaySync } from "@/lib/hr/sync-state-holidays";
+import { isHolidayDateAllowed, holidayYearRangeMessage } from "@/lib/hr/holiday-window";
 import { getOrganizationId } from "@/lib/hr/organization";
+import { loadOrganizationCountry } from "@/lib/payroll/organization-country";
 import { createClient } from "@/lib/supabase/server";
 import { createAssetCategory, updateAssetCategory } from "@/lib/assets/categories";
 
@@ -135,13 +143,14 @@ export async function createBranch(
   await requireRole("hr_administrator");
   const organizationId = await getOrganizationId();
 
-  const parsed = createBranchSchema.safeParse(readBranchForm(formData));
+  const supabase = await createClient();
+  const country = await loadOrganizationCountry(supabase, organizationId);
+  const parsed = createBranchSchema.safeParse({ ...readBranchForm(formData), country });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid branch details." };
   }
 
-  const supabase = await createClient();
   const { error } = await supabase.from("branches").insert({
     organization_id: organizationId,
     ...branchPayload(parsed.data),
@@ -161,13 +170,14 @@ export async function updateBranch(
   await requireRole("hr_administrator");
   const organizationId = await getOrganizationId();
 
-  const parsed = updateBranchSchema.safeParse(readBranchForm(formData));
+  const supabase = await createClient();
+  const country = await loadOrganizationCountry(supabase, organizationId);
+  const parsed = updateBranchSchema.safeParse({ ...readBranchForm(formData), country });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid branch details." };
   }
 
-  const supabase = await createClient();
   const { error } = await supabase
     .from("branches")
     .update(branchPayload(parsed.data))
@@ -612,6 +622,14 @@ export async function importHolidays(input: {
   }
 
   const supabase = await createClient();
+  if ((await loadOrganizationCountry(supabase, organizationId)) === "AU") {
+    return {
+      imported: 0,
+      updated: 0,
+      skipped: 0,
+      error: "Malaysian public holidays cannot be imported for an Australian company.",
+    };
+  }
   const { data: branch, error: branchError } = await supabase
     .from("branches")
     .select("id, name, state")
@@ -693,6 +711,106 @@ export async function importHolidays(input: {
     updated: result.updated,
     skipped: result.skipped,
     success: `${parts[0]![0]!.toUpperCase()}${parts[0]!.slice(1)}${parts.length > 1 ? `; ${parts.slice(1).join("; ")}` : ""}.`,
+  };
+}
+
+/**
+ * Loads the 2026 national plus state or territory public holidays for one branch.
+ * Australian companies only. Safe to run twice: rows already stored are skipped.
+ */
+export async function loadAustralianHolidays2026(input: {
+  branchId: string;
+}): Promise<ImportHolidaysResult> {
+  await requireRole("hr_administrator");
+  const organizationId = await getOrganizationId();
+  const failed = (error: string): ImportHolidaysResult => ({
+    imported: 0,
+    updated: 0,
+    skipped: 0,
+    error,
+  });
+
+  const branchId = String(input?.branchId ?? "").trim();
+  if (!branchId) return failed("Select a branch first.");
+
+  const supabase = await createClient();
+  const country = await loadOrganizationCountry(supabase, organizationId);
+  if (country !== "AU") {
+    return failed("Australian holidays can only be loaded for an Australian company.");
+  }
+
+  const { data: branch, error: branchError } = await supabase
+    .from("branches")
+    .select("id, state")
+    .eq("organization_id", organizationId)
+    .eq("id", branchId)
+    .maybeSingle();
+
+  if (branchError) return failed(branchError.message);
+  if (!branch) return failed("Branch not found.");
+
+  const state = normalizeAustralianState(branch.state);
+  if (!state) return failed(SET_BRANCH_STATE_FIRST);
+
+  const incoming = australianHolidays2026(state).map((holiday) => ({
+    ...holiday,
+    branchId,
+  }));
+
+  if (!incoming.every((holiday) => isHolidayDateAllowed(holiday.holidayDate))) {
+    return failed(holidayYearRangeMessage());
+  }
+
+  const { data: existingRows, error: existingError } = await supabase
+    .from("holidays")
+    .select("branch_id, holiday_date, name")
+    .eq("organization_id", organizationId)
+    .eq("branch_id", branchId)
+    .gte("holiday_date", "2026-01-01")
+    .lte("holiday_date", "2026-12-31");
+
+  if (existingError) return failed(existingError.message);
+
+  const toInsert = holidayRowsToInsert(
+    (existingRows ?? []).map((row) => ({
+      branchId: row.branch_id as string | null,
+      holidayDate: row.holiday_date as string,
+      name: row.name as string,
+    })),
+    incoming,
+  );
+  const skipped = incoming.length - toInsert.length;
+
+  if (toInsert.length > 0) {
+    const { error: insertError } = await supabase.from("holidays").insert(
+      toInsert.map((holiday) => ({
+        organization_id: organizationId,
+        branch_id: branchId,
+        name: holiday.name,
+        holiday_date: holiday.holidayDate,
+      })),
+    );
+    if (insertError) return { imported: 0, updated: 0, skipped, error: insertError.message };
+  }
+
+  revalidateOrg(["/hr/organization/holidays"]);
+
+  if (toInsert.length === 0) {
+    return {
+      imported: 0,
+      updated: 0,
+      skipped,
+      success: `2026 holidays for ${state} are already loaded for this branch.`,
+    };
+  }
+
+  return {
+    imported: toInsert.length,
+    updated: 0,
+    skipped,
+    success: `Loaded ${toInsert.length} holiday${toInsert.length === 1 ? "" : "s"} for ${state}${
+      skipped > 0 ? `; ${skipped} already loaded` : ""
+    }.`,
   };
 }
 

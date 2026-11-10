@@ -7,7 +7,12 @@ import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { updateModuleFlagFormAction, updatePayrollDutySegregationFormAction, updateProductTierFormAction } from "@/app/(owner)/owner/actions";
-import { getOwnerEntitlementSettings, type OwnerModuleSetting } from "@/lib/owner/entitlements";
+import { CompanySettingsForm } from "@/components/owner/company-settings-form";
+import {
+  getOwnerCompanySettings,
+  getOwnerEntitlementSettings,
+  type OwnerModuleSetting,
+} from "@/lib/owner/entitlements";
 import { requireRole } from "@/lib/auth/session";
 
 function ModuleTable({ modules }: { modules: OwnerModuleSetting[] }) {
@@ -56,7 +61,10 @@ function ModuleTable({ modules }: { modules: OwnerModuleSetting[] }) {
 
 export default async function Page() {
   await requireRole("organization_owner");
-  const settings = await getOwnerEntitlementSettings();
+  const [settings, company] = await Promise.all([
+    getOwnerEntitlementSettings(),
+    getOwnerCompanySettings(),
+  ]);
   const canEditTier = !isSaasMode();
 
   const coreModules = settings.modules.filter((module) => module.tier === "Core");
@@ -69,6 +77,8 @@ export default async function Page() {
         description="Turn features off without changing the package. Enterprise can toggle every feature. Professional can toggle lower and middle features. Core can toggle lower features only."
         title="Module settings"
       />
+
+      <CompanySettingsForm settings={company} />
 
       <Card size="sm">
         <CardHeader>

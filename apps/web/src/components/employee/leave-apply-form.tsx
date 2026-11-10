@@ -22,11 +22,19 @@ import {
   HrSelect,
   HrTextInput,
 } from "@/components/hr/employees/form-fields";
-import { countWorkingDays } from "@hrms/domain";
+import { countWorkingDays, daysToHours, hoursToDays } from "@hrms/domain";
 import { findOverlappingLeave, type LeaveDateSpan } from "@/lib/leave/overlap-utils";
 import type { LeaveBalanceRow, LeaveTypeOption } from "@/lib/employee/leave";
+import type { LeaveUnits } from "@/lib/leave/units";
 
 const initialState: EmployeeActionState = {};
+
+const DEFAULT_UNITS: LeaveUnits = { country: "MY", standardDayHours: 8 };
+
+/** Trims floating point noise for display, for example 22.8000000001 -> 22.8. */
+function formatHours(hours: number): string {
+  return String(Math.round(hours * 100) / 100);
+}
 
 type DurationMode = "full" | "half_am" | "half_pm";
 
@@ -75,6 +83,7 @@ export function LeaveApplyForm({
   defaultEndDate,
   existingRequests = [],
   holidays = [],
+  units = DEFAULT_UNITS,
 }: {
   leaveTypes: LeaveTypeOption[];
   balances: LeaveBalanceRow[];
@@ -82,7 +91,11 @@ export function LeaveApplyForm({
   defaultEndDate: string;
   existingRequests?: LeaveDateSpan[];
   holidays?: string[];
+  units?: LeaveUnits;
 }) {
+  const isAu = units.country === "AU";
+  const standardDayHours = units.standardDayHours;
+  const [hoursInput, setHoursInput] = useState<string | null>(null);
   const [state, formAction, pending] = useActionState(applyLeave, initialState);
   const [selectedLeaveTypeId, setSelectedLeaveTypeId] = useState("");
   const [durationMode, setDurationMode] = useState<DurationMode>("full");
@@ -117,12 +130,25 @@ export function LeaveApplyForm({
 
   const workingDays = calculateWorkingDays(startDate, endDate, durationMode !== "full");
   const selectedBalance = balances.find((b) => b.leaveTypeId === selectedLeaveTypeId);
+
+  // Australia enters hours. The field follows the selected dates until the employee edits it.
+  const maxHours = daysToHours(workingDays, standardDayHours);
+  const hoursValue = hoursInput ?? (workingDays > 0 ? formatHours(maxHours) : "");
+  const enteredHours = Number(hoursValue);
+  const hoursValid =
+    hoursValue !== "" && Number.isFinite(enteredHours) && enteredHours > 0 && enteredHours <= maxHours;
+  const requestedDays = isAu
+    ? hoursValid
+      ? Math.round(hoursToDays(enteredHours, standardDayHours) * 100) / 100
+      : 0
+    : workingDays;
+
   const overBalance =
     Boolean(selectedLeaveTypeId) &&
     !selectedType?.isUnpaid &&
-    workingDays > 0 &&
+    requestedDays > 0 &&
     selectedBalance != null &&
-    workingDays > selectedBalance.remainingDays;
+    requestedDays > selectedBalance.remainingDays;
 
   const entitlementBalances = useMemo(() => {
     return balances
@@ -193,14 +219,14 @@ export function LeaveApplyForm({
               {/* Center: Main numeric value */}
               <div className="flex items-baseline gap-1.5 mt-2">
                 <span className="text-2xl sm:text-3xl font-bold tracking-tight">
-                  {balance.remainingDays}
+                  {isAu ? formatHours(daysToHours(balance.remainingDays, standardDayHours)) : balance.remainingDays}
                 </span>
                 <span
                   className={`text-xs font-medium ${
                     isSelected ? "text-emerald-200/90" : "text-[var(--foreground-muted)]"
                   }`}
                 >
-                  days
+                  {isAu ? "hours" : "days"}
                 </span>
               </div>
 
@@ -208,11 +234,11 @@ export function LeaveApplyForm({
               <div className="mt-1 flex items-center justify-between text-[10px] w-full">
                 {balance.pendingDays > 0 ? (
                   <span className={isSelected ? "text-amber-300 font-medium" : "text-amber-600 font-medium"}>
-                    {balance.pendingDays} pending
+                    {isAu ? formatHours(daysToHours(balance.pendingDays, standardDayHours)) : balance.pendingDays} pending
                   </span>
                 ) : balance.entitlementDays > 0 ? (
                   <span className={isSelected ? "text-emerald-200/70" : "text-[var(--foreground-muted)]"}>
-                    of {balance.entitlementDays} total
+                    of {isAu ? formatHours(daysToHours(balance.entitlementDays, standardDayHours)) : balance.entitlementDays} total
                   </span>
                 ) : (
                   <span className={isSelected ? "text-emerald-200/70" : "text-[var(--foreground-muted)]"}>
@@ -255,7 +281,24 @@ export function LeaveApplyForm({
             </HrSelect>
           </HrField>
 
-          {/* Duration Toggle Buttons */}
+          {/* Australia: hours. Malaysia: full / half day. */}
+          {isAu ? (
+            <HrField id="hours" label={`Hours (${standardDayHours} hours = 1 day)`}>
+              <HrTextInput
+                id="hours"
+                name="hours"
+                inputMode="decimal"
+                min="0.1"
+                max={maxHours > 0 ? String(maxHours) : undefined}
+                required
+                step="0.1"
+                type="number"
+                value={hoursValue}
+                onChange={(e) => setHoursInput(e.target.value)}
+              />
+              <input type="hidden" name="halfDay" value="false" />
+            </HrField>
+          ) : (
           <div className="flex flex-col gap-1.5">
             <label className="text-[13px] font-semibold text-[var(--foreground-secondary)]">Duration</label>
             <div className="grid grid-cols-3 gap-2">
@@ -280,6 +323,7 @@ export function LeaveApplyForm({
             </div>
             <input type="hidden" name="halfDay" value={durationMode !== "full" ? "true" : "false"} />
           </div>
+          )}
 
           <HrField id="startDate" label="From">
             <HrTextInput
@@ -318,6 +362,12 @@ export function LeaveApplyForm({
           </p>
         )}
 
+        {isAu && workingDays > 0 && hoursValue !== "" && !hoursValid && (
+          <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+            Enter hours between 0.1 and {formatHours(maxHours)} for these dates.
+          </p>
+        )}
+
         {requiresAttachment && (
           <div className="space-y-1 sm:col-span-2">
             <HrField id="file" label="Supporting Document (Medical Certificate, etc.)">
@@ -343,8 +393,17 @@ export function LeaveApplyForm({
 
         {startDate && endDate && (
           <div className="rounded-lg bg-[var(--surface-accent-soft)] p-3 px-3.5 flex justify-between items-center text-xs font-semibold text-[var(--accent-primary)]">
-            <span>Calculated Working Days</span>
-            <span>{workingDays} Day{workingDays === 1 ? "" : "s"}</span>
+            {isAu ? (
+              <>
+                <span>Leave Hours</span>
+                <span>{hoursValid ? formatHours(enteredHours) : "0"} Hour{hoursValid && enteredHours === 1 ? "" : "s"}</span>
+              </>
+            ) : (
+              <>
+                <span>Calculated Working Days</span>
+                <span>{workingDays} Day{workingDays === 1 ? "" : "s"}</span>
+              </>
+            )}
           </div>
         )}
 
@@ -374,14 +433,19 @@ export function LeaveApplyForm({
 
         {overBalance ? (
           <p className="text-xs font-medium text-destructive">
-            Insufficient balance. Remaining: {selectedBalance?.remainingDays ?? 0} day(s).
+            {isAu
+              ? `Insufficient balance. Remaining: ${formatHours(daysToHours(selectedBalance?.remainingDays ?? 0, standardDayHours))} hour(s).`
+              : `Insufficient balance. Remaining: ${selectedBalance?.remainingDays ?? 0} day(s).`}
           </p>
         ) : null}
 
         <HrFormMessage error={state.error} success={state.success} />
 
         <div className="flex gap-3">
-          <HrPrimaryButton disabled={pending || overBalance || Boolean(overlappingRequest)} type="submit">
+          <HrPrimaryButton
+            disabled={pending || overBalance || Boolean(overlappingRequest) || (isAu && !hoursValid)}
+            type="submit"
+          >
             {pending ? "Submitting..." : "Submit Leave Request"}
           </HrPrimaryButton>
           <HrGhostButton
@@ -390,6 +454,7 @@ export function LeaveApplyForm({
             onClick={() => {
               setSelectedLeaveTypeId("");
               setDurationMode("full");
+              setHoursInput(null);
               setStartDate(defaultStartDate);
               setEndDate(defaultEndDate);
               if (fileInputRef.current) {

@@ -14,6 +14,7 @@ import {
   upsertRecurringAllowance,
   type EmployeeCompensation,
 } from "@/lib/payroll/compensation";
+import { assertMalaysianOrganization } from "@/lib/payroll/exports/country-guard";
 import { generateDraftPayrun } from "@/lib/payroll/generate";
 import { approvePayrun, deletePayrun, submitPayrunForReview } from "@/lib/payroll/workflow";
 import { createPayrunSchema, createPayGroupSchema } from "@hrms/validation";
@@ -366,6 +367,7 @@ export async function exportStatutoryAction(
 
   try {
     const session = await guardPayroll();
+    await assertMalaysianOrganization();
     const { generateStatutoryExport } = await import("@/lib/payroll/exports");
     const result = await generateStatutoryExport(
       payrunId,
@@ -391,6 +393,7 @@ export async function generateCp8dAction(
 
   try {
     const session = await guardPayroll();
+    await assertMalaysianOrganization();
     const { generateCp8dExport } = await import("@/lib/payroll/exports/year-end");
     const result = await generateCp8dExport(calendarYear, session.user.id, branchId);
     return exportReadyState(result);
@@ -410,6 +413,7 @@ export async function generateEaPdfAction(
 
   try {
     const session = await guardPayroll();
+    await assertMalaysianOrganization();
     const { generateEaPdfForEmployee } = await import("@/lib/payroll/exports/year-end");
     const result = await generateEaPdfForEmployee(employeeId, calendarYear, session.user.id);
     return exportReadyState(result);
@@ -427,6 +431,7 @@ export async function generateEaPdfBulkAction(
 
   try {
     const session = await guardPayroll();
+    await assertMalaysianOrganization();
     const { generateEaPdfBulk } = await import("@/lib/payroll/exports/year-end");
     const result = await generateEaPdfBulk(calendarYear, session.user.id, branchId);
     return exportReadyState(result);

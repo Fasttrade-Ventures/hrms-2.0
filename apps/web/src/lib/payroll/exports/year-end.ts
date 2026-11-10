@@ -3,6 +3,7 @@ import { buildSimplePdf } from "@/lib/files/simple-pdf";
 import type { StatutoryExportRow } from "./store";
 import { storePayrollExport } from "./store";
 import { requireOrganizationId } from "@/lib/auth/organization-context";
+import { assertMalaysianOrganization } from "./country-guard";
 
 export function buildEaPdfLines(input: {
   employerName: string;
@@ -104,6 +105,15 @@ export async function generateEaPdfForEmployee(
   calendarYear: number,
   actorUserId: string,
 ): Promise<{ exportId: string; downloadPath: string; fileName: string }> {
+  await assertMalaysianOrganization();
+  return renderEaPdfForEmployee(employeeId, calendarYear, actorUserId);
+}
+
+async function renderEaPdfForEmployee(
+  employeeId: string,
+  calendarYear: number,
+  actorUserId: string,
+): Promise<{ exportId: string; downloadPath: string; fileName: string }> {
   const { createClient } = await import("@/lib/supabase/server");
   const organizationId = await requireOrganizationId();
   const supabase = await createClient();
@@ -156,6 +166,7 @@ export async function generateEaPdfBulk(
   actorUserId: string,
   branchId?: string | null,
 ) {
+  await assertMalaysianOrganization();
   const { createClient } = await import("@/lib/supabase/server");
   const organizationId = await requireOrganizationId();
   const supabase = await createClient();
@@ -192,7 +203,7 @@ export async function generateEaPdfBulk(
 
   const manifestLines = ["Employee Number,Name,Download Path"];
   for (const employee of employees) {
-    const result = await generateEaPdfForEmployee(employee.id, calendarYear, actorUserId);
+    const result = await renderEaPdfForEmployee(employee.id, calendarYear, actorUserId);
     manifestLines.push(
       [
         employee.number,
@@ -220,6 +231,7 @@ export async function generateCp8dExport(
   actorUserId: string,
   branchId?: string | null,
 ) {
+  await assertMalaysianOrganization();
   const { createClient } = await import("@/lib/supabase/server");
   const organizationId = await requireOrganizationId();
   const supabase = await createClient();

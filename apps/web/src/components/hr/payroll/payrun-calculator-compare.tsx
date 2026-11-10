@@ -1,7 +1,14 @@
 import { spotCheckFirstPayrunLine } from "@/lib/payroll/calculator-compare";
 import { PortalSectionCard } from "@/components/portal/portal-section";
+import { formatMoney, type DisplayCurrency } from "@/lib/money";
 
-export async function PayrunCalculatorCompare({ payrunId }: { payrunId: string }) {
+export async function PayrunCalculatorCompare({
+  payrunId,
+  currency = "MYR",
+}: {
+  payrunId: string;
+  currency?: DisplayCurrency;
+}) {
   const result = await spotCheckFirstPayrunLine(payrunId);
 
   if (!result) {
@@ -30,8 +37,8 @@ export async function PayrunCalculatorCompare({ payrunId }: { payrunId: string }
             {result.fields.map((field) => (
               <tr className="border-t" key={field.field}>
                 <td className="px-3 py-2">{field.field}</td>
-                <td className="px-3 py-2 font-mono">RM {field.stored}</td>
-                <td className="px-3 py-2 font-mono">RM {field.computed}</td>
+                <td className="px-3 py-2 font-mono">{formatMoney(Number(field.stored), currency)}</td>
+                <td className="px-3 py-2 font-mono">{formatMoney(Number(field.computed), currency)}</td>
                 <td className="px-3 py-2">{field.match ? "✓" : "✗"}</td>
               </tr>
             ))}

@@ -1,16 +1,21 @@
 import Link from "next/link";
 
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
+import { getOrganizationDisplay } from "@/lib/organization-display";
 
-export function EmployeeProfileTabs({
+/** The Payroll tab holds Malaysian tax declarations (zakat, PCB, extra EPF), so Australian staff do not see it. */
+export async function EmployeeProfileTabs({
   active,
 }: {
   active: "personal" | "address" | "payroll" | "security";
 }) {
+  const { country } = await getOrganizationDisplay();
   const tabs = [
     { id: "personal" as const, label: "Personal", href: "/employee/profile" },
     { id: "address" as const, label: "Address", href: "/employee/profile/address" },
-    { id: "payroll" as const, label: "Payroll", href: "/employee/profile/payroll" },
+    ...(country === "AU"
+      ? []
+      : [{ id: "payroll" as const, label: "Payroll", href: "/employee/profile/payroll" }]),
     { id: "security" as const, label: "Security", href: "/employee/profile/security" },
   ];
 

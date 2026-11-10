@@ -74,5 +74,7 @@ export type ApprovalDetail = ApprovalInboxRow & {
   payload: Record<string, unknown>;
   comment: string | null;
   totalSteps?: number;
+  /** Organization currency, for formatting amounts in the payload. */
+  currency?: "MYR" | "AUD";
 };
 

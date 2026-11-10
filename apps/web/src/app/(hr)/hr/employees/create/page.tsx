@@ -2,14 +2,16 @@ import { CreateEmployeeForm } from "@/components/hr/employees/create-employee-fo
 import { HrLinkButton } from "@/components/hr/hr-ui.client";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { requireRole } from "@/lib/auth/session";
+import { getOrganizationDisplay } from "@/lib/organization-display";
 import { getEmployeeOptions, getSuggestedEmployeeNumber } from "@/lib/employees/queries";
 
 export default async function CreateEmployeePage() {
   await requireRole("hr_administrator");
 
-  const [suggestedEmployeeNumber, options] = await Promise.all([
+  const [suggestedEmployeeNumber, options, organization] = await Promise.all([
     getSuggestedEmployeeNumber(),
     getEmployeeOptions(),
+    getOrganizationDisplay(),
   ]);
 
   const joinDate = new Date().toISOString().slice(0, 10);
@@ -27,6 +29,8 @@ export default async function CreateEmployeePage() {
       />
       <CreateEmployeeForm
         branches={options.branches}
+        country={organization.country}
+        currency={organization.currency}
         departments={options.departments}
         joinDate={joinDate}
         leaveTypes={options.leaveTypes}

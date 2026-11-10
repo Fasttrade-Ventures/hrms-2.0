@@ -10,6 +10,7 @@ import {
 import { buildEmployeePayLines } from "@/lib/payroll/feeds";
 import { buildPayrunItemComponentRows } from "@/lib/payroll/item-components";
 import { assertStatutoryRulesAvailable, loadStatutoryRulePacks } from "@/lib/payroll/rules";
+import { loadOrganizationCountry } from "@/lib/payroll/organization-country";
 import { ensurePayrollComponents } from "@/lib/payroll/seed";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizationIdForWrite } from "@/lib/auth/organization-context";
@@ -29,6 +30,7 @@ export async function generateDraftPayrun(input: CreatePayrunInput): Promise<str
 
   const organizationId = await requireOrganizationIdForWrite();
   const supabase = await createClient();
+  const country = await loadOrganizationCountry(supabase, organizationId);
 
   if (input.scope === "pay_group" && !input.payGroupId) {
     throw new Error("Pay group is required when scope is pay group.");
@@ -180,6 +182,7 @@ export async function generateDraftPayrun(input: CreatePayrunInput): Promise<str
       frequency,
       asOf: input.earningPeriodEnd,
       ytd,
+      country,
     });
     const result = computeEmployeePayrun({ ...computeInput, statutoryRules });
 

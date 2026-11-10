@@ -10,6 +10,8 @@ import { createLeaveRequest } from "@/lib/employee/leave";
 import { requireEmployeeContext } from "@/lib/employee/leave";
 import { submitEmployeeRequest } from "@/lib/employee/submit-request";
 import { requireModule } from "@/lib/entitlements";
+import { formatMoney } from "@/lib/money";
+import { loadOrganizationCurrency } from "@/lib/organization-display";
 import { createClient } from "@/lib/supabase/server";
 import { uploadOrganizationFile } from "@/lib/files/storage";
 import { checkRateLimitDurable } from "@/lib/rate-limit";
@@ -83,7 +85,16 @@ export async function applyLeave(
       return { error: parsed.error.issues[0]?.message ?? "Invalid leave request." };
     }
 
-    const requestId = await createLeaveRequest(parsed.data);
+    const hoursRaw = String(formData.get("hours") ?? "").trim();
+    const hours = hoursRaw ? Number(hoursRaw) : undefined;
+    if (hours !== undefined && !Number.isFinite(hours)) {
+      return { error: "Enter the number of leave hours." };
+    }
+
+    const requestId =
+      hours === undefined
+        ? await createLeaveRequest(parsed.data)
+        : await createLeaveRequest(parsed.data, { hours });
     revalidatePath("/employee/leave");
     revalidatePath("/employee/dashboard");
     redirect(`/employee/leave/${requestId}?submitted=1`);
@@ -162,7 +173,10 @@ export async function submitClaim(
 
     if (claimType.max_amount != null && finalAmount > Number(claimType.max_amount)) {
       return {
-        error: `Amount exceeds maximum allowed (RM ${Number(claimType.max_amount).toFixed(2)}).`,
+        error: `Amount exceeds maximum allowed (${formatMoney(
+          Number(claimType.max_amount),
+          await loadOrganizationCurrency(supabase, organizationId),
+        )}).`,
       };
     }
 

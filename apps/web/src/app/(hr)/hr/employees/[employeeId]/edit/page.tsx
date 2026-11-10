@@ -64,6 +64,8 @@ export default async function EditEmployeePage({
       />
       <EditEmployeeForm
         banner={banner}
+        country={payroll.country}
+        currency={payroll.currency}
         branches={options.branches}
         departments={options.departments}
         employee={employee}
@@ -78,6 +80,8 @@ export default async function EditEmployeePage({
         allowanceComponents={payroll.allowanceComponents}
         allowances={payroll.allowances}
         compensation={payroll.compensation}
+        country={payroll.country}
+        currency={payroll.currency}
         employeeId={employee.id}
         taxProfile={payroll.taxProfile}
       />
