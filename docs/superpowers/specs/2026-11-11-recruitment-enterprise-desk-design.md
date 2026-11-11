@@ -198,13 +198,15 @@ Schema: use existing columns (`source`, offer statuses, requisition status). Add
 
 ## 10. Success criteria
 
-- [ ] Hub supports create/edit with dept/branch/type and open/hold/close/re-open.
-- [ ] Candidate detail is the main work surface; board remains scannable.
-- [ ] Notes appear on stage history; Withdraw works; source is capturable.
-- [ ] Offer draft → sent → accept/decline/withdraw; PDF downloadable; currency from org.
-- [ ] Accept → draft employee + onboarding checklist attempt; activation remains manual.
-- [ ] Recruiter accept does not hard-fail into Unauthorized with no success message.
-- [ ] No public careers routes introduced.
+- [x] Hub supports create/edit with dept/branch/type and open/hold/close/re-open. (PRs #57–#58)
+- [x] Candidate detail is the main work surface; board remains scannable. (PR #60)
+- [x] Notes appear on stage history; Withdraw works; source is capturable. (PRs #59–#60)
+- [x] Offer draft → sent → accept/decline/withdraw; PDF downloadable; currency from org. (PR #61)
+- [x] Accept → draft employee + onboarding checklist attempt; activation remains manual. (PR #62)
+- [x] Recruiter accept does not hard-fail into Unauthorized with no success message. (PR #62)
+- [x] No public careers routes introduced.
+
+Agent note: criteria verified against merged code + CI; interactive UI smoke in a live HR session was not re-run in the SDD agent session.
 
 ---
 
