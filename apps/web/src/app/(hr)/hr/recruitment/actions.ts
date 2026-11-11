@@ -8,6 +8,7 @@ import {
   createOfferSchema,
   createRequisitionSchema,
   moveStageSchema,
+  setOfferStatusSchema,
   setRequisitionStatusSchema,
   updateRequisitionSchema,
 } from "@hrms/validation";
@@ -15,7 +16,14 @@ import {
 import { requireRoleOrPermission } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
 import { addCandidateToRequisition } from "@/lib/recruitment/applications";
-import { acceptOffer, createOfferForApplication, moveApplicationStage } from "@/lib/recruitment/offers";
+import {
+  acceptOffer,
+  createOfferForApplication,
+  declineOffer,
+  markOfferSent,
+  moveApplicationStage,
+  withdrawOffer,
+} from "@/lib/recruitment/offers";
 import {
   createRequisition,
   setRequisitionStatus,
@@ -30,6 +38,11 @@ export type RecruitmentActionState = {
   success?: string;
 };
 
+
+function revalidateCandidatePaths(requisitionId: string, applicationId: string): void {
+  revalidatePath(`/hr/recruitment/${requisitionId}`);
+  revalidatePath(`/hr/recruitment/${requisitionId}/candidates/${applicationId}`);
+}
 
 async function getOrganizationOfferContext(): Promise<{ organizationName: string; currencyCode: string }> {
   const admin = createAdminClient();
@@ -162,8 +175,7 @@ export async function moveStageAction(
 
     const requisitionId = String(formData.get("requisitionId") ?? "");
     if (requisitionId) {
-      revalidatePath(`/hr/recruitment/${requisitionId}`);
-      revalidatePath(`/hr/recruitment/${requisitionId}/candidates/${parsed.applicationId}`);
+      revalidateCandidatePaths(requisitionId, parsed.applicationId);
     }
     return { success: "Stage updated." };
   } catch (error) {
@@ -194,10 +206,47 @@ export async function createOfferAction(
     });
 
     const requisitionId = String(formData.get("requisitionId") ?? "");
-    if (requisitionId) revalidatePath(`/hr/recruitment/${requisitionId}`);
+    if (requisitionId) revalidateCandidatePaths(requisitionId, parsed.applicationId);
     return { success: "Offer created." };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Failed to create offer." };
+  }
+}
+
+export async function setOfferStatusAction(
+  _prev: RecruitmentActionState,
+  formData: FormData,
+): Promise<RecruitmentActionState> {
+  try {
+    await requireModule("recruitment");
+    const session = await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["recruiter"]);
+    const parsed = setOfferStatusSchema.parse({
+      offerId: formData.get("offerId"),
+      status: formData.get("status"),
+    });
+
+    if (parsed.status === "sent") {
+      await markOfferSent(parsed.offerId, session.user.id);
+    } else if (parsed.status === "declined") {
+      await declineOffer(parsed.offerId, session.user.id);
+    } else {
+      await withdrawOffer(parsed.offerId, session.user.id);
+    }
+
+    const requisitionId = String(formData.get("requisitionId") ?? "");
+    const applicationId = String(formData.get("applicationId") ?? "");
+    if (requisitionId && applicationId) {
+      revalidateCandidatePaths(requisitionId, applicationId);
+    }
+
+    const messages: Record<typeof parsed.status, string> = {
+      sent: "Offer marked as sent.",
+      declined: "Offer declined.",
+      withdrawn: "Offer withdrawn.",
+    };
+    return { success: messages[parsed.status] };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Failed to update offer." };
   }
 }
 
@@ -213,7 +262,8 @@ export async function acceptOfferAction(
 
     const { employeeId } = await acceptOffer(offerId, session.user.id);
     const requisitionId = String(formData.get("requisitionId") ?? "");
-    if (requisitionId) revalidatePath(`/hr/recruitment/${requisitionId}`);
+    const applicationId = String(formData.get("applicationId") ?? "");
+    if (requisitionId && applicationId) revalidateCandidatePaths(requisitionId, applicationId);
     redirect(`/hr/employees/${employeeId}/edit?hired=1`);
   } catch (error) {
     if (error instanceof Error && error.message === "NEXT_REDIRECT") throw error;

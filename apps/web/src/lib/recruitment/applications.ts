@@ -36,6 +36,7 @@ export type ApplicationDetail = {
     job_title: string;
     basic_salary: number;
     start_date: string;
+    generated_file_id: string | null;
   } | null;
   history: ApplicationStageHistoryRow[];
   requisition: {
@@ -170,7 +171,7 @@ export async function getApplicationDetail(
   const { data: application } = await admin
     .from("job_applications")
     .select(
-      "id, stage, employee_id, applied_at, stage_updated_at, requisition_id, job_candidates(full_name, email, phone, source), job_offers(id, status, job_title, basic_salary, start_date)",
+      "id, stage, employee_id, applied_at, stage_updated_at, requisition_id, job_candidates(full_name, email, phone, source), job_offers(id, status, job_title, basic_salary, start_date, generated_file_id)",
     )
     .eq("id", applicationId)
     .eq("organization_id", organizationId)
@@ -217,6 +218,7 @@ export async function getApplicationDetail(
           job_title: offerRow.job_title,
           basic_salary: offerRow.basic_salary,
           start_date: offerRow.start_date,
+          generated_file_id: offerRow.generated_file_id ?? null,
         }
       : null,
     history: history ?? [],
