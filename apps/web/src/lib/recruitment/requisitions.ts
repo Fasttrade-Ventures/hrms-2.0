@@ -21,6 +21,7 @@ export type RequisitionListItem = {
   branchId: string | null;
   departmentName?: string;
   branchName?: string;
+  description: string | null;
   hiredCount: number;
   openPipelineCount: number;
   createdAt: string;
@@ -66,6 +67,7 @@ function mapRequisitionRow(
     branchId: row.branch_id,
     departmentName: relationName(row.departments),
     branchName: relationName(row.branches),
+    description: row.description ?? null,
     hiredCount: counts.hiredCount,
     openPipelineCount: counts.openPipelineCount,
     createdAt: row.created_at,
@@ -136,7 +138,7 @@ export async function listRequisitions(): Promise<RequisitionListItem[]> {
   const { data, error } = await admin
     .from("job_requisitions")
     .select(
-      "id, title, status, headcount, employment_type, department_id, branch_id, created_at, departments(name), branches(name)",
+      "id, title, status, headcount, employment_type, department_id, branch_id, description, created_at, departments(name), branches(name)",
     )
     .eq("organization_id", organizationId)
     .order("created_at", { ascending: false });
