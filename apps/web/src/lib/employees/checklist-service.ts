@@ -11,6 +11,10 @@ import {
   type ChecklistKind,
   type EmployeeChecklistTask,
 } from "@/lib/employees/checklists";
+import {
+  onboardingChecklistSkipMessage,
+  tryStartOnboardingChecklist,
+} from "@/lib/employees/start-onboarding-checklist";
 
 function isKind(value: string): value is ChecklistKind {
   return value === "onboarding" || value === "offboarding";
@@ -191,44 +195,54 @@ export async function startEmployeeChecklist(formData: FormData): Promise<void> 
   const kind = String(formData.get("kind") ?? "");
   if (!employeeId || !isKind(kind)) throw new Error("Choose onboarding or offboarding.");
 
-  const admin = createAdminClient();
-  const { data: template } = await admin
-    .from("checklist_templates")
-    .select("id")
-    .eq("organization_id", organizationId)
-    .eq("kind", kind)
-    .maybeSingle();
-  if (!template) throw new Error("Add template tasks before starting this checklist.");
+  if (kind !== "onboarding") {
+    const admin = createAdminClient();
+    const { data: template } = await admin
+      .from("checklist_templates")
+      .select("id")
+      .eq("organization_id", organizationId)
+      .eq("kind", kind)
+      .maybeSingle();
+    if (!template) throw new Error("Add template tasks before starting this checklist.");
 
-  const { data: items, error } = await admin
-    .from("checklist_template_items")
-    .select("title, owner_label, description")
-    .eq("template_id", template.id)
-    .order("sort_order")
-    .order("id");
-  if (error) throw new Error(error.message);
+    const { data: items, error } = await admin
+      .from("checklist_template_items")
+      .select("title, owner_label, description")
+      .eq("template_id", template.id)
+      .order("sort_order")
+      .order("id");
+    if (error) throw new Error(error.message);
+    if ((items ?? []).length === 0) throw new Error("Add template tasks before starting this checklist.");
 
-  const tasks = tasksFromTemplate(
-    kind,
-    (items ?? []).map((item) => ({
-      title: item.title,
-      ownerLabel: item.owner_label,
-      description: item.description ?? "",
-    })),
-  );
-  if (tasks.length === 0) throw new Error("Add template tasks before starting this checklist.");
+    const tasks = tasksFromTemplate(
+      kind,
+      (items ?? []).map((item) => ({
+        title: item.title,
+        ownerLabel: item.owner_label,
+        description: item.description ?? "",
+      })),
+    );
 
-  const { error: insertError } = await admin.from("employee_checklist_tasks").insert(
-    tasks.map((task) => ({
-      organization_id: organizationId,
-      employee_id: employeeId,
-      kind: task.kind,
-      title: task.title,
-      owner_label: task.ownerLabel,
-      description: task.description,
-    })),
-  );
-  if (insertError) throw new Error(insertError.message);
+    const { error: insertError } = await admin.from("employee_checklist_tasks").insert(
+      tasks.map((task) => ({
+        organization_id: organizationId,
+        employee_id: employeeId,
+        kind: task.kind,
+        title: task.title,
+        owner_label: task.ownerLabel,
+        description: task.description,
+      })),
+    );
+    if (insertError) throw new Error(insertError.message);
+  } else {
+    const result = await tryStartOnboardingChecklist(organizationId, employeeId);
+    if (!result.started) {
+      const message = result.reason
+        ? onboardingChecklistSkipMessage(result.reason)
+        : "Add template tasks before starting this checklist.";
+      throw new Error(message);
+    }
+  }
   revalidatePath(`/hr/employees/${employeeId}`);
 }
 

@@ -13,7 +13,7 @@ export default async function EditEmployeePage({
   searchParams,
 }: {
   params: Promise<{ employeeId: string }>;
-  searchParams: Promise<{ created?: string; emailWarning?: string }>;
+  searchParams: Promise<{ created?: string; emailWarning?: string; hired?: string; checklist?: string }>;
 }) {
   await requireRole("hr_administrator");
 
@@ -39,7 +39,14 @@ export default async function EditEmployeePage({
     banner = "This employee is terminated. Profile is read-only except for HR notes and compliance records.";
   }
 
-  if (query.created === "1") {
+  if (query.hired === "1") {
+    banner =
+      "Hire completed from recruitment. Complete this draft profile and send activation when ready.";
+    if (query.checklist === "0") {
+      banner +=
+        " Configure an onboarding checklist template or start the checklist manually from this profile.";
+    }
+  } else if (query.created === "1") {
     banner =
       query.emailWarning === "1"
         ? "Employee created. Activation email could not be sent — check Resend configuration and resend from the Employment tab."

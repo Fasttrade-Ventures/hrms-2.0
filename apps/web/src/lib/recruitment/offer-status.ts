@@ -1,5 +1,9 @@
 export type OfferStatus = "draft" | "sent" | "accepted" | "declined" | "withdrawn";
 
+export function canAcceptOfferStatus(status: string): boolean {
+  return status === "draft" || status === "sent";
+}
+
 export function canTransitionOfferStatus(from: OfferStatus, to: OfferStatus): boolean {
   if (from === to) return false;
   if (from === "accepted" || from === "declined" || from === "withdrawn") return false;

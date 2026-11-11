@@ -4,7 +4,11 @@ import { buildOfferPdf } from "@/lib/recruitment/offer-pdf";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getNextEmployeeNumber } from "@/lib/employees/organization";
 
-import { canTransitionOfferStatus, type OfferStatus } from "@/lib/recruitment/offer-status";
+import {
+  onboardingChecklistSkipMessage,
+  tryStartOnboardingChecklist,
+} from "@/lib/employees/start-onboarding-checklist";
+import { canAcceptOfferStatus, canTransitionOfferStatus, type OfferStatus } from "@/lib/recruitment/offer-status";
 import type { RecruitmentStage } from "./types";
 import { canMoveToStage } from "./types";
 import { requireOrganizationId } from "@/lib/auth/organization-context";
@@ -49,20 +53,28 @@ export async function moveApplicationStage(input: {
   });
 }
 
-export async function acceptOffer(offerId: string, actorUserId: string): Promise<{ employeeId: string }> {
+export async function acceptOffer(
+  offerId: string,
+  actorUserId: string,
+): Promise<{ employeeId: string; checklistStarted: boolean; checklistMessage?: string }> {
   const admin = createAdminClient();
   const organizationId = await requireOrganizationId();
 
   const { data: offer } = await admin
     .from("job_offers")
     .select(
-      "id, application_id, job_title, basic_salary, start_date, job_applications(candidate_id, requisition_id, job_candidates(full_name, email, phone), job_requisitions(branch_id, department_id))",
+      "id, status, application_id, job_title, basic_salary, start_date, job_applications(candidate_id, requisition_id, job_candidates(full_name, email, phone), job_requisitions(branch_id, department_id))",
     )
     .eq("id", offerId)
     .eq("organization_id", organizationId)
     .maybeSingle();
 
   if (!offer) throw new Error("Offer not found.");
+
+  const offerStatus = offer.status as OfferStatus;
+  if (!canAcceptOfferStatus(offerStatus)) {
+    throw new Error(`Cannot accept offer with status ${offerStatus}.`);
+  }
 
   const application = Array.isArray(offer.job_applications) ? offer.job_applications[0] : offer.job_applications;
   const candidate = Array.isArray(application?.job_candidates)
@@ -130,7 +142,19 @@ export async function acceptOffer(offerId: string, actorUserId: string): Promise
     `offer-accepted:${offerId}`,
   );
 
-  return { employeeId: employee.id };
+  let checklistStarted = false;
+  let checklistMessage: string | undefined;
+  try {
+    const checklist = await tryStartOnboardingChecklist(organizationId, employee.id);
+    checklistStarted = checklist.started;
+    if (!checklist.started && checklist.reason) {
+      checklistMessage = onboardingChecklistSkipMessage(checklist.reason);
+    }
+  } catch {
+    checklistMessage = "Onboarding checklist could not be started automatically.";
+  }
+
+  return { employeeId: employee.id, checklistStarted, checklistMessage };
 }
 
 export async function createOfferForApplication(input: {
