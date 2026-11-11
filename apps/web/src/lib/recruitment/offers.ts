@@ -146,12 +146,13 @@ export async function createOfferForApplication(input: {
 
   const { data: application } = await admin
     .from("job_applications")
-    .select("id, job_candidates(full_name)")
+    .select("id, stage, job_candidates(full_name)")
     .eq("id", input.applicationId)
     .eq("organization_id", organizationId)
     .maybeSingle();
 
   if (!application) throw new Error("Application not found.");
+  const fromStage = application.stage as RecruitmentStage;
   const candidate = Array.isArray(application.job_candidates)
     ? application.job_candidates[0]
     : application.job_candidates;
@@ -193,10 +194,21 @@ export async function createOfferForApplication(input: {
 
   if (error || !offer) throw new Error(error?.message ?? "Failed to create offer.");
 
-  await admin
-    .from("job_applications")
-    .update({ stage: "offer", stage_updated_at: new Date().toISOString() })
-    .eq("id", input.applicationId);
+  if (fromStage !== "offer") {
+    await admin
+      .from("job_applications")
+      .update({ stage: "offer", stage_updated_at: new Date().toISOString() })
+      .eq("id", input.applicationId);
+
+    await admin.from("job_application_stage_history").insert({
+      organization_id: organizationId,
+      application_id: input.applicationId,
+      from_stage: fromStage,
+      to_stage: "offer",
+      changed_by: input.actorUserId,
+      notes: "Offer created.",
+    });
+  }
 
   return { offerId: offer.id };
 }
