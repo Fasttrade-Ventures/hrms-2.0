@@ -260,11 +260,24 @@ export async function acceptOfferAction(
     const offerId = String(formData.get("offerId") ?? "");
     if (!offerId) return { error: "Offer ID is required." };
 
-    const { employeeId } = await acceptOffer(offerId, session.user.id);
+    const { employeeId, checklistStarted, checklistMessage } = await acceptOffer(offerId, session.user.id);
     const requisitionId = String(formData.get("requisitionId") ?? "");
     const applicationId = String(formData.get("applicationId") ?? "");
+    const roles = session.membership.roles;
+    const canEditEmployees =
+      roles.includes("hr_administrator") || roles.includes("organization_owner");
+
+    if (canEditEmployees) {
+      redirect(`/hr/employees/${employeeId}/edit?hired=1&checklist=${checklistStarted ? "1" : "0"}`);
+    }
+
     if (requisitionId && applicationId) revalidateCandidatePaths(requisitionId, applicationId);
-    redirect(`/hr/employees/${employeeId}/edit?hired=1`);
+
+    return {
+      success: checklistStarted
+        ? "Hire completed. Draft employee created and onboarding checklist started. Ask HR to complete profile and send activation."
+        : `Hire completed. Draft employee created. ${checklistMessage ?? "Add an onboarding checklist template, then ask HR to send activation."}`,
+    };
   } catch (error) {
     if (error instanceof Error && error.message === "NEXT_REDIRECT") throw error;
     return { error: error instanceof Error ? error.message : "Failed to accept offer." };

@@ -20,7 +20,7 @@ import {
 } from "@/components/hr/employees/form-fields";
 import { HrLinkButton } from "@/components/hr/hr-ui.client";
 import { HrBanner } from "@/components/hr/hr-ui";
-import { canTransitionOfferStatus, type OfferStatus } from "@/lib/recruitment/offer-status";
+import { canAcceptOfferStatus, canTransitionOfferStatus, type OfferStatus } from "@/lib/recruitment/offer-status";
 import { Badge } from "@/components/ui/badge";
 import type { ApplicationDetail } from "@/lib/recruitment/applications";
 import { TERMINAL_STAGES, nextAdvanceStages, type RecruitmentStage } from "@/lib/recruitment/types";
@@ -42,10 +42,6 @@ function formatTimestamp(iso: string): string {
 function canCreateOffer(stage: RecruitmentStage, hasOffer: boolean, readOnly: boolean): boolean {
   if (readOnly || hasOffer) return false;
   return stage === "assessment" || stage === "offer";
-}
-
-function canAcceptOffer(status: string): boolean {
-  return status === "draft" || status === "sent";
 }
 
 export function CandidateDetail({
@@ -252,7 +248,7 @@ export function CandidateDetail({
                   </form>
                 ) : null}
 
-                {canAcceptOffer(offer.status) ? (
+                {canAcceptOfferStatus(offer.status) ? (
                   <form action={acceptAction}>
                     <input name="applicationId" type="hidden" value={detail.application.id} />
                     <input name="offerId" type="hidden" value={offer.id} />
