@@ -20,3 +20,11 @@ export function canMoveToStage(from: RecruitmentStage, to: RecruitmentStage): bo
   const target = RECRUITMENT_STAGES.indexOf(to);
   return target >= order;
 }
+
+export function nextAdvanceStages(current: RecruitmentStage): RecruitmentStage[] {
+  const idx = RECRUITMENT_STAGES.indexOf(current);
+  if (idx < 0 || TERMINAL_STAGES.includes(current)) return [];
+  return RECRUITMENT_STAGES.slice(idx + 1).filter(
+    (s) => s !== "hired" && s !== "rejected" && s !== "withdrawn",
+  );
+}

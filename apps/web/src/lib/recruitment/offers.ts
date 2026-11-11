@@ -138,6 +138,7 @@ export async function createOfferForApplication(input: {
   basicSalary: number;
   startDate: string;
   organizationName: string;
+  currencyCode: string;
   actorUserId: string;
 }): Promise<{ offerId: string }> {
   const admin = createAdminClient();
@@ -161,6 +162,7 @@ export async function createOfferForApplication(input: {
     jobTitle: input.jobTitle,
     basicSalary: input.basicSalary,
     startDate: input.startDate,
+    currencyCode: input.currencyCode,
   });
 
   const fileId = await uploadOrganizationFile({

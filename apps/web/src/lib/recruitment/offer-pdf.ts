@@ -6,6 +6,7 @@ export function buildOfferPdfLines(input: {
   jobTitle: string;
   basicSalary: number;
   startDate: string;
+  currencyCode: string;
 }): string[] {
   return [
     "OFFER OF EMPLOYMENT",
@@ -13,7 +14,7 @@ export function buildOfferPdfLines(input: {
     `Organization: ${input.organizationName}`,
     `Candidate: ${input.candidateName}`,
     `Position: ${input.jobTitle}`,
-    `Basic salary (RM): ${input.basicSalary.toFixed(2)}`,
+    `Basic salary (${input.currencyCode}): ${input.basicSalary.toFixed(2)}`,
     `Proposed start date: ${input.startDate}`,
     "",
     "This offer is subject to HR review and completion of onboarding.",

@@ -8,13 +8,20 @@ import {
   createOfferSchema,
   createRequisitionSchema,
   moveStageSchema,
+  setRequisitionStatusSchema,
+  updateRequisitionSchema,
 } from "@hrms/validation";
 
 import { requireRoleOrPermission } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
 import { addCandidateToRequisition } from "@/lib/recruitment/applications";
 import { acceptOffer, createOfferForApplication, moveApplicationStage } from "@/lib/recruitment/offers";
-import { createRequisition } from "@/lib/recruitment/requisitions";
+import {
+  createRequisition,
+  setRequisitionStatus,
+  updateRequisition,
+} from "@/lib/recruitment/requisitions";
+import { currencyOrDefault } from "@/lib/money";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireOrganizationId } from "@/lib/auth/organization-context";
 
@@ -24,14 +31,18 @@ export type RecruitmentActionState = {
 };
 
 
-async function getOrganizationName(): Promise<string> {
+async function getOrganizationOfferContext(): Promise<{ organizationName: string; currencyCode: string }> {
   const admin = createAdminClient();
+  const organizationId = await requireOrganizationId();
   const { data } = await admin
     .from("organizations")
-    .select("name")
-    .eq("id", await requireOrganizationId())
+    .select("name, currency")
+    .eq("id", organizationId)
     .maybeSingle();
-  return data?.name ?? "Organization";
+  return {
+    organizationName: data?.name ?? "Organization",
+    currencyCode: currencyOrDefault(data?.currency),
+  };
 }
 
 export async function createRequisitionAction(
@@ -56,6 +67,53 @@ export async function createRequisitionAction(
   } catch (error) {
     if (error instanceof Error && error.message === "NEXT_REDIRECT") throw error;
     return { error: error instanceof Error ? error.message : "Failed to create requisition." };
+  }
+}
+
+export async function updateRequisitionAction(
+  _prev: RecruitmentActionState,
+  formData: FormData,
+): Promise<RecruitmentActionState> {
+  try {
+    await requireModule("recruitment");
+    const session = await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["recruiter"]);
+    const parsed = updateRequisitionSchema.parse({
+      requisitionId: formData.get("requisitionId"),
+      title: formData.get("title"),
+      description: formData.get("description") || undefined,
+      headcount: formData.get("headcount") || 1,
+      departmentId: formData.get("departmentId") || null,
+      branchId: formData.get("branchId") || null,
+      employmentType: formData.get("employmentType") || null,
+    });
+
+    await updateRequisition(parsed, session.user.id);
+    revalidatePath("/hr/recruitment");
+    revalidatePath(`/hr/recruitment/${parsed.requisitionId}`);
+    return { success: "Requisition updated." };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Failed to update requisition." };
+  }
+}
+
+export async function setRequisitionStatusAction(
+  _prev: RecruitmentActionState,
+  formData: FormData,
+): Promise<RecruitmentActionState> {
+  try {
+    await requireModule("recruitment");
+    const session = await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["recruiter"]);
+    const parsed = setRequisitionStatusSchema.parse({
+      requisitionId: formData.get("requisitionId"),
+      status: formData.get("status"),
+    });
+
+    await setRequisitionStatus(parsed.requisitionId, parsed.status, session.user.id);
+    revalidatePath("/hr/recruitment");
+    revalidatePath(`/hr/recruitment/${parsed.requisitionId}`);
+    return { success: "Requisition status updated." };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Failed to update requisition status." };
   }
 }
 
@@ -123,9 +181,11 @@ export async function createOfferAction(
       startDate: formData.get("startDate"),
     });
 
+    const { organizationName, currencyCode } = await getOrganizationOfferContext();
     await createOfferForApplication({
       ...parsed,
-      organizationName: await getOrganizationName(),
+      organizationName,
+      currencyCode,
       actorUserId: session.user.id,
     });
 
