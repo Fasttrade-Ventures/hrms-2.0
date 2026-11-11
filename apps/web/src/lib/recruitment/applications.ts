@@ -13,26 +13,53 @@ export async function addCandidateToRequisition(
 
   const { data: requisition } = await admin
     .from("job_requisitions")
-    .select("id")
+    .select("id, status")
     .eq("id", parsed.requisitionId)
     .eq("organization_id", organizationId)
     .maybeSingle();
 
   if (!requisition) throw new Error("Requisition not found.");
+  if (requisition.status !== "open") {
+    throw new Error("Candidates can only be added to open requisitions.");
+  }
 
-  const { data: candidate, error: candidateError } = await admin
+  const email = parsed.email.trim().toLowerCase();
+
+  const { data: existing } = await admin
     .from("job_candidates")
-    .insert({
-      organization_id: organizationId,
-      full_name: parsed.fullName.trim(),
-      email: parsed.email.trim().toLowerCase(),
-      phone: parsed.phone?.trim() ?? null,
-    })
     .select("id")
-    .single();
+    .eq("organization_id", organizationId)
+    .eq("email", email)
+    .maybeSingle();
 
-  if (candidateError || !candidate) {
-    throw new Error(candidateError?.message ?? "Failed to create candidate.");
+  let candidateId = existing?.id;
+  if (!candidateId) {
+    const { data: candidate, error } = await admin
+      .from("job_candidates")
+      .insert({
+        organization_id: organizationId,
+        full_name: parsed.fullName.trim(),
+        email,
+        phone: parsed.phone?.trim() ?? null,
+        source: parsed.source?.trim() || null,
+      })
+      .select("id")
+      .single();
+    if (error || !candidate) throw new Error(error?.message ?? "Failed to create candidate.");
+    candidateId = candidate.id;
+  } else if (parsed.source?.trim()) {
+    await admin.from("job_candidates").update({ source: parsed.source.trim() }).eq("id", candidateId);
+  }
+
+  const { data: existingApplication } = await admin
+    .from("job_applications")
+    .select("id")
+    .eq("requisition_id", parsed.requisitionId)
+    .eq("candidate_id", candidateId)
+    .maybeSingle();
+
+  if (existingApplication) {
+    throw new Error("This candidate is already on this requisition.");
   }
 
   const { data: application, error: applicationError } = await admin
@@ -40,7 +67,7 @@ export async function addCandidateToRequisition(
     .insert({
       organization_id: organizationId,
       requisition_id: parsed.requisitionId,
-      candidate_id: candidate.id,
+      candidate_id: candidateId,
       stage: "applied",
       applied_at: new Date().toISOString(),
       stage_updated_at: new Date().toISOString(),
@@ -49,6 +76,9 @@ export async function addCandidateToRequisition(
     .single();
 
   if (applicationError || !application) {
+    if (applicationError?.code === "23505") {
+      throw new Error("This candidate is already on this requisition.");
+    }
     throw new Error(applicationError?.message ?? "Failed to create application.");
   }
 
