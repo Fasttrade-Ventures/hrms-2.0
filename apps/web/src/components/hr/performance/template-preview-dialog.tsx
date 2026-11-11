@@ -27,9 +27,9 @@ export function TemplatePreviewDialog({ template, triggerButton }: TemplatePrevi
           )
         }
       />
-      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center gap-2">
+      <DialogContent className="max-h-[min(90vh,52rem)] overflow-y-auto sm:max-w-3xl">
+        <DialogHeader className="pr-8">
+          <div className="flex flex-wrap items-center gap-2">
             <DialogTitle>{template.name}</DialogTitle>
             {template.isDefault ? <StatusPill label="Default" tone="success" /> : null}
             {!template.isActive ? <StatusPill label="Inactive" tone="pending" /> : null}
@@ -40,55 +40,50 @@ export function TemplatePreviewDialog({ template, triggerButton }: TemplatePrevi
         </DialogHeader>
 
         <div className="space-y-6 pt-2">
-          {/* Persona switcher */}
-          <div className="flex items-center justify-between border-b pb-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wider">Preview Perspective:</span>
-              <div className="inline-flex rounded-md bg-[var(--surface-muted)] p-1">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("employee")}
-                  className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
-                    activeTab === "employee"
-                      ? "bg-[var(--surface-card)] text-[var(--foreground-primary)] shadow-sm"
-                      : "text-[var(--foreground-secondary)] hover:text-[var(--foreground-primary)]"
-                  }`}
-                >
-                  Employee (Self Review)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("manager")}
-                  className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
-                    activeTab === "manager"
-                      ? "bg-[var(--surface-card)] text-[var(--foreground-primary)] shadow-sm"
-                      : "text-[var(--foreground-secondary)] hover:text-[var(--foreground-primary)]"
-                  }`}
-                >
-                  Manager Evaluation
-                </button>
-              </div>
-            </div>
-
-            {template.targetDepartmentName ? (
-              <span className="text-xs text-[var(--foreground-muted)]">
-                Department: <strong>{template.targetDepartmentName}</strong>
+          <div className="space-y-3 border-b pb-3">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                Preview
               </span>
-            ) : (
-              <span className="text-xs text-[var(--foreground-muted)]">All Departments</span>
-            )}
+              <span className="text-xs text-muted-foreground">
+                {template.targetDepartmentName ? template.targetDepartmentName : "All departments"}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
+              <button
+                type="button"
+                onClick={() => setActiveTab("employee")}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+                  activeTab === "employee"
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Employee
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("manager")}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+                  activeTab === "manager"
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Manager
+              </button>
+            </div>
           </div>
 
-          {/* Rating Scale Legend */}
-          <div className="rounded-lg border border-[var(--border-secondary)] bg-[var(--surface-muted)] p-3">
-            <p className="mb-2 text-xs font-semibold text-[var(--foreground-secondary)] uppercase">Rating Scale Matrix (1 to 5)</p>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
+          <div className="rounded-lg border bg-muted/40 p-3">
+            <p className="mb-2 text-xs font-medium text-muted-foreground">Rating scale, 1 to 5</p>
+            <div className="grid grid-cols-5 gap-2">
               {[1, 2, 3, 4, 5].map((val) => {
                 const label = template.ratingScale.labels?.[String(val)] ?? `Score ${val}`;
                 return (
-                  <div key={val} className="rounded border bg-[var(--surface-card)] p-2 text-center">
-                    <span className="block font-bold text-[var(--foreground-primary)]">{val}</span>
-                    <span className="text-[11px] text-[var(--foreground-muted)]">{label}</span>
+                  <div key={val} className="min-w-0 rounded-md border bg-card px-1.5 py-2 text-center">
+                    <span className="block text-sm font-semibold text-foreground">{val}</span>
+                    <span className="mt-1 block text-[11px] leading-tight break-words text-muted-foreground">{label}</span>
                   </div>
                 );
               })}
@@ -127,13 +122,13 @@ export function TemplatePreviewDialog({ template, triggerButton }: TemplatePrevi
                   <div className="space-y-4">
                     {section.questions.map((q, qIdx) => (
                       <div key={q.id || qIdx} className="rounded-lg border border-[var(--border-secondary)] p-3 space-y-2">
-                        <div className="flex items-baseline justify-between gap-2">
-                          <p className="text-xs font-medium text-[var(--foreground-primary)]">
+                        <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+                          <p className="min-w-0 text-sm font-medium text-foreground">
                             {sIdx + 1}.{qIdx + 1} {q.title}
-                            {q.required ? <span className="ml-1 text-red-500">*</span> : null}
+                            {q.required ? <span className="ml-1 text-destructive">*</span> : null}
                           </p>
-                          <span className="text-[10px] uppercase font-semibold text-[var(--foreground-muted)]">
-                            {q.questionType === "rating" ? "Rating 1 to 5" : q.questionType === "yes_no" ? "Yes / No" : "Text"}
+                          <span className="shrink-0 text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+                            {q.questionType === "rating" ? "Rating" : q.questionType === "yes_no" ? "Yes / No" : "Text"}
                           </span>
                         </div>
 

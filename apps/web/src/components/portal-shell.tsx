@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
 import { EmployeeMobileNav } from "@/components/employee/employee-mobile-nav";
+import { HrMobileNav } from "@/components/hr/hr-mobile-nav";
 import { ManagerMobileNav } from "@/components/manager/manager-mobile-nav";
 import { OrganizationSwitcher, type OrgSwitcherOption } from "@/components/portal/organization-switcher";
 import { PortalAccountMenu } from "@/components/portal/portal-account-menu";
@@ -18,17 +20,15 @@ import {
   getPortalLabel,
   getPortalNavSections,
   getPortalProfileHref,
+  portalBreadcrumbs,
   getPortalSettingsHref,
+  notificationsHref,
   resolvePortalNavLabel,
   type PortalNavSection,
 } from "@/lib/portal-nav";
 import type { ModuleKey } from "@hrms/platform";
 
-function notificationsHref(portal: string): string {
-  if (portal === "Manager") return "/manager/notifications";
-  if (portal === "HR Administrator") return "/hr/notifications";
-  return "/employee/notifications";
-}
+import { formatPortalDate, type DisplayCountry } from "@/lib/locale";
 
 function roleHint(portal: string): string | undefined {
   if (portal === "Manager") return "Manager";
@@ -46,6 +46,7 @@ export function PortalShell({
   enabledModules,
   integrationsHref,
   orgSwitcher,
+  country,
   children,
 }: {
   portal: string;
@@ -62,6 +63,7 @@ export function PortalShell({
     options: OrgSwitcherOption[];
     activeOrganizationId: string;
   } | null;
+  country?: DisplayCountry | null;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -69,13 +71,20 @@ export function PortalShell({
   const portalLabel = getPortalLabel(portal);
   const [mobileOpen, setMobileOpen] = useState(false);
   const currentPage = resolvePortalNavLabel(portal, pathname, sections) ?? portalLabel;
-  const showMobileNav = portal === "Employee" || portal === "Manager";
+  const crumbs = portalBreadcrumbs(pathname);
+  const showMobileNav = portal === "Employee" || portal === "Manager" || portal === "HR Administrator";
   const sidebarUserMuted = portal === "Manager" || portal === "HR Administrator";
   const today = new Date();
-  const todayLabel = `${today.toLocaleDateString("en-MY", { weekday: "short" })}, ${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()}`;
+  const todayLabel = formatPortalDate(today, country);
 
   return (
     <div className="portal-theme flex h-dvh overflow-hidden bg-[var(--surface-primary)]">
+      <a
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-md focus:bg-[var(--surface-card)] focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-[var(--foreground-primary)] focus:shadow-[var(--shadow-elevated)]"
+        href="#portal-main"
+      >
+        Skip to content
+      </a>
       {mobileOpen ? (
         <button
           aria-label="Close navigation"
@@ -187,14 +196,41 @@ export function PortalShell({
 
         <main
           className={`min-h-0 flex-1 min-w-0 overflow-x-hidden overflow-y-auto ${showMobileNav ? "pb-24 lg:pb-6" : ""}`}
-          style={{ padding: portal === "HR Administrator" ? 24 : undefined }}
+          id="portal-main"
+          style={
+            portal === "HR Administrator"
+              ? { paddingTop: 24, paddingRight: 24, paddingLeft: 24 }
+              : undefined
+          }
+          tabIndex={-1}
         >
           <div className={portal === "HR Administrator" ? "min-w-0 w-full" : "min-w-0 w-full px-4 py-6 sm:px-6 sm:py-6 lg:px-8"}>
+            {crumbs.length > 0 ? (
+              <nav aria-label="Breadcrumb" className="mb-4">
+                <ol className="flex flex-wrap items-center gap-1 text-xs text-[var(--foreground-muted)]">
+                  {crumbs.map((crumb, index) => (
+                    <li className="flex items-center gap-1" key={crumb.href}>
+                      {index > 0 ? <span aria-hidden="true">/</span> : null}
+                      {index === crumbs.length - 1 ? (
+                        <span aria-current="page" className="font-medium text-[var(--foreground-secondary)]">
+                          {crumb.label}
+                        </span>
+                      ) : (
+                        <Link className="hover:text-[var(--accent-primary)]" href={crumb.href}>
+                          {crumb.label}
+                        </Link>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              </nav>
+            ) : null}
             {children}
           </div>
         </main>
         {portal === "Employee" ? <EmployeeMobileNav enabledModules={enabledModules} /> : null}
         {portal === "Manager" ? <ManagerMobileNav enabledModules={enabledModules} /> : null}
+        {portal === "HR Administrator" ? <HrMobileNav enabledModules={enabledModules} /> : null}
       </div>
     </div>
   );

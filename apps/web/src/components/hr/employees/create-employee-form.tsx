@@ -30,6 +30,7 @@ import {
   MALAYSIAN_RACE_OPTIONS,
   MALAYSIAN_RELIGION_OPTIONS,
   MALAYSIAN_STATE_OPTIONS,
+  showsMalaysianIdentityFields,
 } from "@/lib/employees/malaysia-demographics";
 
 const initialState: EmployeeActionState = {};
@@ -288,26 +289,30 @@ export function CreateEmployeeForm({
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
-            <HrField id="race" label="Race">
-              <HrSelect defaultValue="" id="race" name="race">
-                <option value="">-- Select --</option>
-                {MALAYSIAN_RACE_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </HrSelect>
-            </HrField>
-            <HrField id="religion" label="Religion">
-              <HrSelect defaultValue="" id="religion" name="religion">
-                <option value="">-- Select --</option>
-                {MALAYSIAN_RELIGION_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </HrSelect>
-            </HrField>
+            {showsMalaysianIdentityFields(country) ? (
+              <>
+                <HrField id="race" label="Race">
+                  <HrSelect defaultValue="" id="race" name="race">
+                    <option value="">-- Select --</option>
+                    {MALAYSIAN_RACE_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </HrSelect>
+                </HrField>
+                <HrField id="religion" label="Religion">
+                  <HrSelect defaultValue="" id="religion" name="religion">
+                    <option value="">-- Select --</option>
+                    {MALAYSIAN_RELIGION_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </HrSelect>
+                </HrField>
+              </>
+            ) : null}
             <HrField id="phone" label="Mobile no">
               <HrTextInput id="phone" name="phone" />
             </HrField>
@@ -435,9 +440,11 @@ export function CreateEmployeeForm({
             <HrField id="spouseName" label="Name">
               <HrTextInput id="spouseName" name="spouseName" />
             </HrField>
-            <HrField id="spouseIc" label="IC no">
-              <HrTextInput id="spouseIc" name="spouseIc" />
-            </HrField>
+            {showsMalaysianIdentityFields(country) ? (
+              <HrField id="spouseIc" label="IC no">
+                <HrTextInput id="spouseIc" name="spouseIc" />
+              </HrField>
+            ) : null}
             <HrField id="spouseWorking" label="Working?">
               <HrSelect defaultValue="no" id="spouseWorking" name="spouseWorking">
                 <option value="no">No</option>
@@ -470,9 +477,11 @@ export function CreateEmployeeForm({
               <HrField id={`childName_${index}`} label="Name">
                 <HrTextInput id={`childName_${index}`} name={`childName_${index}`} />
               </HrField>
-              <HrField id={`childIc_${index}`} label="IC no">
-                <HrTextInput id={`childIc_${index}`} name={`childIc_${index}`} />
-              </HrField>
+              {showsMalaysianIdentityFields(country) ? (
+                <HrField id={`childIc_${index}`} label="IC no">
+                  <HrTextInput id={`childIc_${index}`} name={`childIc_${index}`} />
+                </HrField>
+              ) : null}
               <HrField id={`childDob_${index}`} label="DOB">
                 <HrTextInput id={`childDob_${index}`} name={`childDob_${index}`} type="date" />
               </HrField>

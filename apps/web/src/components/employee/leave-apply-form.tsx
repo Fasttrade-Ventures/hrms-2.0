@@ -11,7 +11,7 @@ import {
   Clock,
   FileMinus,
   HeartPulse,
-} from "lucide-react";
+} from "@/components/portal/product-icons";
 
 import { applyLeave, type EmployeeActionState } from "@/app/(employee)/employee/actions";
 import {

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState } from "react";
 
 import { AuthError } from "@/components/auth/auth-icons";
@@ -77,9 +76,7 @@ export function ActivateAccountForm({
           <p>By activating, you agree to company HR policies and acceptable use guidelines.</p>
         </AuthCardFooter>
 
-        <Link className="block" href="/auth/login">
-          <AuthGhostButton type="button">Back to sign in</AuthGhostButton>
-        </Link>
+        <AuthGhostButton href="/auth/login">Back to sign in</AuthGhostButton>
       </form>
     </>
   );

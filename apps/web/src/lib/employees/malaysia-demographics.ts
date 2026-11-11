@@ -42,6 +42,11 @@ export const MALAYSIAN_STATE_OPTIONS = [
   "Wilayah Persekutuan Putrajaya",
 ] as const;
 
+/** Race, religion, NRIC, and family IC numbers are Malaysian identity fields. */
+export function showsMalaysianIdentityFields(country: "MY" | "AU"): boolean {
+  return country === "MY";
+}
+
 export function withCurrentDemographicsOption(
   options: readonly string[],
   currentValue?: string | null,

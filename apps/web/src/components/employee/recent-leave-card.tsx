@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, X } from "@/components/portal/product-icons";
 
 import { formatDate, RequestStatusPill } from "@/components/employee/employee-shared";
 import { daysToHours } from "@hrms/domain";

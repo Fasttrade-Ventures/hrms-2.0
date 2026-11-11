@@ -14,8 +14,10 @@ import {
   restoreReplacementCredits,
 } from "@/lib/leave/replacement-credit";
 import { queueNotification } from "@/lib/notifications/queue";
+import { formatPortalMonth } from "@/lib/locale";
 import { formatMoney } from "@/lib/money";
 import { loadOrganizationCurrency } from "@/lib/organization-display";
+import { loadOrganizationCountry } from "@/lib/payroll/organization-country";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const OT_RATES = new Set(["1.5", "2.0", "3.0"]);
@@ -646,6 +648,7 @@ export async function payslipsFromApi(organizationId: string, target: Attendance
     .eq("payroll_payruns.status", "locked")
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
+  const country = await loadOrganizationCountry(admin, organizationId);
 
   return (data ?? []).flatMap((row) => {
     const payrun = (Array.isArray(row.payroll_payruns) ? row.payroll_payruns[0] : row.payroll_payruns) as {
@@ -661,10 +664,7 @@ export async function payslipsFromApi(organizationId: string, target: Attendance
       id: row.id,
       periodYear,
       periodMonth,
-      periodLabel: new Date(periodYear, periodMonth - 1, 1).toLocaleDateString("en-MY", {
-        month: "long",
-        year: "numeric",
-      }),
+      periodLabel: formatPortalMonth(new Date(periodYear, periodMonth - 1, 1), country),
       grossPay: Number(row.gross_pay),
       netPay: Number(row.net_pay),
       epfEmployee: Number(row.epf_employee),

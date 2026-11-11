@@ -1,3 +1,5 @@
+import { formatPortalDate, formatPortalTime, type DisplayCountry } from "@/lib/locale";
+
 function formatReportCell(value: string | number | null | undefined): string | number {
   if (value == null || value === "") return "";
   if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -14,14 +16,16 @@ export function ReportPrintLayout({
   filterSummary,
   columns,
   rows,
+  country,
 }: {
   title: string;
   filterSummary: string;
   columns: { key: string; label: string }[];
   rows: Record<string, string | number | null>[];
+  country?: DisplayCountry | null;
 }) {
   const now = new Date();
-  const generatedAt = `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}, ${now.toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit", hour12: true })}`;
+  const generatedAt = `${formatPortalDate(now, country)}, ${formatPortalTime(now, country)}`;
 
   return (
     <div className="hidden print:block">

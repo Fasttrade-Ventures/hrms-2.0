@@ -108,7 +108,7 @@ export const hrPlaceholderNotifications: NotificationRow[] = [
   },
 ];
 
-export type NotificationPortal = "employee" | "manager" | "hr";
+export type NotificationPortal = "employee" | "manager" | "hr" | "account";
 
 /**
  * @deprecated Prefer live DB in-app feed via `listUserNotifications` from `@/lib/notifications/inbox`.
@@ -121,6 +121,8 @@ export function getPlaceholderNotifications(portal: NotificationPortal): Notific
       return managerPlaceholderNotifications;
     case "hr":
       return hrPlaceholderNotifications;
+    case "account":
+      return [];
   }
 }
 
@@ -138,5 +140,8 @@ export const notificationTypeDescriptions: Record<NotificationPortal, string[]> 
     "Employee document compliance gaps (missing, expired, expiring)",
     "Approval requests routed to HR",
     "Organization-wide announcements",
+  ],
+  account: [
+    "Updates sent to this login",
   ],
 };

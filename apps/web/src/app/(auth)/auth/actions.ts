@@ -40,7 +40,6 @@ export async function login(
 ): Promise<LoginState> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  const remember = formData.get("remember") === "on";
 
   if (!email || !password) {
     return { error: "Email and password are required." };
@@ -59,7 +58,7 @@ export async function login(
     await logAuthEvent({
       action: "auth.login.failed",
       email,
-      metadata: { reason: error.message, remember },
+      metadata: { reason: error.message },
     });
     return { error: error.message };
   }
@@ -68,7 +67,6 @@ export async function login(
     action: "auth.login.succeeded",
     actorUserId: data.user?.id,
     email,
-    metadata: { remember },
   });
 
   const next = String(formData.get("next") ?? "").trim();

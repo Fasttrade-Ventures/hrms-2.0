@@ -10,6 +10,7 @@ export * from "./assets";
 export * from "./payroll";
 export * from "./recruitment";
 export * from "./performance";
+export * from "./pulse-survey";
 
 export const deploymentModeSchema = z.enum(["standalone", "saas"]);
 

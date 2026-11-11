@@ -48,6 +48,7 @@ const NAV_MODULE_RULES = [
   { prefix: "/branch-admin/calendar", module: "calendar" },
   { prefix: "/branch-admin/documents", module: "documents" },
   { prefix: "/director/analytics", module: "analytics" },
+  { prefix: "/owner/analytics", module: "analytics" },
   { prefix: "/director/payroll", module: "payroll" },
   { prefix: "/manager/announcements", module: "announcements" },
   { prefix: "/manager/team-calendar", module: "calendar" },
@@ -424,7 +425,7 @@ export function getPortalNavSections(portal: string): PortalNavSection[] {
         {
           items: [
             { href: "/owner/dashboard", label: "Dashboard", icon: "dashboard" },
-            { href: "/hr/analytics", label: "Analytics", icon: "reports" },
+            { href: "/owner/analytics", label: "Analytics", icon: "reports" },
             ...(isSaasMode()
               ? [{ href: "/owner/billing", label: "Billing", icon: "payroll" as const }]
               : []),
@@ -446,7 +447,7 @@ export function getPortalNavSections(portal: string): PortalNavSection[] {
         {
           items: [
             { href: "/auditor/audit", label: "Audit log", icon: "audit" },
-            { href: "/hr/reports", label: "Reports", icon: "reports" },
+            { href: "/auditor/reports", label: "Reports", icon: "reports" },
           ],
         },
       ];
@@ -477,6 +478,14 @@ export function resolvePortalNavLabel(
     return "Notifications";
   }
 
+  if (pathname.endsWith("/profile/security")) {
+    return "Security";
+  }
+
+  if (pathname.endsWith("/profile")) {
+    return "Profile";
+  }
+
   const navItems = sections
     ? sections.flatMap((section) => flattenNavItems(section.items))
     : getPortalNav(portal);
@@ -496,20 +505,118 @@ export function getPortalLabel(portal: string): string {
   return portal;
 }
 
+const EMPLOYEE_MOBILE_TAB_HREFS = new Set([
+  "/employee/dashboard",
+  "/employee/leave",
+  "/employee/attendance",
+  "/employee/payslips",
+]);
+
+/** Phone More sheet: every employee sidebar destination that is not already a tab, plus Profile. */
+export function getEmployeeMobileMoreItems(options?: {
+  hasModule?: (module: ModuleKey) => boolean;
+}): PortalNavItem[] {
+  const sidebarItems = getPortalNav("Employee").filter(
+    (item) => !EMPLOYEE_MOBILE_TAB_HREFS.has(item.href),
+  );
+  const visible = options?.hasModule
+    ? sidebarItems.filter((item) => {
+        const navModule = moduleForNavHref(item.href);
+        return navModule ? options.hasModule!(navModule) : true;
+      })
+    : sidebarItems;
+
+  return [...visible, { href: "/employee/profile", label: "Profile", icon: "profile" }];
+}
+
+const HR_MOBILE_TAB_HREFS = new Set(["/hr/dashboard", "/hr/employees", "/hr/leave", "/hr/payroll"]);
+
+/** Top-level HR destinations that do not already have a phone tab. */
+export function getHrMobileMoreItems(options?: {
+  hasModule?: (module: ModuleKey) => boolean;
+}): Array<Pick<PortalNavItem, "href" | "label" | "icon">> {
+  const topLevel = getPortalNavSections("HR Administrator").flatMap((section) => section.items);
+  const visible = options?.hasModule
+    ? topLevel.filter((item) => {
+        const navModule = moduleForNavHref(item.href);
+        return navModule ? options.hasModule!(navModule) : true;
+      })
+    : topLevel;
+
+  return visible
+    .filter((item) => !HR_MOBILE_TAB_HREFS.has(item.href))
+    .map(({ href, label, icon }) => ({ href, label, icon }));
+}
+
+function portalPrefix(portal: string): string {
+  switch (portal) {
+    case "Manager":
+      return "/manager";
+    case "HR Administrator":
+      return "/hr";
+    case "Branch Admin":
+      return "/branch-admin";
+    case "Director":
+      return "/director";
+    case "Organization Owner":
+      return "/owner";
+    case "Platform Admin":
+      return "/platform";
+    case "Auditor":
+      return "/auditor";
+    default:
+      return "/employee";
+  }
+}
+
 export function getPortalProfileHref(portal: string): string {
-  if (portal === "Manager") return "/manager/profile";
-  if (portal === "HR Administrator") return "/hr/profile";
-  if (portal === "Auditor") return "/employee/profile";
-  return "/employee/profile";
+  return `${portalPrefix(portal)}/profile`;
 }
 
 export function getPortalSettingsHref(portal: string): string {
-  if (portal === "Manager") return "/manager/profile/security";
-  if (portal === "HR Administrator") return "/hr/profile/security";
-  return "/employee/profile/security";
+  return `${portalPrefix(portal)}/profile/security`;
+}
+
+export function notificationsHref(portal: string): string {
+  return `${portalPrefix(portal)}/notifications`;
 }
 
 export function getPortalIntegrationsHref(portal: string): string | undefined {
   if (portal === "HR Administrator") return "/hr/integrations";
   return undefined;
+}
+
+const PORTAL_ROOT_LABELS: Record<string, string> = {
+  hr: "HR",
+  owner: "Owner",
+  employee: "Home",
+  manager: "Manager",
+  "branch-admin": "Branch",
+  director: "Director",
+  auditor: "Auditor",
+  platform: "Platform",
+};
+
+function breadcrumbLabel(segment: string, index: number): string {
+  if (index === 0 && PORTAL_ROOT_LABELS[segment]) return PORTAL_ROOT_LABELS[segment];
+  if (/^[0-9a-f]{8}-[0-9a-f-]{20,}$/i.test(segment) || /^\d+$/.test(segment)) return "Detail";
+  return segment
+    .split("-")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+/** Detail routes only. A portal section such as /hr/employees stays in the shell title. */
+export function portalBreadcrumbs(pathname: string): Array<{ href: string; label: string }> {
+  const parts = pathname.split("?")[0]?.split("/").filter(Boolean) ?? [];
+  if (parts.length < 3) return [];
+
+  const crumbs: Array<{ href: string; label: string }> = [];
+  let href = "";
+  parts.forEach((part, index) => {
+    href += `/${part}`;
+    crumbs.push({ href, label: breadcrumbLabel(part, index) });
+  });
+  return crumbs;
 }

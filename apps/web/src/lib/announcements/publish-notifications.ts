@@ -2,7 +2,9 @@ import {
   announcementMatchesAudience,
   type AnnouncementAudience,
 } from "@/lib/announcements/audience";
+import { announcementExcerpt } from "@/lib/announcements/sanitize";
 import { announcementNotificationHref } from "@/lib/notifications/links";
+import { processNotificationOutbox } from "@/lib/notifications/process-outbox";
 import { queueNotification } from "@/lib/notifications/queue";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -15,6 +17,7 @@ export async function queueAnnouncementPublishedNotifications(input: {
   organizationId: string;
   announcementId: string;
   title: string;
+  body?: string;
   audience: AnnouncementAudience;
   postedAt: string;
 }): Promise<void> {
@@ -70,28 +73,47 @@ export async function queueAnnouncementPublishedNotifications(input: {
   }
 
   const idempotencyBase = `announcement:${input.announcementId}:publish:${input.postedAt}`;
+  const message = announcementExcerpt(input.body ?? "", 2000);
 
   await Promise.all(
-    recipients.map((recipient) => {
+    recipients.flatMap((recipient) => {
       const portal = recipient.roles.includes("hr_administrator")
         ? "hr"
         : recipient.roles.includes("manager")
           ? "manager"
           : "employee";
       const href = announcementNotificationHref(input.announcementId, portal);
+      const payload = {
+        announcementId: input.announcementId,
+        title: input.title,
+        message,
+        href,
+      };
 
-      return queueNotification({
-        organizationId: input.organizationId,
-        recipientUserId: recipient.userId,
-        channel: "in_app",
-        template: "announcement.published",
-        payload: {
-          announcementId: input.announcementId,
-          title: input.title,
-          href,
-        },
-        idempotencyKey: `${idempotencyBase}:${recipient.userId}:in_app`,
-      });
+      return [
+        queueNotification({
+          organizationId: input.organizationId,
+          recipientUserId: recipient.userId,
+          channel: "in_app",
+          template: "announcement.published",
+          payload,
+          idempotencyKey: `${idempotencyBase}:${recipient.userId}:in_app`,
+        }),
+        queueNotification({
+          organizationId: input.organizationId,
+          recipientUserId: recipient.userId,
+          channel: "email",
+          template: "announcement.published",
+          payload,
+          idempotencyKey: `${idempotencyBase}:${recipient.userId}:email`,
+        }),
+      ];
     }),
   );
+
+  try {
+    await processNotificationOutbox(500, "announcement.published");
+  } catch (error) {
+    console.error("Announcement email delivery failed:", error);
+  }
 }

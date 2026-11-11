@@ -13,6 +13,7 @@ import { isReportSlug } from "@/lib/reports/types";
 import { exportReportCsv, logReportPrint } from "../actions";
 import { ReportSubscriptionPanel } from "@/components/reports/report-subscription-panel";
 import { getEntitlements } from "@/lib/entitlements";
+import { getOrganizationCountry } from "@/lib/hr/organization";
 
 export default async function HrReportSlugPage({
   params,
@@ -23,6 +24,7 @@ export default async function HrReportSlugPage({
 }) {
   const { slug } = await params;
   if (!isReportSlug(slug)) notFound();
+  const country = await getOrganizationCountry();
 
   const definition = getReportDefinition(slug);
   if (!definition) notFound();
@@ -55,6 +57,7 @@ export default async function HrReportSlugPage({
       />
       <ReportRunner
         basePath="/hr/reports"
+        country={country}
         columns={result.columns}
         description={definition.description}
         exportCsvAction={exportReportCsv}

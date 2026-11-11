@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { updateModuleFlagFormAction, updatePayrollDutySegregationFormAction, updateProductTierFormAction } from "@/app/(owner)/owner/actions";
 import { CompanySettingsForm } from "@/components/owner/company-settings-form";
+import { ConfirmModuleToggle } from "@/components/owner/confirm-module-toggle";
 import {
   getOwnerCompanySettings,
   getOwnerEntitlementSettings,
@@ -42,13 +43,12 @@ function ModuleTable({ modules }: { modules: OwnerModuleSetting[] }) {
                 {module.locked ? (
                   <span className="text-xs text-[var(--foreground-muted)]">Not in this package</span>
                 ) : (
-                  <form action={updateModuleFlagFormAction}>
-                    <input name="module" type="hidden" value={module.key} />
-                    <input name="enabled" type="hidden" value={module.enabled ? "false" : "true"} />
-                    <Button size="sm" type="submit" variant="outline">
-                      {module.enabled ? "Disable" : "Enable"}
-                    </Button>
-                  </form>
+                  <ConfirmModuleToggle
+                    action={updateModuleFlagFormAction}
+                    enabled={module.enabled}
+                    fields={{ module: module.key, enabled: module.enabled ? "false" : "true" }}
+                    subject={module.label}
+                  />
                 )}
               </td>
             </tr>
@@ -114,22 +114,18 @@ export default async function Page() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={updatePayrollDutySegregationFormAction}>
-            <input
-              name="enabled"
-              type="hidden"
-              value={settings.payrollDutySegregation ? "false" : "true"}
+          <div className="flex flex-wrap items-center gap-3">
+            <StatusPill
+              label={settings.payrollDutySegregation ? "Enabled" : "Disabled"}
+              tone={settings.payrollDutySegregation ? "success" : "neutral"}
             />
-            <div className="flex flex-wrap items-center gap-3">
-              <StatusPill
-                label={settings.payrollDutySegregation ? "Enabled" : "Disabled"}
-                tone={settings.payrollDutySegregation ? "success" : "neutral"}
-              />
-              <Button size="sm" type="submit" variant="outline">
-                {settings.payrollDutySegregation ? "Disable" : "Enable"}
-              </Button>
-            </div>
-          </form>
+            <ConfirmModuleToggle
+              action={updatePayrollDutySegregationFormAction}
+              enabled={settings.payrollDutySegregation}
+              fields={{ enabled: settings.payrollDutySegregation ? "false" : "true" }}
+              subject="payroll duty segregation"
+            />
+          </div>
         </CardContent>
       </Card>
 

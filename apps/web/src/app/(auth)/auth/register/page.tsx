@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { AuthShell } from "@/components/auth/auth-shell";
 import {
   AuthCardHeader,
@@ -35,9 +33,7 @@ export default function RegisterPage() {
           subtitle="Ask your HR administrator for an invitation, then activate your account from the email link."
           title="Invite only"
         />
-        <Link className="block" href="/auth/login">
-          <AuthGhostButton type="button">Back to sign in</AuthGhostButton>
-        </Link>
+        <AuthGhostButton href="/auth/login">Back to sign in</AuthGhostButton>
       </AuthShell>
     );
   }

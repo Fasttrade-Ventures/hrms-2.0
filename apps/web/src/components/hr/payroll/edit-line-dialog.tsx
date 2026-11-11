@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { Check } from "lucide-react";
+import { Check } from "@/components/portal/product-icons";
 
 import { editPayrunLineAction, type HrActionState } from "@/app/(hr)/hr/payroll/actions";
 import { Button } from "@/components/ui/button";

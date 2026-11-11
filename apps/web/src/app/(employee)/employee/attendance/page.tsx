@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "@/components/portal/product-icons";
+import { formatPortalTime, localeForCountry, type DisplayCountry } from "@/lib/locale";
+import { getOrganizationCountry } from "@/lib/hr/organization";
 import { ListCard } from "@hrms/ui";
 
 import { AttendanceClockPanel } from "@/components/employee/attendance-clock-panel";
@@ -10,28 +12,25 @@ import { getEmployeeAttendanceContext } from "@/lib/employee/attendance-context"
 import { getTodayAttendance, getClockInSelfieRequired, listRecentAttendance } from "@/lib/employee/attendance";
 import { requireEmployeeContext } from "@/lib/employee/leave";
 
-function formatDateLong(dateStr: string): string {
+function formatDateLong(dateStr: string, country: DisplayCountry): string {
   const [year, month, day] = dateStr.split("T")[0]?.split("-") ?? [];
+  const locale = localeForCountry(country);
   if (year && month && day) {
     const d = new Date(`${year}-${month}-${day}T12:00:00`);
-    const weekday = d.toLocaleDateString("en-MY", { weekday: "short" });
+    const weekday = d.toLocaleDateString(locale, { weekday: "short" });
     return `${day.padStart(2, "0")}/${month.padStart(2, "0")}/${year} (${weekday})`;
   }
   const d = new Date(dateStr);
   const dayStr = String(d.getDate()).padStart(2, "0");
   const monthStr = String(d.getMonth() + 1).padStart(2, "0");
   const yearNum = d.getFullYear();
-  const weekday = d.toLocaleDateString("en-MY", { weekday: "short" });
+  const weekday = d.toLocaleDateString(locale, { weekday: "short" });
   return `${dayStr}/${monthStr}/${yearNum} (${weekday})`;
 }
 
-function formatTimeOnly(isoString: string | null): string {
+function formatTimeOnly(isoString: string | null, country: DisplayCountry): string {
   if (!isoString) return "—";
-  return new Date(isoString).toLocaleTimeString("en-MY", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
+  return formatPortalTime(new Date(isoString), country, false);
 }
 
 function getStatusBadge(
@@ -74,7 +73,7 @@ function getStatusBadge(
 
 export default async function Page() {
   const employeeContext = await requireEmployeeContext();
-  const today = await getTodayAttendance();
+  const [today, country] = await Promise.all([getTodayAttendance(), getOrganizationCountry()]);
   const [recent, attendanceContext, requireSelfie] = await Promise.all([
     listRecentAttendance(),
     getEmployeeAttendanceContext(today?.workDate),
@@ -126,6 +125,7 @@ export default async function Page() {
       ) : null}
 
       <AttendanceClockPanel
+        country={country}
         geofence={attendanceContext.geofence}
         locationModuleEnabled={attendanceContext.locationModuleEnabled}
         requireSelfie={requireSelfie}
@@ -172,7 +172,7 @@ export default async function Page() {
 
           const clockOutNode = row.clock_out_at ? (
             <span className="inline-flex items-center gap-2 whitespace-nowrap">
-              <span>{formatTimeOnly(row.clock_out_at)}</span>
+              <span>{formatTimeOnly(row.clock_out_at, country)}</span>
               {row.isAutoClockOut && (
                 <span
                   title="Auto clocked out at shift end"
@@ -189,8 +189,8 @@ export default async function Page() {
           return {
             id: row.work_date,
             cells: {
-              date: formatDateLong(row.work_date),
-              in: formatTimeOnly(row.clock_in_at),
+              date: formatDateLong(row.work_date, country),
+              in: formatTimeOnly(row.clock_in_at, country),
               out: clockOutNode,
               duration: durationStr,
               status: getStatusBadge(

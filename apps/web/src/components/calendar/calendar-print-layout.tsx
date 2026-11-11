@@ -4,17 +4,20 @@ import { calendarMonthBounds } from "@hrms/domain";
 
 import { CalendarEventChip } from "@/components/calendar/calendar-event-chip";
 import { CalendarLegend } from "@/components/calendar/calendar-legend";
+import { formatPortalMonth, type DisplayCountry } from "@/lib/locale";
 
 export function CalendarPrintLayout({
   title,
   year,
   month,
   events,
+  country,
 }: {
   title: string;
   year: number;
   month: number;
   events: CalendarDayEvent[];
+  country?: DisplayCountry | null;
 }) {
   const { weeks } = calendarMonthBounds(year, month);
   const eventsByDate = new Map<string, CalendarDayEvent[]>();
@@ -24,10 +27,7 @@ export function CalendarPrintLayout({
     eventsByDate.set(event.date, bucket);
   }
 
-  const label = new Date(year, month - 1, 1).toLocaleDateString("en-MY", {
-    month: "long",
-    year: "numeric",
-  });
+  const label = formatPortalMonth(new Date(year, month - 1, 1), country);
 
   return (
     <div className="hidden print:block">

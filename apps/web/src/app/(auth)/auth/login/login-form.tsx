@@ -8,7 +8,6 @@ import { AuthDivider, AuthError } from "@/components/auth/auth-icons";
 import {
   AuthCardFooter,
   AuthCardHeader,
-  AuthCheckbox,
   AuthPrimaryButton,
   AuthTextField,
 } from "@/components/auth/auth-primitives";
@@ -54,7 +53,6 @@ export function LoginForm({ showRegister }: { showRegister: boolean }) {
           autoComplete="email"
           id="email"
           label="Email address"
-          muted
           name="email"
           placeholder="you@company.com"
           required
@@ -69,17 +67,6 @@ export function LoginForm({ showRegister }: { showRegister: boolean }) {
           name="password"
           required
         />
-
-        <AuthCheckbox
-          defaultChecked
-          id="remember"
-          label="Keep me signed in on this device"
-          name="remember"
-        />
-        <p className="-mt-3 text-[12px] text-[var(--foreground-muted)]">
-          Preference is recorded for future idle-timeout settings; session cookies use the standard
-          Supabase refresh flow today.
-        </p>
 
         {errorMessage ? <AuthError>{errorMessage}</AuthError> : null}
 

@@ -71,6 +71,7 @@ export function PortalNavItemLink({
           ? "bg-[var(--surface-accent-soft)] font-semibold text-[var(--accent-primary)]"
           : "font-medium text-[var(--foreground-secondary)] hover:bg-[var(--surface-muted)]"
       }`}
+      aria-current={active ? "page" : undefined}
       href={href}
       onClick={onNavigate}
     >

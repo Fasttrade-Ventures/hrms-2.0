@@ -8,7 +8,7 @@ export async function runScheduledAnnouncementNotificationsJob(asOf: string): Pr
   const { data: announcements, error } = await admin
     .from("announcements")
     .select(
-      "id, organization_id, title, status, posted_at, display_from, branch_id, target_roles, target_department_ids, notifications_sent_at",
+      "id, organization_id, title, body, status, posted_at, display_from, branch_id, target_roles, target_department_ids, notifications_sent_at",
     )
     .eq("status", "published")
     .is("notifications_sent_at", null);
@@ -37,6 +37,7 @@ export async function runScheduledAnnouncementNotificationsJob(asOf: string): Pr
       organizationId: announcement.organization_id,
       announcementId: announcement.id,
       title: announcement.title,
+      body: announcement.body ?? "",
       audience: {
         branchId: announcement.branch_id,
         targetRoles: announcement.target_roles ?? [],

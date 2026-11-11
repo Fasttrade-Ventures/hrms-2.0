@@ -10,7 +10,7 @@ import {
 import { HrPrimaryButton, HrSelect } from "@/components/hr/employees/form-fields";
 import { ExportDownloadMessage } from "@/components/hr/payroll/export-download-message";
 import { PortalSectionCard } from "@/components/portal/portal-section";
-import { statutoryExportOptionsFor, type PayrollCountry } from "@/lib/payroll/export-options";
+import { bankExportOptionsFor, statutoryExportOptionsFor, type PayrollCountry } from "@/lib/payroll/export-options";
 
 const initialState: HrActionState = {};
 
@@ -28,6 +28,7 @@ export function PayrunExportPanel({
   const [bankState, bankAction, bankPending] = useActionState(exportBankAction, initialState);
   const [statState, statAction, statPending] = useActionState(exportStatutoryAction, initialState);
   const statutoryOptions = statutoryExportOptionsFor(country);
+  const bankOptions = bankExportOptionsFor(country);
   const exportable = status === "approved" || status === "locked";
 
   return (
@@ -51,9 +52,11 @@ export function PayrunExportPanel({
             ))}
           </HrSelect>
           <HrSelect defaultValue="bank_csv" name="format">
-            <option value="bank_csv">Bank CSV</option>
-            <option value="bank_maybank">Maybank</option>
-            <option value="bank_cimb">CIMB</option>
+            {bankOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </HrSelect>
           <ExportDownloadMessage state={bankState} />
           <HrPrimaryButton disabled={!exportable || bankPending} type="submit">

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { MaskedSecret } from "@/components/hr/employees/masked-secret";
 import { PortalAvatar } from "@/components/portal/portal-primitives";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,7 +30,7 @@ function yesNo(value: boolean): string {
   return value ? "Yes" : "No";
 }
 
-function ProfileField({ label, value }: { label: string; value: string }) {
+function ProfileField({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="space-y-1">
       <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
@@ -189,8 +190,12 @@ export function EmployeeProfileView({
             )}
             <ProfileField label="Date of birth" value={formatProfileDate(employee.profile.dateOfBirth)} />
             <ProfileField label="Gender" value={formatGender(employee.profile.gender)} />
-            <ProfileField label="Race" value={employee.profile.race ?? "—"} />
-            <ProfileField label="Religion" value={employee.profile.religion ?? "—"} />
+            {isAu ? null : (
+              <>
+                <ProfileField label="Race" value={employee.profile.race ?? "—"} />
+                <ProfileField label="Religion" value={employee.profile.religion ?? "—"} />
+              </>
+            )}
             <ProfileField
               label="Marital status"
               value={formatMaritalStatus(employee.profile.maritalStatus)}
@@ -256,7 +261,7 @@ export function EmployeeProfileView({
                       : formatMoney(employee.profile.hourlyRate, currency)
                   }
                 />
-                <ProfileField label="Tax File Number" value={employee.profile.taxNumber ?? "—"} />
+                <ProfileField label="Tax File Number" value={<MaskedSecret value={employee.profile.taxNumber} />} />
                 <ProfileField label="Bank" value={employee.profile.bankName ?? "—"} />
                 <ProfileField label="BSB" value={employee.profile.bsb ?? "—"} />
                 <ProfileField label="Account no" value={employee.profile.bankAccountNumber ?? "—"} />
@@ -316,7 +321,7 @@ export function EmployeeProfileView({
               {spouse ? (
                 <div className="space-y-2">
                   <ProfileField label="Name" value={spouse.fullName} />
-                  <ProfileField label="IC no" value={spouse.icNumber ?? "—"} />
+                  {isAu ? null : <ProfileField label="IC no" value={spouse.icNumber ?? "—"} />}
                   <ProfileField
                     label="Working"
                     value={spouse.isWorking === null ? "—" : spouse.isWorking ? "Yes" : "No"}
@@ -334,7 +339,7 @@ export function EmployeeProfileView({
                     <div className="rounded-md border bg-card px-3 py-2" key={child.id}>
                       <p className="text-sm font-medium text-foreground">{child.fullName}</p>
                       <p className="text-xs text-muted-foreground">
-                        {[child.icNumber, formatProfileDate(child.dateOfBirth)]
+                        {[isAu ? null : child.icNumber, formatProfileDate(child.dateOfBirth)]
                           .filter((value) => value && value !== "—")
                           .join(" · ") || "No details"}
                       </p>

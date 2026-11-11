@@ -5,6 +5,7 @@ import { ReportRunner } from "@/components/reports/report-runner";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { HrLinkButton } from "@/components/hr/hr-ui.client";
 import { requireBranchAdminContext } from "@/lib/branch-admin/context";
+import { getOrganizationCountry } from "@/lib/hr/organization";
 import { getReportDefinition } from "@/lib/reports/catalog";
 import { buildFilterSummary, loadReportFilterOptions } from "@/lib/reports/context";
 import { parseReportFilters } from "@/lib/reports/filters";
@@ -30,6 +31,7 @@ export default async function BranchReportSlugPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const context = await requireBranchAdminContext();
+  const country = await getOrganizationCountry();
   const { slug } = await params;
   if (!isReportSlug(slug) || !BRANCH_REPORT_SLUGS.has(slug)) notFound();
 
@@ -66,6 +68,7 @@ export default async function BranchReportSlugPage({
       />
       <ReportRunner
         basePath="/branch-admin/reports"
+        country={country}
         columns={result.columns}
         description={definition.description}
         exportCsvAction={exportBranchReportCsv}

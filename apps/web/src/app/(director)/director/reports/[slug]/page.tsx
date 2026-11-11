@@ -6,6 +6,7 @@ import { ReportRunner } from "@/components/reports/report-runner";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { Button } from "@/components/ui/button";
 import { requireRole } from "@/lib/auth/session";
+import { getOrganizationCountry } from "@/lib/hr/organization";
 import { getReportDefinition } from "@/lib/reports/catalog";
 import { buildFilterSummary, loadReportFilterOptions } from "@/lib/reports/context";
 import { parseReportFilters } from "@/lib/reports/filters";
@@ -22,6 +23,7 @@ export default async function DirectorReportSlugPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   await requireRole("director");
+  const country = await getOrganizationCountry();
 
   const { slug } = await params;
   if (!isReportSlug(slug)) notFound();
@@ -55,6 +57,7 @@ export default async function DirectorReportSlugPage({
       />
       <ReportRunner
         basePath="/director/reports"
+        country={country}
         columns={result.columns}
         description={definition.description}
         exportCsvAction={exportDirectorReportCsv}

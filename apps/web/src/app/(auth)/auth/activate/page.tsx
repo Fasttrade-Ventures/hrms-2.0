@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { AuthShell } from "@/components/auth/auth-shell";
@@ -54,9 +53,7 @@ export default async function ActivatePage() {
           subtitle="If your link expired, ask your HR administrator to resend the invitation."
           title="Activation link required"
         />
-        <Link className="block" href="/auth/login">
-          <AuthGhostButton type="button">Back to sign in</AuthGhostButton>
-        </Link>
+        <AuthGhostButton href="/auth/login">Back to sign in</AuthGhostButton>
       </AuthShell>
     );
   }

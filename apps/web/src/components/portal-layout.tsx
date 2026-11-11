@@ -63,9 +63,7 @@ export async function PortalLayout({
       getImpersonationState(session).catch(() => null),
       getEntitlements(),
       loadOrgSwitcherOptions(session.user.id, session.membership.organizationId),
-      portal === "HR Administrator"
-        ? getOrganizationCountry().catch(() => undefined)
-        : Promise.resolve(undefined),
+      getOrganizationCountry().catch(() => "MY" as const),
     ]);
 
   const navSections = filterNavForSpecialist(
@@ -93,6 +91,7 @@ export async function PortalLayout({
         navSections={navSections}
         orgSwitcher={orgSwitcher}
         pageSubtitle={pageSubtitle}
+        country={country}
         portal={portal}
         unreadNotificationCount={unreadNotificationCount}
         user={session.user}
