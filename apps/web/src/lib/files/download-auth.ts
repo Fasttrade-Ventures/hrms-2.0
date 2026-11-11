@@ -3,6 +3,13 @@ import { canAccessAnnouncementAttachment } from "@/lib/announcements/queries";
 import { rolesCanAccessFolder } from "@/lib/hr/document-folder-access";
 import { createClient } from "@/lib/supabase/server";
 
+export const RECRUITMENT_FILE_CATEGORIES = new Set([
+  "recruitment_offer",
+  "recruitment_agreement",
+  "recruitment_signed_offer",
+  "letter_letterhead",
+]);
+
 async function resolveBranchAdminScopeIds(
   organizationId: string,
   userId: string,
@@ -67,6 +74,7 @@ export async function canDownloadFile(input: {
   fileId: string;
   organizationId?: string;
   userId?: string;
+  permissions?: string[];
 }): Promise<boolean> {
   if (!input.organizationId) return false;
 
@@ -89,6 +97,14 @@ export async function canDownloadFile(input: {
       fileId: input.fileId,
       organizationId: input.organizationId,
     });
+  }
+
+  if (RECRUITMENT_FILE_CATEGORIES.has(file.category)) {
+    return (
+      input.roles.includes("hr_administrator") ||
+      input.roles.includes("organization_owner") ||
+      (input.permissions ?? []).includes("recruiter")
+    );
   }
 
   if (file.category === "policies") {

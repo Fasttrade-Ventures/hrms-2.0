@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { expandMalaysiaReplacementHolidays, type WeekendMode } from "@hrms/domain";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -7,6 +8,11 @@ import {
   type FetchedMalaysiaHoliday,
 } from "@/lib/hr/malaysia-holidays-api";
 
+function asWeekendMode(value: string | null | undefined): WeekendMode {
+  if (value === "fri_sat" || value === "sun_only" || value === "sat_sun") return value;
+  return "sat_sun";
+}
+
 export async function persistHolidaySync(
   supabase: SupabaseClient,
   input: {
@@ -14,6 +20,7 @@ export async function persistHolidaySync(
     branchId: string;
     year: number;
     fetched: FetchedMalaysiaHoliday[];
+    weekendMode?: WeekendMode | string | null;
   },
 ): Promise<{ imported: number; updated: number; skipped: number; error?: string }> {
   const { data: existing, error: existingError } = await supabase
@@ -28,13 +35,18 @@ export async function persistHolidaySync(
     return { imported: 0, updated: 0, skipped: 0, error: existingError.message };
   }
 
+  const fetched = expandMalaysiaReplacementHolidays(
+    input.fetched,
+    asWeekendMode(input.weekendMode),
+  );
+
   const plan = planHolidayChanges(
     (existing ?? []).map((row) => ({
       id: row.id as string,
       holidayDate: row.holiday_date as string,
       name: row.name as string,
     })),
-    input.fetched,
+    fetched,
   );
 
   if (plan.toInsert.length > 0) {
@@ -89,7 +101,7 @@ export async function syncBranchesWithState(year: number): Promise<{
   const admin = createAdminClient();
   const { data: branches, error } = await admin
     .from("branches")
-    .select("id, organization_id, state")
+    .select("id, organization_id, state, weekend_mode")
     .not("state", "is", null);
 
   if (error) throw new Error(error.message);
@@ -111,6 +123,7 @@ export async function syncBranchesWithState(year: number): Promise<{
         branchId: branch.id as string,
         year,
         fetched,
+        weekendMode: branch.weekend_mode as string | null,
       });
       if (result.error) {
         failed += 1;

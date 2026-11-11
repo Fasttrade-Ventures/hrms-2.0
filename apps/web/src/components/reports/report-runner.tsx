@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import {
   buildReportPageHref,
   buildReportPaginationLinks,
+  buildReportSearchParams,
 } from "@/lib/reports/filters";
 import type { DisplayCountry } from "@/lib/locale";
 import type { ReportFilters, ReportSlug } from "@/lib/reports/types";
@@ -43,6 +44,9 @@ export function ReportRunner({
   exportCsvAction,
   logPrintAction,
   country,
+  hrefExtra,
+  /** When set, pagination stays on this path (no /{slug} segment). */
+  paginationPath,
 }: {
   title: string;
   description: string;
@@ -56,12 +60,31 @@ export function ReportRunner({
   exportCsvAction: (slug: ReportSlug, filters: ReportFilters) => Promise<{ csv: string; filename: string }>;
   logPrintAction: (slug: ReportSlug, filters: ReportFilters) => Promise<void>;
   country?: DisplayCountry | null;
+  hrefExtra?: Record<string, string>;
+  paginationPath?: string;
 }) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   const pageCount = Math.max(1, Math.ceil(total / filters.pageSize));
-  const pageHref = (page: number) => buildReportPageHref(basePath, slug, filters, page);
+  const pageHref = (page: number) => {
+    const href = paginationPath
+      ? (() => {
+          const params = buildReportSearchParams(filters, page);
+          for (const [key, value] of Object.entries(hrefExtra ?? {})) {
+            params.set(key, value);
+          }
+          const qs = params.toString();
+          return qs ? `${paginationPath}?${qs}` : paginationPath;
+        })()
+      : buildReportPageHref(basePath, slug, filters, page);
+    if (paginationPath || !hrefExtra || Object.keys(hrefExtra).length === 0) return href;
+    const url = new URL(href, "http://local.invalid");
+    for (const [key, value] of Object.entries(hrefExtra)) {
+      url.searchParams.set(key, value);
+    }
+    return `${url.pathname}${url.search}`;
+  };
   const pageLinks = buildReportPaginationLinks(pageCount, filters.page, pageHref);
 
   function handleExport() {

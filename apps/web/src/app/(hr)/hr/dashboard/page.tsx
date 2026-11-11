@@ -44,6 +44,25 @@ export default async function Page() {
         greeting={data.greeting}
       />
 
+      <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-stretch">
+        <HrActionQueue rows={data.actionQueue} totalPending={data.pendingRequests} />
+        <div className="flex h-full min-h-0 flex-col gap-3">
+          <HrWorkforcePulse
+            absentPct={data.workforce.absentPct}
+            onLeavePct={data.workforce.onLeavePct}
+            presentPct={data.workforce.presentPct}
+          />
+          <HrComplianceWatch rows={data.compliance} />
+          {announcementsEnabled ? (
+            <AnnouncementDashboardWidget
+              basePath="/hr/announcements"
+              items={announcementFeed.latest}
+              pinnedItems={announcementFeed.pinned}
+            />
+          ) : null}
+        </div>
+      </div>
+
       <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           hint="all branches"
@@ -69,25 +88,6 @@ export default async function Page() {
           label="Est. monthly payout"
           value={data.estimatedPayout}
         />
-      </div>
-
-      <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-stretch">
-        <HrActionQueue rows={data.actionQueue} totalPending={data.pendingRequests} />
-        <div className="flex h-full min-h-0 flex-col gap-3">
-          <HrWorkforcePulse
-            absentPct={data.workforce.absentPct}
-            onLeavePct={data.workforce.onLeavePct}
-            presentPct={data.workforce.presentPct}
-          />
-          <HrComplianceWatch rows={data.compliance} />
-          {announcementsEnabled ? (
-            <AnnouncementDashboardWidget
-              basePath="/hr/announcements"
-              items={announcementFeed.latest}
-              pinnedItems={announcementFeed.pinned}
-            />
-          ) : null}
-        </div>
       </div>
     </div>
   );

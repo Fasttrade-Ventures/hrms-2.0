@@ -3,7 +3,8 @@ import { EmptyState } from "@hrms/ui";
 import { AuPayFileForm } from "@/components/hr/payroll/au-pay-file-form";
 import { PayrunListTable } from "@/components/hr/payroll/payrun-list-table";
 import { HrLinkButton } from "@/components/hr/hr-ui.client";
-import { PortalPageHeader } from "@/components/portal/portal-primitives";
+import { PortalIcon } from "@/components/portal/portal-icons";
+import { PortalListPage } from "@/components/portal/portal-list-page";
 import { requireRole } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
 import { getOrganizationDisplay } from "@/lib/organization-display";
@@ -23,15 +24,11 @@ export default async function Page() {
   ]);
 
   return (
-    <div className="space-y-8">
-      <PortalPageHeader
-        actions={
-          <HrLinkButton href="/hr/payroll/new">Create payrun</HrLinkButton>
-        }
-        description={payrollHubDescription(country)}
-        title="Payroll"
-      />
-
+    <PortalListPage
+      actions={<HrLinkButton href="/hr/payroll/new">Create payrun</HrLinkButton>}
+      description={payrollHubDescription(country)}
+      title="Payroll"
+    >
       {showAuPayFile(country) ? <AuPayFileForm /> : null}
 
       {payruns.length === 0 ? (
@@ -40,11 +37,12 @@ export default async function Page() {
             <HrLinkButton href="/hr/payroll/new">Create payrun</HrLinkButton>
           }
           description={payrollEmptyDescription(country)}
-          title="No payruns"
+          icon={<PortalIcon name="payroll" />}
+          title="No payruns yet"
         />
       ) : (
         <PayrunListTable payruns={payruns} />
       )}
-    </div>
+    </PortalListPage>
   );
 }

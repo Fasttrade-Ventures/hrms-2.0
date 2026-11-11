@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { StatCard } from "@hrms/ui";
 
+import { PortalCard } from "@/components/portal/portal-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -31,9 +32,9 @@ export function HrStatCards({
 
 export function HrTableCard({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <Card className={cn("overflow-hidden py-0", className)}>
-      <CardContent className="p-0">{children}</CardContent>
-    </Card>
+    <PortalCard className={cn("overflow-hidden", className)} padding="none">
+      {children}
+    </PortalCard>
   );
 }
 

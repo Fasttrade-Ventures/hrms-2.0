@@ -36,6 +36,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatDate } from "@/components/employee/employee-shared";
+import { PortalListPage } from "@/components/portal/portal-list-page";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import type { PositionRow, DepartmentRow } from "@/lib/hr/organization";
 
@@ -46,28 +47,27 @@ export function PositionsList({ positions }: { positions: PositionRow[] }) {
   const activeCount = positions.filter((row) => row.isActive).length;
 
   return (
-    <div className="space-y-6">
-      <PortalPageHeader
-        actions={
-          <div className="flex gap-2">
-            <HrLinkButton href="/hr/organization" variant="outline">
-              Back to hub
-            </HrLinkButton>
-            <HrLinkButton href="/hr/organization/positions/create">Add position</HrLinkButton>
-          </div>
-        }
-        description="Standardized job titles catalog for employees and recruitment."
-        title="Positions & Job Titles"
-      />
-
-      <OrgStatCards
-        items={[
-          { label: "Total positions", value: positions.length, hint: "in catalog" },
-          { label: "Active roles", value: activeCount, hint: "available for assignment" },
-          { label: "Assigned staff", value: totalEmployees, hint: "holding a position" },
-        ]}
-      />
-
+    <PortalListPage
+      actions={
+        <div className="flex gap-2">
+          <HrLinkButton href="/hr/organization" variant="outline">
+            Back to hub
+          </HrLinkButton>
+          <HrLinkButton href="/hr/organization/positions/create">Add position</HrLinkButton>
+        </div>
+      }
+      description="Standardized job titles catalog for employees and recruitment."
+      stats={
+        <OrgStatCards
+          items={[
+            { label: "Total positions", value: positions.length, hint: "in catalog" },
+            { label: "Active roles", value: activeCount, hint: "available for assignment" },
+            { label: "Assigned staff", value: totalEmployees, hint: "holding a position" },
+          ]}
+        />
+      }
+      title="Positions & Job Titles"
+    >
       <OrgTableShell
         emptyDescription="Create positions in the catalog so employee job titles are standardized across the organization."
         emptyTitle="No positions yet"
@@ -87,7 +87,7 @@ export function PositionsList({ positions }: { positions: PositionRow[] }) {
           </OrgTableRow>
         ))}
       </OrgTableShell>
-    </div>
+    </PortalListPage>
   );
 }
 

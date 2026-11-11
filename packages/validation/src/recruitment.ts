@@ -50,6 +50,24 @@ export const createOfferSchema = z.object({
   jobTitle: z.string().min(1).max(200),
   basicSalary: z.coerce.number().min(0),
   startDate: z.string().date(),
+  templateId: z.string().uuid("Choose an offer template."),
+  /** Per-offer letter body (HTML or plain). Snapshotted from the template; recruiter may edit. */
+  letterBody: z.string().trim().min(10, "Letter body must be at least 10 characters.").max(50000),
+});
+
+export const updateDraftOfferSchema = createOfferSchema.extend({
+  offerId: z.string().uuid(),
+});
+
+export const updateAgreementBodySchema = z.object({
+  offerId: z.string().uuid(),
+  applicationId: z.string().uuid(),
+  agreementBody: z.string().trim().min(10, "Agreement body must be at least 10 characters.").max(50000),
+});
+
+export const sendAgreementSchema = z.object({
+  offerId: z.string().uuid(),
+  applicationId: z.string().uuid(),
 });
 
 export const offerLifecycleStatusSchema = z.enum(["sent", "declined", "withdrawn"]);
@@ -65,4 +83,7 @@ export type SetRequisitionStatusInput = z.infer<typeof setRequisitionStatusSchem
 export type AddCandidateInput = z.infer<typeof addCandidateSchema>;
 export type MoveStageInput = z.infer<typeof moveStageSchema>;
 export type CreateOfferInput = z.infer<typeof createOfferSchema>;
+export type UpdateDraftOfferInput = z.infer<typeof updateDraftOfferSchema>;
+export type UpdateAgreementBodyInput = z.infer<typeof updateAgreementBodySchema>;
+export type SendAgreementInput = z.infer<typeof sendAgreementSchema>;
 export type SetOfferStatusInput = z.infer<typeof setOfferStatusSchema>;

@@ -77,8 +77,9 @@ export function ImportHolidaysDialog({
           <DialogTitle>Import public holidays</DialogTitle>
           <DialogDescription>
             Fetches confirmed Malaysia public holidays for the branch state. Holidays are matched by
-            date — re-importing will not create duplicates. When two public holidays fall on the same
-            day, they are combined into one entry.
+            date — re-importing will not create duplicates. When a holiday falls on Sunday (KL /
+            Selangor weekend), the following Monday is added as a replacement holiday. Same-day
+            holidays are combined into one entry.
           </DialogDescription>
         </DialogHeader>
 

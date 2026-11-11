@@ -35,6 +35,7 @@ export function isPublicPath(pathname: string): boolean {
   if (pathname === "/api/auth/logout") return true;
   if (pathname === "/unauthorized") return true;
   if (pathname.startsWith("/survey/")) return true;
+  if (pathname.startsWith("/offer/respond/") || pathname.startsWith("/offer/sign/")) return true;
   if (isPublicAuthPath(pathname)) return true;
   return false;
 }

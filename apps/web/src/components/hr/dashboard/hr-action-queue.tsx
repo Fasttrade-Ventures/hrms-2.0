@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { EmptyState } from "@hrms/ui";
 
+import { PortalIcon } from "@/components/portal/portal-icons";
 import { PortalAvatar } from "@/components/portal/portal-primitives";
 import type { HrActionQueueRow } from "@/lib/hr/dashboard";
 
@@ -39,7 +40,12 @@ export function HrActionQueue({ rows, totalPending }: { rows: HrActionQueueRow[]
       </div>
 
       {visible.length === 0 ? (
-        <EmptyState description="Pending requests will appear here." title="Queue is clear" />
+        <EmptyState
+          description="Nothing needs HR attention right now."
+          icon={<PortalIcon name="approvals" />}
+          title="Queue is clear"
+          variant="flat"
+        />
       ) : (
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="grid shrink-0 grid-cols-[64px_minmax(0,140px)_minmax(0,1fr)_64px_72px] gap-2 border-b border-[var(--border-primary)] py-1.5 text-[10px] font-semibold text-[var(--foreground-muted)] max-lg:hidden">

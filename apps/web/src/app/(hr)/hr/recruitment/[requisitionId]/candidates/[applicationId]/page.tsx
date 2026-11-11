@@ -5,6 +5,7 @@ import { CandidateDetail } from "@/components/hr/recruitment/candidate-detail";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { requireRoleOrPermission } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
+import { listActiveTemplatesByType } from "@/lib/letters/templates";
 import { getApplicationDetail } from "@/lib/recruitment/applications";
 
 export default async function Page({
@@ -13,13 +14,19 @@ export default async function Page({
   params: Promise<{ requisitionId: string; applicationId: string }>;
 }) {
   await requireModule("recruitment");
-  await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["recruiter"]);
+  const session = await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["recruiter"]);
   const { requisitionId, applicationId } = await params;
 
-  const detail = await getApplicationDetail(requisitionId, applicationId);
+  const [detail, offerTemplates, agreementTemplates] = await Promise.all([
+    getApplicationDetail(requisitionId, applicationId),
+    listActiveTemplatesByType("offer"),
+    listActiveTemplatesByType("employment_agreement"),
+  ]);
   if (!detail) notFound();
 
   const readOnly = detail.requisition.status === "on_hold" || detail.requisition.status === "closed";
+  const roles = session.membership.roles;
+  const canManageLetters = roles.includes("hr_administrator") || roles.includes("organization_owner");
 
   return (
     <div className="space-y-8">
@@ -29,10 +36,21 @@ export default async function Page({
             Back to pipeline
           </Link>
         }
-        description={detail.requisition.title}
+        description={`Candidate for ${detail.requisition.title}`}
         title={detail.candidate.full_name}
       />
-      <CandidateDetail detail={detail} readOnly={readOnly} requisitionId={requisitionId} />
+      <CandidateDetail
+        canManageLetters={canManageLetters}
+        detail={detail}
+        hasAgreementTemplate={agreementTemplates.length > 0}
+        offerTemplates={offerTemplates.map((template) => ({
+          id: template.id,
+          name: template.name,
+          body: template.body,
+        }))}
+        readOnly={readOnly}
+        requisitionId={requisitionId}
+      />
     </div>
   );
 }

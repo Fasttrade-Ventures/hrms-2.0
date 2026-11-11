@@ -24,6 +24,7 @@ import {
 } from "@/components/hr/organization/org-ui";
 import { HrLinkButton } from "@/components/hr/hr-ui.client";
 import { formatDate } from "@/components/employee/employee-shared";
+import { PortalListPage } from "@/components/portal/portal-list-page";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import type { DepartmentRow } from "@/lib/hr/organization";
 
@@ -33,32 +34,31 @@ export function DepartmentsList({ departments }: { departments: DepartmentRow[] 
   const totalEmployees = departments.reduce((sum, row) => sum + row.employeeCount, 0);
 
   return (
-    <div className="space-y-6">
-      <PortalPageHeader
-        actions={
-          <div className="flex gap-2">
-            <HrLinkButton href="/hr/organization" variant="outline">
-              Back to hub
-            </HrLinkButton>
-            <HrLinkButton href="/hr/organization/departments/create">Add department</HrLinkButton>
-          </div>
-        }
-        description="Teams optionally scoped to a branch."
-        title="Departments"
-      />
-
-      <OrgStatCards
-        items={[
-          { label: "Departments", value: departments.length, hint: "across org" },
-          { label: "Assigned staff", value: totalEmployees, hint: "with department set" },
-          {
-            label: "Branch-linked",
-            value: departments.filter((row) => row.branchId).length,
-            hint: "tied to a site",
-          },
-        ]}
-      />
-
+    <PortalListPage
+      actions={
+        <div className="flex gap-2">
+          <HrLinkButton href="/hr/organization" variant="outline">
+            Back to hub
+          </HrLinkButton>
+          <HrLinkButton href="/hr/organization/departments/create">Add department</HrLinkButton>
+        </div>
+      }
+      description="Teams optionally scoped to a branch."
+      stats={
+        <OrgStatCards
+          items={[
+            { label: "Departments", value: departments.length, hint: "across org" },
+            { label: "Assigned staff", value: totalEmployees, hint: "with department set" },
+            {
+              label: "Branch-linked",
+              value: departments.filter((row) => row.branchId).length,
+              hint: "tied to a site",
+            },
+          ]}
+        />
+      }
+      title="Departments"
+    >
       <OrgTableShell
         emptyDescription="Create departments so employees can be assigned to teams."
         emptyTitle="No departments yet"
@@ -78,7 +78,7 @@ export function DepartmentsList({ departments }: { departments: DepartmentRow[] 
           </OrgTableRow>
         ))}
       </OrgTableShell>
-    </div>
+    </PortalListPage>
   );
 }
 

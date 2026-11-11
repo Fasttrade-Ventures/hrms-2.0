@@ -1,25 +1,28 @@
+import { Suspense } from "react";
+
 import { AnalyticsDashboard } from "@/components/analytics/analytics-dashboard";
-import {
-  getHeadcountMetrics,
-  getLeaveLiabilityMetrics,
-  getPayrollCostMetrics,
-  getRecruitmentMetrics,
-} from "@/lib/analytics/queries";
+import { loadAnalyticsPageData } from "@/lib/analytics/page-data";
 import { requireRole } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
 
-export default async function Page() {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string; branchId?: string; departmentId?: string }>;
+}) {
   await requireModule("analytics");
   await requireRole("hr_administrator", "organization_owner");
-
-  const [headcount, leave, payroll, recruitment] = await Promise.all([
-    getHeadcountMetrics(),
-    getLeaveLiabilityMetrics(),
-    getPayrollCostMetrics(),
-    getRecruitmentMetrics().catch(() => ({ openRequisitions: 0, activeCandidates: 0 })),
-  ]);
+  const params = await searchParams;
+  const data = await loadAnalyticsPageData(params);
 
   return (
-    <AnalyticsDashboard headcount={headcount} leave={leave} payroll={payroll} recruitment={recruitment} />
+    <Suspense fallback={<p className="text-sm text-muted-foreground">Loading analytics…</p>}>
+      <AnalyticsDashboard
+        branches={data.branches}
+        cockpit={data.cockpit}
+        departments={data.departments}
+        showRecruitment={data.showRecruitment}
+      />
+    </Suspense>
   );
 }

@@ -24,3 +24,4 @@ export * from "./pagination";
 export * from "./leave/hours";
 export * from "./payroll/au-pay-file";
 export * from "./holidays/australia-2026";
+export * from "./holidays/malaysia-replacement";

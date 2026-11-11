@@ -17,7 +17,7 @@ import {
 } from "@/components/hr/organization/org-ui";
 import { HrField, HrTextInput } from "@/components/hr/employees/form-fields";
 import { HrLinkButton } from "@/components/hr/hr-ui.client";
-import { PortalPageHeader } from "@/components/portal/portal-primitives";
+import { PortalListPage } from "@/components/portal/portal-list-page";
 import type { LeaveBlackoutRow } from "@/lib/leave/blackout";
 import type { LeaveTypeRow } from "@/lib/hr/organization";
 
@@ -33,17 +33,15 @@ export function LeaveBlackoutsList({
   const [state, action, pending] = useActionState(createLeaveBlackout, initialState);
 
   return (
-    <div className="space-y-6">
-      <PortalPageHeader
-        actions={
-          <HrLinkButton href="/hr/organization" variant="outline">
-            Back to hub
-          </HrLinkButton>
-        }
-        description="Block leave applications during peak periods. Applies to employee self-service and HR apply-behalf."
-        title="Leave blackout periods"
-      />
-
+    <PortalListPage
+      actions={
+        <HrLinkButton href="/hr/organization" variant="outline">
+          Back to hub
+        </HrLinkButton>
+      }
+      description="Block leave applications during peak periods. Applies to employee self-service and HR apply-behalf."
+      title="Leave blackout periods"
+    >
       {state.error ? <p className="text-sm text-[var(--danger)]">{state.error}</p> : null}
       {state.success ? <p className="text-sm text-[var(--success)]">{state.success}</p> : null}
 
@@ -113,6 +111,6 @@ export function LeaveBlackoutsList({
           <OrgFormActions cancelHref="/hr/organization/leave-blackouts" pending={pending} submitLabel="Add blackout" />
         </form>
       </OrgFormCard>
-    </div>
+    </PortalListPage>
   );
 }

@@ -1,7 +1,7 @@
 import { HrLinkButton } from "@/components/hr/hr-ui.client";
 import { ReportFilterBar } from "@/components/reports/report-filter-bar";
 import { ReportRunner } from "@/components/reports/report-runner";
-import { PortalPageHeader } from "@/components/portal/portal-primitives";
+import { PortalWorkspaceStrip } from "@/components/portal/portal-workspace-strip";
 import { requireRole } from "@/lib/auth/session";
 import { getOrganizationCountry } from "@/lib/hr/organization";
 import { getEntitlements } from "@/lib/entitlements";
@@ -36,7 +36,7 @@ export default async function HrLeavePage({
 
   return (
     <div className="space-y-6">
-      <PortalPageHeader
+      <PortalWorkspaceStrip
         actions={
           <div className="flex flex-wrap gap-2">
             <HrLinkButton href="/hr/operations" variant="outline">
@@ -53,7 +53,7 @@ export default async function HrLeavePage({
             ) : null}
           </div>
         }
-        description="Org-wide leave balances and pending approvals. Blackout periods are available on Professional."
+        meta="Org-wide leave balances and pending approvals. Blackout periods are available on Professional."
         title="Leave"
       />
 

@@ -5,6 +5,7 @@ import { EmptyState } from "@hrms/ui";
 import { uploadBranchDocumentAction } from "@/app/(branch-admin)/branch-admin/documents/actions";
 import { UploadDocumentDialog } from "@/components/hr/documents/upload-document-dialog";
 import { HrLinkButton, HrPagination } from "@/components/hr/hr-ui.client";
+import { PortalIcon } from "@/components/portal/portal-icons";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { requireBranchAdminContext } from "@/lib/branch-admin/context";
 import { requireModule } from "@/lib/entitlements";
@@ -67,8 +68,9 @@ export default async function BranchDocumentsPage({
 
       {library.rows.length === 0 ? (
         <EmptyState
-          description="No documents yet. Use Upload document to attach files for branch employees."
-          title="No documents"
+          description="Upload a document to attach files for branch employees."
+          icon={<PortalIcon name="documents" />}
+          title="No documents yet"
         />
       ) : (
         <div className="overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-card)]">

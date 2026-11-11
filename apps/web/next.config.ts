@@ -9,6 +9,8 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname, "../.."),
   experimental: {
     optimizePackageImports: ["lucide-react", "@aws-sdk/client-s3"],
+    // Signed-agreement uploads allow files up to DOCUMENT_MAX_BYTES (10 MB).
+    serverActions: { bodySizeLimit: "11mb" },
   },
   transpilePackages: [
     "@hrms/domain",

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 
 import { formatDate } from "@/components/employee/employee-shared";
 import { PayrunDetailView } from "@/components/hr/payroll/payrun-detail";
-import { PortalPageHeader } from "@/components/portal/portal-primitives";
+import { PortalWorkspaceStrip } from "@/components/portal/portal-workspace-strip";
 import { requireRole } from "@/lib/auth/session";
 import { getEntitlements, requireModule } from "@/lib/entitlements";
 import { getBukucloudSyncStatus } from "@/lib/integrations/bukucloud/sync";
@@ -33,8 +33,8 @@ export default async function PayrunDetailPage({
 
   return (
     <div className="space-y-6">
-      <PortalPageHeader
-        description={`${formatDate(payrun.earningPeriodStart)} → ${formatDate(payrun.earningPeriodEnd)}`}
+      <PortalWorkspaceStrip
+        meta={`${formatDate(payrun.earningPeriodStart)} → ${formatDate(payrun.earningPeriodEnd)}`}
         title={`Payrun ${payrun.periodYear}-${String(payrun.periodMonth).padStart(2, "0")}`}
       />
       <PayrunDetailView

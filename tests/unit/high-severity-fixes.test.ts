@@ -114,26 +114,33 @@ describe("sign-in does not pretend to control the session", () => {
 });
 
 describe("signed-in pages have one h1", () => {
-  it("keeps the shell title as the only h1 and demotes the page header", () => {
+  it("keeps the page title as the only h1 and demotes the shell context label", () => {
     const header = readFileSync(
       resolve(root, "apps/web/src/components/portal/portal-primitives.tsx"),
       "utf8",
     );
     const pageHeader = header.slice(header.indexOf("export function PortalPageHeader"));
-    expect(pageHeader).toContain("<h2");
-    expect(pageHeader).not.toContain("<h1");
+    expect(pageHeader).toContain("<h1");
+    expect(pageHeader).not.toContain("<h2");
 
     const shell = readFileSync(resolve(root, "apps/web/src/components/portal-shell.tsx"), "utf8");
-    expect(shell).toContain("<h1");
+    expect(shell).not.toContain("<h1");
 
     for (const file of [
       "apps/web/src/app/(employee)/employee/dashboard/page.tsx",
       "apps/web/src/app/(employee)/employee/leave/page.tsx",
-      "apps/web/src/components/reports/report-runner.tsx",
     ]) {
       const source = readFileSync(resolve(root, file), "utf8");
-      expect(source).not.toContain("<h1");
+      expect(source).toContain("<h1");
+      expect(source.match(/<h1\b/g)?.length ?? 0).toBe(1);
     }
+
+    // ReportRunner sits under PortalPageHeader on report pages — keep its title as h2.
+    const reportRunner = readFileSync(
+      resolve(root, "apps/web/src/components/reports/report-runner.tsx"),
+      "utf8",
+    );
+    expect(reportRunner).not.toContain("<h1");
   });
 });
 

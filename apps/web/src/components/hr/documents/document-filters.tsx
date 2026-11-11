@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { DocumentFormField } from "@/components/hr/documents/document-form-field";
+import { PortalCard } from "@/components/portal/portal-card";
+import { PortalFilterChip, PortalFilterChips } from "@/components/portal/portal-filter-chips";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -81,9 +82,17 @@ export function DocumentFilters({
     router.push(query ? `/hr/documents/library?${query}` : "/hr/documents/library");
   }
 
+  const statusKeys = ["all", "expiring", "expired", "no_expiry"] as const;
+  const statusLabels: Record<(typeof statusKeys)[number], string> = {
+    all: "All",
+    expiring: "Expiring",
+    expired: "Expired",
+    no_expiry: "No expiry",
+  };
+
   return (
-    <Card size="sm">
-      <CardContent className="space-y-4 py-4">
+    <PortalCard padding="sm">
+      <div className="space-y-4">
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.4fr_1fr_1fr_1fr_auto]">
           <DocumentFormField id="search" label="Search">
             <Input
@@ -166,25 +175,22 @@ export function DocumentFilters({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {(["all", "expiring", "expired", "no_expiry"] as const).map((status) => (
-            <Button
-              key={status}
-              render={<Link href={buildHref({ ...base, status: status === "all" ? undefined : status })} />}
-              size="sm"
-              variant={filters.status === status ? "default" : "outline"}
-            >
-              {status === "all"
-                ? "All"
-                : status === "no_expiry"
-                  ? "No expiry"
-                  : status.charAt(0).toUpperCase() + status.slice(1)}
-            </Button>
-          ))}
+          <PortalFilterChips>
+            {statusKeys.map((status) => (
+              <PortalFilterChip
+                active={filters.status === status}
+                href={buildHref({ ...base, status: status === "all" ? undefined : status })}
+                key={status}
+              >
+                {statusLabels[status]}
+              </PortalFilterChip>
+            ))}
+          </PortalFilterChips>
           <Button render={<Link href="/hr/documents/library" />} size="sm" variant="ghost">
             Clear filters
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </PortalCard>
   );
 }

@@ -261,7 +261,7 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | HR / org calendar & holiday admin | Core | ✅ | `/hr/calendar` + holidays at `/hr/organization/holidays` |
 | HR reports hub | Core | ✅ | `/hr/reports` — 9 reports, CSV/print, auditor access |
 | Scheduled reports | Pro | ✅ | `report_subscriptions` + `/api/cron/report-subscriptions` |
-| HQ / branch analytics | Ent | ✅ | `/hr/analytics`, `/director/analytics` |
+| HQ / branch analytics | Ent | ✅ | `/hr/analytics`, `/director/analytics` — filters, charts (workforce/leave/payroll/recruitment), click-to-detail drawer |
 
 ---
 
@@ -270,8 +270,9 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Feature | Tier | UI | Notes |
 |---------|------|-----|--------|
 | Job requisitions | Ent | ✅ | Hub at `/hr/recruitment` — filters, dept/branch/type, open/hold/close/re-open |
-| Candidates / applications pipeline | Ent | ✅ | Slim board `/hr/recruitment/[requisitionId]`; detail `/…/candidates/[applicationId]` |
-| Offers + offer PDF | Ent | ✅ | Draft/sent/accept/decline/withdraw; org currency PDF; accept → draft employee + soft checklist start (activation manual) |
+| Candidates / applications pipeline | Ent | ✅ | Hiring-desk board at `/hr/recruitment/[id]` — command strip, Sheet add, DnD stages (no drag-to-hired); detail `/…/candidates/[applicationId]` |
+| Offers + offer PDF | Ent | ✅ | Template-based draft/sent; candidate Accept/Reject email links; agreement upload; HR Confirm hire → draft employee + checklist (activation manual) |
+| Letter templates | Ent | ✅ | `/hr/letters` — offer + employment agreement bodies with merge tags; recruiters can override letter/agreement body per offer before send |
 
 ---
 
@@ -280,9 +281,9 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 | Feature | Tier | UI | Notes |
 |---------|------|-----|--------|
 | Integrations hub | Ent | ✅ | `/hr/integrations` |
-| External API keys + OpenAPI `/api/v1` | Ent | ✅ | `/hr/integrations/api` |
+| External API keys + OpenAPI `/api/v1` | Ent | ✅ | `/hr/integrations/api` — tabs: API keys, BukuCloud, Virtual Hirix |
 | Outbound webhooks | Ent | ✅ | `/hr/integrations/webhooks` |
-| BukuCloud payroll sync | Ent | ✅ | `/hr/integrations/bukucloud` |
+| BukuCloud payroll sync | Ent | ✅ | `/hr/integrations/api?tab=bukucloud` (old `/hr/integrations/bukucloud` redirects) |
 | SSO (SAML / OIDC) | Ent | ⬜ | End milestone. Not in the current packages. |
 
 ---

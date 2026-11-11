@@ -24,10 +24,12 @@ import {
   OrgTableShell,
   OrgTableStatus,
 } from "@/components/hr/organization/org-ui";
-import { HrFilterButton, HrLinkButton, HrPagination } from "@/components/hr/hr-ui.client";
+import { HrLinkButton, HrPagination } from "@/components/hr/hr-ui.client";
+import { PortalCard } from "@/components/portal/portal-card";
+import { PortalFilterChip, PortalFilterChips } from "@/components/portal/portal-filter-chips";
+import { PortalListPage } from "@/components/portal/portal-list-page";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { getHolidayYearOptions, getHolidayYearRange } from "@/lib/hr/holiday-window";
 import type {
@@ -121,39 +123,95 @@ export function HolidaysList({
   const listParams = { year, branchId, sort, order };
 
   return (
-    <div className="space-y-6">
-      <PortalPageHeader
-        actions={
-          <div className="flex flex-wrap gap-2">
-            <HrLinkButton href="/hr/organization" variant="outline">
-              Back to hub
-            </HrLinkButton>
-            {isAu ? (
-              <Button
-                disabled={branches.length === 0}
-                onClick={() => setImportOpen(true)}
-                type="button"
-                variant="outline"
-              >
-                Load 2026 holidays for this state
-              </Button>
-            ) : (
-              <Button
-                disabled={branches.length === 0}
-                onClick={() => setImportOpen(true)}
-                type="button"
-                variant="outline"
-              >
-                Import holidays
-              </Button>
-            )}
-            <HrLinkButton href="/hr/organization/holidays/create">Add holiday</HrLinkButton>
-          </div>
-        }
-        description={`Public and company holidays used in working-day calculation. Storage window: ${minYear}–${maxYear}.`}
-        title="Holidays"
-      />
+    <PortalListPage
+      actions={
+        <div className="flex flex-wrap gap-2">
+          <HrLinkButton href="/hr/organization" variant="outline">
+            Back to hub
+          </HrLinkButton>
+          {isAu ? (
+            <Button
+              disabled={branches.length === 0}
+              onClick={() => setImportOpen(true)}
+              type="button"
+              variant="outline"
+            >
+              Load 2026 holidays for this state
+            </Button>
+          ) : (
+            <Button
+              disabled={branches.length === 0}
+              onClick={() => setImportOpen(true)}
+              type="button"
+              variant="outline"
+            >
+              Import holidays
+            </Button>
+          )}
+          <HrLinkButton href="/hr/organization/holidays/create">Add holiday</HrLinkButton>
+        </div>
+      }
+      description={`Public and company holidays used in working-day calculation. Storage window: ${minYear}–${maxYear}.`}
+      filters={
+        <>
+          <PortalCard className="flex flex-col gap-3" padding="sm">
+            <Label className="text-xs text-muted-foreground">Year</Label>
+            <PortalFilterChips>
+              {years.map((item) => (
+                <PortalFilterChip
+                  active={item === year}
+                  href={buildHolidayHref({ year: item, branchId, sort, order })}
+                  key={item}
+                >
+                  {item}
+                </PortalFilterChip>
+              ))}
+            </PortalFilterChips>
+          </PortalCard>
 
+          <PortalCard className="flex flex-col gap-3" padding="sm">
+            <Label className="text-xs text-muted-foreground">Branch scope</Label>
+            <PortalFilterChips>
+              <PortalFilterChip
+                active={branchId === "all"}
+                href={buildHolidayHref({ ...listParams, branchId: "all", page: 1 })}
+              >
+                All ({yearTotal})
+              </PortalFilterChip>
+              <PortalFilterChip
+                active={branchId === "org-wide"}
+                href={buildHolidayHref({ ...listParams, branchId: "org-wide", page: 1 })}
+              >
+                Org-wide ({orgWideCount})
+              </PortalFilterChip>
+              {branchFilters.map((branch) => (
+                <PortalFilterChip
+                  active={branchId === branch.id}
+                  href={buildHolidayHref({ ...listParams, branchId: branch.id, page: 1 })}
+                  key={branch.id}
+                >
+                  {branch.name} ({branch.count})
+                </PortalFilterChip>
+              ))}
+            </PortalFilterChips>
+          </PortalCard>
+        </>
+      }
+      stats={
+        <OrgStatCards
+          items={[
+            { label: "Holidays", value: yearTotal, hint: `${year} gazette` },
+            { label: "Org-wide", value: orgWideCount, hint: "all branches" },
+            {
+              label: "Branch-specific",
+              value: yearTotal - orgWideCount,
+              hint: "site only",
+            },
+          ]}
+        />
+      }
+      title="Holidays"
+    >
       {isAu ? (
         <LoadAustralianHolidaysDialog
           branches={branches}
@@ -168,64 +226,6 @@ export function HolidaysList({
           open={importOpen}
         />
       )}
-
-      <Card className="py-0">
-        <CardContent className="flex flex-col gap-3 py-4">
-          <Label className="text-xs text-muted-foreground">Year</Label>
-          <div className="flex flex-wrap gap-1.5">
-            {years.map((item) => (
-              <HrFilterButton
-                active={item === year}
-                href={buildHolidayHref({ year: item, branchId, sort, order })}
-                key={item}
-              >
-                {item}
-              </HrFilterButton>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <OrgStatCards
-        items={[
-          { label: "Holidays", value: yearTotal, hint: `${year} gazette` },
-          { label: "Org-wide", value: orgWideCount, hint: "all branches" },
-          {
-            label: "Branch-specific",
-            value: yearTotal - orgWideCount,
-            hint: "site only",
-          },
-        ]}
-      />
-
-      <Card className="py-0">
-        <CardContent className="flex flex-col gap-3 py-4">
-          <Label className="text-xs text-muted-foreground">Branch scope</Label>
-          <div className="flex flex-wrap gap-1.5">
-            <HrFilterButton
-              active={branchId === "all"}
-              href={buildHolidayHref({ ...listParams, branchId: "all", page: 1 })}
-            >
-              All ({yearTotal})
-            </HrFilterButton>
-            <HrFilterButton
-              active={branchId === "org-wide"}
-              href={buildHolidayHref({ ...listParams, branchId: "org-wide", page: 1 })}
-            >
-              Org-wide ({orgWideCount})
-            </HrFilterButton>
-            {branchFilters.map((branch) => (
-              <HrFilterButton
-                active={branchId === branch.id}
-                href={buildHolidayHref({ ...listParams, branchId: branch.id, page: 1 })}
-                key={branch.id}
-              >
-                {branch.name} ({branch.count})
-              </HrFilterButton>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       <OrgTableShell
         emptyDescription={
@@ -284,7 +284,7 @@ export function HolidaysList({
         to={to}
         total={total}
       />
-    </div>
+    </PortalListPage>
   );
 }
 

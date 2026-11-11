@@ -21,6 +21,7 @@ import {
   OrgTableStatus,
 } from "@/components/hr/organization/org-ui";
 import { HrLinkButton } from "@/components/hr/hr-ui.client";
+import { PortalListPage } from "@/components/portal/portal-list-page";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import type { AssetCategoryRow } from "@/lib/assets/types";
 
@@ -109,27 +110,26 @@ export function AssetCategoriesList({ categories }: { categories: AssetCategoryR
   const active = categories.filter((row) => row.isActive).length;
 
   return (
-    <div className="space-y-6">
-      <PortalPageHeader
-        actions={
-          <div className="flex gap-2">
-            <HrLinkButton href="/hr/organization" variant="outline">
-              Back to hub
-            </HrLinkButton>
-            <HrLinkButton href="/hr/organization/asset-categories/create">Add category</HrLinkButton>
-          </div>
-        }
-        description="Define asset types and custom fields for the register."
-        title="Asset categories"
-      />
-
-      <OrgStatCards
-        items={[
-          { label: "Categories", value: categories.length, hint: "configured" },
-          { label: "Active", value: active, hint: "in use" },
-        ]}
-      />
-
+    <PortalListPage
+      actions={
+        <div className="flex gap-2">
+          <HrLinkButton href="/hr/organization" variant="outline">
+            Back to hub
+          </HrLinkButton>
+          <HrLinkButton href="/hr/organization/asset-categories/create">Add category</HrLinkButton>
+        </div>
+      }
+      description="Define asset types and custom fields for the register."
+      stats={
+        <OrgStatCards
+          items={[
+            { label: "Categories", value: categories.length, hint: "configured" },
+            { label: "Active", value: active, hint: "in use" },
+          ]}
+        />
+      }
+      title="Asset categories"
+    >
       <OrgTableShell
         emptyDescription="Create categories before registering assets."
         emptyTitle="No asset categories yet"
@@ -146,7 +146,7 @@ export function AssetCategoriesList({ categories }: { categories: AssetCategoryR
           </OrgTableRow>
         ))}
       </OrgTableShell>
-    </div>
+    </PortalListPage>
   );
 }
 

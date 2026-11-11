@@ -38,9 +38,16 @@ export type EmployeePayInput = {
 
 export async function loadHolidayDates(organizationId: string): Promise<string[]> {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("holidays")
-    .select("holiday_date")
-    .eq("organization_id", organizationId);
-  return (data ?? []).map((row) => row.holiday_date);
+  const [{ data }, { data: org }] = await Promise.all([
+    supabase.from("holidays").select("holiday_date").eq("organization_id", organizationId),
+    supabase.from("organizations").select("country").eq("id", organizationId).maybeSingle(),
+  ]);
+  const dates = (data ?? []).map((row) => row.holiday_date as string);
+  // Malaysia: if a PH falls on Sunday (KL/Selangor sat_sun), include Monday replacement
+  // even when the source calendar omitted it.
+  if ((org?.country ?? "MY") === "MY") {
+    const { expandMalaysiaReplacementHolidayDates } = await import("@hrms/domain");
+    return expandMalaysiaReplacementHolidayDates(dates, "sat_sun");
+  }
+  return dates;
 }

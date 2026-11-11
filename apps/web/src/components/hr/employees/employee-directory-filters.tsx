@@ -3,10 +3,10 @@
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { HrFilterButton } from "@/components/hr/hr-ui.client";
+import { PortalCard } from "@/components/portal/portal-card";
+import { PortalFilterChip, PortalFilterChips } from "@/components/portal/portal-filter-chips";
 import type { EmployeeBranchFilter } from "@/lib/employees/queries";
 
 function buildHref(
@@ -44,33 +44,35 @@ export function EmployeeDirectoryFilters({
   basePath?: string;
 }) {
   return (
-    <Card className="py-0">
-      <CardContent className="flex flex-col gap-2.5 py-2.5 sm:flex-row sm:items-center sm:gap-3">
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+    <PortalCard className="py-0" padding="none">
+      <div className="flex flex-col gap-2.5 p-2.5 sm:flex-row sm:items-center sm:gap-3 sm:p-3">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
           <span className="shrink-0 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             Branch
           </span>
-          <HrFilterButton
-            active={status === "active" && branchId === "all"}
-            href={buildHref(basePath, { search, status: "active", branchId: "all" })}
-          >
-            All ({activeTotal})
-          </HrFilterButton>
-          {branches.map((branch) => (
-            <HrFilterButton
-              active={status === "active" && branchId === branch.id}
-              href={buildHref(basePath, { search, status: "active", branchId: branch.id })}
-              key={branch.id}
+          <PortalFilterChips>
+            <PortalFilterChip
+              active={status === "active" && branchId === "all"}
+              href={buildHref(basePath, { search, status: "active", branchId: "all" })}
             >
-              {branch.name} ({branch.count})
-            </HrFilterButton>
-          ))}
-          <HrFilterButton
-            active={status === "inactive"}
-            href={buildHref(basePath, { search, status: "inactive", branchId: "all" })}
-          >
-            {inactiveCount > 0 ? `Inactive (${inactiveCount})` : "Inactive"}
-          </HrFilterButton>
+              All ({activeTotal})
+            </PortalFilterChip>
+            {branches.map((branch) => (
+              <PortalFilterChip
+                active={status === "active" && branchId === branch.id}
+                href={buildHref(basePath, { search, status: "active", branchId: branch.id })}
+                key={branch.id}
+              >
+                {branch.name} ({branch.count})
+              </PortalFilterChip>
+            ))}
+            <PortalFilterChip
+              active={status === "inactive"}
+              href={buildHref(basePath, { search, status: "inactive", branchId: "all" })}
+            >
+              {inactiveCount > 0 ? `Inactive (${inactiveCount})` : "Inactive"}
+            </PortalFilterChip>
+          </PortalFilterChips>
         </div>
 
         <Separator className="hidden sm:block sm:h-7" orientation="vertical" />
@@ -105,7 +107,7 @@ export function EmployeeDirectoryFilters({
             </Button>
           ) : null}
         </form>
-      </CardContent>
-    </Card>
+      </div>
+    </PortalCard>
   );
 }

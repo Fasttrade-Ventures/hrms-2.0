@@ -82,9 +82,9 @@ export function OrganizationHub({ data }: { data: OrgHubData }) {
             <p className="text-xs font-semibold uppercase tracking-wide text-primary">
               Structure & policies
             </p>
-            <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
               Organization overview
-            </h2>
+            </h1>
             <p className="text-sm leading-relaxed text-muted-foreground">
               Configure the catalogs employees, leave, and attendance rely on. Use the sidebar
               Organization menu to jump between areas, or open a card below.

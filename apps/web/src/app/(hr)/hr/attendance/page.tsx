@@ -1,19 +1,32 @@
+import { AttendanceMatrix } from "@/components/hr/attendance/attendance-matrix";
 import { HrLinkButton } from "@/components/hr/hr-ui.client";
+import { PortalFilterChip, PortalFilterChips } from "@/components/portal/portal-filter-chips";
+import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { ReportFilterBar } from "@/components/reports/report-filter-bar";
 import { ReportRunner } from "@/components/reports/report-runner";
-import { PortalPageHeader } from "@/components/portal/portal-primitives";
+import { requireOrganizationId } from "@/lib/auth/organization-context";
 import { requireRole } from "@/lib/auth/session";
-import { getOrganizationCountry } from "@/lib/hr/organization";
 import { getEntitlements } from "@/lib/entitlements";
+import { getOrganizationCountry } from "@/lib/hr/organization";
 import { getReportDefinition } from "@/lib/reports/catalog";
+import { listAttendanceMatrixData } from "@/lib/reports/attendance-matrix";
 import { buildFilterSummary, loadReportFilterOptions } from "@/lib/reports/context";
-import { parseReportFilters } from "@/lib/reports/filters";
+import { buildReportSearchParams, parseReportFilters } from "@/lib/reports/filters";
 import { runReport } from "@/lib/reports/run";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 import { exportReportCsv, logReportPrint } from "../reports/actions";
 import { setClockInSelfieRequired } from "./actions";
-import { requireOrganizationId } from "@/lib/auth/organization-context";
-import { createAdminClient } from "@/lib/supabase/admin";
+
+function attendanceHref(
+  view: "matrix" | "summary",
+  filters: ReturnType<typeof parseReportFilters>,
+): string {
+  const params = buildReportSearchParams(filters, view === "summary" ? filters.page : 1);
+  if (view === "summary") params.set("view", "summary");
+  const qs = params.toString();
+  return qs ? `/hr/attendance?${qs}` : "/hr/attendance";
+}
 
 export default async function HrAttendancePage({
   searchParams,
@@ -24,13 +37,16 @@ export default async function HrAttendancePage({
   const country = await getOrganizationCountry();
   const raw = await searchParams;
   const filters = parseReportFilters(raw);
+  const viewParam = Array.isArray(raw.view) ? raw.view[0] : raw.view;
+  const view = viewParam === "summary" ? "summary" : "matrix";
   const slug = "attendance-summary" as const;
   const definition = getReportDefinition(slug)!;
 
-  const [{ branches, departments }, result, entitlements] = await Promise.all([
+  const [{ branches, departments }, entitlements, summaryResult, matrixData] = await Promise.all([
     loadReportFilterOptions(),
-    runReport(slug, filters),
     getEntitlements(),
+    view === "summary" ? runReport(slug, filters) : Promise.resolve(null),
+    view === "matrix" ? listAttendanceMatrixData(filters) : Promise.resolve(null),
   ]);
 
   const hasLocation = entitlements.hasModule("location");
@@ -61,7 +77,7 @@ export default async function HrAttendancePage({
             </HrLinkButton>
           </div>
         }
-        description="Attendance rollups by employee. Geofence and roster scheduling are Professional features."
+        description="Employee × day timesheet with leave and holidays. Switch to Summary for rollups and CSV."
         title="Attendance"
       />
 
@@ -71,26 +87,43 @@ export default async function HrAttendancePage({
         </p>
       ) : null}
 
+      <PortalFilterChips>
+        <PortalFilterChip active={view === "matrix"} href={attendanceHref("matrix", filters)}>
+          Matrix
+        </PortalFilterChip>
+        <PortalFilterChip active={view === "summary"} href={attendanceHref("summary", filters)}>
+          Summary
+        </PortalFilterChip>
+      </PortalFilterChips>
+
       <ReportFilterBar
         branches={branches}
         definition={definition}
         departments={departments}
         filters={filters}
+        preserveParams={view === "summary" ? { view: "summary" } : undefined}
       />
-      <ReportRunner
-        basePath="/hr/attendance"
-        country={country}
-        columns={result.columns}
-        description={definition.description}
-        exportCsvAction={exportReportCsv}
-        filterSummary={buildFilterSummary(filters)}
-        filters={filters}
-        logPrintAction={logReportPrint}
-        rows={result.rows}
-        slug={slug}
-        title="Attendance summary"
-        total={result.total}
-      />
+
+      {view === "matrix" && matrixData ? <AttendanceMatrix data={matrixData} /> : null}
+
+      {view === "summary" && summaryResult ? (
+        <ReportRunner
+          basePath="/hr/attendance"
+          country={country}
+          columns={summaryResult.columns}
+          description={definition.description}
+          exportCsvAction={exportReportCsv}
+          filterSummary={buildFilterSummary(filters)}
+          filters={filters}
+          hrefExtra={{ view: "summary" }}
+          logPrintAction={logReportPrint}
+          paginationPath="/hr/attendance"
+          rows={summaryResult.rows}
+          slug={slug}
+          title="Attendance summary"
+          total={summaryResult.total}
+        />
+      ) : null}
     </div>
   );
 }

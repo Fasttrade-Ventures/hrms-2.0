@@ -326,13 +326,28 @@ const hrNav: PortalNavSection[] = [
   {
     label: "Workplace",
     items: [
-      { href: "/hr/documents", label: "Documents", icon: "documents" },
-      { href: "/hr/policies", label: "Policies", icon: "documents" },
-      { href: "/hr/announcements", label: "Announcements", icon: "announcements" },
-      { href: "/hr/calendar", label: "Calendar", icon: "calendar" },
-      { href: "/hr/assets", label: "Assets", icon: "assets" },
-      { href: "/hr/performance", label: "Performance", icon: "performance" },
-      { href: "/hr/pulse", label: "Pulse", icon: "performance" },
+      {
+        href: "/hr/documents",
+        label: "Content",
+        icon: "documents",
+        children: [
+          { href: "/hr/documents", label: "Documents", icon: "documents" },
+          { href: "/hr/letters", label: "Letters", icon: "documents" },
+          { href: "/hr/policies", label: "Policies", icon: "documents" },
+          { href: "/hr/announcements", label: "Announcements", icon: "announcements" },
+          { href: "/hr/calendar", label: "Calendar", icon: "calendar" },
+        ],
+      },
+      {
+        href: "/hr/assets",
+        label: "Talent",
+        icon: "performance",
+        children: [
+          { href: "/hr/assets", label: "Assets", icon: "assets" },
+          { href: "/hr/performance", label: "Performance", icon: "performance" },
+          { href: "/hr/pulse", label: "Pulse", icon: "performance" },
+        ],
+      },
     ],
   },
   {
@@ -367,7 +382,6 @@ const hrNav: PortalNavSection[] = [
         children: [
           { href: "/hr/integrations/webhooks", label: "Webhooks", icon: "organization" },
           { href: "/hr/integrations/api", label: "Developer API", icon: "organization" },
-          { href: "/hr/integrations/bukucloud", label: "BukuCloud", icon: "payroll" },
         ],
       },
     ],

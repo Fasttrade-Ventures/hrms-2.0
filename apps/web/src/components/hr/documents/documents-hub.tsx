@@ -1,14 +1,13 @@
 import Link from "next/link";
 
 import { HrStatCards } from "@/components/hr/hr-ui";
+import { PortalCard } from "@/components/portal/portal-card";
 import { PortalIcon } from "@/components/portal/portal-icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -48,16 +47,16 @@ const modules = [
 export function DocumentsHub({ stats }: { stats: DocumentsHubStats }) {
   return (
     <div className="space-y-4">
-      <Card size="sm">
-        <CardContent className="flex flex-wrap items-center justify-between gap-3 py-3">
+      <PortalCard padding="sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">
             Browse the library, manage folders and required types, or review compliance gaps.
           </p>
           <Button render={<Link href="/hr/documents/library" />} size="sm">
             Open library
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </PortalCard>
 
       <HrStatCards
         compact
@@ -73,22 +72,20 @@ export function DocumentsHub({ stats }: { stats: DocumentsHubStats }) {
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {modules.map((module) => (
-          <Card className="flex flex-col" key={module.id} size="sm">
-            <CardHeader className="pb-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-primary">
-                <PortalIcon name={module.icon} />
-              </div>
-            </CardHeader>
-            <CardContent className="flex flex-1 flex-col gap-1 pb-2">
-              <CardTitle className="text-sm">{module.title}</CardTitle>
-              <CardDescription>{module.subtitle}</CardDescription>
-            </CardContent>
-            <CardFooter className="border-t-0 bg-transparent pt-0">
+          <PortalCard className="flex flex-col" key={module.id} padding="sm">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-primary">
+              <PortalIcon name={module.icon} />
+            </div>
+            <div className="mt-3 flex flex-1 flex-col gap-1">
+              <p className="text-sm font-medium text-[var(--foreground-primary)]">{module.title}</p>
+              <p className="text-sm text-muted-foreground">{module.subtitle}</p>
+            </div>
+            <div className="mt-3 pt-0">
               <Button className="w-full" render={<Link href={module.href} />} size="sm" variant="outline">
                 Open
               </Button>
-            </CardFooter>
-          </Card>
+            </div>
+          </PortalCard>
         ))}
       </div>
 

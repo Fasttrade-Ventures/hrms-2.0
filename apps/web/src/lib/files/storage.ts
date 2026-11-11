@@ -69,7 +69,7 @@ export async function uploadOrganizationFile(input: {
   fileName: string;
   contentType: string;
   body: Uint8Array;
-  uploadedByUserId: string;
+  uploadedByUserId: string | null;
 }): Promise<string> {
   const adapter = getStorageAdapter();
   const ref = await adapter.putObject({
@@ -132,4 +132,17 @@ export async function hardDeleteOrganizationFile(fileId: string): Promise<void> 
 
   const { error: deleteError } = await admin.from("file_objects").delete().eq("id", fileId);
   if (deleteError) throw new Error(deleteError.message);
+}
+
+/** Reads a stored file back as bytes (e.g. to attach to an email). Returns null if unavailable. */
+export async function fetchOrganizationFileBytes(fileId: string): Promise<Uint8Array | null> {
+  const url = await getSignedDownloadUrl(fileId);
+  if (!url) return null;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    return new Uint8Array(await response.arrayBuffer());
+  } catch {
+    return null;
+  }
 }
