@@ -4,6 +4,7 @@ import { buildOfferPdf } from "@/lib/recruitment/offer-pdf";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getNextEmployeeNumber } from "@/lib/employees/organization";
 
+import { canTransitionOfferStatus, type OfferStatus } from "@/lib/recruitment/offer-status";
 import type { RecruitmentStage } from "./types";
 import { canMoveToStage } from "./types";
 import { requireOrganizationId } from "@/lib/auth/organization-context";
@@ -211,4 +212,57 @@ export async function createOfferForApplication(input: {
   }
 
   return { offerId: offer.id };
+}
+
+async function transitionOfferStatus(
+  offerId: string,
+  toStatus: Extract<OfferStatus, "sent" | "declined" | "withdrawn">,
+  actorUserId: string,
+  applicationStage?: Extract<RecruitmentStage, "rejected" | "withdrawn">,
+): Promise<void> {
+  const admin = createAdminClient();
+  const organizationId = await requireOrganizationId();
+
+  const { data: offer } = await admin
+    .from("job_offers")
+    .select("id, status, application_id")
+    .eq("id", offerId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  if (!offer) throw new Error("Offer not found.");
+
+  const fromStatus = offer.status as OfferStatus;
+  if (!canTransitionOfferStatus(fromStatus, toStatus)) {
+    throw new Error(`Cannot transition offer from ${fromStatus} to ${toStatus}.`);
+  }
+
+  const patch: { status: typeof toStatus; sent_at?: string } = { status: toStatus };
+  if (toStatus === "sent") {
+    patch.sent_at = new Date().toISOString();
+  }
+
+  const { error: offerError } = await admin.from("job_offers").update(patch).eq("id", offerId);
+  if (offerError) throw new Error(offerError.message);
+
+  if (applicationStage) {
+    await moveApplicationStage({
+      applicationId: offer.application_id,
+      toStage: applicationStage,
+      actorUserId,
+      notes: applicationStage === "rejected" ? "Offer declined." : "Offer withdrawn.",
+    });
+  }
+}
+
+export async function markOfferSent(offerId: string, actorUserId: string): Promise<void> {
+  await transitionOfferStatus(offerId, "sent", actorUserId);
+}
+
+export async function declineOffer(offerId: string, actorUserId: string): Promise<void> {
+  await transitionOfferStatus(offerId, "declined", actorUserId, "rejected");
+}
+
+export async function withdrawOffer(offerId: string, actorUserId: string): Promise<void> {
+  await transitionOfferStatus(offerId, "withdrawn", actorUserId, "withdrawn");
 }
