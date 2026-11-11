@@ -1,7 +1,15 @@
 -- Replace one-question pulse with a full survey builder (templates, runs, invites, answers).
 
-drop policy if exists pulse_responses_org on public.pulse_responses;
-drop policy if exists pulse_surveys_org on public.pulse_surveys;
+do $$
+begin
+  if to_regclass('public.pulse_responses') is not null then
+    drop policy if exists pulse_responses_org on public.pulse_responses;
+  end if;
+  if to_regclass('public.pulse_surveys') is not null then
+    drop policy if exists pulse_surveys_org on public.pulse_surveys;
+  end if;
+end $$;
+
 drop table if exists public.pulse_responses;
 drop table if exists public.pulse_surveys;
 
