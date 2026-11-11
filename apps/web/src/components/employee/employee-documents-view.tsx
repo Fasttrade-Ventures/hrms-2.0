@@ -96,8 +96,8 @@ export function EmployeeDocumentsView({
         </div>
         {documents.length === 0 ? (
           <EmptyState
-            description="Documents shared by HR will appear here."
-            icon={<PortalIcon name="documents" className="h-6 w-6" />}
+            description="When HR shares files with you, they'll show up here."
+            icon={<PortalIcon name="documents" />}
             title="No documents yet"
             variant="flat"
           />

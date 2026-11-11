@@ -15,7 +15,7 @@ import {
 } from "@/components/hr/organization/org-ui";
 import { Button } from "@/components/ui/button";
 import { HrLinkButton } from "@/components/hr/hr-ui.client";
-import { PortalPageHeader } from "@/components/portal/portal-primitives";
+import { PortalListPage } from "@/components/portal/portal-list-page";
 import type { BranchRow, ShiftRow } from "@/lib/hr/organization";
 import type { RosterEntryRow } from "@/lib/hr/rosters";
 
@@ -43,22 +43,20 @@ export function RostersPlanner({
     entries.find((entry) => entry.employeeId === employeeId && entry.workDate === workDate);
 
   return (
-    <div className="space-y-6">
-      <PortalPageHeader
-        actions={
-          <div className="flex gap-2">
-            <HrLinkButton href="/hr/organization" variant="outline">
-              Back to hub
-            </HrLinkButton>
-            <HrLinkButton href={`/hr/organization/rosters?weekStart=${weekStart}`} variant="outline">
-              This week
-            </HrLinkButton>
-          </div>
-        }
-        description="Assign shift patterns to employees by day."
-        title="Work rosters"
-      />
-
+    <PortalListPage
+      actions={
+        <div className="flex gap-2">
+          <HrLinkButton href="/hr/organization" variant="outline">
+            Back to hub
+          </HrLinkButton>
+          <HrLinkButton href={`/hr/organization/rosters?weekStart=${weekStart}`} variant="outline">
+            This week
+          </HrLinkButton>
+        </div>
+      }
+      description="Assign shift patterns to employees by day."
+      title="Work rosters"
+    >
       <OrgFormCard backHref="/hr/organization/rosters" description="Quick assign a single day." title="Assign shift">
         <form action={formAction} className="grid gap-4 md:grid-cols-4">
           <input name="weekStart" type="hidden" value={weekStart} />
@@ -157,6 +155,6 @@ export function RostersPlanner({
           </OrgTableRow>
         ))}
       </OrgTableShell>
-    </div>
+    </PortalListPage>
   );
 }

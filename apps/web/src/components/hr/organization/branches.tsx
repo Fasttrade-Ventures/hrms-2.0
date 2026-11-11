@@ -27,6 +27,7 @@ import {
   OrgTableStatus,
 } from "@/components/hr/organization/org-ui";
 import { HrLinkButton } from "@/components/hr/hr-ui.client";
+import { PortalListPage } from "@/components/portal/portal-list-page";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { MALAYSIAN_STATE_OPTIONS } from "@/lib/employees/malaysia-demographics";
 import type { BranchRow } from "@/lib/hr/organization";
@@ -55,32 +56,31 @@ export function BranchesList({
   const totalEmployees = branches.reduce((sum, row) => sum + row.employeeCount, 0);
 
   return (
-    <div className="space-y-6">
-      <PortalPageHeader
-        actions={
-          <div className="flex gap-2">
-            <HrLinkButton href="/hr/organization" variant="outline">
-              Back to hub
-            </HrLinkButton>
-            <HrLinkButton href="/hr/organization/branches/create">Add branch</HrLinkButton>
-          </div>
-        }
-        description="Sites with weekend mode and payroll cutoff settings."
-        title="Branches"
-      />
-
-      <OrgStatCards
-        items={[
-          { label: "Branches", value: branches.length, hint: "active sites" },
-          { label: "Assigned staff", value: totalEmployees, hint: "with branch set" },
-          {
-            label: "Avg staff / branch",
-            value: branches.length ? Math.round(totalEmployees / branches.length) : 0,
-            hint: "approximate",
-          },
-        ]}
-      />
-
+    <PortalListPage
+      actions={
+        <div className="flex gap-2">
+          <HrLinkButton href="/hr/organization" variant="outline">
+            Back to hub
+          </HrLinkButton>
+          <HrLinkButton href="/hr/organization/branches/create">Add branch</HrLinkButton>
+        </div>
+      }
+      description="Sites with weekend mode and payroll cutoff settings."
+      stats={
+        <OrgStatCards
+          items={[
+            { label: "Branches", value: branches.length, hint: "active sites" },
+            { label: "Assigned staff", value: totalEmployees, hint: "with branch set" },
+            {
+              label: "Avg staff / branch",
+              value: branches.length ? Math.round(totalEmployees / branches.length) : 0,
+              hint: "approximate",
+            },
+          ]}
+        />
+      }
+      title="Branches"
+    >
       <OrgTableShell
         emptyDescription="Create your first branch to assign employees and holidays."
         emptyTitle="No branches yet"
@@ -117,7 +117,7 @@ export function BranchesList({
           </OrgTableRow>
         ))}
       </OrgTableShell>
-    </div>
+    </PortalListPage>
   );
 }
 

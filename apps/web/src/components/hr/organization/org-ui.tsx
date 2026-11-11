@@ -19,6 +19,7 @@ import {
   HrTextInput,
   HrTextarea,
 } from "@/components/hr/employees/form-fields";
+import { PortalIcon } from "@/components/portal/portal-icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -122,6 +123,7 @@ export function OrgTableShell({
   children,
   emptyTitle,
   emptyDescription,
+  emptyIcon,
   isEmpty,
   sort,
   getSortHref,
@@ -130,6 +132,7 @@ export function OrgTableShell({
   children: ReactNode;
   emptyTitle: string;
   emptyDescription: string;
+  emptyIcon?: ReactNode;
   isEmpty: boolean;
   sort?: { key: string; order: "asc" | "desc" };
   getSortHref?: (key: string, order: "asc" | "desc") => string;
@@ -138,7 +141,11 @@ export function OrgTableShell({
     <HrTableCard>
       {isEmpty ? (
         <div className="p-8">
-          <EmptyState description={emptyDescription} title={emptyTitle} />
+          <EmptyState
+            description={emptyDescription}
+            icon={emptyIcon ?? <PortalIcon name="organization" />}
+            title={emptyTitle}
+          />
         </div>
       ) : (
         <div className="overflow-x-auto">

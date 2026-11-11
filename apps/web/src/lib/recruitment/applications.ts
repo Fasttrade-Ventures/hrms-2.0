@@ -37,6 +37,14 @@ export type ApplicationDetail = {
     basic_salary: number;
     start_date: string;
     generated_file_id: string | null;
+    template_id: string | null;
+    letter_body: string | null;
+    agreement_body: string | null;
+    agreement_file_id: string | null;
+    agreement_sent_at: string | null;
+    signed_file_id: string | null;
+    sent_at: string | null;
+    accepted_at: string | null;
   } | null;
   history: ApplicationStageHistoryRow[];
   requisition: {
@@ -144,7 +152,7 @@ export async function getRequisitionPipeline(requisitionId: string) {
   const { data: applications } = await admin
     .from("job_applications")
     .select(
-      "id, stage, employee_id, stage_updated_at, job_candidates(full_name, email, phone), job_offers(id, status, job_title, basic_salary, start_date)",
+      "id, stage, employee_id, stage_updated_at, job_candidates(full_name, email, phone, source), job_offers(id, status, job_title, basic_salary, start_date)",
     )
     .eq("requisition_id", requisitionId)
     .order("applied_at", { ascending: false });
@@ -171,7 +179,7 @@ export async function getApplicationDetail(
   const { data: application } = await admin
     .from("job_applications")
     .select(
-      "id, stage, employee_id, applied_at, stage_updated_at, requisition_id, job_candidates(full_name, email, phone, source), job_offers(id, status, job_title, basic_salary, start_date, generated_file_id)",
+      "id, stage, employee_id, applied_at, stage_updated_at, requisition_id, job_candidates(full_name, email, phone, source), job_offers(id, status, job_title, basic_salary, start_date, generated_file_id, template_id, letter_body, agreement_body, agreement_file_id, agreement_sent_at, signed_file_id, sent_at, accepted_at)",
     )
     .eq("id", applicationId)
     .eq("organization_id", organizationId)
@@ -219,6 +227,14 @@ export async function getApplicationDetail(
           basic_salary: offerRow.basic_salary,
           start_date: offerRow.start_date,
           generated_file_id: offerRow.generated_file_id ?? null,
+          template_id: offerRow.template_id ?? null,
+          letter_body: (offerRow.letter_body as string | null | undefined) ?? null,
+          agreement_body: (offerRow.agreement_body as string | null | undefined) ?? null,
+          agreement_file_id: offerRow.agreement_file_id ?? null,
+          agreement_sent_at: (offerRow.agreement_sent_at as string | null | undefined) ?? null,
+          signed_file_id: offerRow.signed_file_id ?? null,
+          sent_at: offerRow.sent_at ?? null,
+          accepted_at: offerRow.accepted_at ?? null,
         }
       : null,
     history: history ?? [],

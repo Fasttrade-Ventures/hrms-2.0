@@ -9,6 +9,12 @@ describe("PWA manifest and auth middleware", () => {
     expect(isPublicPath("/hr/dashboard")).toBe(false);
   });
 
+  it("keeps candidate offer respond/sign token pages public", () => {
+    expect(isPublicPath("/offer/respond/abc")).toBe(true);
+    expect(isPublicPath("/offer/sign/abc")).toBe(true);
+    expect(isPublicPath("/offer/other")).toBe(false);
+  });
+
   it("excludes the webmanifest extension from the middleware matcher", () => {
     const pattern = new RegExp(`^${config.matcher[0]}$`);
     expect(pattern.test("/manifest.webmanifest")).toBe(false);

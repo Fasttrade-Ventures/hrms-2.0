@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { canMoveToStage, nextAdvanceStages } from "@/lib/recruitment/types";
+import {
+  canDropOnBoardStage,
+  canMoveToStage,
+  nextAdvanceStages,
+} from "@/lib/recruitment/types";
 
 describe("recruitment stages", () => {
   it("allows forward stage moves", () => {
@@ -32,5 +36,17 @@ describe("recruitment stages", () => {
 
   it("nextAdvanceStages from hired is empty", () => {
     expect(nextAdvanceStages("hired")).toEqual([]);
+  });
+
+  it("allows forward drops and reject/withdrawn", () => {
+    expect(canDropOnBoardStage("applied", "interview")).toBe(true);
+    expect(canDropOnBoardStage("screening", "rejected")).toBe(true);
+    expect(canDropOnBoardStage("offer", "withdrawn")).toBe(true);
+  });
+
+  it("blocks drop onto hired and backward moves", () => {
+    expect(canDropOnBoardStage("offer", "hired")).toBe(false);
+    expect(canDropOnBoardStage("interview", "applied")).toBe(false);
+    expect(canDropOnBoardStage("hired", "offer")).toBe(false);
   });
 });

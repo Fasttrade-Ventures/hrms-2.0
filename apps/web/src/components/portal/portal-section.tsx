@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { PortalCard } from "@/components/portal/portal-card";
+
 /** Pencil Card/Section (e0MlVY). */
 export function PortalSectionCard({
   title,
@@ -13,7 +15,7 @@ export function PortalSectionCard({
   action?: ReactNode;
 }) {
   return (
-    <section className="rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-card)] p-6 shadow-[var(--shadow-card)]">
+    <PortalCard padding="lg">
       <div className="mb-4 flex items-start justify-between gap-4">
         <div className="space-y-1">
           <h2 className="text-base font-semibold text-[var(--foreground-primary)]">{title}</h2>
@@ -24,7 +26,7 @@ export function PortalSectionCard({
         {action}
       </div>
       {children}
-    </section>
+    </PortalCard>
   );
 }
 

@@ -2,10 +2,11 @@ import { buildAnnouncementEmail } from "./announcement";
 import { buildDocumentComplianceEmail } from "./document-compliance";
 import { buildEmployeeActivationEmail } from "./employee-activation";
 import { buildPayslipAvailableEmail } from "./payslip-available";
+import { buildAgreementToSignEmail, buildOfferSentEmail } from "./offer-sent";
 import { buildPulseSurveyOpenedEmail } from "./pulse-survey";
 import { buildScheduledReportEmail } from "./scheduled-report";
 
-type SendResult =
+export type SendResult =
   | { sent: true; id?: string }
   | { sent: false; reason: "not_configured" | "request_failed"; detail?: string };
 
@@ -203,4 +204,72 @@ export async function sendScheduledReportEmail(input: {
   });
 
   return sendResendEmail({ to: input.to, subject, html, text });
+}
+
+function resolveOrigin(appOrigin?: string): string {
+  return (
+    appOrigin ??
+    process.env.NEXT_PUBLIC_APP_URL ??
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    ""
+  ).replace(/\/$/, "");
+}
+
+export async function sendOfferSentEmail(input: {
+  to: string;
+  candidateName: string;
+  organizationName: string;
+  jobTitle: string;
+  acceptPath: string;
+  rejectPath: string;
+  expiresInDays: number;
+  attachment?: { filename: string; content: string };
+  appOrigin?: string;
+}): Promise<SendResult> {
+  const origin = resolveOrigin(input.appOrigin);
+  const { subject, html, text } = buildOfferSentEmail({
+    candidateName: input.candidateName,
+    organizationName: input.organizationName,
+    jobTitle: input.jobTitle,
+    acceptUrl: origin ? `${origin}${input.acceptPath}` : input.acceptPath,
+    rejectUrl: origin ? `${origin}${input.rejectPath}` : input.rejectPath,
+    expiresInDays: input.expiresInDays,
+  });
+
+  return sendResendEmail({
+    to: input.to,
+    subject,
+    html,
+    text,
+    attachments: input.attachment ? [input.attachment] : undefined,
+  });
+}
+
+export async function sendAgreementToSignEmail(input: {
+  to: string;
+  candidateName: string;
+  organizationName: string;
+  jobTitle: string;
+  signPath: string;
+  expiresInDays: number;
+  attachment?: { filename: string; content: string };
+  appOrigin?: string;
+}): Promise<SendResult> {
+  const origin = resolveOrigin(input.appOrigin);
+  const { subject, html, text } = buildAgreementToSignEmail({
+    candidateName: input.candidateName,
+    organizationName: input.organizationName,
+    jobTitle: input.jobTitle,
+    signUrl: origin ? `${origin}${input.signPath}` : input.signPath,
+    expiresInDays: input.expiresInDays,
+    hasAttachment: Boolean(input.attachment),
+  });
+
+  return sendResendEmail({
+    to: input.to,
+    subject,
+    html,
+    text,
+    attachments: input.attachment ? [input.attachment] : undefined,
+  });
 }

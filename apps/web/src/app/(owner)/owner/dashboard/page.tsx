@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { ListCard, StatCard, StatusPill } from "@hrms/ui";
 
+import { PortalCard } from "@/components/portal/portal-card";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { updateModuleFlagFormAction } from "@/app/(owner)/owner/actions";
 import { PortalIcon } from "@/components/portal/portal-icons";
@@ -25,27 +26,6 @@ export default async function Page() {
         description={`${data.deploymentMode} deployment · module entitlements and organization health`}
         title={`${greetingForHour(hour)}, ${name}`}
       />
-
-      <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard
-          hint="Active headcount"
-          icon={<PortalIcon name="employees" />}
-          label="Employees"
-          value={String(data.employeeCount)}
-        />
-        <StatCard
-          hint="Locations"
-          icon={<PortalIcon name="organization" />}
-          label="Branches"
-          value={String(data.branchCount)}
-        />
-        <StatCard
-          hint="Draft or in workflow"
-          icon={<PortalIcon name="payroll" />}
-          label="Open payruns"
-          value={String(data.activePayruns)}
-        />
-      </div>
 
       <ListCard
         columns={[
@@ -77,7 +57,28 @@ export default async function Page() {
         }))}
       />
 
-      <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--surface-card)] p-5">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <StatCard
+          hint="Active headcount"
+          icon={<PortalIcon name="employees" />}
+          label="Employees"
+          value={String(data.employeeCount)}
+        />
+        <StatCard
+          hint="Locations"
+          icon={<PortalIcon name="organization" />}
+          label="Branches"
+          value={String(data.branchCount)}
+        />
+        <StatCard
+          hint="Draft or in workflow"
+          icon={<PortalIcon name="payroll" />}
+          label="Open payruns"
+          value={String(data.activePayruns)}
+        />
+      </div>
+
+      <PortalCard padding="lg">
         <p className="text-sm font-medium text-[var(--foreground-primary)]">Organization settings</p>
         <p className="mt-1 text-sm text-[var(--foreground-secondary)]">
           Configure branches, statutory settings, and payroll from the HR portal. Country, package, and module
@@ -107,7 +108,7 @@ export default async function Page() {
             </Link>
           ) : null}
         </div>
-      </div>
+      </PortalCard>
     </div>
   );
 }

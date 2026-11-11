@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { logDocumentEvent } from "@/lib/audit/log-document-event";
 import { requireModule } from "@/lib/entitlements";
-import { canDownloadFile } from "@/lib/files/download-auth";
+import { RECRUITMENT_FILE_CATEGORIES, canDownloadFile } from "@/lib/files/download-auth";
 import { getSignedDownloadUrl } from "@/lib/files/storage";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -27,7 +27,12 @@ export async function GET(
     .maybeSingle();
 
   const isLeave = file?.category === "leave-attachments";
-  const moduleKey = file?.category === "announcement-attachments" ? "announcements" : "documents";
+  const moduleKey =
+    file?.category === "announcement-attachments"
+      ? "announcements"
+      : file && RECRUITMENT_FILE_CATEGORIES.has(file.category)
+        ? "recruitment"
+        : "documents";
 
   if (!isLeave) {
     try {
@@ -43,6 +48,7 @@ export async function GET(
     fileId,
     organizationId: session.membership.organizationId,
     userId: session.user.id,
+    permissions: session.membership.permissions,
   });
 
   if (!allowed) {

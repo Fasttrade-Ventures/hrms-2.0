@@ -69,27 +69,6 @@ export default async function Page() {
         />
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard
-          hint="Awaiting your decision"
-          icon={<PortalIcon name="approvals" />}
-          label="Pending approvals"
-          value={String(pending)}
-        />
-        <StatCard
-          hint="Active direct reports"
-          icon={<PortalIcon name="team-leave" />}
-          label="Team size"
-          value={String(teamSize)}
-        />
-        <StatCard
-          hint={pending > 0 ? "Action needed" : "All caught up"}
-          icon={<PortalIcon name="dashboard" />}
-          label="Inbox status"
-          value={pending > 0 ? "Review" : "Clear"}
-        />
-      </div>
-
       <ListCard
         columns={[
           { key: "request", label: "Request" },
@@ -100,7 +79,7 @@ export default async function Page() {
           <EmptyState
             description="New requests from your team will appear here."
             icon={<PortalIcon name="approvals" />}
-            title="Approval queue empty"
+            title="You're clear"
           />
         }
         header={
@@ -148,6 +127,27 @@ export default async function Page() {
           },
         }))}
       />
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <StatCard
+          hint="Awaiting your decision"
+          icon={<PortalIcon name="approvals" />}
+          label="Pending approvals"
+          value={String(pending)}
+        />
+        <StatCard
+          hint="Active direct reports"
+          icon={<PortalIcon name="team-leave" />}
+          label="Team size"
+          value={String(teamSize)}
+        />
+        <StatCard
+          hint={pending > 0 ? "Action needed" : "All caught up"}
+          icon={<PortalIcon name="dashboard" />}
+          label="Inbox status"
+          value={pending > 0 ? "Review" : "Clear"}
+        />
+      </div>
 
       {announcementFeed.latest.length > 0 || announcementFeed.pinned.length > 0 ? (
         <AnnouncementDashboardWidget

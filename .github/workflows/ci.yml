@@ -46,7 +46,8 @@ jobs:
           supabase test db
 
   e2e-smoke:
-    runs-on: ubuntu-latest
+    # Pin 24.04: ubuntu-latest (26) breaks Playwright --with-deps apt packages.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -63,14 +64,8 @@ jobs:
 
       - name: Install Playwright Chromium
         run: |
-          sudo rm -f /etc/cron.daily/google-chrome
-          sudo rm -f /etc/apt/sources.list.d/*chrome* /etc/apt/sources.list.d/*google*
-          sudo grep -rl "dl.google.com" /etc/apt/ 2>/dev/null | sudo xargs -r rm -f || true
-          sudo sed -i '/dl\.google\.com/d' /etc/apt/sources.list 2>/dev/null || true
-          sudo rm -rf /var/lib/apt/lists/*
-          sudo mkdir -p /etc/apt/apt.conf.d
-          printf 'Acquire::http::Pipeline-Depth "0";\nAcquire::http::No-Cache "true";\nAcquire::BrokenProxy "true";\nAcquire::Retries "3";\n' | sudo tee /etc/apt/apt.conf.d/99fixbadproxy
-          pnpm exec playwright install --with-deps chromium
+          # Browser-only: --with-deps / install-deps fail when runner apt mirrors/DNS flake.
+          pnpm exec playwright install chromium
 
       - name: Smoke e2e (login page)
         env:

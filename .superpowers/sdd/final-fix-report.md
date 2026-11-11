@@ -1,31 +1,24 @@
-# Final fix report — PCB manual override
+# Final fix report — requisition hiring desk
 
-**Date:** 6 Nov 2026  
-**Branch:** `feat/pcb-manual-override`
+Not committed.
 
-## Important findings fixed
+## Changes
 
-- **I-1 Net rounding:** Removed the manual-PCB delta path. Auto and manual PCB now use the same existing net formula and round once after deducting the resolved PCB. Updated the manual and zero-amount domain assertions.
-- **I-2 Blank amount → sticky 0:** Both PCB actions now reject empty, whitespace, and non-finite manual amounts with a clear error. The persistence helper also rejects all non-finite numbers. Added six action-level validation cases.
-- **I-5 Accidental sticky Save:** Draft PCB editing now requires an explicit `Auto (calculated)` or `Use manual amount` mode. Existing sticky overrides open in manual mode with their saved amount; employees without an override open in auto mode. Saving auto clears via `clear=1`, so saving an unchanged auto-calculated line cannot create a sticky override.
+1. `recruitment-pipeline.tsx`: `DndContext` now has `id={`requisition-board-${requisitionId}`}` (stable, avoids hydration id mismatch).
+2. `requisition-command-strip.tsx`: removed translucent `bg-muted/40`. Strip uses solid `bg-[var(--surface-card)]`. On hold or closed it uses solid `bg-[var(--surface-primary)]` with a dashed border as the muted cue.
+3. `requisition-command-strip.tsx`: `onAddCandidate` is now required. The `document.getElementById("add-candidate-panel")?.scrollIntoView` fallback is removed. The button uses `onClick={onAddCandidate}`.
+4. `requisition-command-strip.tsx`: sticky is desktop-only (`lg:sticky lg:top-0 lg:z-20`), with a solid background. It is not sticky on mobile.
+5. `requisition-command-strip.tsx`: requisition title changed from `h2` to `h1`.
+
+Out of scope, untouched: hub duplication, keyboard coordinateGetter, authenticated browser smoke.
 
 ## Verification
 
-- Payroll/domain suite: **15 files, 63 tests passed**
-- Override persistence tests: **9 passed**
-- PCB action validation tests: **6 passed**
-- `@hrms/domain` typecheck: passed
-- `@hrms/web` typecheck: passed
-- IDE lint diagnostics for touched files: none
-- `git diff --check`: passed
+`pnpm --filter @hrms/web typecheck` — passed (`tsc --noEmit`, no errors).
 
-## Commits
-
-- `083986e` — `fix(payroll): round net with resolved PCB`
-- `d2b2efb` — `fix(payroll): require explicit manual PCB mode`
-
-## Deferred
-
-- **I-3 RLS:** Pre-existing database policy gap; deferred for payroll-table policy hardening.
-- **I-4 Statutory rules on edit:** Pre-existing `editPayrunLine` rule-pack gap; deferred.
-- **I-6 Multi-payrun-type double apply:** Requires a product decision on payrun type/frequency semantics; deferred as a product follow-up.
+`pnpm exec vitest run tests/recruitment/types.test.ts`:
+```
+ ✓ tests/recruitment/types.test.ts (8 tests) 3ms
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+```

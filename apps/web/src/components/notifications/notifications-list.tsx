@@ -25,6 +25,7 @@ import { formatNotificationMessage } from "@/lib/notifications/types";
 import { markNotificationReadAction, markAllNotificationsReadAction } from "@/lib/notifications/actions";
 import { REQUEST_TYPE_LABELS } from "@/lib/approvals/types";
 import { HrPagination } from "@/components/hr/hr-ui.client";
+import { PortalPageHeader } from "@/components/portal/portal-primitives";
 
 function formatRelativeTime(value: string): string {
   const date = new Date(value);
@@ -319,6 +320,11 @@ export function NotificationsList({
 
   return (
     <div className="space-y-6">
+      <PortalPageHeader
+        description="Approvals, reminders, and updates for your role."
+        title="Notifications"
+      />
+
       {/* What appears here description card */}
       <div className="rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-muted)] px-4 py-3">
         <p className="text-sm font-medium text-[var(--foreground-primary)]">What appears here</p>
@@ -407,9 +413,9 @@ export function NotificationsList({
         <div className="divide-y divide-[var(--border-primary)]">
           {filteredRows.length === 0 ? (
             <EmptyState
-              description="You're all caught up! No notifications in this category."
-              icon={<Bell className="h-6 w-6" />}
-              title="No notifications found"
+              description="Nothing in this category right now. New approvals and reminders will show up here."
+              icon={<Bell />}
+              title="You're all caught up"
               variant="flat"
             />
           ) : (

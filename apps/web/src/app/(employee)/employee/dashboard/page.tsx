@@ -224,9 +224,9 @@ export default async function Page() {
       {/* Head */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div className="flex flex-col gap-1">
-          <h2 className="text-2xl font-bold tracking-tight text-[var(--foreground-primary)]">
+          <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground-primary)]">
             {greetingForHour(hour)}, {firstName}
-          </h2>
+          </h1>
           <p className="text-sm text-[var(--foreground-muted)]">
             {todayDateStr}
             {employee?.departmentName ? ` · ${employee.departmentName}` : ""}

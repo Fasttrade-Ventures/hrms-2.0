@@ -66,7 +66,10 @@ export function PayrunBukucloudPanel({
       <PortalSectionCard title="BukuCloud accounting">
         <p className="text-sm text-muted-foreground">
           Configure your tenant API credentials in{" "}
-          <a className="text-[var(--accent-primary)] hover:underline" href="/hr/integrations/bukucloud">
+          <a
+            className="text-[var(--accent-primary)] hover:underline"
+            href="/hr/integrations/api?tab=bukucloud"
+          >
             BukuCloud integration settings
           </a>
           .

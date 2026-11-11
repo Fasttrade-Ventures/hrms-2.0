@@ -17,11 +17,14 @@ export function ReportFilterBar({
   definition,
   branches,
   departments,
+  preserveParams,
 }: {
   filters: ReportFilters;
   definition: ReportDefinition;
   branches: Option[];
   departments: Option[];
+  /** Extra GET fields kept across Apply (e.g. view=matrix). */
+  preserveParams?: Record<string, string>;
 }) {
   const pathname = usePathname();
 
@@ -29,6 +32,11 @@ export function ReportFilterBar({
     <Card className="py-0">
       <CardContent className="flex flex-col gap-3 py-3">
         <form action={pathname} className="grid gap-3 md:grid-cols-2 xl:grid-cols-4" method="get">
+          {preserveParams
+            ? Object.entries(preserveParams).map(([key, value]) => (
+                <input key={key} name={key} type="hidden" value={value} />
+              ))
+            : null}
           <div className="space-y-1">
             <Label htmlFor="preset">Date preset</Label>
             <select

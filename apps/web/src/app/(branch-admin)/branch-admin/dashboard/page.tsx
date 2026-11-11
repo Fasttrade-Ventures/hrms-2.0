@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { StatCard } from "@hrms/ui";
 
+import { PortalCard } from "@/components/portal/portal-card";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { PortalIcon } from "@/components/portal/portal-icons";
 import { requireBranchAdminContext } from "@/lib/branch-admin/context";
@@ -21,34 +22,7 @@ export default async function Page() {
         title={`${greetingForHour(hour)}, ${firstName}`}
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          hint="Active in this branch"
-          icon={<PortalIcon name="employees" />}
-          label="Employees"
-          value={String(data.employeeCount)}
-        />
-        <StatCard
-          hint="Clocked in today"
-          icon={<PortalIcon name="attendance" />}
-          label="Present today"
-          value={String(data.presentToday)}
-        />
-        <StatCard
-          hint="Approved leave today"
-          icon={<PortalIcon name="leave" />}
-          label="On leave"
-          value={String(data.onLeaveToday)}
-        />
-        <StatCard
-          hint="Missing required docs"
-          icon={<PortalIcon name="documents" />}
-          label="Compliance gaps"
-          value={String(data.complianceGaps)}
-        />
-      </div>
-
-      <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--surface-card)] p-5">
+      <PortalCard padding="lg">
         <p className="text-sm font-medium text-[var(--foreground-primary)]">Branch operations</p>
         <p className="mt-1 text-sm text-[var(--foreground-secondary)]">
           {data.pendingApprovals} pending approval{data.pendingApprovals === 1 ? "" : "s"} from employees in this
@@ -80,6 +54,33 @@ export default async function Page() {
             Reports
           </Link>
         </div>
+      </PortalCard>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          hint="Active in this branch"
+          icon={<PortalIcon name="employees" />}
+          label="Employees"
+          value={String(data.employeeCount)}
+        />
+        <StatCard
+          hint="Clocked in today"
+          icon={<PortalIcon name="attendance" />}
+          label="Present today"
+          value={String(data.presentToday)}
+        />
+        <StatCard
+          hint="Approved leave today"
+          icon={<PortalIcon name="leave" />}
+          label="On leave"
+          value={String(data.onLeaveToday)}
+        />
+        <StatCard
+          hint="Missing required docs"
+          icon={<PortalIcon name="documents" />}
+          label="Compliance gaps"
+          value={String(data.complianceGaps)}
+        />
       </div>
     </div>
   );

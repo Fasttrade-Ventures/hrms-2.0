@@ -23,6 +23,7 @@ import {
   HrTextInput,
 } from "@/components/hr/employees/form-fields";
 import { HrTableCard } from "@/components/hr/hr-ui";
+import { PortalIcon } from "@/components/portal/portal-icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -294,7 +295,15 @@ export function RequisitionHub({
         {!hasRequisitions ? (
           <div className="px-5 py-10">
             <EmptyState
-              description="Use New requisition to add a role, then open the pipeline board from the list."
+              action={
+                showCreate ? undefined : (
+                  <Button onClick={() => setShowCreate(true)} type="button">
+                    New requisition
+                  </Button>
+                )
+              }
+              description="Add a role to open a hiring desk and track candidates on the pipeline board."
+              icon={<PortalIcon name="employees" />}
               title="No requisitions yet"
               variant="flat"
             />

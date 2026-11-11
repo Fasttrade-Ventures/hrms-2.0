@@ -22,6 +22,7 @@ import {
   OrgTableStatus,
 } from "@/components/hr/organization/org-ui";
 import { HrLinkButton } from "@/components/hr/hr-ui.client";
+import { PortalListPage } from "@/components/portal/portal-list-page";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import type { ShiftRow } from "@/lib/hr/organization";
 
@@ -31,32 +32,31 @@ export function ShiftsList({ shifts }: { shifts: ShiftRow[] }) {
   const totalEmployees = shifts.reduce((sum, row) => sum + row.employeeCount, 0);
 
   return (
-    <div className="space-y-6">
-      <PortalPageHeader
-        actions={
-          <div className="flex gap-2">
-            <HrLinkButton href="/hr/organization" variant="outline">
-              Back to hub
-            </HrLinkButton>
-            <HrLinkButton href="/hr/organization/shifts/create">Add shift</HrLinkButton>
-          </div>
-        }
-        description="Attendance patterns assigned on employee profiles."
-        title="Shifts"
-      />
-
-      <OrgStatCards
-        items={[
-          { label: "Shifts", value: shifts.length, hint: "patterns" },
-          { label: "Assigned staff", value: totalEmployees, hint: "with shift set" },
-          {
-            label: "With grace",
-            value: shifts.filter((row) => row.graceMinutes > 0).length,
-            hint: "late buffer",
-          },
-        ]}
-      />
-
+    <PortalListPage
+      actions={
+        <div className="flex gap-2">
+          <HrLinkButton href="/hr/organization" variant="outline">
+            Back to hub
+          </HrLinkButton>
+          <HrLinkButton href="/hr/organization/shifts/create">Add shift</HrLinkButton>
+        </div>
+      }
+      description="Attendance patterns assigned on employee profiles."
+      stats={
+        <OrgStatCards
+          items={[
+            { label: "Shifts", value: shifts.length, hint: "patterns" },
+            { label: "Assigned staff", value: totalEmployees, hint: "with shift set" },
+            {
+              label: "With grace",
+              value: shifts.filter((row) => row.graceMinutes > 0).length,
+              hint: "late buffer",
+            },
+          ]}
+        />
+      }
+      title="Shifts"
+    >
       <OrgTableShell
         emptyDescription="Create a shift so employees can be assigned for attendance."
         emptyTitle="No shifts yet"
@@ -76,7 +76,7 @@ export function ShiftsList({ shifts }: { shifts: ShiftRow[] }) {
           </OrgTableRow>
         ))}
       </OrgTableShell>
-    </div>
+    </PortalListPage>
   );
 }
 

@@ -9,6 +9,7 @@ export * from "./calendar";
 export * from "./assets";
 export * from "./payroll";
 export * from "./recruitment";
+export * from "./letters";
 export * from "./performance";
 export * from "./pulse-survey";
 

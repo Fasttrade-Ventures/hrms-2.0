@@ -8,8 +8,11 @@ import {
   createOfferSchema,
   createRequisitionSchema,
   moveStageSchema,
+  sendAgreementSchema,
   setOfferStatusSchema,
   setRequisitionStatusSchema,
+  updateAgreementBodySchema,
+  updateDraftOfferSchema,
   updateRequisitionSchema,
 } from "@hrms/validation";
 
@@ -17,11 +20,18 @@ import { requireRoleOrPermission } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
 import { addCandidateToRequisition } from "@/lib/recruitment/applications";
 import {
-  acceptOffer,
+  resendAgreementEmail,
+  sendAgreementEmail,
+  updateAgreementBody,
+} from "@/lib/recruitment/offer-candidate";
+import {
+  confirmHire,
   createOfferForApplication,
   declineOffer,
   markOfferSent,
   moveApplicationStage,
+  resendOfferEmail,
+  updateDraftOffer,
   withdrawOffer,
 } from "@/lib/recruitment/offers";
 import {
@@ -36,6 +46,10 @@ import { requireOrganizationId } from "@/lib/auth/organization-context";
 export type RecruitmentActionState = {
   error?: string;
   success?: string;
+  /** Non-fatal problem (e.g. email soft-fail). Status change still succeeded. */
+  warning?: string;
+  /** Local-only link when email isn't configured. */
+  devLink?: string;
 };
 
 
@@ -195,6 +209,8 @@ export async function createOfferAction(
       jobTitle: formData.get("jobTitle"),
       basicSalary: formData.get("basicSalary"),
       startDate: formData.get("startDate"),
+      templateId: formData.get("templateId"),
+      letterBody: formData.get("letterBody"),
     });
 
     const { organizationName, currencyCode } = await getOrganizationOfferContext();
@@ -225,8 +241,9 @@ export async function setOfferStatusAction(
       status: formData.get("status"),
     });
 
+    let emailResult: Awaited<ReturnType<typeof markOfferSent>> | null = null;
     if (parsed.status === "sent") {
-      await markOfferSent(parsed.offerId, session.user.id);
+      emailResult = await markOfferSent(parsed.offerId, session.user.id);
     } else if (parsed.status === "declined") {
       await declineOffer(parsed.offerId, session.user.id);
     } else {
@@ -239,18 +256,133 @@ export async function setOfferStatusAction(
       revalidateCandidatePaths(requisitionId, applicationId);
     }
 
-    const messages: Record<typeof parsed.status, string> = {
-      sent: "Offer marked as sent.",
+    if (emailResult) {
+      return emailResult.emailSent
+        ? { success: "Offer marked as sent and emailed to the candidate." }
+        : {
+            success: "Offer marked as sent.",
+            warning: `Email not sent. ${emailResult.warning ?? ""} Use “Resend offer email” to retry.`.trim(),
+            devLink: emailResult.devLink,
+          };
+    }
+
+    const messages: Record<"declined" | "withdrawn", string> = {
       declined: "Offer declined.",
       withdrawn: "Offer withdrawn.",
     };
-    return { success: messages[parsed.status] };
+    return { success: messages[parsed.status as "declined" | "withdrawn"] };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Failed to update offer." };
   }
 }
 
-export async function acceptOfferAction(
+export async function updateDraftOfferAction(
+  _prev: RecruitmentActionState,
+  formData: FormData,
+): Promise<RecruitmentActionState> {
+  try {
+    await requireModule("recruitment");
+    const session = await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["recruiter"]);
+    const parsed = updateDraftOfferSchema.parse({
+      offerId: formData.get("offerId"),
+      applicationId: formData.get("applicationId"),
+      jobTitle: formData.get("jobTitle"),
+      basicSalary: formData.get("basicSalary"),
+      startDate: formData.get("startDate"),
+      templateId: formData.get("templateId"),
+      letterBody: formData.get("letterBody"),
+    });
+
+    const { organizationName, currencyCode } = await getOrganizationOfferContext();
+    await updateDraftOffer({
+      offerId: parsed.offerId,
+      jobTitle: parsed.jobTitle,
+      basicSalary: parsed.basicSalary,
+      startDate: parsed.startDate,
+      templateId: parsed.templateId,
+      letterBody: parsed.letterBody,
+      organizationName,
+      currencyCode,
+      actorUserId: session.user.id,
+    });
+
+    const requisitionId = String(formData.get("requisitionId") ?? "");
+    if (requisitionId) revalidateCandidatePaths(requisitionId, parsed.applicationId);
+    return { success: "Draft offer updated and PDF regenerated." };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Failed to update offer." };
+  }
+}
+
+export async function resendOfferEmailAction(
+  _prev: RecruitmentActionState,
+  formData: FormData,
+): Promise<RecruitmentActionState> {
+  try {
+    await requireModule("recruitment");
+    await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["recruiter"]);
+    const offerId = String(formData.get("offerId") ?? "");
+    if (!offerId) return { error: "Offer ID is required." };
+
+    const result = await resendOfferEmail(offerId);
+    const requisitionId = String(formData.get("requisitionId") ?? "");
+    const applicationId = String(formData.get("applicationId") ?? "");
+    if (requisitionId && applicationId) revalidateCandidatePaths(requisitionId, applicationId);
+
+    return result.emailSent
+      ? { success: "Offer email sent again with a fresh link." }
+      : { error: result.warning ?? "Email could not be sent.", devLink: result.devLink };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Failed to resend offer email." };
+  }
+}
+
+export async function updateAgreementBodyAction(
+  _prev: RecruitmentActionState,
+  formData: FormData,
+): Promise<RecruitmentActionState> {
+  try {
+    await requireModule("recruitment");
+    await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["recruiter"]);
+    const parsed = updateAgreementBodySchema.parse({
+      offerId: formData.get("offerId"),
+      applicationId: formData.get("applicationId"),
+      agreementBody: formData.get("agreementBody"),
+    });
+    await updateAgreementBody(parsed.offerId, parsed.agreementBody);
+    const requisitionId = String(formData.get("requisitionId") ?? "");
+    if (requisitionId) revalidateCandidatePaths(requisitionId, parsed.applicationId);
+    return { success: "Agreement draft saved. Send it when ready." };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Failed to save agreement." };
+  }
+}
+
+export async function sendAgreementEmailAction(
+  _prev: RecruitmentActionState,
+  formData: FormData,
+): Promise<RecruitmentActionState> {
+  try {
+    await requireModule("recruitment");
+    const session = await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["recruiter"]);
+    const parsed = sendAgreementSchema.parse({
+      offerId: formData.get("offerId"),
+      applicationId: formData.get("applicationId"),
+    });
+
+    const result = await sendAgreementEmail(parsed.offerId, session.user.id);
+    const requisitionId = String(formData.get("requisitionId") ?? "");
+    if (requisitionId) revalidateCandidatePaths(requisitionId, parsed.applicationId);
+
+    return result.emailSent
+      ? { success: "Agreement emailed to the candidate with an upload link." }
+      : { error: result.warning ?? "Email could not be sent.", devLink: result.devLink };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Failed to send agreement." };
+  }
+}
+
+export async function resendAgreementEmailAction(
   _prev: RecruitmentActionState,
   formData: FormData,
 ): Promise<RecruitmentActionState> {
@@ -260,7 +392,30 @@ export async function acceptOfferAction(
     const offerId = String(formData.get("offerId") ?? "");
     if (!offerId) return { error: "Offer ID is required." };
 
-    const { employeeId, checklistStarted, checklistMessage } = await acceptOffer(offerId, session.user.id);
+    const result = await resendAgreementEmail(offerId, session.user.id);
+    const requisitionId = String(formData.get("requisitionId") ?? "");
+    const applicationId = String(formData.get("applicationId") ?? "");
+    if (requisitionId && applicationId) revalidateCandidatePaths(requisitionId, applicationId);
+
+    return result.emailSent
+      ? { success: "Agreement emailed to the candidate with a fresh upload link." }
+      : { error: result.warning ?? "Email could not be sent.", devLink: result.devLink };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Failed to send agreement." };
+  }
+}
+
+export async function confirmHireAction(
+  _prev: RecruitmentActionState,
+  formData: FormData,
+): Promise<RecruitmentActionState> {
+  try {
+    await requireModule("recruitment");
+    const session = await requireRoleOrPermission(["hr_administrator", "organization_owner"], ["recruiter"]);
+    const offerId = String(formData.get("offerId") ?? "");
+    if (!offerId) return { error: "Offer ID is required." };
+
+    const { employeeId, checklistStarted, checklistMessage } = await confirmHire(offerId, session.user.id);
     const requisitionId = String(formData.get("requisitionId") ?? "");
     const applicationId = String(formData.get("applicationId") ?? "");
     const roles = session.membership.roles;
@@ -280,6 +435,6 @@ export async function acceptOfferAction(
     };
   } catch (error) {
     if (error instanceof Error && error.message === "NEXT_REDIRECT") throw error;
-    return { error: error instanceof Error ? error.message : "Failed to accept offer." };
+    return { error: error instanceof Error ? error.message : "Failed to confirm hire." };
   }
 }

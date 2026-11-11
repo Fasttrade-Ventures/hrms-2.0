@@ -150,7 +150,7 @@ export function PortalShell({
                   <PortalBrand />
                 </div>
                 <div className="hidden lg:block">
-                  <h1 className="text-lg font-semibold text-[var(--foreground-primary)]">{currentPage}</h1>
+                  <p className="text-lg font-semibold text-[var(--foreground-primary)]">{currentPage}</p>
                   {pageSubtitle ? (
                     <p className="text-xs text-[var(--foreground-muted)]">{pageSubtitle}</p>
                   ) : null}
@@ -167,7 +167,7 @@ export function PortalShell({
                   <MenuIcon />
                 </button>
                 <div>
-                  <h1 className="text-lg font-semibold text-[var(--foreground-primary)]">{currentPage}</h1>
+                  <p className="text-lg font-semibold text-[var(--foreground-primary)]">{currentPage}</p>
                   {pageSubtitle ? (
                     <p className="text-xs text-[var(--foreground-muted)]">{pageSubtitle}</p>
                   ) : null}

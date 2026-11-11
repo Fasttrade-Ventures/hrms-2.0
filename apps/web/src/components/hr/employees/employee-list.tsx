@@ -142,7 +142,7 @@ export function EmployeeList({
     <div className="space-y-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <h2 className="text-base font-semibold text-foreground">Employee directory</h2>
+          <h1 className="text-base font-semibold text-foreground">Employee directory</h1>
           <p className="max-w-[520px] text-[13px] text-muted-foreground">
             {readOnly
               ? "View employees assigned to this branch."

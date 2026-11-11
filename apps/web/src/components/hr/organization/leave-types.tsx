@@ -23,6 +23,7 @@ import {
   OrgTableStatus,
 } from "@/components/hr/organization/org-ui";
 import { HrLinkButton } from "@/components/hr/hr-ui.client";
+import { PortalListPage } from "@/components/portal/portal-list-page";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import type { LeaveTypeRow } from "@/lib/hr/organization";
 
@@ -34,29 +35,28 @@ export function LeaveTypesList({ leaveTypes }: { leaveTypes: LeaveTypeRow[] }) {
   const withAccrual = leaveTypes.filter((row) => row.accrualFrequency === "monthly").length;
 
   return (
-    <div className="space-y-6">
-      <PortalPageHeader
-        actions={
-          <div className="flex gap-2">
-            <HrLinkButton href="/hr/organization" variant="outline">
-              Back to hub
-            </HrLinkButton>
-            <HrLinkButton href="/hr/organization/leave-types/create">Add leave type</HrLinkButton>
-          </div>
-        }
-        description="Policies used for apply leave, automated accrual, and employee entitlements."
-        title="Leave types"
-      />
-
-      <OrgStatCards
-        items={[
-          { label: "Leave types", value: leaveTypes.length, hint: "configured" },
-          { label: "Monthly accrual", value: withAccrual, hint: "automated jobs" },
-          { label: "Unpaid", value: unpaid, hint: "policies" },
-          { label: "Need attachment", value: withAttachment, hint: "e.g. MC" },
-        ]}
-      />
-
+    <PortalListPage
+      actions={
+        <div className="flex gap-2">
+          <HrLinkButton href="/hr/organization" variant="outline">
+            Back to hub
+          </HrLinkButton>
+          <HrLinkButton href="/hr/organization/leave-types/create">Add leave type</HrLinkButton>
+        </div>
+      }
+      description="Policies used for apply leave, automated accrual, and employee entitlements."
+      stats={
+        <OrgStatCards
+          items={[
+            { label: "Leave types", value: leaveTypes.length, hint: "configured" },
+            { label: "Monthly accrual", value: withAccrual, hint: "automated jobs" },
+            { label: "Unpaid", value: unpaid, hint: "policies" },
+            { label: "Need attachment", value: withAttachment, hint: "e.g. MC" },
+          ]}
+        />
+      }
+      title="Leave types"
+    >
       <OrgTableShell
         emptyDescription="Create leave types so employees can apply for leave."
         emptyTitle="No leave types yet"
@@ -96,7 +96,7 @@ export function LeaveTypesList({ leaveTypes }: { leaveTypes: LeaveTypeRow[] }) {
           </OrgTableRow>
         ))}
       </OrgTableShell>
-    </div>
+    </PortalListPage>
   );
 }
 

@@ -632,7 +632,7 @@ export async function importHolidays(input: {
   }
   const { data: branch, error: branchError } = await supabase
     .from("branches")
-    .select("id, name, state")
+    .select("id, name, state, weekend_mode")
     .eq("organization_id", organizationId)
     .eq("id", parsed.data.branchId)
     .maybeSingle();
@@ -678,6 +678,7 @@ export async function importHolidays(input: {
     branchId: parsed.data.branchId,
     year: parsed.data.year,
     fetched,
+    weekendMode: branch.weekend_mode,
   });
 
   if (result.error) {

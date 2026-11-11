@@ -42,42 +42,53 @@ export function CreateRequisitionForm({
   );
 }
 
-export function AddCandidateForm({ requisitionId }: { requisitionId: string }) {
+export function AddCandidateForm({
+  requisitionId,
+  embedded = false,
+}: {
+  requisitionId: string;
+  /** Render without the card wrapper and in a single column (e.g. inside a Sheet). */
+  embedded?: boolean;
+}) {
   const [state, action, pending] = useActionState(addCandidateAction, initialState);
 
-  return (
-    <PortalSectionCard title="Add candidate">
-      <form action={action} className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <input name="requisitionId" type="hidden" value={requisitionId} />
-        <div>
-          <label className="text-sm font-medium" htmlFor="fullName">
-            Full name
-          </label>
-          <HrTextInput id="fullName" name="fullName" required />
-        </div>
-        <div>
-          <label className="text-sm font-medium" htmlFor="email">
-            Email
-          </label>
-          <HrTextInput id="email" name="email" required type="email" />
-        </div>
-        <div>
-          <label className="text-sm font-medium" htmlFor="phone">
-            Phone
-          </label>
-          <HrTextInput id="phone" name="phone" />
-        </div>
-        <div>
-          <label className="text-sm font-medium" htmlFor="source">
-            Source
-          </label>
-          <HrTextInput id="source" name="source" placeholder="e.g. Referral, LinkedIn" />
-        </div>
-        <HrFormMessage error={state.error} success={state.success} />
-        <HrPrimaryButton disabled={pending} type="submit">
-          {pending ? "Adding…" : "Add candidate"}
-        </HrPrimaryButton>
-      </form>
-    </PortalSectionCard>
+  const form = (
+    <form
+      action={action}
+      className={embedded ? "grid gap-4" : "grid gap-4 md:grid-cols-2 lg:grid-cols-4"}
+    >
+      <input name="requisitionId" type="hidden" value={requisitionId} />
+      <div>
+        <label className="text-sm font-medium" htmlFor="fullName">
+          Full name
+        </label>
+        <HrTextInput id="fullName" name="fullName" required />
+      </div>
+      <div>
+        <label className="text-sm font-medium" htmlFor="email">
+          Email
+        </label>
+        <HrTextInput id="email" name="email" required type="email" />
+      </div>
+      <div>
+        <label className="text-sm font-medium" htmlFor="phone">
+          Phone
+        </label>
+        <HrTextInput id="phone" name="phone" />
+      </div>
+      <div>
+        <label className="text-sm font-medium" htmlFor="source">
+          Source
+        </label>
+        <HrTextInput id="source" name="source" placeholder="e.g. Referral, LinkedIn" />
+      </div>
+      <HrFormMessage error={state.error} success={state.success} />
+      <HrPrimaryButton disabled={pending} type="submit">
+        {pending ? "Adding…" : "Add candidate"}
+      </HrPrimaryButton>
+    </form>
   );
+
+  if (embedded) return form;
+  return <PortalSectionCard title="Add candidate">{form}</PortalSectionCard>;
 }

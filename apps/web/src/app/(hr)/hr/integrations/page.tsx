@@ -39,11 +39,18 @@ export default async function IntegrationsHubPage() {
       enabled: hasApi,
     },
     {
-      href: "/hr/integrations/bukucloud",
+      href: "/hr/integrations/api?tab=bukucloud",
       title: "BukuCloud",
       description: "Sync locked payruns to BukuCloud as balanced payroll journal entries.",
       tier: "Enterprise + Payroll",
       enabled: hasIntegrations && hasPayroll,
+    },
+    {
+      href: "/hr/integrations/api?tab=virtual-hirix",
+      title: "Virtual Hirix",
+      description: "Connect Virtual Hirix using a Developer API key.",
+      tier: "Enterprise",
+      enabled: hasApi,
     },
     {
       href: "/hr/audit/settings",

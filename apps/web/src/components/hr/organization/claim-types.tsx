@@ -22,7 +22,7 @@ import {
   OrgTableStatus,
 } from "@/components/hr/organization/org-ui";
 import { HrLinkButton } from "@/components/hr/hr-ui.client";
-import { PortalPageHeader } from "@/components/portal/portal-primitives";
+import { PortalListPage } from "@/components/portal/portal-list-page";
 import type { ClaimTypeRow } from "@/lib/hr/organization";
 import { currencySymbolLabel, formatMoney, type DisplayCurrency } from "@/lib/money";
 
@@ -40,29 +40,28 @@ export function ClaimTypesList({
   const reimbCount = claimTypes.filter((row) => row.payrollTreatment === "reimbursement").length;
 
   return (
-    <div className="space-y-6">
-      <PortalPageHeader
-        actions={
-          <div className="flex gap-2">
-            <HrLinkButton href="/hr/organization" variant="outline">
-              Back to hub
-            </HrLinkButton>
-            <HrLinkButton href="/hr/organization/claim-types/create">Add claim type</HrLinkButton>
-          </div>
-        }
-        description="Expense claim categories, mileage travel calculation rates, and payroll tax treatment."
-        title="Claim types"
-      />
-
-      <OrgStatCards
-        items={[
-          { label: "Claim types", value: claimTypes.length, hint: "configured" },
-          { label: "Mileage enabled", value: mileageCount, hint: "rate per km" },
-          { label: "Taxable claims", value: taxableCount, hint: "payroll feeds" },
-          { label: "Reimbursements", value: reimbCount, hint: "tax-exempt" },
-        ]}
-      />
-
+    <PortalListPage
+      actions={
+        <div className="flex gap-2">
+          <HrLinkButton href="/hr/organization" variant="outline">
+            Back to hub
+          </HrLinkButton>
+          <HrLinkButton href="/hr/organization/claim-types/create">Add claim type</HrLinkButton>
+        </div>
+      }
+      description="Expense claim categories, mileage travel calculation rates, and payroll tax treatment."
+      stats={
+        <OrgStatCards
+          items={[
+            { label: "Claim types", value: claimTypes.length, hint: "configured" },
+            { label: "Mileage enabled", value: mileageCount, hint: "rate per km" },
+            { label: "Taxable claims", value: taxableCount, hint: "payroll feeds" },
+            { label: "Reimbursements", value: reimbCount, hint: "tax-exempt" },
+          ]}
+        />
+      }
+      title="Claim types"
+    >
       <OrgTableShell
         emptyDescription="Create claim types so employees can submit expenses and mileage claims."
         emptyTitle="No claim types yet"
@@ -97,7 +96,7 @@ export function ClaimTypesList({
           </OrgTableRow>
         ))}
       </OrgTableShell>
-    </div>
+    </PortalListPage>
   );
 }
 

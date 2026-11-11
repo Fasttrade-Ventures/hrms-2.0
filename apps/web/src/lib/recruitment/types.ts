@@ -21,6 +21,11 @@ export function canMoveToStage(from: RecruitmentStage, to: RecruitmentStage): bo
   return target >= order;
 }
 
+export function canDropOnBoardStage(from: RecruitmentStage, to: RecruitmentStage): boolean {
+  if (to === "hired") return false;
+  return canMoveToStage(from, to);
+}
+
 export function nextAdvanceStages(current: RecruitmentStage): RecruitmentStage[] {
   const idx = RECRUITMENT_STAGES.indexOf(current);
   if (idx < 0 || TERMINAL_STAGES.includes(current)) return [];
