@@ -161,7 +161,10 @@ export async function moveStageAction(
     });
 
     const requisitionId = String(formData.get("requisitionId") ?? "");
-    if (requisitionId) revalidatePath(`/hr/recruitment/${requisitionId}`);
+    if (requisitionId) {
+      revalidatePath(`/hr/recruitment/${requisitionId}`);
+      revalidatePath(`/hr/recruitment/${requisitionId}/candidates/${parsed.applicationId}`);
+    }
     return { success: "Stage updated." };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Failed to move stage." };
