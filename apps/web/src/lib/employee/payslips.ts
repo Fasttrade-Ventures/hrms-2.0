@@ -1,5 +1,4 @@
 import { requireEmployeeContext } from "@/lib/employee/leave";
-import { getOrganizationCountry } from "@/lib/hr/organization";
 import { formatPortalMonth } from "@/lib/locale";
 import { currencyOrDefault, type DisplayCurrency } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
@@ -62,7 +61,13 @@ export async function listPayslips(): Promise<PayslipRow[]> {
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
-  const country = await getOrganizationCountry();
+
+  const { data: organization } = await supabase
+    .from("organizations")
+    .select("country")
+    .eq("id", organizationId)
+    .maybeSingle();
+  const country = organization?.country === "AU" ? "AU" : "MY";
 
   return (data ?? [])
     .map((row) => {

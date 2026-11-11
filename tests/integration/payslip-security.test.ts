@@ -45,6 +45,9 @@ class MockSupabaseQueryBuilder {
 
   maybeSingle() {
     this.calledMaybeSingle = true;
+    if (this.tableName === "organizations") {
+      return Promise.resolve({ data: { country: "MY", currency: "MYR" }, error: null });
+    }
     const data = this.tableName === "payroll_item_components" ? mockComponentsResponse : mockPayrunItemsResponse;
     return Promise.resolve({ data, error: null });
   }
