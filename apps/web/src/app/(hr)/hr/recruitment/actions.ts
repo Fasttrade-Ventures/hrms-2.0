@@ -129,6 +129,7 @@ export async function addCandidateAction(
       fullName: formData.get("fullName"),
       email: formData.get("email"),
       phone: formData.get("phone") || null,
+      source: formData.get("source") || null,
     });
 
     await addCandidateToRequisition(parsed);

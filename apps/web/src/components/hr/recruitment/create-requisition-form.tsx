@@ -47,7 +47,7 @@ export function AddCandidateForm({ requisitionId }: { requisitionId: string }) {
 
   return (
     <PortalSectionCard title="Add candidate">
-      <form action={action} className="grid gap-4 md:grid-cols-3">
+      <form action={action} className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <input name="requisitionId" type="hidden" value={requisitionId} />
         <div>
           <label className="text-sm font-medium" htmlFor="fullName">
@@ -66,6 +66,12 @@ export function AddCandidateForm({ requisitionId }: { requisitionId: string }) {
             Phone
           </label>
           <HrTextInput id="phone" name="phone" />
+        </div>
+        <div>
+          <label className="text-sm font-medium" htmlFor="source">
+            Source
+          </label>
+          <HrTextInput id="source" name="source" placeholder="e.g. Referral, LinkedIn" />
         </div>
         <HrFormMessage error={state.error} success={state.success} />
         <HrPrimaryButton disabled={pending} type="submit">
