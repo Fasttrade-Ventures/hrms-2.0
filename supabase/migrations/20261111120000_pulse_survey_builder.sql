@@ -184,9 +184,11 @@ alter table public.pulse_survey_invitations enable row level security;
 alter table public.pulse_survey_responses enable row level security;
 alter table public.pulse_survey_answers enable row level security;
 
+drop policy if exists pulse_survey_templates_org on public.pulse_survey_templates;
 create policy pulse_survey_templates_org on public.pulse_survey_templates for all
   using (organization_id in (select public.current_user_org_ids()));
 
+drop policy if exists pulse_survey_template_sections_org on public.pulse_survey_template_sections;
 create policy pulse_survey_template_sections_org on public.pulse_survey_template_sections for all
   using (
     template_id in (
@@ -195,6 +197,7 @@ create policy pulse_survey_template_sections_org on public.pulse_survey_template
     )
   );
 
+drop policy if exists pulse_survey_template_questions_org on public.pulse_survey_template_questions;
 create policy pulse_survey_template_questions_org on public.pulse_survey_template_questions for all
   using (
     section_id in (
@@ -204,6 +207,7 @@ create policy pulse_survey_template_questions_org on public.pulse_survey_templat
     )
   );
 
+drop policy if exists pulse_survey_template_choices_org on public.pulse_survey_template_choices;
 create policy pulse_survey_template_choices_org on public.pulse_survey_template_choices for all
   using (
     question_id in (
@@ -214,9 +218,11 @@ create policy pulse_survey_template_choices_org on public.pulse_survey_template_
     )
   );
 
+drop policy if exists pulse_survey_runs_org on public.pulse_survey_runs;
 create policy pulse_survey_runs_org on public.pulse_survey_runs for all
   using (organization_id in (select public.current_user_org_ids()));
 
+drop policy if exists pulse_survey_run_sections_org on public.pulse_survey_run_sections;
 create policy pulse_survey_run_sections_org on public.pulse_survey_run_sections for all
   using (
     run_id in (
@@ -225,6 +231,7 @@ create policy pulse_survey_run_sections_org on public.pulse_survey_run_sections 
     )
   );
 
+drop policy if exists pulse_survey_run_questions_org on public.pulse_survey_run_questions;
 create policy pulse_survey_run_questions_org on public.pulse_survey_run_questions for all
   using (
     section_id in (
@@ -234,6 +241,7 @@ create policy pulse_survey_run_questions_org on public.pulse_survey_run_question
     )
   );
 
+drop policy if exists pulse_survey_run_choices_org on public.pulse_survey_run_choices;
 create policy pulse_survey_run_choices_org on public.pulse_survey_run_choices for all
   using (
     question_id in (
@@ -244,12 +252,15 @@ create policy pulse_survey_run_choices_org on public.pulse_survey_run_choices fo
     )
   );
 
+drop policy if exists pulse_survey_invitations_org on public.pulse_survey_invitations;
 create policy pulse_survey_invitations_org on public.pulse_survey_invitations for all
   using (organization_id in (select public.current_user_org_ids()));
 
+drop policy if exists pulse_survey_responses_org on public.pulse_survey_responses;
 create policy pulse_survey_responses_org on public.pulse_survey_responses for all
   using (organization_id in (select public.current_user_org_ids()));
 
+drop policy if exists pulse_survey_answers_org on public.pulse_survey_answers;
 create policy pulse_survey_answers_org on public.pulse_survey_answers for all
   using (
     response_id in (
