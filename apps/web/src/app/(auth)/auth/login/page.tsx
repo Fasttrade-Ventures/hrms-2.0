@@ -11,7 +11,7 @@ const standaloneBrand = {
     "Leave, attendance, payroll, and approvals in one secure workplace system — ready for standalone or multi-company use.",
   features: [
     "Role-based access for every team",
-    "Malaysia payroll with statutory compliance",
+    "Payroll with statutory compliance for Malaysia and Australia",
     "Mobile-friendly employee self-service",
   ],
 } as const;
@@ -19,7 +19,7 @@ const standaloneBrand = {
 const saasBrand = {
   headline: "Run HR for\nevery company.",
   subhead:
-    "Create your organization, invite your team, and manage leave, attendance, and Malaysia payroll in one place.",
+    "Create your organization, invite your team, and manage leave, attendance, and payroll for Malaysia or Australia in one place.",
   features: [
     "Start free with Core BukuHR",
     "Upgrade to Professional automation anytime",

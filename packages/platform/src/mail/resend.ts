@@ -1,6 +1,8 @@
+import { buildAnnouncementEmail } from "./announcement";
 import { buildDocumentComplianceEmail } from "./document-compliance";
 import { buildEmployeeActivationEmail } from "./employee-activation";
 import { buildPayslipAvailableEmail } from "./payslip-available";
+import { buildPulseSurveyOpenedEmail } from "./pulse-survey";
 import { buildScheduledReportEmail } from "./scheduled-report";
 
 type SendResult =
@@ -44,6 +46,31 @@ async function sendResendEmail(input: {
 
   const payload = (await response.json()) as { id?: string };
   return { sent: true, id: payload.id };
+}
+
+export async function sendAnnouncementEmail(input: {
+  to: string;
+  title: string;
+  message: string;
+  announcementPath: string;
+  appOrigin?: string;
+}): Promise<SendResult> {
+  const origin = (
+    input.appOrigin ??
+    process.env.NEXT_PUBLIC_APP_URL ??
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    ""
+  ).replace(/\/$/, "");
+  const announcementUrl = origin
+    ? `${origin}${input.announcementPath}`
+    : input.announcementPath;
+  const { subject, html, text } = buildAnnouncementEmail({
+    title: input.title,
+    message: input.message,
+    announcementUrl,
+  });
+
+  return sendResendEmail({ to: input.to, subject, html, text });
 }
 
 export async function sendNoticeEmail(input: {
@@ -129,6 +156,28 @@ export async function sendPayslipAvailableEmail(input: {
     text,
     attachments: input.attachment ? [input.attachment] : undefined,
   });
+}
+
+export async function sendPulseSurveyOpenedEmail(input: {
+  to: string;
+  title: string;
+  message: string;
+  surveyPath: string;
+  appOrigin?: string;
+}): Promise<SendResult> {
+  const origin = (
+    input.appOrigin ??
+    process.env.NEXT_PUBLIC_APP_URL ??
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    ""
+  ).replace(/\/$/, "");
+  const surveyUrl = origin ? `${origin}${input.surveyPath}` : input.surveyPath;
+  const { subject, html, text } = buildPulseSurveyOpenedEmail({
+    title: input.title,
+    message: input.message,
+    surveyUrl,
+  });
+  return sendResendEmail({ to: input.to, subject, html, text });
 }
 
 export async function sendScheduledReportEmail(input: {

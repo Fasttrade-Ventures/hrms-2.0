@@ -2,11 +2,16 @@ import { ListCard } from "@hrms/ui";
 
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { orgLocalDateString } from "@/lib/datetime/org-timezone";
+import { getOrganizationCountry } from "@/lib/hr/organization";
 import { listEmployeeRosterSchedule, addDays } from "@/lib/hr/rosters";
+import { localeForCountry } from "@/lib/locale";
 
 export default async function EmployeeSchedulePage() {
   const daysToShow = 14;
-  const entries = await listEmployeeRosterSchedule(daysToShow);
+  const [entries, country] = await Promise.all([
+    listEmployeeRosterSchedule(daysToShow),
+    getOrganizationCountry(),
+  ]);
 
   const start = orgLocalDateString();
   const dates: string[] = [];
@@ -27,7 +32,7 @@ export default async function EmployeeSchedulePage() {
     let dateLabel = date;
     if (year && month && day) {
       const d = new Date(`${year}-${month}-${day}T12:00:00`);
-      const weekday = d.toLocaleDateString("en-MY", { weekday: "short" });
+      const weekday = d.toLocaleDateString(localeForCountry(country), { weekday: "short" });
       dateLabel = `${weekday}, ${day.padStart(2, "0")}/${month.padStart(2, "0")}/${year}`;
     }
 

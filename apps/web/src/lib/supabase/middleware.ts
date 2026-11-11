@@ -7,6 +7,7 @@ import {
   getPublicOrigin,
   isAuthEntryPath,
   isPublicAuthPath,
+  isReportsPath,
 } from "@/lib/auth/routes";
 import { createMiddlewareSupabaseClient } from "@/lib/supabase/create-middleware-client";
 
@@ -33,6 +34,7 @@ export function isPublicPath(pathname: string): boolean {
   if (pathname === "/api/register") return true;
   if (pathname === "/api/auth/logout") return true;
   if (pathname === "/unauthorized") return true;
+  if (pathname.startsWith("/survey/")) return true;
   if (isPublicAuthPath(pathname)) return true;
   return false;
 }
@@ -219,6 +221,17 @@ export async function updateSession(request: NextRequest) {
       const url = request.nextUrl.clone();
       url.pathname = "/unauthorized";
       url.searchParams.set("from", pathname);
+      return redirectPublic(url, request);
+    }
+
+    if (
+      isReportsPath(pathname) &&
+      permissions.includes("auditor") &&
+      !roles.includes("hr_administrator") &&
+      !roles.includes("organization_owner")
+    ) {
+      const url = request.nextUrl.clone();
+      url.pathname = pathname.replace(/^\/hr\/reports/, "/auditor/reports");
       return redirectPublic(url, request);
     }
   }

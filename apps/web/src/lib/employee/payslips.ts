@@ -1,4 +1,5 @@
 import { requireEmployeeContext } from "@/lib/employee/leave";
+import { formatPortalMonth } from "@/lib/locale";
 import { currencyOrDefault, type DisplayCurrency } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
 
@@ -30,11 +31,8 @@ export type PayslipDetail = PayslipRow & {
   };
 };
 
-function periodLabel(year: number, month: number): string {
-  return new Date(year, month - 1, 1).toLocaleDateString("en-MY", {
-    month: "long",
-    year: "numeric",
-  });
+function periodLabel(year: number, month: number, country: "MY" | "AU"): string {
+  return formatPortalMonth(new Date(year, month - 1, 1), country);
 }
 
 export async function getPayslipCurrency(): Promise<DisplayCurrency> {
@@ -64,6 +62,13 @@ export async function listPayslips(): Promise<PayslipRow[]> {
 
   if (error) throw new Error(error.message);
 
+  const { data: organization } = await supabase
+    .from("organizations")
+    .select("country")
+    .eq("id", organizationId)
+    .maybeSingle();
+  const country = organization?.country === "AU" ? "AU" : "MY";
+
   return (data ?? [])
     .map((row) => {
       const payrun = row.payroll_payruns as {
@@ -81,7 +86,7 @@ export async function listPayslips(): Promise<PayslipRow[]> {
         id: row.id,
         periodYear: payrun.period_year ?? 0,
         periodMonth: payrun.period_month ?? 0,
-        periodLabel: periodLabel(payrun.period_year ?? 0, payrun.period_month ?? 0),
+        periodLabel: periodLabel(payrun.period_year ?? 0, payrun.period_month ?? 0, country),
         grossPay: Number(row.gross_pay),
         netPay: Number(row.net_pay),
         status: payrun.status,
@@ -161,14 +166,15 @@ export async function getPayslip(itemId: string): Promise<PayslipDetail | null> 
     .select("country, currency")
     .eq("id", organizationId)
     .maybeSingle();
+  const country = organization?.country === "AU" ? "AU" : "MY";
 
   return {
-    country: organization?.country === "AU" ? "AU" : "MY",
+    country,
     currency: currencyOrDefault(organization?.currency),
     id: data.id,
     periodYear: payrun.period_year ?? 0,
     periodMonth: payrun.period_month ?? 0,
-    periodLabel: periodLabel(payrun.period_year ?? 0, payrun.period_month ?? 0),
+    periodLabel: periodLabel(payrun.period_year ?? 0, payrun.period_month ?? 0, country),
     grossPay: Number(data.gross_pay),
     netPay: Number(data.net_pay),
     status: payrun.status,

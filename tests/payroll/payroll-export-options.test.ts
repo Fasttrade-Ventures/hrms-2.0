@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  bankExportOptionsFor,
   payrollEmptyDescription,
   payrollHubDescription,
   showAuPayFile,
@@ -36,6 +37,22 @@ describe("payroll hub wording by country", () => {
     for (const word of ["EPF", "SOCSO", "EIS", "PCB", "HRDF", "Malaysia", "statutory"]) {
       expect(text).not.toContain(word);
     }
+  });
+});
+
+describe("bank file formats by country", () => {
+  it("offers Bank CSV, Maybank, and CIMB for MY", () => {
+    expect(bankExportOptionsFor("MY").map((option) => option.label)).toEqual([
+      "Bank CSV",
+      "Maybank",
+      "CIMB",
+    ]);
+  });
+
+  it("offers only a generic bank file for AU", () => {
+    const labels = bankExportOptionsFor("AU").map((option) => option.label);
+    expect(labels).toEqual(["Bank CSV"]);
+    expect(labels.join(" ")).not.toMatch(/Maybank|CIMB/);
   });
 });
 

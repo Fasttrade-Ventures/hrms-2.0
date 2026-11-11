@@ -45,6 +45,9 @@ class MockSupabaseQueryBuilder {
 
   maybeSingle() {
     this.calledMaybeSingle = true;
+    if (this.tableName === "organizations") {
+      return Promise.resolve({ data: { country: "MY", currency: "MYR" }, error: null });
+    }
     const data = this.tableName === "payroll_item_components" ? mockComponentsResponse : mockPayrunItemsResponse;
     return Promise.resolve({ data, error: null });
   }
@@ -103,13 +106,12 @@ describe("payslip access security", () => {
       expect(result[0]!.id).toBe("item-1");
       expect(result[0]!.status).toBe("locked");
 
-      // Verify DB query constraints
-      expect(queries).toHaveLength(1);
-      const query = queries[0]!;
-      expect(query.tableName).toBe("payroll_payrun_items");
-      
+      // Verify DB query constraints (country lookup may add a second query)
+      const query = queries.find((entry) => entry.tableName === "payroll_payrun_items");
+      expect(query).toBeDefined();
+
       // Verify all eq constraints
-      const eqsMap = new Map(query.calledEqs);
+      const eqsMap = new Map(query!.calledEqs);
       expect(eqsMap.get("organization_id")).toBe(mockOrgId);
       expect(eqsMap.get("employee_id")).toBe(mockEmployeeId);
       expect(eqsMap.get("payroll_payruns.status")).toBe("locked");

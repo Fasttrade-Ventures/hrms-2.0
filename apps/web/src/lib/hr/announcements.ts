@@ -260,6 +260,7 @@ export async function createAnnouncement(input: {
       organizationId,
       announcementId: data.id,
       title: input.form.title.trim(),
+      body: publishFields.body,
       audience: {
         branchId: input.form.branchId ?? null,
         targetRoles: input.form.targetRoles,
@@ -381,6 +382,7 @@ export async function updateAnnouncement(input: {
       organizationId,
       announcementId: input.announcementId,
       title: input.form.title.trim(),
+      body: publishFields.body,
       audience: {
         branchId: input.form.branchId ?? null,
         targetRoles: input.form.targetRoles,

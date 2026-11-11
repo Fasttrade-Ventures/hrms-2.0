@@ -17,6 +17,7 @@ import {
 import { getLeaveBalances, listLeaveRequests, requireEmployeeContext, type LeaveBalanceRow } from "@/lib/employee/leave";
 import { getMyDocumentComplianceSummary } from "@/lib/employee/documents";
 import { hasModule } from "@/lib/entitlements";
+import { formatPortalDate } from "@/lib/locale";
 import { formatMoney } from "@/lib/money";
 import { getOrganizationDisplay } from "@/lib/organization-display";
 import {
@@ -51,7 +52,10 @@ export default async function Page() {
   ]);
   const firstName = firstNameFromFullName(employee?.fullName, employee?.email);
 
-  const { currency } = await getOrganizationDisplay().catch(() => ({ currency: "MYR" as const }));
+  const { currency, country } = await getOrganizationDisplay().catch(() => ({
+    currency: "MYR" as const,
+    country: "MY" as const,
+  }));
 
   const requireSelfie = employeeContext
     ? await getClockInSelfieRequired(employeeContext.organizationId).catch(() => false)
@@ -213,16 +217,16 @@ export default async function Page() {
     </div>
   );
 
-  const todayDateStr = `${now.toLocaleDateString("en-MY", { weekday: "short" })}, ${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+  const todayDateStr = formatPortalDate(now, country);
 
   return (
     <div className="space-y-6">
       {/* Head */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground-primary)]">
+          <h2 className="text-2xl font-bold tracking-tight text-[var(--foreground-primary)]">
             {greetingForHour(hour)}, {firstName}
-          </h1>
+          </h2>
           <p className="text-sm text-[var(--foreground-muted)]">
             {todayDateStr}
             {employee?.departmentName ? ` · ${employee.departmentName}` : ""}

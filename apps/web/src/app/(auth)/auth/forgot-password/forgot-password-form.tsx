@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState, useEffect, useRef } from "react";
 
 import { AuthError, MailIcon } from "@/components/auth/auth-icons";
@@ -38,9 +37,7 @@ export function ForgotPasswordForm() {
           subtitle={`If an account exists for ${submittedEmail.current || "that email"}, you’ll receive an email with a password reset link shortly.`}
           title="Reset link sent"
         />
-        <Link className="block" href="/auth/login">
-          <AuthGhostButton type="button">Return to sign in</AuthGhostButton>
-        </Link>
+        <AuthGhostButton href="/auth/login">Return to sign in</AuthGhostButton>
       </div>
     );
   }
@@ -64,7 +61,6 @@ export function ForgotPasswordForm() {
           autoComplete="email"
           id="email"
           label="Email address"
-          muted
           name="email"
           placeholder="you@company.com"
           required
@@ -77,9 +73,7 @@ export function ForgotPasswordForm() {
           {pending ? "Sending…" : "Send reset link"}
         </AuthPrimaryButton>
 
-        <Link className="block" href="/auth/login">
-          <AuthGhostButton type="button">Back to sign in</AuthGhostButton>
-        </Link>
+        <AuthGhostButton href="/auth/login">Back to sign in</AuthGhostButton>
       </form>
     </>
   );

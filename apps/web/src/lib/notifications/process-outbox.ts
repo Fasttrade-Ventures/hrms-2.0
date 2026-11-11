@@ -2,9 +2,11 @@ import {
   S3R2StorageAdapter,
   StubR2StorageAdapter,
   type R2StorageAdapter,
+  sendAnnouncementEmail,
   sendDocumentComplianceEmail,
   sendNoticeEmail,
   sendPayslipAvailableEmail,
+  sendPulseSurveyOpenedEmail,
   sendScheduledReportEmail,
 } from "@hrms/platform";
 
@@ -30,19 +32,24 @@ function getStorageAdapter(): R2StorageAdapter {
   }
 }
 
-export async function processNotificationOutbox(limit = 25): Promise<{
+export async function processNotificationOutbox(
+  limit = 25,
+  template?: string,
+): Promise<{
   processed: number;
   sent: number;
   failed: number;
 }> {
   const admin = createAdminClient();
-  const { data: rows, error } = await admin
+  let query = admin
     .from("notification_outbox")
     .select("id, recipient_user_id, template, payload, status")
     .eq("channel", "email")
-    .eq("status", "pending")
-    .order("created_at")
-    .limit(limit);
+    .eq("status", "pending");
+
+  if (template) query = query.eq("template", template);
+
+  const { data: rows, error } = await query.order("created_at").limit(limit);
 
   if (error) throw new Error(error.message);
 
@@ -184,6 +191,22 @@ export async function processNotificationOutbox(limit = 25): Promise<{
         secureLink,
         attachment,
       });
+    } else if (row.template === "announcement.published") {
+      const href = String(payload.href ?? "/employee/announcements");
+      result = await sendAnnouncementEmail({
+        to: email,
+        title: String(payload.title ?? "New announcement"),
+        message: String(payload.message ?? ""),
+        announcementPath: href.startsWith("/") ? href : `/${href}`,
+      });
+    } else if (row.template === "pulse.survey_opened") {
+      const href = String(payload.href ?? "/employee/pulse");
+      result = await sendPulseSurveyOpenedEmail({
+        to: email,
+        title: String(payload.title ?? "Pulse survey"),
+        message: String(payload.message ?? ""),
+        surveyPath: href.startsWith("/") ? href : `/${href}`,
+      });
     } else if (row.template === "celebration.notice") {
       result = await sendNoticeEmail({
         to: email,
@@ -207,6 +230,12 @@ export async function processNotificationOutbox(limit = 25): Promise<{
     }
 
     if (!result.sent) {
+      if (
+        result.reason === "not_configured" &&
+        (row.template === "announcement.published" || row.template === "pulse.survey_opened")
+      ) {
+        continue;
+      }
       await admin.from("notification_outbox").update({ status: "failed" }).eq("id", row.id);
       failed += 1;
       continue;

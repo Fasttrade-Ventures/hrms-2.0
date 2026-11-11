@@ -39,6 +39,7 @@ import {
   MALAYSIAN_RACE_OPTIONS,
   MALAYSIAN_RELIGION_OPTIONS,
   MALAYSIAN_STATE_OPTIONS,
+  showsMalaysianIdentityFields,
   withCurrentDemographicsOption,
 } from "@/lib/employees/malaysia-demographics";
 import { Button } from "@/components/ui/button";
@@ -536,31 +537,35 @@ export function EditEmployeeForm({
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
-              <HrField id="race" label="Race">
-                <HrSelect defaultValue={employee.profile.race ?? ""} id="race" name="race">
-                  <option value="">-- Select --</option>
-                  {withCurrentDemographicsOption(MALAYSIAN_RACE_OPTIONS, employee.profile.race).map(
-                    (option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ),
-                  )}
-                </HrSelect>
-              </HrField>
-              <HrField id="religion" label="Religion">
-                <HrSelect defaultValue={employee.profile.religion ?? ""} id="religion" name="religion">
-                  <option value="">-- Select --</option>
-                  {withCurrentDemographicsOption(
-                    MALAYSIAN_RELIGION_OPTIONS,
-                    employee.profile.religion,
-                  ).map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </HrSelect>
-              </HrField>
+              {showsMalaysianIdentityFields(country) ? (
+                <>
+                  <HrField id="race" label="Race">
+                    <HrSelect defaultValue={employee.profile.race ?? ""} id="race" name="race">
+                      <option value="">-- Select --</option>
+                      {withCurrentDemographicsOption(MALAYSIAN_RACE_OPTIONS, employee.profile.race).map(
+                        (option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ),
+                      )}
+                    </HrSelect>
+                  </HrField>
+                  <HrField id="religion" label="Religion">
+                    <HrSelect defaultValue={employee.profile.religion ?? ""} id="religion" name="religion">
+                      <option value="">-- Select --</option>
+                      {withCurrentDemographicsOption(
+                        MALAYSIAN_RELIGION_OPTIONS,
+                        employee.profile.religion,
+                      ).map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </HrSelect>
+                  </HrField>
+                </>
+              ) : null}
               <HrField id="phone" label="Mobile no">
                 <HrTextInput defaultValue={employee.profile.phone ?? ""} id="phone" name="phone" />
               </HrField>
@@ -737,13 +742,15 @@ export function EditEmployeeForm({
                     name="spouseName"
                   />
                 </HrField>
-                <HrField id="spouseIc" label="IC no">
-                  <HrTextInput
-                    defaultValue={spouse?.icNumber ?? ""}
-                    id="spouseIc"
-                    name="spouseIc"
-                  />
-                </HrField>
+                {showsMalaysianIdentityFields(country) ? (
+                  <HrField id="spouseIc" label="IC no">
+                    <HrTextInput
+                      defaultValue={spouse?.icNumber ?? ""}
+                      id="spouseIc"
+                      name="spouseIc"
+                    />
+                  </HrField>
+                ) : null}
                 <HrField id="spouseWorking" label="Working?">
                   <HrSelect
                     defaultValue={
@@ -792,13 +799,15 @@ export function EditEmployeeForm({
                         name={`childName_${index}`}
                       />
                     </HrField>
-                    <HrField id={`childIc_${index}`} label="IC no">
-                      <HrTextInput
-                        defaultValue={child?.icNumber ?? ""}
-                        id={`childIc_${index}`}
-                        name={`childIc_${index}`}
-                      />
-                    </HrField>
+                    {showsMalaysianIdentityFields(country) ? (
+                      <HrField id={`childIc_${index}`} label="IC no">
+                        <HrTextInput
+                          defaultValue={child?.icNumber ?? ""}
+                          id={`childIc_${index}`}
+                          name={`childIc_${index}`}
+                        />
+                      </HrField>
+                    ) : null}
                     <HrField id={`childDob_${index}`} label="DOB">
                       <HrTextInput
                         defaultValue={child?.dateOfBirth ?? ""}

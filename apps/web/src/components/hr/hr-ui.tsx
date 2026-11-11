@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { StatCard } from "@hrms/ui";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -15,30 +17,13 @@ export function HrStatCards({
   return (
     <div
       className={cn(
-        "grid gap-3",
+        "grid",
+        compact ? "gap-2" : "gap-3",
         columns === 5 ? "sm:grid-cols-2 lg:grid-cols-5" : "sm:grid-cols-2 lg:grid-cols-3",
       )}
     >
       {items.map((item) => (
-        <Card className="py-0" key={item.label} size="sm">
-          <CardContent
-            className={cn(
-              "flex flex-col gap-0.5",
-              compact ? "px-4 py-3" : "px-4 py-4",
-            )}
-          >
-            <p className="text-xs font-medium text-muted-foreground">{item.label}</p>
-            <p
-              className={cn(
-                "font-semibold tabular-nums tracking-tight",
-                compact ? "text-lg" : "text-2xl",
-              )}
-            >
-              {item.value}
-            </p>
-            {item.hint ? <p className="text-[11px] text-muted-foreground">{item.hint}</p> : null}
-          </CardContent>
-        </Card>
+        <StatCard hint={item.hint} key={item.label} label={item.label} value={item.value} />
       ))}
     </div>
   );

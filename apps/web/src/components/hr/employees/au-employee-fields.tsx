@@ -1,4 +1,5 @@
 import { HrCheckbox, HrField, HrSelect, HrTextInput } from "@/components/hr/employees/form-fields";
+import { MaskedTaxNumberField } from "@/components/hr/employees/masked-secret";
 
 export type AuEmployeeFieldValues = {
   employmentBasis?: "full_time" | "part_time" | "casual" | null;
@@ -39,14 +40,8 @@ export function AuEmployeeFields({ values = {} }: { values?: AuEmployeeFieldValu
             required
           />
         </HrField>
-        <HrField hint="8 or 9 digits" id="taxNumber" label="Tax File Number">
-          <HrTextInput
-            defaultValue={values.taxNumber ?? ""}
-            id="taxNumber"
-            inputMode="numeric"
-            name="taxNumber"
-            required
-          />
+        <HrField hint="8 or 9 digits. Hidden until you choose Show." id="taxNumber" label="Tax File Number">
+          <MaskedTaxNumberField defaultValue={values.taxNumber ?? ""} id="taxNumber" name="taxNumber" />
         </HrField>
         <HrField hint="6 digits" id="bsb" label="BSB">
           <HrTextInput

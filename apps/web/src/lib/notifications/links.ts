@@ -49,6 +49,19 @@ export function resolveNotificationHref(
   row: NotificationRow,
   portal: NotificationPortal,
 ): string | null {
+  if (portal === "account") {
+    const payloadHref = row.payload.href;
+    if (
+      typeof payloadHref === "string" &&
+      payloadHref.startsWith("/") &&
+      !payloadHref.startsWith("/employee") &&
+      !payloadHref.startsWith("/hr") &&
+      !payloadHref.startsWith("/manager")
+    ) {
+      return payloadHref;
+    }
+    return null;
+  }
   if (row.template === "announcement.published") {
     const announcementId = extractAnnouncementId(row);
     if (announcementId) return announcementNotificationHref(announcementId, portal);

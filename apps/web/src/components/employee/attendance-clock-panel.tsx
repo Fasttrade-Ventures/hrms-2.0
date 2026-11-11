@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useEffect, useState, startTransition } from "react";
-import { Info, MapPinOff, Check, Loader2 } from "lucide-react";
+import { Check, Info, Loader2, MapPinOff } from "@/components/portal/product-icons";
+import { formatPortalTime, type DisplayCountry } from "@/lib/locale";
 
 import { employeeClockIn, employeeClockOut, type EmployeeActionState } from "@/app/(employee)/employee/actions";
 import type { GeofenceConfig } from "@/lib/attendance/geofence";
@@ -12,13 +13,9 @@ type LocationState = "idle" | "loading" | "ready" | "denied" | "unsupported";
 
 const initialClockState: EmployeeActionState = {};
 
-function formatTime(isoString: string | null | undefined): string {
+function formatTime(isoString: string | null | undefined, country?: DisplayCountry | null): string {
   if (!isoString) return "—";
-  return new Date(isoString).toLocaleTimeString("en-MY", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
+  return formatPortalTime(new Date(isoString), country);
 }
 
 export function AttendanceClockPanel({
@@ -26,11 +23,13 @@ export function AttendanceClockPanel({
   geofence,
   locationModuleEnabled,
   requireSelfie = false,
+  country,
 }: {
   today: TodayAttendance | null;
   geofence: GeofenceConfig | null;
   locationModuleEnabled: boolean;
   requireSelfie?: boolean;
+  country?: DisplayCountry | null;
 }) {
   const [locationState, setLocationState] = useState<LocationState>("idle");
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -272,11 +271,11 @@ export function AttendanceClockPanel({
 
   const getLocationSubtext = () => {
     if (isClockedIn) {
-      return `Clocked in at ${mounted ? formatTime(today?.clockInAt) : "—"}`;
+      return `Clocked in at ${mounted ? formatTime(today?.clockInAt, country) : "—"}`;
     }
     if (today && today.sessions.length > 0) {
       const lastSession = today.sessions[today.sessions.length - 1];
-      return `Clocked out at ${mounted ? formatTime(lastSession?.clockOutAt) : "—"} · Clock In Again when ready`;
+      return `Clocked out at ${mounted ? formatTime(lastSession?.clockOutAt, country) : "—"} · Clock In Again when ready`;
     }
     if (geofenceRequired) {
       if (locationState === "idle") return "Location not verified yet";
@@ -385,13 +384,13 @@ export function AttendanceClockPanel({
                     <div className="flex justify-between items-center text-xs pb-1 border-b border-[var(--border-primary)]/30">
                       <span className="text-[var(--foreground-muted)] font-medium">Session {session.session} in</span>
                       <span className="font-semibold text-[var(--foreground-primary)]">
-                        {mounted ? formatTime(session.clockInAt) : "—"}
+                        {mounted ? formatTime(session.clockInAt, country) : "—"}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-xs pb-1 border-b border-[var(--border-primary)]/30">
                       <span className="text-[var(--foreground-muted)] font-medium">Session {session.session} out</span>
                       <span className="font-semibold text-[var(--foreground-primary)]">
-                        {mounted ? formatTime(session.clockOutAt) : "—"}
+                        {mounted ? formatTime(session.clockOutAt, country) : "—"}
                       </span>
                     </div>
                   </div>
@@ -481,13 +480,13 @@ export function AttendanceClockPanel({
               </h4>
               <p className="text-xs text-[var(--foreground-muted)] leading-relaxed">
                 {activeOverlay === "success_in" &&
-                  `Recorded at ${formatTime(today?.clockInAt || new Date().toISOString())} · ${geofence?.branchName || "HQ Branch"} · GPS verified`}
+                  `Recorded at ${formatTime(today?.clockInAt || new Date().toISOString(), country)} · ${geofence?.branchName || "HQ Branch"} · GPS verified`}
                 {activeOverlay === "success_out" &&
-                  `Recorded at ${formatTime(today?.clockOutAt || new Date().toISOString())} · ${geofence?.branchName || "HQ Branch"} · Session completed`}
+                  `Recorded at ${formatTime(today?.clockOutAt || new Date().toISOString(), country)} · ${geofence?.branchName || "HQ Branch"} · Session completed`}
                 {activeOverlay === "gps_denied" &&
                   "Enable GPS to allow location tracking when clocking in."}
                 {activeOverlay === "already_clocked" &&
-                  `You clocked in at ${formatTime(today?.clockInAt)}. Clock out first before starting a new session.`}
+                  `You clocked in at ${formatTime(today?.clockInAt, country)}. Clock out first before starting a new session.`}
                 {activeOverlay === "geofence_outside" &&
                   "You are outside the allowed clock-in radius for this branch. Please move within the approved geofence to clock in."}
               </p>

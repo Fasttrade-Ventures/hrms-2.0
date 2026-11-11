@@ -43,7 +43,7 @@ export function ReportsHub({
   basePath,
   country = "MY",
 }: {
-  portal: "hr" | "director" | "branch-admin";
+  portal: "hr" | "director" | "branch-admin" | "auditor";
   basePath: string;
   country?: "MY" | "AU";
 }) {

@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { buttonVariants } from "@/components/ui/button";
+import { formatPortalMonth, type DisplayCountry } from "@/lib/locale";
 import { cn } from "@/lib/utils";
 
 function shiftMonth(year: number, month: number, delta: number) {
@@ -21,6 +22,7 @@ export function CalendarToolbar({
   showExport = false,
   extraActions,
   buildMonthHref,
+  country,
 }: {
   basePath: string;
   year: number;
@@ -32,16 +34,14 @@ export function CalendarToolbar({
   showExport?: boolean;
   extraActions?: React.ReactNode;
   buildMonthHref?: (year: number, month: number) => string;
+  country?: DisplayCountry | null;
 }) {
   const prev = shiftMonth(year, month, -1);
   const next = shiftMonth(year, month, 1);
   const now = new Date();
   const monthHref = (y: number, m: number) =>
     buildMonthHref ? buildMonthHref(y, m) : `${basePath}?year=${y}&month=${m}`;
-  const label = new Date(year, month - 1, 1).toLocaleDateString("en-MY", {
-    month: "long",
-    year: "numeric",
-  });
+  const label = formatPortalMonth(new Date(year, month - 1, 1), country);
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">

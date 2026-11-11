@@ -37,35 +37,40 @@ export function ListCard({
       </div>
       <div className="overflow-x-auto">
         {rows.length > 0 ? (
-          <div className="min-w-full w-full">
-            <div className="flex items-center gap-4 border-b border-[var(--border-primary)] bg-[var(--surface-muted)]/60 px-4 py-2.5">
-              {columns.map((col) => (
-                <div key={col.key} className={columnClassName(col, "header")}>
-                  {col.label}
-                </div>
-              ))}
-              {rows.some((row) => row.action) ? (
-                <div className="w-16 shrink-0 text-xs font-medium uppercase tracking-wide text-[var(--foreground-muted)]">
-                  Action
-                </div>
-              ) : null}
-            </div>
-            <div className="divide-y divide-[var(--border-primary)]">
+          <table className="min-w-full w-full border-collapse text-left">
+            <thead>
+              <tr className="border-b border-[var(--border-primary)] bg-[var(--surface-muted)]/60">
+                {columns.map((col) => (
+                  <th key={col.key} className={`px-4 py-2.5 ${columnClassName(col, "header")}`} scope="col">
+                    {col.label}
+                  </th>
+                ))}
+                {rows.some((row) => row.action) ? (
+                  <th
+                    className="w-16 shrink-0 px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-[var(--foreground-muted)]"
+                    scope="col"
+                  >
+                    Action
+                  </th>
+                ) : null}
+              </tr>
+            </thead>
+            <tbody>
               {rows.map((row) => (
-                <div
-                  key={row.id}
-                  className={compact ? "flex items-center gap-4 px-4 py-2.5" : "flex items-center gap-4 px-4 py-4"}
-                >
+                <tr className="border-b border-[var(--border-primary)] last:border-b-0" key={row.id}>
                   {columns.map((col) => (
-                    <div key={col.key} className={columnClassName(col, "cell")}>
+                    <td
+                      key={col.key}
+                      className={`px-4 align-middle ${compact ? "py-2.5" : "py-4"} ${columnClassName(col, "cell")}`}
+                    >
                       {row.cells[col.key]}
-                    </div>
+                    </td>
                   ))}
-                  {row.action ? <div className="w-16 shrink-0">{row.action}</div> : null}
-                </div>
+                  {row.action ? <td className="w-16 shrink-0 px-4 align-middle">{row.action}</td> : null}
+                </tr>
               ))}
-            </div>
-          </div>
+            </tbody>
+          </table>
         ) : (
           <p className="px-4 py-6 text-sm text-[var(--foreground-muted)]">No rows to display.</p>
         )}

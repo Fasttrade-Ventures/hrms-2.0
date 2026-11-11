@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { requireRole } from "@/lib/auth/session";
 import { buildEmployeeDossierPdf, dossierFilename, getEmployeeDossier } from "@/lib/employees/dossier";
+import { getOrganizationCountry } from "@/lib/hr/organization";
 
 export async function GET(
   _request: Request,
@@ -16,7 +17,7 @@ export async function GET(
     notFound();
   }
 
-  const pdf = buildEmployeeDossierPdf(employee);
+  const pdf = buildEmployeeDossierPdf(employee, await getOrganizationCountry());
   const filename = dossierFilename(employee);
   const url = new URL(_request.url);
   const download = url.searchParams.get("download") === "1";

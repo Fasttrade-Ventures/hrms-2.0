@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 type ConfirmDialogProps = {
   open: boolean;
@@ -14,6 +14,12 @@ type ConfirmDialogProps = {
   isPending?: boolean;
 };
 
+function focusableControls(dialog: HTMLElement): HTMLElement[] {
+  return Array.from(
+    dialog.querySelectorAll<HTMLElement>("button:not(:disabled), [href], input, select, textarea"),
+  ).filter((element) => !element.hasAttribute("disabled"));
+}
+
 export function ConfirmDialog({
   open,
   title,
@@ -25,17 +31,53 @@ export function ConfirmDialog({
   tone = "primary",
   isPending = false,
 }: ConfirmDialogProps) {
-  // Handle Escape key
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previouslyFocused = useRef<HTMLElement | null>(null);
+  const onCancelRef = useRef(onCancel);
+  onCancelRef.current = onCancel;
+
   useEffect(() => {
     if (!open) return;
+    previouslyFocused.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const dialog = dialogRef.current;
+    const focusable = dialog ? focusableControls(dialog) : [];
+    (focusable[focusable.length - 1] ?? dialog)?.focus();
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && !isPending) {
-        onCancel();
+        onCancelRef.current();
+        return;
+      }
+      if (e.key === "Tab" && dialog) {
+        const controls = focusableControls(dialog);
+        if (controls.length === 0) {
+          e.preventDefault();
+          dialog.focus();
+          return;
+        }
+        const first = controls[0];
+        const last = controls[controls.length - 1];
+        const active = document.activeElement;
+        if (!dialog.contains(active)) {
+          e.preventDefault();
+          (e.shiftKey ? last : first)?.focus();
+          return;
+        }
+        if (e.shiftKey && active === first) {
+          e.preventDefault();
+          last?.focus();
+        } else if (!e.shiftKey && active === last) {
+          e.preventDefault();
+          first?.focus();
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, isPending, onCancel]);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      previouslyFocused.current?.focus();
+    };
+  }, [open, isPending]);
 
   if (!open) return null;
 
@@ -43,7 +85,7 @@ export function ConfirmDialog({
     danger: {
       iconBg: "bg-red-500/10 text-red-500",
       buttonClass:
-        "bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500 dark:bg-red-600 dark:hover:bg-red-500",
+        "bg-[var(--danger)] text-white hover:opacity-90 focus-visible:ring-[var(--danger)]",
       icon: (
         <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -80,9 +122,11 @@ export function ConfirmDialog({
       }}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
+        tabIndex={-1}
         className="w-full max-w-md rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-card)] p-6 shadow-2xl transition-all space-y-4 animate-in zoom-in-95"
         onClick={(e) => e.stopPropagation()}
       >

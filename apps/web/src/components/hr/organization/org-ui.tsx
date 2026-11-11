@@ -206,29 +206,33 @@ export function OrgFormCard({
   title,
   description,
   backHref,
+  showClose = true,
   children,
 }: {
   title: string;
   description: string;
-  backHref: string;
+  backHref?: string;
+  showClose?: boolean;
   children: ReactNode;
 }) {
   return (
     <Card className="overflow-hidden py-0">
       <CardHeader className="flex flex-row items-center justify-between border-b bg-primary px-5 py-4 text-primary-foreground">
-        <div className="space-y-0.5">
+        <div className="min-w-0 space-y-0.5">
           <CardTitle className="text-base text-primary-foreground">{title}</CardTitle>
           <p className="text-xs text-primary-foreground/80">{description}</p>
         </div>
-        <Button
-          aria-label="Close"
-          className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
-          render={<Link href={backHref} />}
-          size="icon-sm"
-          variant="ghost"
-        >
-          ✕
-        </Button>
+        {showClose && backHref ? (
+          <Button
+            aria-label="Close"
+            className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+            render={<Link href={backHref} />}
+            size="icon-sm"
+            variant="ghost"
+          >
+            ✕
+          </Button>
+        ) : null}
       </CardHeader>
       <CardContent className="space-y-5 py-5">{children}</CardContent>
     </Card>

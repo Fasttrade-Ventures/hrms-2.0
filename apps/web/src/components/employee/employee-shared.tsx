@@ -1,5 +1,7 @@
 import { StatusPill } from "@hrms/ui";
 
+import { formatPortalTime, type DisplayCountry } from "@/lib/locale";
+
 export function RequestStatusPill({ status }: { status: string }) {
   const tone =
     status === "approved"
@@ -18,7 +20,7 @@ export function RequestStatusPill({ status }: { status: string }) {
   return <StatusPill label={label} tone={tone} />;
 }
 
-export function formatDateTime(value: string | null | undefined): string {
+export function formatDateTime(value: string | null | undefined, country?: DisplayCountry | null): string {
   if (!value) return "—";
 
   const d = new Date(value);
@@ -26,12 +28,7 @@ export function formatDateTime(value: string | null | undefined): string {
   const day = String(d.getDate()).padStart(2, "0");
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const year = d.getFullYear();
-  const time = d.toLocaleTimeString("en-MY", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
-  return `${day}/${month}/${year}, ${time}`;
+  return `${day}/${month}/${year}, ${formatPortalTime(d, country)}`;
 }
 
 export function formatDate(value: string | null | undefined): string {

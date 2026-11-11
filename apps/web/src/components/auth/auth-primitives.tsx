@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 export function AuthBrand({ inverted = false }: { inverted?: boolean }) {
@@ -55,16 +56,25 @@ export function AuthPrimaryButton({
   );
 }
 
+const authGhostClass =
+  "flex h-10 w-full items-center justify-center rounded-md border border-[var(--border-primary)] bg-[var(--surface-card)] px-5 text-[15px] font-medium text-[var(--foreground-primary)] transition-colors hover:bg-[var(--surface-muted)] disabled:cursor-not-allowed disabled:opacity-60";
+
 export function AuthGhostButton({
   children,
   className = "",
+  href,
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement>) {
+}: ButtonHTMLAttributes<HTMLButtonElement> & { href?: string }) {
+  if (href) {
+    return (
+      <Link className={`${authGhostClass} ${className}`} href={href}>
+        {children}
+      </Link>
+    );
+  }
+
   return (
-    <button
-      className={`flex h-10 w-full items-center justify-center rounded-md border border-[var(--border-primary)] bg-[var(--surface-card)] px-5 text-[15px] font-medium text-[var(--foreground-primary)] transition-colors hover:bg-[var(--surface-muted)] disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
-      {...props}
-    >
+    <button className={`${authGhostClass} ${className}`} {...props}>
       {children}
     </button>
   );

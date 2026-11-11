@@ -12,6 +12,7 @@ import {
   buildReportPageHref,
   buildReportPaginationLinks,
 } from "@/lib/reports/filters";
+import type { DisplayCountry } from "@/lib/locale";
 import type { ReportFilters, ReportSlug } from "@/lib/reports/types";
 
 const EXPORT_ROW_CAP = 5000;
@@ -41,6 +42,7 @@ export function ReportRunner({
   basePath,
   exportCsvAction,
   logPrintAction,
+  country,
 }: {
   title: string;
   description: string;
@@ -53,6 +55,7 @@ export function ReportRunner({
   basePath: string;
   exportCsvAction: (slug: ReportSlug, filters: ReportFilters) => Promise<{ csv: string; filename: string }>;
   logPrintAction: (slug: ReportSlug, filters: ReportFilters) => Promise<void>;
+  country?: DisplayCountry | null;
 }) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -94,7 +97,7 @@ export function ReportRunner({
   return (
     <div className="space-y-4">
       <div className="print:hidden space-y-1">
-        <h1 className="text-xl font-semibold">{title}</h1>
+        <h2 className="text-xl font-semibold">{title}</h2>
         <p className="text-sm text-muted-foreground">{description}</p>
       </div>
 
@@ -164,7 +167,7 @@ export function ReportRunner({
         </HrTableCard>
       </div>
 
-      <ReportPrintLayout columns={columns} filterSummary={filterSummary} rows={rows} title={title} />
+      <ReportPrintLayout columns={columns} country={country} filterSummary={filterSummary} rows={rows} title={title} />
     </div>
   );
 }

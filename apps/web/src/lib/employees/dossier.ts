@@ -11,6 +11,7 @@ import {
   tenureLabel,
 } from "@/lib/employees/display-labels";
 import { getEmployeeDetail, type EmployeeDetail } from "@/lib/employees/queries";
+import { formatPortalTime, type DisplayCountry } from "@/lib/locale";
 import { buildStyledPdf, type PdfField, type PdfSection } from "@/lib/files/styled-pdf";
 
 export async function getEmployeeDossier(employeeId: string): Promise<EmployeeDetail | null> {
@@ -137,7 +138,10 @@ export function buildEmployeeDossierSections(employee: EmployeeDetail): PdfSecti
   ];
 }
 
-export function buildEmployeeDossierPdf(employee: EmployeeDetail): Uint8Array {
+export function buildEmployeeDossierPdf(
+  employee: EmployeeDetail,
+  country?: DisplayCountry | null,
+): Uint8Array {
   const assignment =
     [employee.branchName, employee.departmentName].filter(Boolean).join(" · ") || "Unassigned";
   const hasLogin = Boolean(employee.membership?.userId);
@@ -166,7 +170,7 @@ export function buildEmployeeDossierPdf(employee: EmployeeDetail): Uint8Array {
       const g = new Date();
       const gd = String(g.getDate()).padStart(2, "0");
       const gm = String(g.getMonth() + 1).padStart(2, "0");
-      const gt = g.toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit", hour12: true });
+      const gt = formatPortalTime(g, country);
       return `Generated ${gd}/${gm}/${g.getFullYear()}, ${gt} · BukuHR Employee Dossier`;
     })(),
     compact: true,

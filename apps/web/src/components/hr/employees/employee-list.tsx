@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 
 import { EmptyState } from "@hrms/ui";
@@ -20,6 +21,15 @@ import type {
   EmployeeDirectoryStats,
   EmployeeListItem,
 } from "@/lib/employees/queries";
+
+function DirectoryCell({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground md:hidden">{label}</p>
+      {children}
+    </div>
+  );
+}
 
 const DIRECTORY_GRID =
   "md:grid md:grid-cols-[72px_minmax(160px,1.2fr)_minmax(100px,0.9fr)_minmax(120px,1fr)_88px_88px_88px_140px] md:items-center md:gap-3";
@@ -223,23 +233,29 @@ export function EmployeeList({
                     </div>
                   </div>
 
-                  <p className="min-w-0 truncate text-[13px] font-medium text-muted-foreground">
-                    {employee.jobTitle || "—"}
-                  </p>
-                  <p className="min-w-0 truncate text-[13px] font-medium text-muted-foreground">
-                    {assignment}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{formatJoined(employee.joinDate)}</p>
-                  <div>
+                  <DirectoryCell label="Job title">
+                    <p className="min-w-0 truncate text-[13px] font-medium text-muted-foreground">
+                      {employee.jobTitle || "—"}
+                    </p>
+                  </DirectoryCell>
+                  <DirectoryCell label="Branch / Dept">
+                    <p className="min-w-0 truncate text-[13px] font-medium text-muted-foreground">
+                      {assignment}
+                    </p>
+                  </DirectoryCell>
+                  <DirectoryCell label="Joined">
+                    <p className="text-xs text-muted-foreground">{formatJoined(employee.joinDate)}</p>
+                  </DirectoryCell>
+                  <DirectoryCell label="Login">
                     <Badge variant={employee.hasLogin ? "secondary" : "outline"}>
                       {employee.hasLogin ? "Has login" : "Invite pending"}
                     </Badge>
-                  </div>
-                  <div>
+                  </DirectoryCell>
+                  <DirectoryCell label="Status">
                     <Badge variant={statusVariant(employee.displayStatus)}>
                       {statusLabel(employee.displayStatus)}
                     </Badge>
-                  </div>
+                  </DirectoryCell>
                   <div className="flex items-center justify-start gap-2 md:justify-end">
                     {readOnly ? (
                       <HrLinkButton href={`/hr/employees/${employee.id}`} size="sm" variant="outline">

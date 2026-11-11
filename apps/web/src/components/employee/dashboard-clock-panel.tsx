@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState, startTransition } from "react";
-import { MapPinOff, Check, Loader2 } from "lucide-react";
+import { Check, Loader2, MapPinOff } from "@/components/portal/product-icons";
 import { employeeClockIn, employeeClockOut, type EmployeeActionState } from "@/app/(employee)/employee/actions";
 
 import type { GeofenceConfig } from "@/lib/attendance/geofence";

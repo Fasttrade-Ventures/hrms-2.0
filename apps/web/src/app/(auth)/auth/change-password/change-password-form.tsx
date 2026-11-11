@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState } from "react";
 
 import { AuthError } from "@/components/auth/auth-icons";
@@ -56,9 +55,7 @@ export function ChangePasswordForm() {
           {pending ? "Saving…" : "Save password"}
         </AuthPrimaryButton>
 
-        <Link className="block" href="/">
-          <AuthGhostButton type="button">Cancel</AuthGhostButton>
-        </Link>
+        <AuthGhostButton href="/">Cancel</AuthGhostButton>
       </form>
     </>
   );

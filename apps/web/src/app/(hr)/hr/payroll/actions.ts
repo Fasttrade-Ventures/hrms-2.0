@@ -14,6 +14,8 @@ import {
   upsertRecurringAllowance,
   type EmployeeCompensation,
 } from "@/lib/payroll/compensation";
+import { getOrganizationDisplay } from "@/lib/organization-display";
+import { bankExportOptionsFor } from "@/lib/payroll/export-options";
 import { assertMalaysianOrganization } from "@/lib/payroll/exports/country-guard";
 import { generateDraftPayrun } from "@/lib/payroll/generate";
 import { approvePayrun, deletePayrun, submitPayrunForReview } from "@/lib/payroll/workflow";
@@ -342,13 +344,22 @@ export async function exportBankAction(
 ): Promise<HrActionState> {
   const payrunId = String(formData.get("payrunId") ?? "");
   const branchId = String(formData.get("branchId") ?? "") || null;
-  const format = String(formData.get("format") ?? "bank_csv") as
-    "bank_csv" | "bank_maybank" | "bank_cimb";
+  const format = String(formData.get("format") ?? "bank_csv");
+  const { country } = await getOrganizationDisplay();
+  const allowed = bankExportOptionsFor(country).map((option) => option.value);
+  if (!allowed.includes(format as (typeof allowed)[number])) {
+    return { error: "That bank file is not available for this company." };
+  }
 
   try {
     const session = await guardPayroll();
     const { generateBankExport } = await import("@/lib/payroll/exports");
-    const result = await generateBankExport(payrunId, branchId, format, session.user.id);
+    const result = await generateBankExport(
+      payrunId,
+      branchId,
+      format as "bank_csv" | "bank_maybank" | "bank_cimb",
+      session.user.id,
+    );
     revalidatePath(`/hr/payroll/${payrunId}`);
     return exportReadyState(result);
   } catch (error) {

@@ -7,24 +7,13 @@ import { useState } from "react";
 import type { ModuleKey } from "@hrms/platform";
 
 import { PortalIcon, type PortalIconName, MenuIcon } from "@/components/portal/portal-icons";
-import { moduleForNavHref } from "@/lib/portal-nav";
+import { getEmployeeMobileMoreItems, moduleForNavHref } from "@/lib/portal-nav";
 
 const items: Array<{ href: string; label: string; icon: PortalIconName }> = [
   { href: "/employee/dashboard", label: "Home", icon: "dashboard" },
   { href: "/employee/leave", label: "Leave", icon: "leave" },
   { href: "/employee/attendance", label: "Attend", icon: "attendance" },
   { href: "/employee/payslips", label: "Pay", icon: "payslips" },
-];
-
-const moreItems: Array<{ href: string; label: string; icon: PortalIconName }> = [
-  { href: "/employee/dashboard", label: "Dashboard", icon: "dashboard" },
-  { href: "/employee/announcements", label: "Announcements", icon: "announcements" },
-  { href: "/employee/calendar", label: "Calendar", icon: "calendar" },
-  { href: "/employee/claims", label: "Claims", icon: "claims" },
-  { href: "/employee/overtime", label: "Overtime", icon: "overtime" },
-  { href: "/employee/documents", label: "Documents", icon: "documents" },
-  { href: "/employee/replacement-credit", label: "Replacement", icon: "replacement-credit" },
-  { href: "/employee/profile", label: "Profile", icon: "profile" },
 ];
 
 function isActive(pathname: string, href: string): boolean {
@@ -46,12 +35,9 @@ export function EmployeeMobileNav({ enabledModules }: { enabledModules?: ModuleK
       })
     : items;
 
-  const visibleMoreItems = enabledModules
-    ? moreItems.filter((item) => {
-        const navModule = moduleForNavHref(item.href);
-        return navModule ? enabled.has(navModule) : true;
-      })
-    : moreItems;
+  const visibleMoreItems = getEmployeeMobileMoreItems(
+    enabledModules ? { hasModule: (module) => enabled.has(module) } : undefined,
+  );
 
   const isMoreActive = menuOpen || !items.some((item) => isActive(pathname, item.href));
 

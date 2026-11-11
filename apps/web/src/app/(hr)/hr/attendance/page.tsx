@@ -3,6 +3,7 @@ import { ReportFilterBar } from "@/components/reports/report-filter-bar";
 import { ReportRunner } from "@/components/reports/report-runner";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { requireRole } from "@/lib/auth/session";
+import { getOrganizationCountry } from "@/lib/hr/organization";
 import { getEntitlements } from "@/lib/entitlements";
 import { getReportDefinition } from "@/lib/reports/catalog";
 import { buildFilterSummary, loadReportFilterOptions } from "@/lib/reports/context";
@@ -20,6 +21,7 @@ export default async function HrAttendancePage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   await requireRole("hr_administrator");
+  const country = await getOrganizationCountry();
   const raw = await searchParams;
   const filters = parseReportFilters(raw);
   const slug = "attendance-summary" as const;
@@ -77,6 +79,7 @@ export default async function HrAttendancePage({
       />
       <ReportRunner
         basePath="/hr/attendance"
+        country={country}
         columns={result.columns}
         description={definition.description}
         exportCsvAction={exportReportCsv}

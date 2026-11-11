@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { AuthGhostButton, AuthCardHeader } from "@/components/auth/auth-primitives";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { dashboardPathForRoles } from "@/lib/auth/redirect";
@@ -36,9 +34,7 @@ export default async function UnauthorizedPage({
       />
 
       <div className="space-y-3">
-        <Link className="block" href={dashboardHref}>
-          <AuthGhostButton type="button">Go to my dashboard</AuthGhostButton>
-        </Link>
+        <AuthGhostButton href={dashboardHref}>Go to my dashboard</AuthGhostButton>
         <form action="/api/auth/logout" method="post">
           <button
             className="w-full text-center text-[13px] text-[var(--accent-primary)] hover:text-[var(--accent-hover)]"

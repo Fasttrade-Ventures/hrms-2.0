@@ -2,17 +2,17 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { 
-  FileText, 
-  Calendar, 
-  DollarSign, 
-  Megaphone, 
-  Bell, 
-  Info, 
+import {
+  Bell,
+  Calendar,
   Check,
   CheckSquare,
-  Clock
-} from "lucide-react";
+  Clock,
+  DollarSign,
+  FileText,
+  Info,
+  Megaphone,
+} from "@/components/portal/product-icons";
 
 import { EmptyState } from "@hrms/ui";
 import { resolveNotificationHref } from "@/lib/notifications/links";

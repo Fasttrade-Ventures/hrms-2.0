@@ -14,6 +14,7 @@ import {
   type ApplyBehalfActionState,
 } from "@/app/(hr)/hr/apply-behalf/actions";
 import { ApplyBehalfFilters } from "@/components/hr/apply-behalf/apply-behalf-filters";
+import { EmployeeSearchSelect } from "@/components/hr/apply-behalf/employee-search-select";
 import {
   HrCheckbox,
   HrField,
@@ -490,8 +491,8 @@ export function ApplyBehalfForm({
         title="New application"
       />
 
-      <Card className="overflow-hidden py-0">
-        <div className="border-b bg-muted/40 px-5 py-4">
+      <Card className="overflow-visible py-0">
+        <div className="rounded-t-xl border-b bg-muted/40 px-5 py-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-semibold text-foreground">
@@ -525,7 +526,7 @@ export function ApplyBehalfForm({
 
           <div className="mt-3.5 pt-3 border-t border-border/50">
             <ToggleGroup
-              className="flex w-full flex-wrap sm:w-auto"
+              className="grid w-full grid-cols-5"
               onValueChange={(values) => {
                 const next = values.at(-1) as BehalfApplicationType | undefined;
                 if (next) setKind(next);
@@ -534,37 +535,21 @@ export function ApplyBehalfForm({
               value={[kind]}
               variant="outline"
             >
-              <ToggleGroupItem
-                aria-label="Leave application"
-                className="flex-1 sm:flex-initial text-xs px-3.5 py-1.5"
-                value="leave"
-              >
+              <ToggleGroupItem aria-label="Leave application" className="w-full min-w-0 px-2 text-xs" value="leave">
                 Leave
               </ToggleGroupItem>
-              <ToggleGroupItem
-                aria-label="Late application"
-                className="flex-1 sm:flex-initial text-xs px-3.5 py-1.5"
-                value="late"
-              >
+              <ToggleGroupItem aria-label="Late application" className="w-full min-w-0 px-2 text-xs" value="late">
                 Late
               </ToggleGroupItem>
-              <ToggleGroupItem
-                aria-label="Claim application"
-                className="flex-1 sm:flex-initial text-xs px-3.5 py-1.5"
-                value="claim"
-              >
+              <ToggleGroupItem aria-label="Claim application" className="w-full min-w-0 px-2 text-xs" value="claim">
                 Claim
               </ToggleGroupItem>
-              <ToggleGroupItem
-                aria-label="Overtime application"
-                className="flex-1 sm:flex-initial text-xs px-3.5 py-1.5"
-                value="overtime"
-              >
+              <ToggleGroupItem aria-label="Overtime application" className="w-full min-w-0 px-2 text-xs" value="overtime">
                 Overtime
               </ToggleGroupItem>
               <ToggleGroupItem
                 aria-label="Replacement credit application"
-                className="flex-1 sm:flex-initial text-xs px-3.5 py-1.5"
+                className="w-full min-w-0 px-2 text-xs"
                 value="replacement"
               >
                 Replacement
@@ -577,14 +562,7 @@ export function ApplyBehalfForm({
 
           <form action={activeFormAction} className="space-y-5" encType="multipart/form-data">
             <HrField id="employeeId" label="Employee">
-              <HrSelect defaultValue="" id="employeeId" name="employeeId" required>
-                <option value="">-- Select employee --</option>
-                {employees.map((employee) => (
-                  <option key={employee.id} value={employee.id}>
-                    {employee.full_name} ({employee.employee_number})
-                  </option>
-                ))}
-              </HrSelect>
+              <EmployeeSearchSelect employees={employees} />
             </HrField>
 
             {kind === "leave" ? (

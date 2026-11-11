@@ -177,7 +177,9 @@ export function AnnouncementComposeForm({
         <Card className="py-3" size="sm">
           <CardHeader className="border-b pb-3">
             <CardTitle>Audience</CardTitle>
-            <CardDescription>Leave filters empty to reach everyone in the organization.</CardDescription>
+            <CardDescription>
+              Leave filters empty to reach everyone in the organization. Publishing emails the people in this audience.
+            </CardDescription>
           </CardHeader>
           <CardContent className="pt-3">
             <AnnouncementAudienceFields
