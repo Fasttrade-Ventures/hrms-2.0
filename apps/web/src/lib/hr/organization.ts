@@ -1,3 +1,5 @@
+import { cookies } from "next/headers";
+
 import { requireRole } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import type { ListHolidaysInput } from "@hrms/validation";
@@ -9,9 +11,16 @@ export async function getOrganizationId(): Promise<string> {
 }
 
 export async function getOrganizationCountry(): Promise<"MY" | "AU"> {
-  const organizationId = await requireOrganizationId();
-  const supabase = await createClient();
-  return loadOrganizationCountry(supabase, organizationId);
+  // Mark the route dynamic for `next build`, then soft-fallback when org
+  // context is unavailable (e.g. CI build without DEFAULT_ORGANIZATION_ID).
+  await cookies();
+  try {
+    const organizationId = await requireOrganizationId();
+    const supabase = await createClient();
+    return loadOrganizationCountry(supabase, organizationId);
+  } catch {
+    return "MY";
+  }
 }
 
 export type OrgHubModule = {
