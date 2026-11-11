@@ -64,12 +64,8 @@ jobs:
 
       - name: Install Playwright Chromium
         run: |
-          # Prefer browser-only install: --with-deps fails when GitHub runner apt mirrors/DNS flake.
-          # Fall back to with-deps once if the host is missing shared libraries.
+          # Browser-only: --with-deps / install-deps fail when runner apt mirrors/DNS flake.
           pnpm exec playwright install chromium
-          if ! pnpm exec playwright install-deps chromium; then
-            echo "playwright install-deps skipped/failed; continuing with bundled Chromium"
-          fi
 
       - name: Smoke e2e (login page)
         env:
