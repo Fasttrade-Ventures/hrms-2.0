@@ -269,9 +269,9 @@ Build order and rules in [developer-brief.md](./developer-brief.md).
 
 | Feature | Tier | UI | Notes |
 |---------|------|-----|--------|
-| Job requisitions | Ent | ✅ | `/hr/recruitment` |
-| Candidates / applications pipeline | Ent | ✅ | `/hr/recruitment/[requisitionId]` |
-| Offers + offer PDF | Ent | ✅ | Schema + HR flow |
+| Job requisitions | Ent | ✅ | Hub at `/hr/recruitment` — filters, dept/branch/type, open/hold/close/re-open |
+| Candidates / applications pipeline | Ent | ✅ | Slim board `/hr/recruitment/[requisitionId]`; detail `/…/candidates/[applicationId]` |
+| Offers + offer PDF | Ent | ✅ | Draft/sent/accept/decline/withdraw; org currency PDF; accept → draft employee + soft checklist start (activation manual) |
 
 ---
 
