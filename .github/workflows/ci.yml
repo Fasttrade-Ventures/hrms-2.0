@@ -46,7 +46,8 @@ jobs:
           supabase test db
 
   e2e-smoke:
-    runs-on: ubuntu-latest
+    # Pin 24.04: ubuntu-latest (26) breaks Playwright --with-deps apt packages.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
