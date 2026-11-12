@@ -453,4 +453,184 @@ describe("Leave Attachment / MC Upload Workflow", () => {
       expect(allowed).toBe(false);
     });
   });
+
+  describe("canDownloadFile authorization for claims attachments", () => {
+    beforeEach(() => {
+      vi.mocked(createAdminClient).mockReturnValue({
+        from: vi.fn((table: string) => {
+          if (table === "file_objects") {
+            return {
+              select: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({
+                      data: {
+                        id: MOCK_FILE_ID,
+                        category: "claims",
+                        organization_id: MOCK_ORG_ID,
+                        deleted_at: null,
+                      },
+                      error: null,
+                    }),
+                  }),
+                }),
+              }),
+            };
+          }
+          return {} as any;
+        }),
+      } as any);
+    });
+
+    it("allows HR administrator to download claim receipts", async () => {
+      const allowed = await canDownloadFile({
+        roles: ["hr_administrator"],
+        employeeId: MOCK_OTHER_EMPLOYEE_ID,
+        fileId: MOCK_FILE_ID,
+        organizationId: MOCK_ORG_ID,
+        userId: "user-hr",
+      });
+      expect(allowed).toBe(true);
+    });
+
+    it("allows direct manager to download employee's claim receipt", async () => {
+      vi.mocked(createClient).mockResolvedValue({
+        from: vi.fn((table: string) => {
+          if (table === "claims") {
+            return {
+              select: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({
+                      data: {
+                        id: "claim-123",
+                        employee_id: MOCK_EMPLOYEE_ID,
+                        approval_request_id: MOCK_APPROVAL_REQUEST_ID,
+                        employees: { manager_employee_id: MOCK_MANAGER_ID },
+                      },
+                      error: null,
+                    }),
+                  }),
+                }),
+              }),
+            };
+          }
+          return {} as any;
+        }),
+      } as any);
+
+      const allowed = await canDownloadFile({
+        roles: ["manager"],
+        employeeId: MOCK_MANAGER_ID,
+        fileId: MOCK_FILE_ID,
+        organizationId: MOCK_ORG_ID,
+        userId: "user-mgr",
+      });
+      expect(allowed).toBe(true);
+    });
+
+    it("allows assigned step approver to download claim receipt", async () => {
+      vi.mocked(createClient).mockResolvedValue({
+        from: vi.fn((table: string) => {
+          if (table === "claims") {
+            return {
+              select: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({
+                      data: {
+                        id: "claim-123",
+                        employee_id: MOCK_EMPLOYEE_ID,
+                        approval_request_id: MOCK_APPROVAL_REQUEST_ID,
+                        employees: { manager_employee_id: MOCK_MANAGER_ID },
+                      },
+                      error: null,
+                    }),
+                  }),
+                }),
+              }),
+            };
+          }
+          if (table === "approval_steps") {
+            return {
+              select: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    eq: vi.fn().mockReturnValue({
+                      maybeSingle: vi.fn().mockResolvedValue({
+                        data: { id: "step-1" },
+                        error: null,
+                      }),
+                    }),
+                  }),
+                }),
+              }),
+            };
+          }
+          return {} as any;
+        }),
+      } as any);
+
+      const allowed = await canDownloadFile({
+        roles: ["manager"],
+        employeeId: MOCK_STEP_APPROVER_ID,
+        fileId: MOCK_FILE_ID,
+        organizationId: MOCK_ORG_ID,
+        userId: "user-step-mgr",
+      });
+      expect(allowed).toBe(true);
+    });
+
+    it("blocks an unrelated employee from downloading claim receipt", async () => {
+      vi.mocked(createClient).mockResolvedValue({
+        from: vi.fn((table: string) => {
+          if (table === "claims") {
+            return {
+              select: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({
+                      data: {
+                        id: "claim-123",
+                        employee_id: MOCK_EMPLOYEE_ID,
+                        approval_request_id: MOCK_APPROVAL_REQUEST_ID,
+                        employees: { manager_employee_id: MOCK_MANAGER_ID },
+                      },
+                      error: null,
+                    }),
+                  }),
+                }),
+              }),
+            };
+          }
+          if (table === "approval_steps") {
+            return {
+              select: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    eq: vi.fn().mockReturnValue({
+                      maybeSingle: vi.fn().mockResolvedValue({
+                        data: null,
+                        error: null,
+                      }),
+                    }),
+                  }),
+                }),
+              }),
+            };
+          }
+          return {} as any;
+        }),
+      } as any);
+
+      const allowed = await canDownloadFile({
+        roles: ["employee"],
+        employeeId: MOCK_OTHER_EMPLOYEE_ID,
+        fileId: MOCK_FILE_ID,
+        organizationId: MOCK_ORG_ID,
+        userId: "user-other",
+      });
+      expect(allowed).toBe(false);
+    });
+  });
 });
