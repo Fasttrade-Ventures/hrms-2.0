@@ -113,6 +113,7 @@ export async function submitClaim(
   const ratePerKmRaw = formData.get("ratePerKm");
   const originRaw = formData.get("origin");
   const destinationRaw = formData.get("destination");
+  const receiptFile = formData.get("receipt");
 
   const parsed = claimRequestSchema.safeParse({
     claimTypeId: String(formData.get("claimTypeId") ?? ""),
@@ -132,7 +133,7 @@ export async function submitClaim(
 
   try {
     await requireModule("claims");
-    const { employeeId, organizationId } = await requireEmployeeContext();
+    const { employeeId, organizationId, session } = await requireEmployeeContext();
 
     const rateLimit = await checkRateLimitDurable(`claim:${employeeId}`, 15, 60000, 2000);
     if (!rateLimit.allowed) {
@@ -140,15 +141,56 @@ export async function submitClaim(
     }
     const supabase = await createClient();
 
-    const { data: claimType, error: claimTypeError } = await supabase
+    let { data: claimType, error: claimTypeError } = await supabase
       .from("claim_types")
-      .select("id, name, max_amount, is_mileage, rate_per_km")
+      .select("id, name, max_amount, is_mileage, rate_per_km, requires_receipt")
       .eq("id", parsed.data.claimTypeId)
       .eq("organization_id", organizationId)
       .maybeSingle();
 
+    if (claimTypeError && claimTypeError.message.includes("requires_receipt")) {
+      const fallback = await supabase
+        .from("claim_types")
+        .select("id, name, max_amount, is_mileage, rate_per_km")
+        .eq("id", parsed.data.claimTypeId)
+        .eq("organization_id", organizationId)
+        .maybeSingle();
+      claimType = fallback.data
+        ? { ...fallback.data, requires_receipt: !fallback.data.is_mileage }
+        : null;
+      claimTypeError = fallback.error;
+    }
+
     if (claimTypeError) throw new Error(claimTypeError.message);
     if (!claimType) return { error: "Claim type not found." };
+
+    if (claimType.requires_receipt) {
+      if (!(receiptFile instanceof File) || receiptFile.size === 0) {
+        return { error: `A receipt attachment is required for ${claimType.name}.` };
+      }
+    }
+
+    let attachmentFileId: string | null = null;
+    let attachmentFileName: string | null = null;
+
+    if (receiptFile instanceof File && receiptFile.size > 0) {
+      const { assertDocumentUpload, uploadOrganizationFile } = await import("@/lib/files/storage");
+      assertDocumentUpload({
+        name: receiptFile.name,
+        type: receiptFile.type || "application/octet-stream",
+        size: receiptFile.size,
+      });
+      const fileBuffer = new Uint8Array(await receiptFile.arrayBuffer());
+      attachmentFileId = await uploadOrganizationFile({
+        organizationId,
+        category: "claims",
+        fileName: receiptFile.name,
+        contentType: receiptFile.type || "application/octet-stream",
+        body: fileBuffer,
+        uploadedByUserId: session.user.id,
+      });
+      attachmentFileName = receiptFile.name;
+    }
 
     const isMileage = Boolean(claimType.is_mileage);
     let finalAmount = Number(parsed.data.amount);
@@ -194,6 +236,7 @@ export async function submitClaim(
         rate_per_km: ratePerKm,
         origin,
         destination,
+        receipt_file_id: attachmentFileId,
         status: "draft",
       })
       .select("id, claim_types(name)")
@@ -210,6 +253,8 @@ export async function submitClaim(
         amount: finalAmount.toFixed(2),
         receiptDate: parsed.data.receiptDate,
         isMileage,
+        attachmentFileId: attachmentFileId ?? undefined,
+        attachmentFileName: attachmentFileName ?? undefined,
         ...(isMileage
           ? {
               origin,

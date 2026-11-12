@@ -317,7 +317,7 @@ export async function getEmployeeDetail(employeeId: string): Promise<EmployeeDet
   const supabase = await createClient();
   const organizationId = await requireOrganizationId();
 
-  const { data: employee, error } = await supabase
+  let { data: employee, error } = await supabase
     .from("employees")
     .select(
       `
@@ -390,6 +390,76 @@ export async function getEmployeeDetail(employeeId: string): Promise<EmployeeDet
     .eq("organization_id", organizationId)
     .eq("id", employeeId)
     .maybeSingle();
+
+  if (error && error.message.includes("employment_basis")) {
+    const fallback = await supabase
+      .from("employees")
+      .select(
+        `
+        id,
+        employee_number,
+        full_name,
+        email,
+        status,
+        join_date,
+        branch_id,
+        department_id,
+        manager_employee_id,
+        shift_id,
+        pay_group_id,
+        employment_type,
+        job_title,
+        position_id,
+        confirmation_status,
+        probation_end_date,
+        confirmed_on,
+        annual_leave_entitlement,
+        annual_leave_carry_forward,
+        branches(name),
+        departments(name),
+        positions(title),
+        shifts(name),
+        pay_groups(name),
+        employee_profiles(
+          phone,
+          ic_number,
+          date_of_birth,
+          gender,
+          race,
+          religion,
+          marital_status,
+          address_line1,
+          address_line2,
+          city,
+          state,
+          postcode,
+          country,
+          pay_basis,
+          working_days_per_month,
+          bank_name,
+          bank_account_number,
+          epf_number,
+          socso_number,
+          tax_number,
+          basic_salary,
+          epf_employee_rate,
+          epf_employer_rate,
+          eis_eligible,
+          profile_photo_path
+        ),
+        employee_emergency_contacts(id, name, relationship, phone),
+        employee_dependents(id, dependent_type, full_name, ic_number, is_working, date_of_birth),
+        employee_allowed_leave_types(leave_type_id, leave_types(name)),
+        employee_compensation(voluntary_epf_extra_rate),
+        organization_memberships(user_id, roles)
+      `,
+      )
+      .eq("organization_id", organizationId)
+      .eq("id", employeeId)
+      .maybeSingle();
+    employee = fallback.data as typeof employee;
+    error = fallback.error;
+  }
 
   if (error) {
     throw new Error(error.message);

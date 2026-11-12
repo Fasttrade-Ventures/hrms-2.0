@@ -44,6 +44,7 @@ export const claimRequestSchema = z.object({
   ratePerKm: z.coerce.number().positive().optional().nullable(),
   origin: z.string().max(255).optional().nullable(),
   destination: z.string().max(255).optional().nullable(),
+  attachmentFileId: z.string().uuid().optional().nullable(),
 });
 
 export type LeaveRequestInput = z.infer<typeof leaveRequestSchema>;

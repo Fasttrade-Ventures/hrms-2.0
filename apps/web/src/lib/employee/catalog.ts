@@ -9,11 +9,24 @@ export async function listClaimTypes() {
   const { organizationId } = await requireEmployeeContext();
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("claim_types")
-    .select("id, name, max_amount, is_mileage, rate_per_km")
+    .select("id, name, max_amount, is_mileage, rate_per_km, requires_receipt")
     .eq("organization_id", organizationId)
     .order("name");
+
+  if (error && error.message.includes("requires_receipt")) {
+    const fallback = await supabase
+      .from("claim_types")
+      .select("id, name, max_amount, is_mileage, rate_per_km")
+      .eq("organization_id", organizationId)
+      .order("name");
+    data = (fallback.data ?? []).map((ct) => ({
+      ...ct,
+      requires_receipt: !ct.is_mileage,
+    }));
+    error = fallback.error;
+  }
 
   if (error) throw new Error(error.message);
   return data ?? [];

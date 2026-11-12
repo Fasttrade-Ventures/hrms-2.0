@@ -705,6 +705,7 @@ export type ClaimTypeRow = {
   payrollTreatment: "taxable" | "reimbursement" | "exclude";
   isMileage: boolean;
   ratePerKm: number | null;
+  requiresReceipt: boolean;
   claimsCount: number;
   createdAt: string;
 };
@@ -714,14 +715,29 @@ export async function listClaimTypesAdmin(): Promise<ClaimTypeRow[]> {
   const supabase = await createClient();
   const organizationId = await requireOrganizationId();
 
-  const [{ data, error }, { data: claims, error: claimError }] = await Promise.all([
+  const [claimTypesRes, { data: claims, error: claimError }] = await Promise.all([
     supabase
       .from("claim_types")
-      .select("id, name, max_amount, payroll_treatment, is_mileage, rate_per_km, created_at")
+      .select("id, name, max_amount, payroll_treatment, is_mileage, rate_per_km, requires_receipt, created_at")
       .eq("organization_id", organizationId)
       .order("name"),
     supabase.from("claims").select("claim_type_id").eq("organization_id", organizationId),
   ]);
+  let data = claimTypesRes.data;
+  let error = claimTypesRes.error;
+
+  if (error && error.message.includes("requires_receipt")) {
+    const fallback = await supabase
+      .from("claim_types")
+      .select("id, name, max_amount, payroll_treatment, is_mileage, rate_per_km, created_at")
+      .eq("organization_id", organizationId)
+      .order("name");
+    data = (fallback.data ?? []).map((row) => ({
+      ...row,
+      requires_receipt: !row.is_mileage,
+    })) as typeof data;
+    error = fallback.error;
+  }
 
   if (error) throw new Error(error.message);
   if (claimError) throw new Error(claimError.message);
@@ -738,6 +754,7 @@ export async function listClaimTypesAdmin(): Promise<ClaimTypeRow[]> {
     payrollTreatment: (row.payroll_treatment ?? "taxable") as ClaimTypeRow["payrollTreatment"],
     isMileage: Boolean(row.is_mileage),
     ratePerKm: row.rate_per_km != null ? Number(row.rate_per_km) : null,
+    requiresReceipt: Boolean(row.requires_receipt),
     claimsCount: counts.get(row.id) ?? 0,
     createdAt: row.created_at,
   }));

@@ -3,6 +3,7 @@ import { computeOtPay, money } from "@hrms/domain";
 import { claimRequestSchema, createClaimTypeSchema } from "@hrms/validation";
 import { aggregateOtPayByEmployee } from "../../apps/web/src/lib/payroll/feeds/overtime";
 import { summarizeApprovalPayload } from "../../apps/web/src/lib/approvals/inbox";
+import { portalBreadcrumbs } from "../../apps/web/src/lib/portal-nav";
 
 describe("Custom Overtime Hourly Rates", () => {
   it("calculates overtime pay using custom hourly rate override", () => {
@@ -160,5 +161,62 @@ describe("Mileage Claims Schema & Calculations", () => {
 
     const summary = summarizeApprovalPayload("claim", payload);
     expect(summary).toBe("Medical Claim · RM 150.00");
+  });
+
+  it("validates claimRequestSchema with optional attachmentFileId", () => {
+    const validClaimWithReceipt = claimRequestSchema.safeParse({
+      claimTypeId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+      amount: "75.50",
+      receiptDate: "2026-11-12",
+      description: "Clinic outpatient visit",
+      attachmentFileId: "b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22",
+    });
+
+    expect(validClaimWithReceipt.success).toBe(true);
+    if (validClaimWithReceipt.success) {
+      expect(validClaimWithReceipt.data.attachmentFileId).toBe("b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22");
+    }
+
+    const invalidUuid = claimRequestSchema.safeParse({
+      claimTypeId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+      amount: "75.50",
+      receiptDate: "2026-11-12",
+      attachmentFileId: "not-a-valid-uuid",
+    });
+    expect(invalidUuid.success).toBe(false);
+  });
+
+  it("validates createClaimTypeSchema with requiresReceipt configuration", () => {
+    const medicalType = createClaimTypeSchema.safeParse({
+      name: "Medical",
+      maxAmount: "500",
+      payrollTreatment: "reimbursement",
+      isMileage: false,
+      requiresReceipt: true,
+    });
+    expect(medicalType.success).toBe(true);
+    if (medicalType.success) {
+      expect(medicalType.data.requiresReceipt).toBe(true);
+    }
+
+    const mileageType = createClaimTypeSchema.safeParse({
+      name: "Mileage (Car)",
+      isMileage: true,
+      ratePerKm: "0.80",
+    });
+    expect(mileageType.success).toBe(true);
+    if (mileageType.success) {
+      expect(mileageType.data.requiresReceipt).toBe(false);
+    }
+  });
+
+  it("renders clean breadcrumbs for organization edit paths without phantom Detail crumb", () => {
+    const crumbs = portalBreadcrumbs("/hr/organization/claim-types/cf214b07-ebbf-4e00-b92e-62936780d305/edit");
+    expect(crumbs).toEqual([
+      { href: "/hr", label: "HR" },
+      { href: "/hr/organization", label: "Organization" },
+      { href: "/hr/organization/claim-types", label: "Claim Types" },
+      { href: "/hr/organization/claim-types/cf214b07-ebbf-4e00-b92e-62936780d305/edit", label: "Edit" },
+    ]);
   });
 });

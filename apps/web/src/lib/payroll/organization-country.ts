@@ -7,12 +7,19 @@ export async function loadOrganizationCountry(
   supabase: SupabaseClient,
   organizationId: string,
 ): Promise<OrganizationCountry> {
-  const { data, error } = await supabase
-    .from("organizations")
-    .select("country")
-    .eq("id", organizationId)
-    .maybeSingle();
+  try {
+    const { data, error } = await supabase
+      .from("organizations")
+      .select("country")
+      .eq("id", organizationId)
+      .maybeSingle();
 
-  if (error) throw new Error(error.message);
-  return data?.country === "AU" ? "AU" : "MY";
+    if (error) {
+      if (error.message.includes("country")) return "MY";
+      throw new Error(error.message);
+    }
+    return data?.country === "AU" ? "AU" : "MY";
+  } catch {
+    return "MY";
+  }
 }
