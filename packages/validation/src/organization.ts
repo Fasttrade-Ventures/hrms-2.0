@@ -256,6 +256,7 @@ export const createClaimTypeSchema = z.object({
   payrollTreatment: claimPayrollTreatmentSchema.default("taxable"),
   isMileage: z.boolean().default(false),
   ratePerKm: z.coerce.number().min(0).optional().nullable(),
+  requiresReceipt: z.boolean().default(false),
 });
 
 export const updateClaimTypeSchema = createClaimTypeSchema;

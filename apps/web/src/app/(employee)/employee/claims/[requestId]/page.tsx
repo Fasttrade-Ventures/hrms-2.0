@@ -10,6 +10,7 @@ import {
   formatDateTime,
   RequestStatusPill,
 } from "@/components/employee/employee-shared";
+import { PortalIcon } from "@/components/portal/portal-icons";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { getClaim, getApprovalTimeline } from "@/lib/employee/requests";
 import { requireModule } from "@/lib/entitlements";
@@ -106,6 +107,23 @@ export default async function ClaimDetailPage({
 
         <ClaimActionControls requestId={request.id} status={request.status} />
       </section>
+
+      {request.receiptFileId && (
+        <section className="space-y-3 border border-[var(--border-primary)] bg-[var(--surface-card)] p-6">
+          <h2 className="text-base font-semibold text-[var(--foreground-primary)]">Receipt / Supporting document</h2>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/api/files/${request.receiptFileId}/download`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm font-medium text-[var(--accent-primary)] hover:underline"
+            >
+              <PortalIcon name="documents" className="h-4 w-4" />
+              <span>{request.receiptFileName ?? "Download receipt"}</span>
+            </Link>
+          </div>
+        </section>
+      )}
 
       {timeline.length > 0 && (
         <ApprovalTimeline steps={timeline} />

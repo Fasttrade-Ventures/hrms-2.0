@@ -141,7 +141,7 @@ export async function listClaims() {
 
   const { data, error } = await supabase
     .from("claims")
-    .select("id, amount, receipt_date, description, status, created_at, approval_request_id, is_mileage, distance_km, rate_per_km, origin, destination, claim_types(name)")
+    .select("id, amount, receipt_date, description, status, created_at, approval_request_id, is_mileage, distance_km, rate_per_km, origin, destination, receipt_file_id, claim_types(name)")
     .eq("organization_id", organizationId)
     .eq("employee_id", employeeId)
     .order("created_at", { ascending: false });
@@ -161,6 +161,7 @@ export async function listClaims() {
     ratePerKm: row.rate_per_km != null ? Number(row.rate_per_km) : null,
     origin: row.origin ?? null,
     destination: row.destination ?? null,
+    receiptFileId: row.receipt_file_id ?? null,
   }));
 }
 
@@ -170,7 +171,7 @@ export async function getClaim(id: string) {
 
   const { data, error } = await supabase
     .from("claims")
-    .select("id, amount, receipt_date, description, status, created_at, approval_request_id, is_mileage, distance_km, rate_per_km, origin, destination, claim_types(name)")
+    .select("id, amount, receipt_date, description, status, created_at, approval_request_id, is_mileage, distance_km, rate_per_km, origin, destination, receipt_file_id, claim_types(name), file_objects(file_name)")
     .eq("organization_id", organizationId)
     .eq("employee_id", employeeId)
     .eq("id", id)
@@ -178,6 +179,8 @@ export async function getClaim(id: string) {
 
   if (error) throw new Error(error.message);
   if (!data) return null;
+
+  const file = Array.isArray(data.file_objects) ? data.file_objects[0] : data.file_objects;
 
   return {
     id: data.id,
@@ -193,6 +196,8 @@ export async function getClaim(id: string) {
     ratePerKm: data.rate_per_km != null ? Number(data.rate_per_km) : null,
     origin: data.origin ?? null,
     destination: data.destination ?? null,
+    receiptFileId: data.receipt_file_id ?? null,
+    receiptFileName: (file as { file_name?: string } | null)?.file_name ?? null,
   };
 }
 

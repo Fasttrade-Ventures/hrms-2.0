@@ -19,6 +19,9 @@ export async function loadLeaveUnits(
     .eq("id", organizationId)
     .maybeSingle();
 
+  if (error && (error.message.includes("country") || error.message.includes("standard_day_hours"))) {
+    return { country: "MY", standardDayHours: 8 };
+  }
   if (error) throw new Error(error.message);
 
   const country = data?.country === "AU" ? "AU" : "MY";

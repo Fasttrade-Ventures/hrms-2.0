@@ -54,7 +54,7 @@ describe("low severity fixes", () => {
   it("keeps Lucide inside the shadcn primitives", () => {
     const web = resolve(root, "apps/web/src");
     const offenders = sourceFiles(web)
-      .filter((file) => !relative(web, file).startsWith("components/ui/"))
+      .filter((file) => !relative(web, file).replace(/\\/g, "/").startsWith("components/ui/"))
       .filter((file) => source(file).includes('from "lucide-react"') || source(file).includes("from 'lucide-react'"));
 
     expect(offenders.map((file) => relative(root, file))).toEqual([]);

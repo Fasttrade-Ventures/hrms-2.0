@@ -23,8 +23,10 @@ import {
 } from "@/components/hr/organization/org-ui";
 import { HrLinkButton } from "@/components/hr/hr-ui.client";
 import { PortalListPage } from "@/components/portal/portal-list-page";
+import { Badge } from "@/components/ui/badge";
 import type { ClaimTypeRow } from "@/lib/hr/organization";
 import { currencySymbolLabel, formatMoney, type DisplayCurrency } from "@/lib/money";
+import { cn } from "@/lib/utils";
 
 const initialState: OrgActionState = {};
 
@@ -65,7 +67,7 @@ export function ClaimTypesList({
       <OrgTableShell
         emptyDescription="Create claim types so employees can submit expenses and mileage claims."
         emptyTitle="No claim types yet"
-        headers={["Name", "Calculation & Rate", "Payroll Treatment", "Claims", "Status", "Action"]}
+        headers={["Name", "Calculation & Rate", "Receipt", "Payroll Treatment", "Claims", "Status", "Action"]}
         isEmpty={claimTypes.length === 0}
       >
         {claimTypes.map((claimType) => (
@@ -74,9 +76,9 @@ export function ClaimTypesList({
             <OrgTableCell>
               {claimType.isMileage ? (
                 <span className="inline-flex items-center gap-1.5">
-                  <span className="inline-flex items-center rounded-full bg-[var(--surface-muted)] px-2.5 py-0.5 text-xs font-medium text-[var(--accent-primary)]">
+                  <Badge className="font-medium text-foreground" variant="secondary">
                     Mileage
-                  </span>
+                  </Badge>
                   <span className="text-xs text-[var(--foreground-muted)]">
                     {formatMoney(Number(claimType.ratePerKm ?? 0), currency)} / km
                   </span>
@@ -86,6 +88,20 @@ export function ClaimTypesList({
                   Standard receipt {claimType.maxAmount != null ? `· Max ${formatMoney(claimType.maxAmount, currency)}` : "· No limit"}
                 </span>
               )}
+            </OrgTableCell>
+            <OrgTableCell>
+              <div className="flex w-fit items-center">
+                <Badge
+                  className={cn(
+                    claimType.requiresReceipt
+                      ? "border-emerald-500/30 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
+                      : "border-border text-muted-foreground font-normal",
+                  )}
+                  variant="outline"
+                >
+                  {claimType.requiresReceipt ? "Required" : "Optional"}
+                </Badge>
+              </div>
             </OrgTableCell>
             <OrgTableCell variant="muted">
               <span className="capitalize">{claimType.payrollTreatment}</span>
@@ -137,6 +153,24 @@ export function ClaimTypeCreateForm({ currency = "MYR" }: { currency?: DisplayCu
                 <span className="font-medium text-foreground">Enable distance-based mileage calculation</span>
                 <span className="block text-xs text-muted-foreground">
                   Calculate total automatically based on origin, destination, and distance.
+                </span>
+              </span>
+            </label>
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                defaultChecked={true}
+                className="mt-1 size-4 rounded border border-input"
+                id="requiresReceipt"
+                name="requiresReceipt"
+                type="checkbox"
+              />
+              <span className="space-y-0.5">
+                <span className="font-medium text-foreground">Require receipt attachment</span>
+                <span className="block text-xs text-muted-foreground">
+                  Employees must upload a receipt or tax invoice when submitting claims for this category.
                 </span>
               </span>
             </label>
@@ -237,6 +271,24 @@ export function ClaimTypeEditForm({
                 <span className="font-medium text-foreground">Enable distance-based mileage calculation</span>
                 <span className="block text-xs text-muted-foreground">
                   Calculate total automatically based on origin, destination, and distance.
+                </span>
+              </span>
+            </label>
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                defaultChecked={claimType.requiresReceipt}
+                className="mt-1 size-4 rounded border border-input"
+                id="requiresReceipt"
+                name="requiresReceipt"
+                type="checkbox"
+              />
+              <span className="space-y-0.5">
+                <span className="font-medium text-foreground">Require receipt attachment</span>
+                <span className="block text-xs text-muted-foreground">
+                  Employees must upload a receipt or tax invoice when submitting claims for this category.
                 </span>
               </span>
             </label>

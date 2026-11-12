@@ -958,6 +958,7 @@ export async function createClaimType(
   const organizationId = await getOrganizationId();
 
   const isMileage = readCheckbox(formData, "isMileage");
+  const requiresReceipt = readCheckbox(formData, "requiresReceipt");
   const maxAmountRaw = String(formData.get("maxAmount") ?? "").trim();
   const ratePerKmRaw = String(formData.get("ratePerKm") ?? "").trim();
 
@@ -967,6 +968,7 @@ export async function createClaimType(
     payrollTreatment: String(formData.get("payrollTreatment") ?? "taxable").trim(),
     isMileage,
     ratePerKm: isMileage && ratePerKmRaw ? ratePerKmRaw : null,
+    requiresReceipt,
   });
 
   if (!parsed.success) {
@@ -981,6 +983,7 @@ export async function createClaimType(
     payroll_treatment: parsed.data.payrollTreatment,
     is_mileage: parsed.data.isMileage,
     rate_per_km: parsed.data.ratePerKm,
+    requires_receipt: parsed.data.requiresReceipt,
   });
 
   if (error) {
@@ -1003,6 +1006,7 @@ export async function updateClaimType(
   const organizationId = await getOrganizationId();
 
   const isMileage = readCheckbox(formData, "isMileage");
+  const requiresReceipt = readCheckbox(formData, "requiresReceipt");
   const maxAmountRaw = String(formData.get("maxAmount") ?? "").trim();
   const ratePerKmRaw = String(formData.get("ratePerKm") ?? "").trim();
 
@@ -1012,6 +1016,7 @@ export async function updateClaimType(
     payrollTreatment: String(formData.get("payrollTreatment") ?? "taxable").trim(),
     isMileage,
     ratePerKm: isMileage && ratePerKmRaw ? ratePerKmRaw : null,
+    requiresReceipt,
   });
 
   if (!parsed.success) {
@@ -1027,6 +1032,7 @@ export async function updateClaimType(
       payroll_treatment: parsed.data.payrollTreatment,
       is_mileage: parsed.data.isMileage,
       rate_per_km: parsed.data.ratePerKm,
+      requires_receipt: parsed.data.requiresReceipt,
     })
     .eq("id", claimTypeId)
     .eq("organization_id", organizationId);

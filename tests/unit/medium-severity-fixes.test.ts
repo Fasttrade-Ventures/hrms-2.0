@@ -110,7 +110,7 @@ describe("medium severity fixes", () => {
     const css = source("apps/web/src/app/globals.css");
     const root = css.slice(css.indexOf(":root"), css.indexOf(".auth-theme"));
 
-    expect(button).toContain('default:\n          "h-10');
+    expect(button.replace(/\r\n/g, "\n")).toContain('default:\n          "h-10');
     expect(button).toContain("bg-[var(--accent-primary)]");
     expect(input).toContain("h-10");
     expect(input).toContain("bg-[var(--surface-card)]");

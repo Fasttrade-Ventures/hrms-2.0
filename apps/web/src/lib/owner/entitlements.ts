@@ -196,7 +196,7 @@ export async function getOwnerCompanySettings(): Promise<OwnerCompanySettings> {
   const supabase = await createClient();
   const organizationId = await requireOrganizationId();
 
-  const [{ data, error }, { data: branches }] = await Promise.all([
+  const [orgRes, { data: branches }] = await Promise.all([
     supabase
       .from("organizations")
       .select("country, currency, abn, standard_day_hours, timezone")
@@ -209,6 +209,24 @@ export async function getOwnerCompanySettings(): Promise<OwnerCompanySettings> {
       .order("created_at")
       .limit(1),
   ]);
+  let data = orgRes.data;
+  let error = orgRes.error;
+
+  if (error && error.message.includes("country")) {
+    const fallback = await supabase
+      .from("organizations")
+      .select("timezone")
+      .eq("id", organizationId)
+      .maybeSingle();
+    data = {
+      country: "MY",
+      currency: "MYR",
+      abn: null,
+      standard_day_hours: 8,
+      timezone: fallback.data?.timezone ?? "Asia/Kuala_Lumpur",
+    } as typeof data;
+    error = fallback.error;
+  }
 
   if (error || !data) throw new Error(error?.message ?? "Organization not found.");
 

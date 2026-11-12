@@ -26,7 +26,10 @@ export async function GET(
     .is("deleted_at", null)
     .maybeSingle();
 
-  const isLeave = file?.category === "leave-attachments";
+  const isRequestAttachment =
+    file?.category === "leave-attachments" ||
+    file?.category === "claims" ||
+    file?.category === "claim-attachments";
   const moduleKey =
     file?.category === "announcement-attachments"
       ? "announcements"
@@ -34,7 +37,7 @@ export async function GET(
         ? "recruitment"
         : "documents";
 
-  if (!isLeave) {
+  if (!isRequestAttachment) {
     try {
       await requireModule(moduleKey);
     } catch {

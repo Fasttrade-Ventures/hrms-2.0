@@ -611,9 +611,13 @@ const PORTAL_ROOT_LABELS: Record<string, string> = {
   platform: "Platform",
 };
 
+function isIdSegment(segment: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f-]{20,}$/i.test(segment) || /^\d+$/.test(segment);
+}
+
 function breadcrumbLabel(segment: string, index: number): string {
   if (index === 0 && PORTAL_ROOT_LABELS[segment]) return PORTAL_ROOT_LABELS[segment];
-  if (/^[0-9a-f]{8}-[0-9a-f-]{20,}$/i.test(segment) || /^\d+$/.test(segment)) return "Detail";
+  if (isIdSegment(segment)) return "Detail";
   return segment
     .split("-")
     .filter(Boolean)
@@ -628,8 +632,13 @@ export function portalBreadcrumbs(pathname: string): Array<{ href: string; label
 
   const crumbs: Array<{ href: string; label: string }> = [];
   let href = "";
+  const isOrgEdit = parts.includes("organization") && parts[parts.length - 1] === "edit";
+
   parts.forEach((part, index) => {
     href += `/${part}`;
+    if (isOrgEdit && isIdSegment(part) && parts[index + 1] === "edit") {
+      return;
+    }
     crumbs.push({ href, label: breadcrumbLabel(part, index) });
   });
   return crumbs;

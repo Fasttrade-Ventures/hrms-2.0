@@ -170,6 +170,66 @@ export async function canDownloadFile(input: {
     return false;
   }
 
+  if (file.category === "claims" || file.category === "claim-attachments") {
+    if (
+      input.roles.includes("hr_administrator") ||
+      input.roles.includes("platform_administrator") ||
+      input.roles.includes("organization_owner")
+    ) {
+      return true;
+    }
+    if (!input.employeeId) return false;
+
+    const supabase = await createClient();
+    let { data: claim } = await supabase
+      .from("claims")
+      .select("id, employee_id, approval_request_id, employees(manager_employee_id, branch_id)")
+      .eq("organization_id", input.organizationId)
+      .eq("receipt_file_id", input.fileId)
+      .maybeSingle();
+
+    if (!claim) {
+      const { data: adminClaim } = await admin
+        .from("claims")
+        .select("id, employee_id, approval_request_id, employees(manager_employee_id, branch_id)")
+        .eq("organization_id", input.organizationId)
+        .eq("receipt_file_id", input.fileId)
+        .maybeSingle();
+      claim = adminClaim;
+    }
+
+    if (!claim) return false;
+
+    if (claim.employee_id === input.employeeId) return true;
+
+    const requesterManagerId = (
+      claim.employees as { manager_employee_id?: string | null; branch_id?: string | null } | null
+    )?.manager_employee_id;
+    if (input.roles.includes("manager") && requesterManagerId === input.employeeId) return true;
+
+    if (input.roles.includes("branch_admin") && input.userId) {
+      const branchIds = await resolveBranchAdminScopeIds(input.organizationId, input.userId);
+      const employeeBranch = (
+        claim.employees as { manager_employee_id?: string | null; branch_id?: string | null } | null
+      )?.branch_id;
+      if (employeeBranch && branchIds.includes(employeeBranch)) return true;
+    }
+
+    if (claim.approval_request_id) {
+      const { data: step } = await supabase
+        .from("approval_steps")
+        .select("id")
+        .eq("organization_id", input.organizationId)
+        .eq("approval_request_id", claim.approval_request_id)
+        .eq("approver_employee_id", input.employeeId)
+        .maybeSingle();
+
+      if (step) return true;
+    }
+
+    return false;
+  }
+
   const supabase = await createClient();
   const { data: link } = await supabase
     .from("employee_documents")
