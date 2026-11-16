@@ -8,7 +8,15 @@ import { PortalSectionCard } from "@/components/portal/portal-section";
 
 const initialState: ManagerActionState = {};
 
-export function ApprovalActions({ stepId }: { stepId: string }) {
+export function ApprovalActions({
+  stepId,
+  requesterName = "The employee",
+  requestTypeLabel = "request",
+}: {
+  stepId: string;
+  requesterName?: string;
+  requestTypeLabel?: string;
+}) {
   const [approveState, approveAction, approvePending] = useActionState(approveRequest, initialState);
   const [rejectState, rejectAction, rejectPending] = useActionState(rejectRequest, initialState);
   const [comment, setComment] = useState("");
@@ -93,8 +101,8 @@ export function ApprovalActions({ stepId }: { stepId: string }) {
             <div className="flex flex-col items-center text-center">
               <div className={`flex h-12 w-12 items-center justify-center rounded-full ${
                 confirmModal.type === "approve" 
-                  ? "bg-emerald-500/15 text-emerald-500" 
-                  : "bg-red-500/15 text-red-500"
+                  ? "bg-emerald-500/15 text-emerald-600" 
+                  : "bg-red-500/15 text-red-600"
               }`}>
                 {confirmModal.type === "approve" ? (
                   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -102,18 +110,20 @@ export function ApprovalActions({ stepId }: { stepId: string }) {
                   </svg>
                 ) : (
                   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 )}
               </div>
               
               <h3 className="mt-4 text-lg font-semibold text-[var(--foreground-primary)]">
-                {confirmModal.type === "approve" ? "Approve request?" : "Reject request?"}
+                {confirmModal.type === "approve"
+                  ? `Approve this ${requestTypeLabel.toLowerCase()}?`
+                  : `Reject this ${requestTypeLabel.toLowerCase()}?`}
               </h3>
               <p className="mt-2 text-sm text-[var(--foreground-muted)]">
                 {confirmModal.type === "approve"
-                  ? "Are you sure you want to approve this request? This will approve the employee's leave application."
-                  : "Are you sure you want to reject this request? This will reject the employee's leave application."}
+                  ? `${requesterName} will be notified. This will approve the ${requestTypeLabel.toLowerCase()} application.`
+                  : `${requesterName} will be notified. Please ensure you have added a comment explaining the rejection.`}
               </p>
 
               {comment.trim() && (
@@ -141,7 +151,7 @@ export function ApprovalActions({ stepId }: { stepId: string }) {
                 }`}
                 onClick={handleConfirm}
               >
-                {confirmModal.type === "approve" ? "Yes, approve" : "Yes, reject"}
+                {confirmModal.type === "approve" ? "Approve" : "Reject"}
               </button>
             </div>
           </div>

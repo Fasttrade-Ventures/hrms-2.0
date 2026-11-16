@@ -50,25 +50,35 @@ function getNotificationText(row: NotificationRow): { title: string; message: st
   if (row.template === "approval.pending") {
     const requestType = String(row.payload.requestType ?? "");
     const label = REQUEST_TYPE_LABELS[requestType as keyof typeof REQUEST_TYPE_LABELS] ?? "Request";
+    const requesterName = row.payload.requesterName ? String(row.payload.requesterName) : null;
+    const summary = row.payload.requestSummary ? String(row.payload.requestSummary) : null;
     return {
-      title: `${label} pending approval`,
-      message: `${label} request is awaiting your approval.`
+      title: requesterName ? `${requesterName} · ${label} pending` : `${label} pending approval`,
+      message: summary
+        ? `${summary} is awaiting your approval.`
+        : `${label} request is awaiting your approval.`,
     };
   }
   if (row.template === "approval.approve") {
     const requestType = String(row.payload.requestType ?? "");
     const label = REQUEST_TYPE_LABELS[requestType as keyof typeof REQUEST_TYPE_LABELS] ?? "Request";
+    const summary = row.payload.requestSummary ? String(row.payload.requestSummary) : null;
     return {
       title: `${label} approved`,
-      message: `Your ${label.toLowerCase()} request was approved.`
+      message: summary
+        ? `Your ${label.toLowerCase()} request (${summary}) was approved.`
+        : `Your ${label.toLowerCase()} request was approved.`,
     };
   }
   if (row.template === "approval.reject") {
     const requestType = String(row.payload.requestType ?? "");
     const label = REQUEST_TYPE_LABELS[requestType as keyof typeof REQUEST_TYPE_LABELS] ?? "Request";
+    const summary = row.payload.requestSummary ? String(row.payload.requestSummary) : null;
     return {
       title: `${label} rejected`,
-      message: `Your ${label.toLowerCase()} request was rejected.`
+      message: summary
+        ? `Your ${label.toLowerCase()} request (${summary}) was rejected.`
+        : `Your ${label.toLowerCase()} request was rejected.`,
     };
   }
   if (row.template === "approval.cancel") {

@@ -7,12 +7,14 @@ import { queueNotification } from "@/lib/notifications/queue";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-import type {
-  ApprovalRequestType,
-  ApprovalSourceTable,
-  ApproverType,
-  ApprovalWorkflowConfig,
-  EscalationAction,
+import { summarizeApprovalPayload } from "./inbox";
+import {
+  REQUEST_TYPE_LABELS,
+  type ApprovalRequestType,
+  type ApprovalSourceTable,
+  type ApproverType,
+  type ApprovalWorkflowConfig,
+  type EscalationAction,
 } from "./types";
 
 type SubmitApprovalInput = {
@@ -44,6 +46,75 @@ export type ResolvedApprovalStep = {
   escalationAction: EscalationAction;
   escalationEmployeeId: string | null;
 };
+
+export function extractApprovalEmailDetails(
+  requestType: ApprovalRequestType,
+  payload: Record<string, unknown>,
+  currencyPrefix = "RM ",
+): Array<{ label: string; value: string }> {
+  const details: Array<{ label: string; value: string }> = [];
+
+  if (requestType === "claim") {
+    if (payload.claimTypeName) details.push({ label: "Category", value: String(payload.claimTypeName) });
+    if (payload.amount) details.push({ label: "Amount", value: `${currencyPrefix}${Number(payload.amount).toFixed(2)}` });
+    if (payload.receiptDate) details.push({ label: "Receipt Date", value: String(payload.receiptDate) });
+    if (payload.isMileage) {
+      if (payload.distanceKm) details.push({ label: "Distance", value: `${payload.distanceKm} km` });
+      if (payload.origin && payload.destination) {
+        details.push({ label: "Route", value: `${payload.origin} → ${payload.destination}` });
+      }
+    }
+    if (payload.attachmentFileName) {
+      details.push({ label: "Receipt", value: String(payload.attachmentFileName) });
+    } else if (payload.attachmentFileId) {
+      details.push({ label: "Receipt", value: "Attached file" });
+    }
+    if (payload.description) {
+      details.push({ label: "Description", value: String(payload.description) });
+    }
+  } else if (requestType === "leave") {
+    if (payload.leaveTypeName) details.push({ label: "Leave Type", value: String(payload.leaveTypeName) });
+    if (payload.startDate && payload.endDate) {
+      details.push({
+        label: "Period",
+        value: payload.startDate === payload.endDate ? String(payload.startDate) : `${payload.startDate} to ${payload.endDate}`,
+      });
+    }
+    if (payload.days != null) details.push({ label: "Duration", value: `${payload.days} day(s)` });
+    if (payload.reason) details.push({ label: "Reason", value: String(payload.reason) });
+    if (payload.attachmentFileName) {
+      details.push({ label: "Attachment", value: String(payload.attachmentFileName) });
+    } else if (payload.attachmentFileId) {
+      details.push({ label: "Attachment", value: "Attached document" });
+    }
+  } else if (requestType === "overtime") {
+    if (payload.workDate) details.push({ label: "Work Date", value: String(payload.workDate) });
+    if (payload.hours) details.push({ label: "Hours", value: `${payload.hours}h` });
+    if (payload.rateType) details.push({ label: "Rate", value: `${payload.rateType}x` });
+    if (payload.reason) details.push({ label: "Reason", value: String(payload.reason) });
+  } else if (requestType === "replacement_credit") {
+    if (payload.workDate) details.push({ label: "Work Date", value: String(payload.workDate) });
+    if (payload.creditDays != null) details.push({ label: "Credit Days", value: `${payload.creditDays} day(s)` });
+    if (payload.description) details.push({ label: "Description", value: String(payload.description) });
+  } else if (requestType === "late") {
+    if (payload.requestDate) details.push({ label: "Date", value: String(payload.requestDate) });
+    if (payload.actualArrivalTime) details.push({ label: "Arrival Time", value: String(payload.actualArrivalTime) });
+    if (payload.reason) details.push({ label: "Reason", value: String(payload.reason) });
+  } else if (requestType === "attendance") {
+    if (payload.requestDate) details.push({ label: "Date", value: String(payload.requestDate) });
+    if (payload.clockInTime) details.push({ label: "Clock In", value: String(payload.clockInTime) });
+    if (payload.clockOutTime) details.push({ label: "Clock Out", value: String(payload.clockOutTime) });
+    if (payload.reason) details.push({ label: "Reason", value: String(payload.reason) });
+  }
+
+  return details;
+}
+
+export function triggerOutboxDispatch(): void {
+  import("@/lib/notifications/process-outbox")
+    .then(({ processNotificationOutbox }) => processNotificationOutbox(20))
+    .catch(() => {});
+}
 
 export async function resolveUserIdForEmployee(
   organizationId: string,
@@ -241,7 +312,7 @@ export async function submitForApproval(input: SubmitApprovalInput): Promise<str
   const { data: createdSteps, error: stepsError } = await supabase
     .from("approval_steps")
     .insert(stepRows)
-    .select("id, step_order, approver_employee_id, status");
+    .select("id, step_order, approver_employee_id, status, due_date");
 
   if (stepsError) throw new Error(stepsError.message);
 
@@ -254,12 +325,31 @@ export async function submitForApproval(input: SubmitApprovalInput): Promise<str
   if (linkError) throw new Error(linkError.message);
 
   const firstStep = (createdSteps ?? []).find((s) => s.step_order === 1);
+  const requestTypeLabel = REQUEST_TYPE_LABELS[input.requestType] ?? "Request";
+  const requestSummary = summarizeApprovalPayload(input.requestType, input.payload);
+  const details = extractApprovalEmailDetails(input.requestType, input.payload);
+
+  const { data: requester } = await supabase
+    .from("employees")
+    .select("id, full_name, employee_number, email")
+    .eq("organization_id", input.organizationId)
+    .eq("id", input.requesterEmployeeId)
+    .maybeSingle();
+
   if (firstStep?.approver_employee_id) {
     const managerUserId = await resolveUserIdForEmployee(
       input.organizationId,
       firstStep.approver_employee_id,
       supabase,
     );
+
+    const { data: approverEmp } = await supabase
+      .from("employees")
+      .select("id, full_name, email")
+      .eq("organization_id", input.organizationId)
+      .eq("id", firstStep.approver_employee_id)
+      .maybeSingle();
+
     await queueNotification({
       organizationId: input.organizationId,
       recipientUserId: managerUserId,
@@ -272,10 +362,63 @@ export async function submitForApproval(input: SubmitApprovalInput): Promise<str
         sourceId: input.sourceId,
         stepId: firstStep.id,
         href: `/manager/approvals/${firstStep.id}`,
+        requesterName: requester?.full_name ?? "Employee",
+        requestSummary,
       },
       idempotencyKey: `approval-pending-${request.id}`,
     });
+
+    if (managerUserId) {
+      await queueNotification({
+        organizationId: input.organizationId,
+        recipientUserId: managerUserId,
+        channel: "email",
+        template: "approval.pending",
+        payload: {
+          recipientName: approverEmp?.full_name ?? "Approver",
+          recipientEmail: approverEmp?.email,
+          requesterName: requester?.full_name ?? "Employee",
+          requesterEmployeeNumber: requester?.employee_number,
+          requestType: input.requestType,
+          requestTypeLabel,
+          requestSummary,
+          details,
+          stepId: firstStep.id,
+          href: `/manager/approvals/${firstStep.id}`,
+          dueDate: firstStep.due_date,
+        },
+        idempotencyKey: `approval-pending-${request.id}:email`,
+      });
+    }
   }
+
+  // Confirmation email for requester employee
+  const requesterUserId = await resolveUserIdForEmployee(
+    input.organizationId,
+    input.requesterEmployeeId,
+    supabase,
+  );
+  if (requesterUserId) {
+    const detailHref = employeeRequestDetailHref(input.requestType, input.sourceId);
+    await queueNotification({
+      organizationId: input.organizationId,
+      recipientUserId: requesterUserId,
+      channel: "email",
+      template: "approval.submitted",
+      payload: {
+        employeeName: requester?.full_name ?? "Employee",
+        recipientEmail: requester?.email,
+        requestType: input.requestType,
+        requestTypeLabel,
+        requestSummary,
+        details,
+        href: detailHref,
+      },
+      idempotencyKey: `approval-submitted-${request.id}:email`,
+    });
+  }
+
+  triggerOutboxDispatch();
 
   await logAuditEvent({
     organizationId: input.organizationId,
@@ -380,6 +523,25 @@ export async function actOnApproval(input: ActOnApprovalInput): Promise<void> {
           nextStep.approver_employee_id,
           supabase,
         );
+
+        const { data: nextApproverEmp } = await supabase
+          .from("employees")
+          .select("id, full_name, email")
+          .eq("organization_id", input.organizationId)
+          .eq("id", nextStep.approver_employee_id)
+          .maybeSingle();
+
+        const { data: requesterEmp } = await supabase
+          .from("employees")
+          .select("id, full_name, employee_number, email")
+          .eq("organization_id", input.organizationId)
+          .eq("id", request.requester_employee_id)
+          .maybeSingle();
+
+        const requestTypeLabel = REQUEST_TYPE_LABELS[request.request_type] ?? "Request";
+        const requestSummary = summarizeApprovalPayload(request.request_type, request.payload);
+        const details = extractApprovalEmailDetails(request.request_type, request.payload);
+
         await queueNotification({
           organizationId: input.organizationId,
           recipientUserId: nextApproverUserId,
@@ -392,9 +554,36 @@ export async function actOnApproval(input: ActOnApprovalInput): Promise<void> {
             sourceId: sourceId ?? null,
             stepId: nextStep.id,
             href: `/manager/approvals/${nextStep.id}`,
+            requesterName: requesterEmp?.full_name ?? "Employee",
+            requestSummary,
           },
           idempotencyKey: `approval-pending-${nextStep.id}`,
         });
+
+        if (nextApproverUserId) {
+          await queueNotification({
+            organizationId: input.organizationId,
+            recipientUserId: nextApproverUserId,
+            channel: "email",
+            template: "approval.pending",
+            payload: {
+              recipientName: nextApproverEmp?.full_name ?? "Approver",
+              recipientEmail: nextApproverEmp?.email,
+              requesterName: requesterEmp?.full_name ?? "Employee",
+              requesterEmployeeNumber: requesterEmp?.employee_number,
+              requestType: request.request_type,
+              requestTypeLabel,
+              requestSummary,
+              details,
+              stepId: nextStep.id,
+              href: `/manager/approvals/${nextStep.id}`,
+              dueDate: nextDueDate,
+            },
+            idempotencyKey: `approval-pending-${nextStep.id}:email`,
+          });
+        }
+
+        triggerOutboxDispatch();
       }
 
       await logAuditEvent({
@@ -492,6 +681,8 @@ export async function actOnApproval(input: ActOnApprovalInput): Promise<void> {
         ? employeeRequestDetailHref(request.request_type, sourceId)
         : null;
 
+    const requestSummary = summarizeApprovalPayload(request.request_type, request.payload);
+
     await queueNotification({
       organizationId: input.organizationId,
       recipientUserId: requesterUserId,
@@ -503,9 +694,41 @@ export async function actOnApproval(input: ActOnApprovalInput): Promise<void> {
         status: "approved",
         sourceId: sourceId ?? null,
         href: detailHref,
+        requestSummary,
+        comment: input.comment ?? null,
       },
       idempotencyKey: `approval-approve-${request.id}`,
     });
+
+    if (requesterUserId) {
+      const { data: requesterEmp } = await supabase
+        .from("employees")
+        .select("id, full_name, email")
+        .eq("organization_id", input.organizationId)
+        .eq("id", request.requester_employee_id)
+        .maybeSingle();
+
+      const requestTypeLabel = REQUEST_TYPE_LABELS[request.request_type] ?? "Request";
+
+      await queueNotification({
+        organizationId: input.organizationId,
+        recipientUserId: requesterUserId,
+        channel: "email",
+        template: "approval.approve",
+        payload: {
+          employeeName: requesterEmp?.full_name ?? "Employee",
+          recipientEmail: requesterEmp?.email,
+          requestType: request.request_type,
+          requestTypeLabel,
+          requestSummary,
+          comment: input.comment,
+          href: detailHref,
+        },
+        idempotencyKey: `approval-approve-${request.id}:email`,
+      });
+
+      triggerOutboxDispatch();
+    }
 
     await logAuditEvent({
       organizationId: input.organizationId,
@@ -599,6 +822,8 @@ export async function actOnApproval(input: ActOnApprovalInput): Promise<void> {
       ? employeeRequestDetailHref(request.request_type, sourceId)
       : null;
 
+  const requestSummary = summarizeApprovalPayload(request.request_type, request.payload);
+
   await queueNotification({
     organizationId: input.organizationId,
     recipientUserId: requesterUserId,
@@ -610,9 +835,41 @@ export async function actOnApproval(input: ActOnApprovalInput): Promise<void> {
       status: "rejected",
       sourceId: sourceId ?? null,
       href: detailHref,
+      requestSummary,
+      comment: input.comment ?? null,
     },
     idempotencyKey: `approval-reject-${request.id}`,
   });
+
+  if (requesterUserId) {
+    const { data: requesterEmp } = await supabase
+      .from("employees")
+      .select("id, full_name, email")
+      .eq("organization_id", input.organizationId)
+      .eq("id", request.requester_employee_id)
+      .maybeSingle();
+
+    const requestTypeLabel = REQUEST_TYPE_LABELS[request.request_type] ?? "Request";
+
+    await queueNotification({
+      organizationId: input.organizationId,
+      recipientUserId: requesterUserId,
+      channel: "email",
+      template: "approval.reject",
+      payload: {
+        employeeName: requesterEmp?.full_name ?? "Employee",
+        recipientEmail: requesterEmp?.email,
+        requestType: request.request_type,
+        requestTypeLabel,
+        requestSummary,
+        comment: input.comment,
+        href: detailHref,
+      },
+      idempotencyKey: `approval-reject-${request.id}:email`,
+    });
+
+    triggerOutboxDispatch();
+  }
 
   await logAuditEvent({
     organizationId: input.organizationId,

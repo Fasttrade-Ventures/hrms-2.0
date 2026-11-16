@@ -1,4 +1,10 @@
 import { buildAnnouncementEmail } from "./announcement";
+import {
+  buildApprovalPendingEmail,
+  buildApprovalConfirmationEmail,
+  buildApprovalDecisionEmail,
+  type ApprovalDetailItem,
+} from "./approval";
 import { buildDocumentComplianceEmail } from "./document-compliance";
 import { buildEmployeeActivationEmail } from "./employee-activation";
 import { buildPayslipAvailableEmail } from "./payslip-available";
@@ -273,3 +279,80 @@ export async function sendAgreementToSignEmail(input: {
     attachments: input.attachment ? [input.attachment] : undefined,
   });
 }
+
+export async function sendApprovalPendingEmail(input: {
+  to: string;
+  recipientName: string;
+  requesterName: string;
+  requesterEmployeeNumber?: string | null;
+  requestTypeLabel: string;
+  requestSummary: string;
+  details?: ApprovalDetailItem[];
+  actionPath: string;
+  dueDate?: string | null;
+  isEscalated?: boolean;
+  appOrigin?: string;
+}): Promise<SendResult> {
+  const origin = resolveOrigin(input.appOrigin);
+  const actionUrl = origin ? `${origin}${input.actionPath}` : input.actionPath;
+  const { subject, html, text } = buildApprovalPendingEmail({
+    recipientName: input.recipientName,
+    requesterName: input.requesterName,
+    requesterEmployeeNumber: input.requesterEmployeeNumber,
+    requestTypeLabel: input.requestTypeLabel,
+    requestSummary: input.requestSummary,
+    details: input.details,
+    actionUrl,
+    dueDate: input.dueDate,
+    isEscalated: input.isEscalated,
+  });
+
+  return sendResendEmail({ to: input.to, subject, html, text });
+}
+
+export async function sendApprovalConfirmationEmail(input: {
+  to: string;
+  employeeName: string;
+  requestTypeLabel: string;
+  requestSummary: string;
+  details?: ApprovalDetailItem[];
+  viewPath: string;
+  appOrigin?: string;
+}): Promise<SendResult> {
+  const origin = resolveOrigin(input.appOrigin);
+  const viewUrl = origin ? `${origin}${input.viewPath}` : input.viewPath;
+  const { subject, html, text } = buildApprovalConfirmationEmail({
+    employeeName: input.employeeName,
+    requestTypeLabel: input.requestTypeLabel,
+    requestSummary: input.requestSummary,
+    details: input.details,
+    viewUrl,
+  });
+
+  return sendResendEmail({ to: input.to, subject, html, text });
+}
+
+export async function sendApprovalDecisionEmail(input: {
+  to: string;
+  employeeName: string;
+  requestTypeLabel: string;
+  requestSummary: string;
+  status: "approved" | "rejected";
+  approverComment?: string | null;
+  viewPath: string;
+  appOrigin?: string;
+}): Promise<SendResult> {
+  const origin = resolveOrigin(input.appOrigin);
+  const viewUrl = origin ? `${origin}${input.viewPath}` : input.viewPath;
+  const { subject, html, text } = buildApprovalDecisionEmail({
+    employeeName: input.employeeName,
+    requestTypeLabel: input.requestTypeLabel,
+    requestSummary: input.requestSummary,
+    status: input.status,
+    approverComment: input.approverComment,
+    viewUrl,
+  });
+
+  return sendResendEmail({ to: input.to, subject, html, text });
+}
+

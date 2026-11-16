@@ -3,11 +3,15 @@ import {
   StubR2StorageAdapter,
   type R2StorageAdapter,
   sendAnnouncementEmail,
+  sendApprovalConfirmationEmail,
+  sendApprovalDecisionEmail,
+  sendApprovalPendingEmail,
   sendDocumentComplianceEmail,
   sendNoticeEmail,
   sendPayslipAvailableEmail,
   sendPulseSurveyOpenedEmail,
   sendScheduledReportEmail,
+  type ApprovalDetailItem,
 } from "@hrms/platform";
 
 import { generatePayslipPdf } from "@/lib/payroll/pdf";
@@ -63,15 +67,19 @@ export async function processNotificationOutbox(
       continue;
     }
 
-    const { data: userData, error: userError } = await admin.auth.admin.getUserById(row.recipient_user_id);
-    const email = userData.user?.email;
-    if (userError || !email) {
+    const { data: userData } = await admin.auth.admin.getUserById(row.recipient_user_id);
+    let email = userData.user?.email;
+    const payload = (row.payload ?? {}) as Record<string, unknown>;
+
+    if (!email && typeof payload.recipientEmail === "string") {
+      email = payload.recipientEmail;
+    }
+
+    if (!email) {
       await admin.from("notification_outbox").update({ status: "failed" }).eq("id", row.id);
       failed += 1;
       continue;
     }
-
-    const payload = (row.payload ?? {}) as Record<string, unknown>;
     let result: Awaited<ReturnType<typeof sendDocumentComplianceEmail>> | null = null;
 
     if (
@@ -221,6 +229,60 @@ export async function processNotificationOutbox(
         reportPath: String(payload.href ?? "/hr/reports"),
         schedule: String(payload.schedule ?? "scheduled"),
       });
+    } else if (row.template === "approval.pending") {
+      const details = Array.isArray(payload.details)
+        ? (payload.details as ApprovalDetailItem[])
+        : undefined;
+
+      result = await sendApprovalPendingEmail({
+        to: email,
+        recipientName: String(payload.recipientName ?? "Approver"),
+        requesterName: String(payload.requesterName ?? "Employee"),
+        requesterEmployeeNumber: payload.requesterEmployeeNumber ? String(payload.requesterEmployeeNumber) : null,
+        requestTypeLabel: String(payload.requestTypeLabel ?? "Request"),
+        requestSummary: String(payload.requestSummary ?? "Pending request"),
+        details,
+        actionPath: String(payload.href ?? `/manager/approvals/${payload.stepId ?? ""}`),
+        dueDate: payload.dueDate ? String(payload.dueDate) : null,
+        isEscalated: Boolean(payload.isEscalated),
+      });
+    } else if (row.template === "approval.submitted") {
+      const details = Array.isArray(payload.details)
+        ? (payload.details as ApprovalDetailItem[])
+        : undefined;
+
+      const defaultViewPath =
+        payload.requestType === "leave"
+          ? "/employee/leave"
+          : payload.requestType === "overtime"
+            ? "/employee/overtime"
+            : "/employee/claims";
+
+      result = await sendApprovalConfirmationEmail({
+        to: email,
+        employeeName: String(payload.employeeName ?? "Employee"),
+        requestTypeLabel: String(payload.requestTypeLabel ?? "Request"),
+        requestSummary: String(payload.requestSummary ?? "Submitted request"),
+        details,
+        viewPath: String(payload.href ?? defaultViewPath),
+      });
+    } else if (row.template === "approval.approve" || row.template === "approval.reject") {
+      const defaultViewPath =
+        payload.requestType === "leave"
+          ? "/employee/leave"
+          : payload.requestType === "overtime"
+            ? "/employee/overtime"
+            : "/employee/claims";
+
+      result = await sendApprovalDecisionEmail({
+        to: email,
+        employeeName: String(payload.employeeName ?? "Employee"),
+        requestTypeLabel: String(payload.requestTypeLabel ?? "Request"),
+        requestSummary: String(payload.requestSummary ?? "Request update"),
+        status: row.template === "approval.approve" ? "approved" : "rejected",
+        approverComment: payload.comment ? String(payload.comment) : null,
+        viewPath: String(payload.href ?? defaultViewPath),
+      });
     }
 
     if (!result) {
@@ -232,7 +294,9 @@ export async function processNotificationOutbox(
     if (!result.sent) {
       if (
         result.reason === "not_configured" &&
-        (row.template === "announcement.published" || row.template === "pulse.survey_opened")
+        (row.template === "announcement.published" ||
+          row.template === "pulse.survey_opened" ||
+          row.template.startsWith("approval."))
       ) {
         continue;
       }
