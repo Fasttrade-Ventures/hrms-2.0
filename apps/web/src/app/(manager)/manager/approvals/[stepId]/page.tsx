@@ -143,7 +143,11 @@ export default async function Page({ params }: { params: Promise<{ stepId: strin
 
       {/* Resolution Banners vs Decision Form */}
       {detail.status === "pending" ? (
-        <ApprovalActions stepId={detail.stepId} />
+        <ApprovalActions
+          stepId={detail.stepId}
+          requesterName={detail.requesterName}
+          requestTypeLabel={detail.requestTypeLabel}
+        />
       ) : detail.status === "expired" ? (
         <div className="rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-muted)] p-4 sm:p-5">
           <h3 className="text-sm font-semibold text-[var(--foreground-primary)]">Request Expired</h3>

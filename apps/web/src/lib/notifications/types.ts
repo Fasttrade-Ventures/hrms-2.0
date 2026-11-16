@@ -13,19 +13,33 @@ export function formatNotificationMessage(row: NotificationRow): string {
     const requestType = String(row.payload.requestType ?? "");
     const label =
       REQUEST_TYPE_LABELS[requestType as keyof typeof REQUEST_TYPE_LABELS] ?? "Request";
+    const requesterName = row.payload.requesterName ? String(row.payload.requesterName) : null;
+    const summary = row.payload.requestSummary ? String(row.payload.requestSummary) : null;
+    if (requesterName && summary) {
+      return `${requesterName}: ${summary} awaiting your approval.`;
+    }
+    if (requesterName) {
+      return `${requesterName} submitted a ${label.toLowerCase()} request awaiting your approval.`;
+    }
     return `${label} request awaiting your approval.`;
   }
   if (row.template === "approval.approve") {
     const requestType = String(row.payload.requestType ?? "");
     const label =
       REQUEST_TYPE_LABELS[requestType as keyof typeof REQUEST_TYPE_LABELS] ?? "Request";
-    return `Your ${label.toLowerCase()} request was approved.`;
+    const summary = row.payload.requestSummary ? String(row.payload.requestSummary) : null;
+    return summary
+      ? `Your ${label.toLowerCase()} request (${summary}) was approved.`
+      : `Your ${label.toLowerCase()} request was approved.`;
   }
   if (row.template === "approval.reject") {
     const requestType = String(row.payload.requestType ?? "");
     const label =
       REQUEST_TYPE_LABELS[requestType as keyof typeof REQUEST_TYPE_LABELS] ?? "Request";
-    return `Your ${label.toLowerCase()} request was rejected.`;
+    const summary = row.payload.requestSummary ? String(row.payload.requestSummary) : null;
+    return summary
+      ? `Your ${label.toLowerCase()} request (${summary}) was rejected.`
+      : `Your ${label.toLowerCase()} request was rejected.`;
   }
   if (row.template === "approval.cancel") {
     const requestType = String(row.payload.requestType ?? "");

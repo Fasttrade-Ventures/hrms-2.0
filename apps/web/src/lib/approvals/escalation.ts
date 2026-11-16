@@ -1,7 +1,13 @@
 import { logAuditEvent } from "@/lib/audit/log-event";
 import { queueNotification } from "@/lib/notifications/queue";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { resolveUserIdForEmployee } from "./service";
+import { summarizeApprovalPayload } from "./inbox";
+import {
+  extractApprovalEmailDetails,
+  resolveUserIdForEmployee,
+  triggerOutboxDispatch,
+} from "./service";
+import { REQUEST_TYPE_LABELS, type ApprovalRequestType } from "./types";
 
 export type EscalationResult = {
   escalatedCount: number;
@@ -140,6 +146,25 @@ export async function escalateOverdueApprovalSteps(options?: {
 
     const newApproverUserId = await resolveUserIdForEmployee(step.organization_id, fallbackEmployeeId, admin);
     if (newApproverUserId && request) {
+      const { data: newApproverEmp } = await admin
+        .from("employees")
+        .select("id, full_name, email")
+        .eq("organization_id", step.organization_id)
+        .eq("id", fallbackEmployeeId)
+        .maybeSingle();
+
+      const { data: requesterEmp } = await admin
+        .from("employees")
+        .select("id, full_name, employee_number, email")
+        .eq("organization_id", step.organization_id)
+        .eq("id", request.requester_employee_id)
+        .maybeSingle();
+
+      const requestType = request.request_type as ApprovalRequestType;
+      const requestTypeLabel = REQUEST_TYPE_LABELS[requestType] ?? "Request";
+      const requestSummary = summarizeApprovalPayload(requestType, request.payload ?? {});
+      const details = extractApprovalEmailDetails(requestType, request.payload ?? {});
+
       await queueNotification({
         organizationId: step.organization_id,
         recipientUserId: newApproverUserId,
@@ -152,10 +177,37 @@ export async function escalateOverdueApprovalSteps(options?: {
           stepId: step.id,
           isEscalated: true,
           href: `/manager/approvals/${step.id}`,
+          requesterName: requesterEmp?.full_name ?? "Employee",
+          requestSummary,
         },
         idempotencyKey: `approval-escalated-${step.id}-${now}`,
       });
+
+      await queueNotification({
+        organizationId: step.organization_id,
+        recipientUserId: newApproverUserId,
+        channel: "email",
+        template: "approval.pending",
+        payload: {
+          recipientName: newApproverEmp?.full_name ?? "Approver",
+          recipientEmail: newApproverEmp?.email,
+          requesterName: requesterEmp?.full_name ?? "Employee",
+          requesterEmployeeNumber: requesterEmp?.employee_number,
+          requestType,
+          requestTypeLabel,
+          requestSummary,
+          details,
+          stepId: step.id,
+          isEscalated: true,
+          href: `/manager/approvals/${step.id}`,
+        },
+        idempotencyKey: `approval-escalated-${step.id}-${now}:email`,
+      });
     }
+  }
+
+  if (escalatedStepIds.length > 0) {
+    triggerOutboxDispatch();
   }
 
   return {

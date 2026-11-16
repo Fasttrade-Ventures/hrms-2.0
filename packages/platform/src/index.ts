@@ -13,6 +13,7 @@ export * from "./jobs/ledger";
 export * from "./audit/events";
 export * from "./health/check";
 export * from "./mail/announcement";
+export * from "./mail/approval";
 export * from "./mail/pulse-survey";
 export * from "./mail/offer-sent";
 export * from "./mail/resend";
