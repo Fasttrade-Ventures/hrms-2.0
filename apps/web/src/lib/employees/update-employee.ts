@@ -81,6 +81,14 @@ export async function updateEmployeeFullProfile(
     });
   }
 
+  if (nextManagerId) {
+    const { ensureEmployeeHasManagerRole } = await import("@/lib/employees/ensure-manager-role");
+    await ensureEmployeeHasManagerRole(admin, {
+      organizationId,
+      employeeId: nextManagerId,
+    });
+  }
+
   const { error: profileError } = await admin
     .from("employee_profiles")
     .update({
@@ -194,6 +202,17 @@ export async function updateEmployeeFullProfile(
       .update({ roles: [input.portalRole] })
       .eq("employee_id", employeeId)
       .eq("organization_id", organizationId);
+  }
+
+  // Keep manager portal access for anyone who still has direct reports.
+  const { count: reportCount } = await admin
+    .from("employees")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", organizationId)
+    .eq("manager_employee_id", employeeId);
+  if ((reportCount ?? 0) > 0) {
+    const { ensureEmployeeHasManagerRole } = await import("@/lib/employees/ensure-manager-role");
+    await ensureEmployeeHasManagerRole(admin, { organizationId, employeeId });
   }
 
   await logEmployeeEvent({
