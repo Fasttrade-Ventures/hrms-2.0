@@ -1,15 +1,22 @@
+"use client"
+
 import * as React from "react"
 import { Input as InputPrimitive } from "@base-ui/react/input"
 
 import { cn } from "@/lib/utils"
 
 function Input({ className, type, onKeyDown, ...props }: React.ComponentProps<"input">) {
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (type === "number" && (e.key === "e" || e.key === "E")) {
-      e.preventDefault();
-    }
-    onKeyDown?.(e);
-  };
+  // Only attach a handler when needed so server parents can render plain inputs
+  // without serializing functions into the Base UI client primitive.
+  const handleKeyDown =
+    type === "number" || onKeyDown
+      ? (e: React.KeyboardEvent<HTMLInputElement>) => {
+          if (type === "number" && (e.key === "e" || e.key === "E")) {
+            e.preventDefault()
+          }
+          onKeyDown?.(e)
+        }
+      : undefined
 
   return (
     <InputPrimitive
