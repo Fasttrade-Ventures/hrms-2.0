@@ -264,6 +264,14 @@ export async function createEmployeeRecord(
     activationEmailError = error instanceof Error ? error.message : "Activation setup failed.";
   }
 
+  if (input.managerEmployeeId) {
+    const { ensureEmployeeHasManagerRole } = await import("@/lib/employees/ensure-manager-role");
+    await ensureEmployeeHasManagerRole(admin, {
+      organizationId,
+      employeeId: input.managerEmployeeId,
+    });
+  }
+
   await logEmployeeEvent({
     action: "employee.created",
     actorUserId,
