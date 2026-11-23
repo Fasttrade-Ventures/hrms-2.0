@@ -1,4 +1,9 @@
 import { requireManagerContext } from "@/lib/manager/context";
+import {
+  buildAttendanceMatrixData,
+  type AttendanceMatrixData,
+} from "@/lib/reports/attendance-matrix";
+import type { ReportFilters } from "@/lib/reports/types";
 import { createClient } from "@/lib/supabase/server";
 
 export type TeamMemberRow = {
@@ -114,6 +119,40 @@ export async function listTeamAttendance(): Promise<TeamAttendanceRow[]> {
     status: row.status,
     isAutoClockOut: Boolean(row.is_auto_clock_out),
   }));
+}
+
+/** Attendance matrix for the manager's direct reports only (no HR report-runner access). */
+export async function listTeamAttendanceMatrixData(
+  filters: Pick<ReportFilters, "from" | "to" | "employeeQuery">,
+): Promise<AttendanceMatrixData> {
+  const { organizationId } = await requireManagerContext();
+  const reports = await listDirectReports();
+  const q = filters.employeeQuery?.toLowerCase();
+  const employees = reports
+    .filter((report) => {
+      if (!q) return true;
+      return (
+        report.fullName.toLowerCase().includes(q) ||
+        report.employeeNumber.toLowerCase().includes(q)
+      );
+    })
+    .map((report) => ({
+      id: report.id,
+      employeeNumber: report.employeeNumber,
+      fullName: report.fullName,
+      branchName: null,
+      departmentName: report.departmentName,
+      status: "active",
+      employmentType: null,
+      joinDate: "",
+    }));
+
+  return buildAttendanceMatrixData({
+    organizationId,
+    from: filters.from,
+    to: filters.to,
+    employees,
+  });
 }
 
 export async function countDirectReports(): Promise<number> {

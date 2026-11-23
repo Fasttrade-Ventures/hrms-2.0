@@ -61,8 +61,10 @@ export async function submitSelfAppraisal(appraisalId: string, formData: FormDat
   }
   await assertAppraisalEditable(appraisal);
 
+  const { letterHtmlToText, sanitizeLetterHtml } = await import("@/lib/letters/html-text");
   const selfRating = parseRating(formData.get("selfRating"));
-  const selfComments = String(formData.get("selfComments") ?? "").trim() || null;
+  const rawComments = sanitizeLetterHtml(String(formData.get("selfComments") ?? "").trim());
+  const selfComments = letterHtmlToText(rawComments).trim() ? rawComments : null;
 
   const supabase = await createClient();
   const { error } = await supabase

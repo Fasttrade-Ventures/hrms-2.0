@@ -11,6 +11,7 @@ import { CalendarLegend } from "@/components/calendar/calendar-legend";
 import { CalendarMonth } from "@/components/calendar/calendar-month";
 import { CalendarPrintLayout } from "@/components/calendar/calendar-print-layout";
 import { CalendarToolbar } from "@/components/calendar/calendar-toolbar";
+import { PortalCard } from "@/components/portal/portal-card";
 import type { CalendarPortalMode } from "@/lib/calendar/types";
 
 export function CalendarShell({
@@ -81,18 +82,20 @@ export function CalendarShell({
 
   return (
     <div className="space-y-4">
-      <CalendarToolbar
-        basePath={basePath}
-        buildMonthHref={buildMonthHref}
-        extraActions={toolbarExtra}
-        month={month}
-        onExportCsv={onExportCsv}
-        onPrint={handlePrint}
-        onViewChange={setView}
-        showExport={showExport}
-        view={view}
-        year={year}
-      />
+      <PortalCard>
+        <CalendarToolbar
+          basePath={basePath}
+          buildMonthHref={buildMonthHref}
+          extraActions={toolbarExtra}
+          month={month}
+          onExportCsv={onExportCsv}
+          onPrint={handlePrint}
+          onViewChange={setView}
+          showExport={showExport}
+          view={view}
+          year={year}
+        />
+      </PortalCard>
 
       <CalendarLegend showCompanyEvents={showCompanyLegend} />
 

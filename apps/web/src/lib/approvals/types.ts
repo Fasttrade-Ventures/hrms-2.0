@@ -76,5 +76,7 @@ export type ApprovalDetail = ApprovalInboxRow & {
   totalSteps?: number;
   /** Organization currency, for formatting amounts in the payload. */
   currency?: "MYR" | "AUD";
+  /** True when the viewing manager is the current pending approver. */
+  canDecide?: boolean;
 };
 

@@ -91,8 +91,10 @@ export async function submitManagerReview(appraisalId: string, formData: FormDat
   }
   await assertAppraisalEditable(appraisal);
 
+  const { letterHtmlToText, sanitizeLetterHtml } = await import("@/lib/letters/html-text");
   const managerRating = parseRating(formData.get("managerRating"));
-  const managerComments = String(formData.get("managerComments") ?? "").trim() || null;
+  const rawComments = sanitizeLetterHtml(String(formData.get("managerComments") ?? "").trim());
+  const managerComments = letterHtmlToText(rawComments).trim() ? rawComments : null;
 
   const supabase = await createClient();
   const { error } = await supabase
