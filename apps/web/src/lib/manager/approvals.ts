@@ -80,7 +80,7 @@ export async function listManagerApprovals(options?: {
 
   // Pending: only steps currently assigned to this manager (actionable).
   if (status === "pending") {
-    let query = supabase
+    const query = supabase
       .from("approval_steps")
       .select(STEP_SELECT)
       .eq("organization_id", organizationId)
