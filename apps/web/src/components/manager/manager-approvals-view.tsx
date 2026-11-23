@@ -6,8 +6,12 @@ import { useMemo, useState } from "react";
 import { EmptyState, StatusPill } from "@hrms/ui";
 
 import { formatDate } from "@/components/employee/employee-shared";
+import { PortalCard } from "@/components/portal/portal-card";
 import { PortalIcon } from "@/components/portal/portal-icons";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import type { ApprovalInboxRow } from "@/lib/approvals/types";
+import { cn } from "@/lib/utils";
 
 type TabKey = "all" | "pending" | "approved" | "rejected" | "expired";
 
@@ -26,27 +30,24 @@ export function ManagerApprovalsView({
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Calculate counts for each tab
-  const counts = useMemo(() => {
-    return {
+  const counts = useMemo(
+    () => ({
       all: rows.length,
       pending: rows.filter((r) => r.status === "pending").length,
       approved: rows.filter((r) => r.status === "approved").length,
       rejected: rows.filter((r) => r.status === "rejected").length,
       expired: rows.filter((r) => r.status === "expired").length,
-    };
-  }, [rows]);
+    }),
+    [rows],
+  );
 
-  // Filter rows based on active tab and search query
   const filteredRows = useMemo(() => {
     return rows.filter((row) => {
-      // 1. Tab filter
       if (activeTab === "pending" && row.status !== "pending") return false;
       if (activeTab === "approved" && row.status !== "approved") return false;
       if (activeTab === "rejected" && row.status !== "rejected") return false;
       if (activeTab === "expired" && row.status !== "expired") return false;
 
-      // 2. Search filter
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase().trim();
         const matchName = row.requesterName.toLowerCase().includes(query);
@@ -62,7 +63,6 @@ export function ManagerApprovalsView({
     });
   }, [rows, activeTab, searchQuery]);
 
-  // Pagination calculations
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
   const effectivePage = Math.min(currentPage, totalPages);
   const startIndex = (effectivePage - 1) * PAGE_SIZE;
@@ -82,17 +82,14 @@ export function ManagerApprovalsView({
   const getStatusTone = (status: string) => {
     switch (status) {
       case "pending":
-        return "warning";
+        return "warning" as const;
       case "approved":
-        return "success";
+        return "success" as const;
       case "rejected":
       case "revoked":
-        return "danger";
-      case "cancelled":
-      case "expired":
-        return "neutral";
+        return "danger" as const;
       default:
-        return "neutral";
+        return "neutral" as const;
     }
   };
 
@@ -105,26 +102,20 @@ export function ManagerApprovalsView({
 
   return (
     <div className="space-y-4">
-      {/* Notice Banners */}
-      {approvedNotice && (
-        <div className="flex items-center gap-2 rounded-[var(--radius-md)] border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-medium text-[var(--success)]">
-          <span>✓</span>
-          <span>Request approved successfully.</span>
+      {approvedNotice ? (
+        <div className="rounded-[var(--radius-md)] border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-medium text-[var(--success)]">
+          Request approved successfully.
         </div>
-      )}
-      {rejectedNotice && (
-        <div className="flex items-center gap-2 rounded-[var(--radius-md)] border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-medium text-[var(--danger)]">
-          <span>✕</span>
-          <span>Request rejected.</span>
+      ) : null}
+      {rejectedNotice ? (
+        <div className="rounded-[var(--radius-md)] border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-medium text-[var(--danger)]">
+          Request rejected.
         </div>
-      )}
+      ) : null}
 
-      {/* Main Card Container */}
-      <div className="overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-card)] shadow-sm">
-        {/* Header with Tabs and Search */}
+      <PortalCard className="overflow-hidden" padding="none">
         <div className="border-b border-[var(--border-primary)] p-4 sm:p-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            {/* Tabs */}
             <div className="flex flex-wrap items-center gap-1.5 rounded-[var(--radius-lg)] bg-[var(--surface-muted)] p-1">
               {(
                 [
@@ -137,70 +128,69 @@ export function ManagerApprovalsView({
               ).map((tab) => {
                 const isActive = activeTab === tab.key;
                 return (
-                  <button
+                  <Button
                     key={tab.key}
-                    type="button"
-                    onClick={() => handleTabChange(tab.key)}
-                    className={`inline-flex items-center gap-2 rounded-[var(--radius-md)] px-3 py-1.5 text-xs font-semibold transition-all duration-150 ${
+                    className={cn(
+                      "h-8 gap-2 px-3 text-xs",
                       isActive
                         ? "bg-[var(--surface-card)] text-[var(--foreground-primary)] shadow-sm"
-                        : "text-[var(--foreground-muted)] hover:text-[var(--foreground-primary)]"
-                    }`}
+                        : "text-[var(--foreground-muted)]",
+                    )}
+                    onClick={() => handleTabChange(tab.key)}
+                    size="sm"
+                    type="button"
+                    variant="ghost"
                   >
                     <span>{tab.label}</span>
                     <span
-                      className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${
+                      className={cn(
+                        "rounded-full px-1.5 text-[10px] font-bold",
                         isActive
-                          ? tab.key === "pending"
-                            ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
-                            : tab.key === "expired"
-                              ? "bg-zinc-500/15 text-zinc-600 dark:text-zinc-400"
-                              : "bg-[var(--surface-muted)] text-[var(--foreground-primary)]"
-                          : "bg-black/5 text-[var(--foreground-muted)] dark:bg-white/5"
-                      }`}
+                          ? "bg-[var(--surface-muted)] text-[var(--foreground-primary)]"
+                          : "bg-black/5 text-[var(--foreground-muted)] dark:bg-white/5",
+                      )}
                     >
                       {tab.count}
                     </span>
-                  </button>
+                  </Button>
                 );
               })}
             </div>
 
-            {/* Search Input */}
             <div className="relative w-full sm:w-72">
-              <input
-                type="text"
-                value={searchQuery}
+              <Input
+                className="h-9 pr-8"
                 onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder="Search requests or employees…"
-                className="w-full rounded-[var(--radius-md)] border border-[var(--border-primary)] bg-[var(--surface-muted)] py-1.5 pl-8 pr-3 text-xs text-[var(--foreground-primary)] placeholder-[var(--foreground-muted)] outline-none transition-colors focus:border-[var(--border-focus)] focus:bg-[var(--surface-card)]"
+                type="search"
+                value={searchQuery}
               />
-              <svg
-                className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--foreground-muted)]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              {searchQuery && (
-                <button
-                  type="button"
+              {searchQuery ? (
+                <Button
+                  className="absolute right-1 top-1/2 h-7 -translate-y-1/2 px-2 text-xs"
                   onClick={() => handleSearchChange("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[var(--foreground-muted)] hover:text-[var(--foreground-primary)]"
+                  size="sm"
+                  type="button"
+                  variant="ghost"
                 >
-                  ✕
-                </button>
-              )}
+                  Clear
+                </Button>
+              ) : null}
             </div>
           </div>
         </div>
 
-        {/* Content Table / List */}
         {paginatedRows.length === 0 ? (
           <div className="p-8">
             <EmptyState
+              description={
+                searchQuery
+                  ? "Try adjusting your search terms or clearing filters."
+                  : activeTab === "pending"
+                    ? "New requests awaiting your decision will appear here."
+                    : `Requests with ${activeTab} status will be listed here.`
+              }
+              icon={<PortalIcon name="approvals" className="h-6 w-6" />}
               title={
                 searchQuery
                   ? "No matching requests"
@@ -210,14 +200,6 @@ export function ManagerApprovalsView({
                       ? "No expired requests"
                       : `No ${activeTab} requests`
               }
-              description={
-                searchQuery
-                  ? "Try adjusting your search terms or clearing filters."
-                  : activeTab === "pending"
-                    ? "New requests awaiting your decision will appear here."
-                    : `Requests with ${activeTab} status will be listed here.`
-              }
-              icon={<PortalIcon name="approvals" className="h-6 w-6" />}
             />
           </div>
         ) : (
@@ -227,24 +209,22 @@ export function ManagerApprovalsView({
                 <tr className="border-b border-[var(--border-primary)] bg-[var(--surface-muted)] text-[11px] font-semibold uppercase tracking-wider text-[var(--foreground-muted)]">
                   <th className="px-5 py-3">Request</th>
                   <th className="px-5 py-3">Summary</th>
-                  <th className="px-5 py-3 w-32">Status</th>
-                  <th className="px-5 py-3 w-32 text-right whitespace-nowrap">Action</th>
+                  <th className="w-32 px-5 py-3">Status</th>
+                  <th className="w-32 whitespace-nowrap px-5 py-3 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border-primary)]">
                 {paginatedRows.map((row) => {
                   const isPending = row.status === "pending";
-
                   return (
                     <tr
-                      key={row.stepId}
                       className="group transition-colors hover:bg-[var(--surface-muted)]/50"
+                      key={row.stepId}
                     >
-                      {/* Request Info */}
                       <td className="px-5 py-3.5">
                         <Link
+                          className="font-medium text-[var(--foreground-primary)] transition-colors group-hover:text-[var(--accent-primary)]"
                           href={`/manager/approvals/${row.stepId}`}
-                          className="font-medium text-[var(--foreground-primary)] group-hover:text-[var(--accent-primary)] transition-colors"
                         >
                           <span className="font-semibold">{row.requestTypeLabel}</span>
                           <span className="text-[var(--foreground-muted)]"> · </span>
@@ -252,48 +232,36 @@ export function ManagerApprovalsView({
                         </Link>
                         <p className="mt-0.5 text-xs text-[var(--foreground-muted)]">
                           ID: {row.requesterEmployeeNumber}
-                          {row.stepLabel && ` · ${row.stepLabel}`}
+                          {row.stepLabel ? ` · ${row.stepLabel}` : ""}
                         </p>
                       </td>
-
-                      {/* Summary */}
                       <td className="px-5 py-3.5">
-                        <p className="text-sm font-medium text-[var(--foreground-primary)] truncate max-w-md">
+                        <p className="max-w-md truncate text-sm font-medium text-[var(--foreground-primary)]">
                           {row.summary}
                         </p>
                         <p className="mt-0.5 text-xs text-[var(--foreground-muted)]">
                           Submitted: {formatDate(row.submittedAt)}
                         </p>
                       </td>
-
-                      {/* Status */}
-                      <td className="px-5 py-3.5 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-5 py-3.5">
                         <div className="flex items-center gap-1.5">
-                          {row.isEscalated && (
-                            <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                              Escalated
-                            </span>
-                          )}
+                          {row.isEscalated ? (
+                            <StatusPill label="Escalated" tone="warning" />
+                          ) : null}
                           <StatusPill
                             label={getStatusLabel(row.status)}
                             tone={getStatusTone(row.status)}
                           />
                         </div>
                       </td>
-
-                      {/* Action */}
-                      <td className="px-5 py-3.5 text-right whitespace-nowrap">
-                        <Link
-                          href={`/manager/approvals/${row.stepId}`}
-                          className={`inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-[var(--radius-md)] px-3.5 py-1.5 text-xs font-semibold transition-all duration-150 ${
-                            isPending
-                              ? "bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-hover)] shadow-xs"
-                              : "border border-[var(--border-primary)] bg-[var(--surface-card)] text-[var(--foreground-secondary)] hover:bg-[var(--surface-muted)] hover:text-[var(--foreground-primary)]"
-                          }`}
+                      <td className="whitespace-nowrap px-5 py-3.5 text-right">
+                        <Button
+                          render={<Link href={`/manager/approvals/${row.stepId}`} />}
+                          size="sm"
+                          variant={isPending ? "default" : "outline"}
                         >
-                          <span>{isPending ? "Review" : "View"}</span>
-                          <span className="inline-block transition-transform group-hover:translate-x-0.5">→</span>
-                        </Link>
+                          {isPending ? "Review" : "View"}
+                        </Button>
                       </td>
                     </tr>
                   );
@@ -303,43 +271,48 @@ export function ManagerApprovalsView({
           </div>
         )}
 
-        {/* Footer with Pagination matching Pencil c2DqY1 */}
-        {filteredRows.length > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-[var(--border-primary)] bg-[var(--surface-muted)]/30 px-5 py-3.5 text-xs text-[var(--foreground-muted)]">
+        {filteredRows.length > 0 ? (
+          <div className="flex flex-col items-center justify-between gap-3 border-t border-[var(--border-primary)] bg-[var(--surface-muted)]/30 px-5 py-3.5 text-xs text-[var(--foreground-muted)] sm:flex-row">
             <div>
-              Showing <span className="font-semibold text-[var(--foreground-primary)]">{startIndex + 1}</span>–
+              Showing{" "}
+              <span className="font-semibold text-[var(--foreground-primary)]">{startIndex + 1}</span>–
               <span className="font-semibold text-[var(--foreground-primary)]">{endIndex}</span> of{" "}
-              <span className="font-semibold text-[var(--foreground-primary)]">{filteredRows.length}</span> requests
+              <span className="font-semibold text-[var(--foreground-primary)]">
+                {filteredRows.length}
+              </span>{" "}
+              requests
             </div>
 
-            {totalPages > 1 && (
+            {totalPages > 1 ? (
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
+                <Button
+                  aria-label="Previous page"
                   disabled={effectivePage <= 1}
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-primary)] bg-[var(--surface-card)] text-xs font-semibold text-[var(--foreground-primary)] hover:bg-[var(--surface-muted)] disabled:opacity-40 disabled:pointer-events-none transition-colors"
-                  aria-label="Previous page"
+                  size="icon-sm"
+                  type="button"
+                  variant="outline"
                 >
                   ‹
-                </button>
+                </Button>
                 <span className="px-2 text-xs font-medium text-[var(--foreground-primary)]">
                   Page {effectivePage} of {totalPages}
                 </span>
-                <button
-                  type="button"
+                <Button
+                  aria-label="Next page"
                   disabled={effectivePage >= totalPages}
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-primary)] bg-[var(--surface-card)] text-xs font-semibold text-[var(--foreground-primary)] hover:bg-[var(--surface-muted)] disabled:opacity-40 disabled:pointer-events-none transition-colors"
-                  aria-label="Next page"
+                  size="icon-sm"
+                  type="button"
+                  variant="outline"
                 >
                   ›
-                </button>
+                </Button>
               </div>
-            )}
+            ) : null}
           </div>
-        )}
-      </div>
+        ) : null}
+      </PortalCard>
     </div>
   );
 }

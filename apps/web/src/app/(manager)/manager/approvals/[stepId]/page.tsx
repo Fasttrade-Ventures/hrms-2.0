@@ -7,6 +7,7 @@ import { ApprovalActions } from "@/components/manager/approval-actions";
 import { PortalIcon } from "@/components/portal/portal-icons";
 import { PortalSectionCard } from "@/components/portal/portal-section";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
+import { RichText } from "@/components/ui/rich-text";
 import { getManagerApprovalDetail } from "@/lib/manager/approvals";
 import { requireRole } from "@/lib/auth/session";
 import { formatMoney, type DisplayCurrency } from "@/lib/money";
@@ -142,12 +143,19 @@ export default async function Page({ params }: { params: Promise<{ stepId: strin
       </PortalSectionCard>
 
       {/* Resolution Banners vs Decision Form */}
-      {detail.status === "pending" ? (
+      {detail.canDecide ? (
         <ApprovalActions
           stepId={detail.stepId}
           requesterName={detail.requesterName}
           requestTypeLabel={detail.requestTypeLabel}
         />
+      ) : detail.status === "pending" ? (
+        <div className="rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-muted)] p-4 sm:p-5">
+          <h3 className="text-sm font-semibold text-[var(--foreground-primary)]">Awaiting another approver</h3>
+          <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+            This request is still pending with another approver. You can view it because the requester is on your team.
+          </p>
+        </div>
       ) : detail.status === "expired" ? (
         <div className="rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-muted)] p-4 sm:p-5">
           <h3 className="text-sm font-semibold text-[var(--foreground-primary)]">Request Expired</h3>
@@ -162,11 +170,12 @@ export default async function Page({ params }: { params: Promise<{ stepId: strin
           <p className="mt-1 text-sm text-[var(--foreground-muted)]">
             This request was approved and processed.
           </p>
-          {detail.comment && (
-            <p className="mt-2 text-xs italic text-[var(--foreground-secondary)]">
-              Note: &ldquo;{detail.comment}&rdquo;
-            </p>
-          )}
+          {detail.comment ? (
+            <div className="mt-3 rounded-[var(--radius-md)] bg-[var(--surface-card)] px-3 py-2">
+              <p className="text-xs font-medium text-[var(--foreground-muted)]">Note</p>
+              <RichText className="mt-1" value={detail.comment} />
+            </div>
+          ) : null}
         </div>
       ) : detail.status === "rejected" ? (
         <div className="rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-muted)] p-4 sm:p-5">
@@ -174,11 +183,12 @@ export default async function Page({ params }: { params: Promise<{ stepId: strin
           <p className="mt-1 text-sm text-[var(--foreground-muted)]">
             This request was rejected.
           </p>
-          {detail.comment && (
-            <p className="mt-2 text-xs italic text-[var(--foreground-secondary)]">
-              Reason: &ldquo;{detail.comment}&rdquo;
-            </p>
-          )}
+          {detail.comment ? (
+            <div className="mt-3 rounded-[var(--radius-md)] bg-[var(--surface-card)] px-3 py-2">
+              <p className="text-xs font-medium text-[var(--foreground-muted)]">Reason</p>
+              <RichText className="mt-1" value={detail.comment} />
+            </div>
+          ) : null}
         </div>
       ) : detail.status === "revoked" ? (
         <div className="rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-muted)] p-4 sm:p-5">
@@ -186,11 +196,12 @@ export default async function Page({ params }: { params: Promise<{ stepId: strin
           <p className="mt-1 text-sm text-[var(--foreground-muted)]">
             This previously approved request was revoked by the employee. Any utilized days or expense reimbursements have been reverted.
           </p>
-          {detail.comment && (
-            <p className="mt-2 text-xs italic text-[var(--foreground-secondary)]">
-              Reason: &ldquo;{detail.comment}&rdquo;
-            </p>
-          )}
+          {detail.comment ? (
+            <div className="mt-3 rounded-[var(--radius-md)] bg-[var(--surface-card)] px-3 py-2">
+              <p className="text-xs font-medium text-[var(--foreground-muted)]">Reason</p>
+              <RichText className="mt-1" value={detail.comment} />
+            </div>
+          ) : null}
         </div>
       ) : (
         <div className="rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-muted)] p-4 sm:p-5">
@@ -198,11 +209,12 @@ export default async function Page({ params }: { params: Promise<{ stepId: strin
           <p className="mt-1 text-sm text-[var(--foreground-muted)]">
             This request was cancelled by the employee. No approval action is required.
           </p>
-          {detail.comment && (
-            <p className="mt-2 text-xs italic text-[var(--foreground-secondary)]">
-              Reason: &ldquo;{detail.comment}&rdquo;
-            </p>
-          )}
+          {detail.comment ? (
+            <div className="mt-3 rounded-[var(--radius-md)] bg-[var(--surface-card)] px-3 py-2">
+              <p className="text-xs font-medium text-[var(--foreground-muted)]">Reason</p>
+              <RichText className="mt-1" value={detail.comment} />
+            </div>
+          ) : null}
         </div>
       )}
     </div>

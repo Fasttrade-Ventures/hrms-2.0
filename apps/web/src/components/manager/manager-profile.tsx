@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { PortalFilterChip, PortalFilterChips } from "@/components/portal/portal-filter-chips";
+
 export function ManagerProfileTabs({
   active,
 }: {
@@ -11,20 +13,27 @@ export function ManagerProfileTabs({
   ];
 
   return (
-    <div className="flex flex-wrap gap-2 border-b border-[var(--border-primary)]">
+    <PortalFilterChips>
       {tabs.map((tab) => (
-        <Link
-          className={`px-4 py-3 text-sm font-medium ${
-            active === tab.id
-              ? "border-b-2 border-[var(--accent-primary)] text-[var(--accent-primary)]"
-              : "text-[var(--foreground-secondary)] hover:text-[var(--foreground-primary)]"
-          }`}
-          href={tab.href}
-          key={tab.id}
-        >
+        <PortalFilterChip active={active === tab.id} href={tab.href} key={tab.id}>
           {tab.label}
-        </Link>
+        </PortalFilterChip>
       ))}
-    </div>
+    </PortalFilterChips>
+  );
+}
+
+/** @deprecated Prefer ManagerProfileTabs; kept for any stray imports. */
+export function ManagerProfileTabLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link className="text-sm font-medium text-[var(--accent-primary)]" href={href}>
+      {children}
+    </Link>
   );
 }

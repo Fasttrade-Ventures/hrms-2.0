@@ -1,19 +1,23 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { PortalPageHeader } from "@/components/portal/portal-primitives";
+import { StatusPill } from "@hrms/ui";
+
+import { submitManagerReviewAction } from "@/app/(manager)/manager/team-performance/actions";
 import { AppraisalSummary } from "@/components/performance/appraisal-summary";
 import { GoalList } from "@/components/performance/goal-list";
 import { KpiScoreList } from "@/components/performance/kpi-score-list";
 import { RatingSelect } from "@/components/performance/rating-select";
-import { submitManagerReviewAction } from "@/app/(manager)/manager/team-performance/actions";
-import { Button } from "@/components/ui/button";
+import { PortalPrimaryButton, PortalSectionCard } from "@/components/portal/portal-section";
+import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { Label } from "@/components/ui/label";
+import { RichText } from "@/components/ui/rich-text";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { requireRole } from "@/lib/auth/session";
 import { requireModule } from "@/lib/entitlements";
 import { getTeamAppraisal } from "@/lib/manager/performance";
 import { listAppraisalKpis } from "@/lib/performance/kpi-service";
-import { appraisalStatusLabel } from "@/lib/performance/types";
-import { requireRole } from "@/lib/auth/session";
+import { appraisalStatusLabel, appraisalStatusTone } from "@/lib/performance/types";
 
 export default async function Page({
   params,
@@ -27,7 +31,9 @@ export default async function Page({
   const { appraisalId } = await params;
   const query = await searchParams;
   const appraisal = await getTeamAppraisal(appraisalId);
-  const kpis = appraisal ? await listAppraisalKpis(appraisalId).catch(() => ({ rows: [], rating: null })) : null;
+  const kpis = appraisal
+    ? await listAppraisalKpis(appraisalId).catch(() => ({ rows: [], rating: null }))
+    : null;
 
   if (!appraisal) notFound();
 
@@ -35,38 +41,61 @@ export default async function Page({
 
   return (
     <div className="space-y-6">
-      <PortalPageHeader
-        actions={
-          <Link
-            className="inline-flex h-11 items-center border border-[var(--border-primary)] px-5 text-sm font-medium hover:bg-[var(--surface-muted)]"
-            href="/manager/team-performance"
-          >
-            Back to team performance
-          </Link>
-        }
-        description={`${appraisal.employeeName}${appraisal.employeeNumber ? ` · ${appraisal.employeeNumber}` : ""}`}
-        title="Manager review"
-      />
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <PortalPageHeader
+          description={`${appraisal.employeeName}${appraisal.employeeNumber ? ` · ${appraisal.employeeNumber}` : ""}`}
+          title="Manager review"
+        />
+        <Link
+          className="text-sm font-medium text-[var(--accent-primary)]"
+          href="/manager/team-performance"
+        >
+          Back to team performance
+        </Link>
+      </div>
 
       {query.submitted === "1" ? (
-        <div className="border border-[var(--accent-primary)] bg-[var(--surface-accent-soft)] px-4 py-3 text-sm text-[var(--accent-primary)]">
+        <div className="rounded-[var(--radius-md)] border border-[var(--accent-primary)] bg-[var(--surface-accent-soft)] px-4 py-3 text-sm text-[var(--accent-primary)]">
           Manager review submitted and marked complete.
         </div>
       ) : null}
 
       <AppraisalSummary appraisal={appraisal} />
+
       {kpis ? (
-        <KpiScoreList appraisalId={appraisalId} rating={kpis.rating} rows={kpis.rows} side="manager" />
+        <KpiScoreList
+          appraisalId={appraisalId}
+          rating={kpis.rating}
+          rows={kpis.rows}
+          side="manager"
+        />
       ) : null}
 
-      <section className="space-y-3 border border-[var(--border-primary)] bg-[var(--surface-card)] p-6">
-        <h2 className="text-base font-semibold text-[var(--foreground-primary)]">Employee self review</h2>
+      <PortalSectionCard
+        action={
+          appraisal.selfRating != null ? (
+            <StatusPill label={`${appraisal.selfRating}/5`} tone="success" />
+          ) : (
+            <StatusPill label="Waiting" tone="warning" />
+          )
+        }
+        description="Scores and comments submitted by the employee."
+        title="Employee self review"
+      >
         {appraisal.selfRating != null ? (
           <div className="space-y-3 text-sm">
-            <p className="text-[var(--foreground-secondary)]">Self rating: {appraisal.selfRating}/5</p>
-            <p className="text-[var(--foreground-primary)]">
-              {appraisal.selfComments?.trim() || "No comments provided."}
-            </p>
+            <div className="rounded-[var(--radius-md)] bg-[var(--surface-muted)] px-3 py-2.5">
+              <p className="text-xs text-[var(--foreground-muted)]">Self rating</p>
+              <p className="mt-1 font-medium text-[var(--foreground-primary)]">
+                {appraisal.selfRating}/5
+              </p>
+            </div>
+            <div className="rounded-[var(--radius-md)] bg-[var(--surface-muted)] px-3 py-2.5">
+              <p className="text-xs text-[var(--foreground-muted)]">Comments</p>
+              <div className="mt-1">
+                <RichText empty="No comments provided." value={appraisal.selfComments} />
+              </div>
+            </div>
           </div>
         ) : (
           <p className="text-sm text-[var(--foreground-muted)]">
@@ -75,10 +104,22 @@ export default async function Page({
               : "No self review submitted."}
           </p>
         )}
-      </section>
+      </PortalSectionCard>
 
-      <section className="space-y-4 border border-[var(--border-primary)] bg-[var(--surface-card)] p-6">
-        <h2 className="text-base font-semibold text-[var(--foreground-primary)]">Your review</h2>
+      <PortalSectionCard
+        action={
+          <StatusPill
+            label={appraisalStatusLabel(appraisal.status)}
+            tone={appraisalStatusTone(appraisal.status)}
+          />
+        }
+        description={
+          canReview
+            ? "Submit your rating and feedback to complete this appraisal."
+            : "Your submitted manager review for this cycle."
+        }
+        title="Your review"
+      >
         {canReview ? (
           <form action={submitManagerReviewAction.bind(null, appraisalId)} className="space-y-4">
             <RatingSelect
@@ -88,32 +129,39 @@ export default async function Page({
               name="managerRating"
             />
             <div className="space-y-2">
-              <Label htmlFor="managerComments">Comments</Label>
-              <textarea
-                className="min-h-32 w-full rounded-[var(--radius-md)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-3 py-2 text-sm"
+              <Label>Comments</Label>
+              <RichTextEditor
                 defaultValue={appraisal.managerComments ?? ""}
-                id="managerComments"
                 name="managerComments"
                 placeholder="Share feedback, strengths, and development areas."
               />
             </div>
-            <Button type="submit">Submit manager review</Button>
+            <PortalPrimaryButton type="submit">Submit manager review</PortalPrimaryButton>
           </form>
         ) : (
           <div className="space-y-3 text-sm">
-            <p className="text-[var(--foreground-secondary)]">
-              Status: {appraisalStatusLabel(appraisal.status)}
-            </p>
-            <p className="text-[var(--foreground-secondary)]">
-              Manager rating: {appraisal.managerRating != null ? `${appraisal.managerRating}/5` : "Not submitted"}
-            </p>
-            <p className="text-[var(--foreground-primary)]">
-              {appraisal.managerComments?.trim() || "No manager comments."}
-            </p>
+            <div className="rounded-[var(--radius-md)] bg-[var(--surface-muted)] px-3 py-2.5">
+              <p className="text-xs text-[var(--foreground-muted)]">Manager rating</p>
+              <p className="mt-1 font-medium text-[var(--foreground-primary)]">
+                {appraisal.managerRating != null ? `${appraisal.managerRating}/5` : "Not submitted"}
+              </p>
+            </div>
+            <div className="rounded-[var(--radius-md)] bg-[var(--surface-muted)] px-3 py-2.5">
+              <p className="text-xs text-[var(--foreground-muted)]">Comments</p>
+              <div className="mt-1">
+                <RichText empty="No manager comments." value={appraisal.managerComments} />
+              </div>
+            </div>
           </div>
         )}
-      </section>
-      <GoalList canAdd={false} canComment={canReview} cycleId={appraisal.cycleId} employeeId={appraisal.employeeId} />
+      </PortalSectionCard>
+
+      <GoalList
+        canAdd={false}
+        canComment={canReview}
+        cycleId={appraisal.cycleId}
+        employeeId={appraisal.employeeId}
+      />
     </div>
   );
 }

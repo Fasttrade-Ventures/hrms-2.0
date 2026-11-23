@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 
-import { buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { formatPortalMonth, type DisplayCountry } from "@/lib/locale";
-import { cn } from "@/lib/utils";
 
 function shiftMonth(year: number, month: number, delta: number) {
   const date = new Date(year, month - 1 + delta, 1);
@@ -45,61 +44,50 @@ export function CalendarToolbar({
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <div className="flex items-center gap-2">
-        <Link
-          className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-          href={monthHref(prev.year, prev.month)}
-        >
+      <div className="flex flex-wrap items-center gap-2">
+        <Button render={<Link href={monthHref(prev.year, prev.month)} />} size="sm" variant="outline">
           Prev
-        </Link>
-        <Link
-          className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-          href={monthHref(now.getFullYear(), now.getMonth() + 1)}
+        </Button>
+        <Button
+          render={<Link href={monthHref(now.getFullYear(), now.getMonth() + 1)} />}
+          size="sm"
+          variant="outline"
         >
           Today
-        </Link>
-        <Link
-          className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-          href={monthHref(next.year, next.month)}
-        >
+        </Button>
+        <Button render={<Link href={monthHref(next.year, next.month)} />} size="sm" variant="outline">
           Next
-        </Link>
-        <h2 className="text-lg font-semibold">{label}</h2>
+        </Button>
+        <h2 className="text-base font-semibold text-[var(--foreground-primary)] sm:text-lg">{label}</h2>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
         {extraActions}
-        <button
-          className={cn(buttonVariants({ variant: view === "month" ? "default" : "outline", size: "sm" }))}
+        <Button
           onClick={() => onViewChange("month")}
+          size="sm"
           type="button"
+          variant={view === "month" ? "default" : "outline"}
         >
           Month
-        </button>
-        <button
-          className={cn(buttonVariants({ variant: view === "agenda" ? "default" : "outline", size: "sm" }))}
+        </Button>
+        <Button
           onClick={() => onViewChange("agenda")}
+          size="sm"
           type="button"
+          variant={view === "agenda" ? "default" : "outline"}
         >
           List
-        </button>
+        </Button>
         {onPrint ? (
-          <button
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-            onClick={onPrint}
-            type="button"
-          >
+          <Button onClick={onPrint} size="sm" type="button" variant="outline">
             Print
-          </button>
+          </Button>
         ) : null}
         {showExport && onExportCsv ? (
-          <button
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-            onClick={onExportCsv}
-            type="button"
-          >
+          <Button onClick={onExportCsv} size="sm" type="button" variant="outline">
             Export CSV
-          </button>
+          </Button>
         ) : null}
       </div>
     </div>

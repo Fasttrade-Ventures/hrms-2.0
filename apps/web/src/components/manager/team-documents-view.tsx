@@ -1,7 +1,9 @@
 import Link from "next/link";
 
-import { HrStatCards, HrTableCard } from "@/components/hr/hr-ui";
-import { HrStatusBadge } from "@/components/hr/hr-ui.client";
+import { EmptyState, ListCard, StatCard, StatusPill } from "@hrms/ui";
+
+import { PortalIcon } from "@/components/portal/portal-icons";
+import { PortalSectionCard } from "@/components/portal/portal-section";
 import { Button } from "@/components/ui/button";
 import type { TeamComplianceSummaryRow, TeamDocumentRow } from "@/lib/manager/documents";
 import type { ComplianceStatus } from "@/lib/hr/document-compliance";
@@ -19,15 +21,15 @@ function statusLabel(status: ComplianceStatus): string {
   }
 }
 
-function statusVariant(status: ComplianceStatus): "default" | "secondary" | "destructive" | "outline" {
+function statusTone(status: ComplianceStatus): "success" | "warning" | "danger" | "neutral" {
   switch (status) {
     case "valid":
-      return "secondary";
+      return "success";
     case "expiring":
-      return "outline";
+      return "warning";
     case "missing":
     case "expired":
-      return "destructive";
+      return "danger";
   }
 }
 
@@ -43,77 +45,91 @@ export function TeamDocumentsView({
 
   return (
     <div className="space-y-6">
-      <HrStatCards
-        items={[
-          { label: "Team members", value: summary.length },
-          { label: "Missing / expired", value: totalMissing },
-          { label: "Expiring soon", value: totalExpiring },
-        ]}
-      />
+      <div className="grid gap-4 sm:grid-cols-3">
+        <StatCard label="Team members" value={String(summary.length)} />
+        <StatCard label="Missing / expired" value={String(totalMissing)} />
+        <StatCard label="Expiring soon" value={String(totalExpiring)} />
+      </div>
 
       {summary.length > 0 ? (
-        <HrTableCard>
-          <div className="border-b px-4 py-3">
-            <p className="text-sm font-medium">Compliance by team member</p>
-          </div>
-          <div className="divide-y divide-border">
+        <PortalSectionCard
+          description="Compliance snapshot for each direct report."
+          title="Compliance by team member"
+        >
+          <ul className="space-y-2">
             {summary.map((row) => (
-              <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3" key={row.employeeId}>
+              <li
+                className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-md)] bg-[var(--surface-muted)] px-3 py-2.5"
+                key={row.employeeId}
+              >
                 <div>
-                  <p className="font-medium">{row.employeeName}</p>
-                  <p className="text-xs text-muted-foreground">{row.employeeNumber}</p>
+                  <p className="text-sm font-medium text-[var(--foreground-primary)]">
+                    {row.employeeName}
+                  </p>
+                  <p className="text-xs text-[var(--foreground-muted)]">{row.employeeNumber}</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {row.missing > 0 ? (
-                    <HrStatusBadge label={`${row.missing} missing`} variant="destructive" />
+                    <StatusPill label={`${row.missing} missing`} tone="danger" />
                   ) : null}
                   {row.expiring > 0 ? (
-                    <HrStatusBadge label={`${row.expiring} expiring`} variant="outline" />
+                    <StatusPill label={`${row.expiring} expiring`} tone="warning" />
                   ) : null}
                   {row.missing === 0 && row.expiring === 0 ? (
-                    <HrStatusBadge label="Compliant" variant="secondary" />
+                    <StatusPill label="Compliant" tone="success" />
                   ) : null}
                 </div>
-              </div>
+              </li>
             ))}
-          </div>
-        </HrTableCard>
+          </ul>
+        </PortalSectionCard>
       ) : null}
 
-      <HrTableCard>
-        <div className="border-b px-4 py-3">
-          <p className="text-sm font-medium">Team documents ({documents.length})</p>
-        </div>
-        {documents.length === 0 ? (
-          <div className="px-4 py-8 text-sm text-muted-foreground">
-            Assign direct reports in HR to see their documents here.
-          </div>
-        ) : (
-          <div className="divide-y divide-border">
-            {documents.map((doc) => (
-              <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3" key={doc.id}>
-                <div className="min-w-0">
-                  <p className="font-medium">{doc.documentType}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {doc.employeeName} · {doc.fileName}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {doc.complianceStatus ? (
-                    <HrStatusBadge
-                      label={statusLabel(doc.complianceStatus)}
-                      variant={statusVariant(doc.complianceStatus)}
-                    />
-                  ) : null}
-                  <Button render={<Link href={`/api/files/${doc.fileId}/download`} />} size="sm" variant="outline">
-                    Download
-                  </Button>
-                </div>
+      <ListCard
+        columns={[
+          { key: "document", label: "Document", className: "min-w-0 flex-1" },
+          { key: "status", label: "Status", className: "w-28" },
+          { key: "action", label: "", className: "w-28 text-right" },
+        ]}
+        empty={
+          <EmptyState
+            description="Assign direct reports in HR to see their documents here."
+            icon={<PortalIcon name="documents" className="h-6 w-6" />}
+            title="No team documents"
+          />
+        }
+        header={<p className="text-sm font-medium">Team documents ({documents.length})</p>}
+        rows={documents.map((doc) => ({
+          id: doc.id,
+          cells: {
+            document: (
+              <div className="min-w-0 space-y-0.5">
+                <p className="font-semibold text-[var(--foreground-primary)]">{doc.documentType}</p>
+                <p className="text-xs text-[var(--foreground-muted)]">
+                  {doc.employeeName} · {doc.fileName}
+                </p>
               </div>
-            ))}
-          </div>
-        )}
-      </HrTableCard>
+            ),
+            status: doc.complianceStatus ? (
+              <StatusPill
+                label={statusLabel(doc.complianceStatus)}
+                tone={statusTone(doc.complianceStatus)}
+              />
+            ) : (
+              "—"
+            ),
+            action: (
+              <Button
+                render={<Link href={`/api/files/${doc.fileId}/download`} />}
+                size="sm"
+                variant="outline"
+              >
+                Download
+              </Button>
+            ),
+          },
+        }))}
+      />
     </div>
   );
 }

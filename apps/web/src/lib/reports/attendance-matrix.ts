@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 
-import { getOrganizationIdForReports, listReportEmployees } from "./context";
+import { getOrganizationIdForReports, listReportEmployees, type ReportEmployee } from "./context";
 import type { ReportFilters } from "./types";
 
 export type MatrixCellKind = "hours" | "late" | "absent" | "leave" | "holiday" | "empty";
@@ -86,12 +86,17 @@ function formatRangeLabel(from: string, to: string): string {
   return `${from} → ${to}`;
 }
 
-export async function listAttendanceMatrixData(filters: ReportFilters): Promise<AttendanceMatrixData> {
+/** Build matrix for a known employee list (HR org-wide or manager direct reports). */
+export async function buildAttendanceMatrixData(params: {
+  organizationId: string;
+  from: string;
+  to: string;
+  employees: ReportEmployee[];
+}): Promise<AttendanceMatrixData> {
+  const { organizationId, from, to, employees } = params;
   const supabase = await createClient();
-  const organizationId = await getOrganizationIdForReports();
-  const employees = await listReportEmployees({ ...filters, page: 1, pageSize: 500 });
   const employeeIds = employees.map((employee) => employee.id);
-  const dates = eachDateInclusive(filters.from, filters.to);
+  const dates = eachDateInclusive(from, to);
 
   const [
     { data: attendance, error: attendanceError },
@@ -105,8 +110,8 @@ export async function listAttendanceMatrixData(filters: ReportFilters): Promise<
           .select("employee_id, work_date, clock_in_at, clock_out_at, status")
           .eq("organization_id", organizationId)
           .in("employee_id", employeeIds)
-          .gte("work_date", filters.from)
-          .lte("work_date", filters.to)
+          .gte("work_date", from)
+          .lte("work_date", to)
       : Promise.resolve({ data: [], error: null }),
     supabase
       .from("holidays")
@@ -116,12 +121,12 @@ export async function listAttendanceMatrixData(filters: ReportFilters): Promise<
       .gte(
         "holiday_date",
         (() => {
-          const d = new Date(`${filters.from}T12:00:00`);
+          const d = new Date(`${from}T12:00:00`);
           d.setDate(d.getDate() - 1);
           return d.toISOString().slice(0, 10);
         })(),
       )
-      .lte("holiday_date", filters.to),
+      .lte("holiday_date", to),
     employeeIds.length
       ? supabase
           .from("leave_requests")
@@ -129,8 +134,8 @@ export async function listAttendanceMatrixData(filters: ReportFilters): Promise<
           .eq("organization_id", organizationId)
           .eq("status", "approved")
           .in("employee_id", employeeIds)
-          .lte("start_date", filters.to)
-          .gte("end_date", filters.from)
+          .lte("start_date", to)
+          .gte("end_date", from)
       : Promise.resolve({ data: [], error: null }),
     supabase.from("organizations").select("country").eq("id", organizationId).maybeSingle(),
   ]);
@@ -193,7 +198,7 @@ export async function listAttendanceMatrixData(filters: ReportFilters): Promise<
     const code = row.half_day ? "HD" : leaveTypeShortCode(name);
     const span = eachDateInclusive(row.start_date, row.end_date);
     for (const date of span) {
-      if (date < filters.from || date > filters.to) continue;
+      if (date < from || date > to) continue;
       leaveByKey.set(`${row.employee_id}:${date}`, { code, title: name });
     }
   }
@@ -264,6 +269,17 @@ export async function listAttendanceMatrixData(filters: ReportFilters): Promise<
   return {
     days,
     rows,
-    rangeLabel: formatRangeLabel(filters.from, filters.to),
+    rangeLabel: formatRangeLabel(from, to),
   };
+}
+
+export async function listAttendanceMatrixData(filters: ReportFilters): Promise<AttendanceMatrixData> {
+  const organizationId = await getOrganizationIdForReports();
+  const employees = await listReportEmployees({ ...filters, page: 1, pageSize: 500 });
+  return buildAttendanceMatrixData({
+    organizationId,
+    from: filters.from,
+    to: filters.to,
+    employees,
+  });
 }

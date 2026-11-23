@@ -1,4 +1,5 @@
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 const RATING_OPTIONS = [1, 2, 3, 4, 5] as const;
 
@@ -21,7 +22,11 @@ export function RatingSelect({
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
       <select
-        className="flex h-10 w-full rounded-[var(--radius-md)] border border-[var(--border-primary)] bg-[var(--surface-card)] px-3 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+        className={cn(
+          "flex h-10 w-full rounded-lg border border-input bg-[var(--surface-card)] px-3.5 text-sm outline-none transition-colors",
+          "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+          "disabled:cursor-not-allowed disabled:bg-[var(--surface-muted)] disabled:opacity-60",
+        )}
         defaultValue={defaultValue ?? ""}
         disabled={disabled}
         id={id}

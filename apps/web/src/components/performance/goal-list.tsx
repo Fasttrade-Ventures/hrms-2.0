@@ -1,10 +1,18 @@
 import { revalidatePath } from "next/cache";
 
+import { PortalGhostButton, PortalSectionCard } from "@/components/portal/portal-section";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { addGoal, commentOnGoal, listGoals, markGoalDone, type GoalRow } from "@/lib/performance/goals";
 
 async function addAction(formData: FormData) {
   "use server";
-  await addGoal(String(formData.get("cycleId") ?? ""), String(formData.get("title") ?? ""), String(formData.get("note") ?? ""));
+  await addGoal(
+    String(formData.get("cycleId") ?? ""),
+    String(formData.get("title") ?? ""),
+    String(formData.get("note") ?? ""),
+  );
   revalidatePath("/employee/performance");
 }
 
@@ -34,39 +42,81 @@ export async function GoalList({
   const goals: GoalRow[] = await listGoals(cycleId, employeeId).catch(() => []);
 
   return (
-    <section className="space-y-3">
-      <h2 className="text-base font-semibold">Goals</h2>
-      <ul className="space-y-2 text-sm">
-        {goals.map((goal) => (
-          <li className="border border-[var(--border-primary)] p-3" key={goal.id}>
-            <p className="font-medium">{goal.title}</p>
-            {goal.note ? <p>{goal.note}</p> : null}
-            <p className="text-[var(--foreground-muted)]">{goal.status}</p>
-            {goal.managerNote ? <p>Manager: {goal.managerNote}</p> : null}
-            {canAdd && goal.status === "open" ? (
-              <form action={doneAction}>
-                <input name="goalId" type="hidden" value={goal.id} />
-                <button className="mt-2 text-sm underline" type="submit">Mark done</button>
-              </form>
-            ) : null}
-            {canComment ? (
-              <form action={commentAction} className="mt-2 flex gap-2">
-                <input name="goalId" type="hidden" value={goal.id} />
-                <input className="flex-1 border border-[var(--border-primary)] px-2 py-1" defaultValue={goal.managerNote ?? ""} name="managerNote" />
-                <button className="border border-[var(--border-primary)] px-3 py-1" type="submit">Comment</button>
-              </form>
-            ) : null}
-          </li>
-        ))}
-      </ul>
+    <PortalSectionCard
+      description={
+        goals.length
+          ? `${goals.length} goal${goals.length === 1 ? "" : "s"} for this review cycle.`
+          : "No goals added for this cycle yet."
+      }
+      title="Goals"
+    >
+      {goals.length ? (
+        <ul className="space-y-3">
+          {goals.map((goal) => (
+            <li
+              className="rounded-[var(--radius-md)] bg-[var(--surface-muted)] px-3 py-3 sm:px-4"
+              key={goal.id}
+            >
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="min-w-0 space-y-1">
+                  <p className="text-sm font-medium text-[var(--foreground-primary)]">{goal.title}</p>
+                  {goal.note ? (
+                    <p className="text-sm text-[var(--foreground-secondary)]">{goal.note}</p>
+                  ) : null}
+                  <p className="text-xs capitalize text-[var(--foreground-muted)]">{goal.status}</p>
+                  {goal.managerNote ? (
+                    <p className="text-sm text-[var(--foreground-secondary)]">
+                      Manager: {goal.managerNote}
+                    </p>
+                  ) : null}
+                </div>
+                {canAdd && goal.status === "open" ? (
+                  <form action={doneAction}>
+                    <input name="goalId" type="hidden" value={goal.id} />
+                    <Button size="sm" type="submit" variant="outline">
+                      Mark done
+                    </Button>
+                  </form>
+                ) : null}
+              </div>
+              {canComment ? (
+                <form action={commentAction} className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">
+                  <input name="goalId" type="hidden" value={goal.id} />
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <Label className="text-xs" htmlFor={`goal-note-${goal.id}`}>
+                      Manager comment
+                    </Label>
+                    <Input
+                      defaultValue={goal.managerNote ?? ""}
+                      id={`goal-note-${goal.id}`}
+                      name="managerNote"
+                      placeholder="Add feedback on this goal"
+                    />
+                  </div>
+                  <Button size="sm" type="submit" variant="outline">
+                    Save comment
+                  </Button>
+                </form>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
       {canAdd ? (
-        <form action={addAction} className="space-y-2">
+        <form action={addAction} className="mt-4 space-y-3 border-t border-[var(--border-primary)] pt-4">
           <input name="cycleId" type="hidden" value={cycleId} />
-          <input className="w-full border border-[var(--border-primary)] px-3 py-2 text-sm" name="title" placeholder="Goal" required />
-          <input className="w-full border border-[var(--border-primary)] px-3 py-2 text-sm" name="note" placeholder="Note" />
-          <button className="border border-[var(--border-primary)] px-3 py-2 text-sm" type="submit">Add goal</button>
+          <div className="space-y-1">
+            <Label htmlFor="goal-title">New goal</Label>
+            <Input id="goal-title" name="title" placeholder="Goal title" required />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="goal-note">Note</Label>
+            <Input id="goal-note" name="note" placeholder="Optional note" />
+          </div>
+          <PortalGhostButton type="submit">Add goal</PortalGhostButton>
         </form>
       ) : null}
-    </section>
+    </PortalSectionCard>
   );
 }

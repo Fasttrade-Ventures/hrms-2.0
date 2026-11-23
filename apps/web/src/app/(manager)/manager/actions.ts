@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { actOnApproval } from "@/lib/approvals/service";
+import { letterHtmlToText, sanitizeLetterHtml } from "@/lib/letters/html-text";
 import { requireManagerContext } from "@/lib/manager/context";
 
 export type ManagerActionState = {
@@ -11,12 +12,17 @@ export type ManagerActionState = {
   success?: string;
 };
 
+function normalizeComment(raw: string): string | undefined {
+  const sanitized = sanitizeLetterHtml(raw.trim());
+  return letterHtmlToText(sanitized).trim() ? sanitized : undefined;
+}
+
 export async function approveRequest(
   _prev: ManagerActionState,
   formData: FormData,
 ): Promise<ManagerActionState> {
   const stepId = String(formData.get("stepId") ?? "");
-  const comment = String(formData.get("comment") ?? "").trim() || undefined;
+  const comment = normalizeComment(String(formData.get("comment") ?? ""));
 
   if (!stepId) return { error: "Missing approval step." };
 
@@ -45,7 +51,7 @@ export async function rejectRequest(
   formData: FormData,
 ): Promise<ManagerActionState> {
   const stepId = String(formData.get("stepId") ?? "");
-  const comment = String(formData.get("comment") ?? "").trim() || undefined;
+  const comment = normalizeComment(String(formData.get("comment") ?? ""));
 
   if (!stepId) return { error: "Missing approval step." };
 

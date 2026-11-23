@@ -15,17 +15,22 @@ import {
 } from "@/components/portal/product-icons";
 
 import { EmptyState } from "@hrms/ui";
+
+import { HrPagination } from "@/components/hr/hr-ui.client";
+import { PortalCard } from "@/components/portal/portal-card";
+import { PortalPageHeader } from "@/components/portal/portal-primitives";
+import { PortalSectionCard } from "@/components/portal/portal-section";
+import { Button } from "@/components/ui/button";
+import { REQUEST_TYPE_LABELS } from "@/lib/approvals/types";
+import { markAllNotificationsReadAction, markNotificationReadAction } from "@/lib/notifications/actions";
 import { resolveNotificationHref } from "@/lib/notifications/links";
-import { 
-  type NotificationPortal, 
-  notificationTypeDescriptions 
+import {
+  type NotificationPortal,
+  notificationTypeDescriptions,
 } from "@/lib/notifications/placeholders";
 import type { NotificationRow } from "@/lib/notifications/types";
 import { formatNotificationMessage } from "@/lib/notifications/types";
-import { markNotificationReadAction, markAllNotificationsReadAction } from "@/lib/notifications/actions";
-import { REQUEST_TYPE_LABELS } from "@/lib/approvals/types";
-import { HrPagination } from "@/components/hr/hr-ui.client";
-import { PortalPageHeader } from "@/components/portal/portal-primitives";
+import { cn } from "@/lib/utils";
 
 function formatRelativeTime(value: string): string {
   const date = new Date(value);
@@ -335,40 +340,32 @@ export function NotificationsList({
         title="Notifications"
       />
 
-      {/* What appears here description card */}
-      <div className="rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-muted)] px-4 py-3">
-        <p className="text-sm font-medium text-[var(--foreground-primary)]">What appears here</p>
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-[var(--foreground-muted)]">
+      <PortalSectionCard description="Categories that land in this inbox for your role." title="What appears here">
+        <ul className="list-disc space-y-1 pl-5 text-sm text-[var(--foreground-muted)]">
           {descriptions.map((item) => (
             <li key={item}>{item}</li>
           ))}
         </ul>
-      </div>
+      </PortalSectionCard>
 
-      {/* Navigation Grouping Tabs */}
-      <div className="flex flex-wrap items-center gap-1.5 border-b border-[var(--border-primary)] pb-1.5 overflow-x-auto select-none no-scrollbar">
+      <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto pb-1">
         {GROUPS.map((group) => {
           const count = localTabCounts[group.id] ?? 0;
           const isActive = activeTab === group.id;
           return (
             <Link
-              key={group.id}
-              href={`${baseHref}?tab=${group.id}&page=1${filterQuery}`}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 whitespace-nowrap ${
+              className={cn(
+                "flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
                 isActive
-                  ? "bg-[var(--accent-primary)] text-white shadow-sm"
-                  : "text-[var(--foreground-secondary)] hover:bg-[var(--surface-muted)]"
-              }`}
+                  ? "border-transparent bg-[var(--surface-accent-soft)] text-[var(--accent-primary)]"
+                  : "border-[var(--border-primary)] bg-[var(--surface-card)] text-[var(--foreground-secondary)] hover:bg-[var(--surface-muted)]",
+              )}
+              href={`${baseHref}?tab=${group.id}&page=1${filterQuery}`}
+              key={group.id}
             >
-              {group.id !== "all" && getGroupIcon(group.id, isActive)}
+              {group.id !== "all" ? getGroupIcon(group.id, false) : null}
               <span>{group.label}</span>
-              <span
-                className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] ${
-                  isActive
-                    ? "bg-white/20 text-white"
-                    : "bg-[var(--surface-muted)] text-[var(--foreground-secondary)]"
-                }`}
-              >
+              <span className="rounded-full bg-black/5 px-1.5 py-0.5 text-[10px] dark:bg-white/5">
                 {count}
               </span>
             </Link>
@@ -376,48 +373,53 @@ export function NotificationsList({
         })}
       </div>
 
-      {/* Main Notifications Card */}
-      <div className="overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border-primary)] bg-[var(--surface-card)] shadow-[var(--shadow-card)]">
+      <PortalCard className="overflow-hidden" padding="none">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-primary)] bg-[var(--surface-muted)] px-4 py-3 text-sm font-medium">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <span>
-              {activeTab === "all" ? "Recent" : GROUPS.find((g) => g.id === activeTab)?.label} ({isUnreadOnly ? (localTabCounts[activeTab] ?? filteredRows.length) : total})
+              {activeTab === "all" ? "Recent" : GROUPS.find((g) => g.id === activeTab)?.label} (
+              {isUnreadOnly ? (localTabCounts[activeTab] ?? filteredRows.length) : total})
             </span>
 
             <div className="inline-flex rounded-lg border border-[var(--border-primary)] bg-[var(--surface-card)] p-0.5 text-xs font-medium">
               <Link
-                href={`${baseHref}?tab=${activeTab}&page=1&filter=all`}
-                className={`px-2.5 py-1 rounded-md transition-all ${
+                className={cn(
+                  "rounded-md px-2.5 py-1 transition-all",
                   !isUnreadOnly
-                    ? "bg-[var(--surface-accent-soft)] text-[var(--accent-primary)] font-semibold shadow-xs"
-                    : "text-[var(--foreground-muted)] hover:text-[var(--foreground-primary)]"
-                }`}
+                    ? "bg-[var(--surface-accent-soft)] font-semibold text-[var(--accent-primary)]"
+                    : "text-[var(--foreground-muted)] hover:text-[var(--foreground-primary)]",
+                )}
+                href={`${baseHref}?tab=${activeTab}&page=1&filter=all`}
               >
                 All
               </Link>
               <Link
-                href={`${baseHref}?tab=${activeTab}&page=1&filter=unread`}
-                className={`px-2.5 py-1 rounded-md transition-all ${
+                className={cn(
+                  "rounded-md px-2.5 py-1 transition-all",
                   isUnreadOnly
-                    ? "bg-[var(--surface-accent-soft)] text-[var(--accent-primary)] font-semibold shadow-xs"
-                    : "text-[var(--foreground-muted)] hover:text-[var(--foreground-primary)]"
-                }`}
+                    ? "bg-[var(--surface-accent-soft)] font-semibold text-[var(--accent-primary)]"
+                    : "text-[var(--foreground-muted)] hover:text-[var(--foreground-primary)]",
+                )}
+                href={`${baseHref}?tab=${activeTab}&page=1&filter=unread`}
               >
                 Unread only
               </Link>
             </div>
           </div>
 
-          {hasUnread && (
-            <button
-              onClick={handleMarkAllAsRead}
+          {hasUnread ? (
+            <Button
+              className="h-8 gap-1 text-xs"
               disabled={isPending}
-              className="flex items-center gap-1 text-xs font-semibold text-[var(--accent-primary)] hover:text-[var(--accent-hover)] disabled:opacity-50 transition-colors cursor-pointer"
+              onClick={handleMarkAllAsRead}
+              size="sm"
+              type="button"
+              variant="ghost"
             >
               <CheckSquare className="h-3.5 w-3.5" />
-              <span>Mark all as read</span>
-            </button>
-          )}
+              Mark all as read
+            </Button>
+          ) : null}
         </div>
 
         <div className="divide-y divide-[var(--border-primary)]">
@@ -478,19 +480,22 @@ export function NotificationsList({
                       {formatRelativeTime(row.createdAt)}
                     </span>
 
-                    {isUnread && (
-                      <button
+                    {isUnread ? (
+                      <Button
+                        className="h-7 gap-1 px-2.5 text-xs"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
                           handleMarkAsRead(row.id);
                         }}
-                        className="flex h-7 items-center justify-center rounded bg-[var(--surface-accent-soft)] px-2.5 text-xs font-semibold text-[var(--accent-primary)] hover:bg-[var(--surface-accent-soft)]/80 transition cursor-pointer"
+                        size="sm"
+                        type="button"
+                        variant="ghost"
                       >
-                        <Check className="h-3.5 w-3.5 mr-1" />
+                        <Check className="h-3.5 w-3.5" />
                         Mark read
-                      </button>
-                    )}
+                      </Button>
+                    ) : null}
                   </div>
                 </div>
               );
@@ -530,7 +535,7 @@ export function NotificationsList({
         </div>
 
         {/* Pagination */}
-        {pageCount > 1 && (
+        {pageCount > 1 ? (
           <div className="border-t border-[var(--border-primary)] bg-[var(--surface-muted)]/20 px-4 py-3">
             <HrPagination
               from={from}
@@ -548,8 +553,8 @@ export function NotificationsList({
               total={total}
             />
           </div>
-        )}
-      </div>
+        ) : null}
+      </PortalCard>
     </div>
   );
 }

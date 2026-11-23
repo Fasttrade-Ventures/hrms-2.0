@@ -1,9 +1,8 @@
 import Link from "next/link";
 
-import {
-  EmployeeProfileHeader,
-} from "@/components/employee/employee-profile";
+import { EmployeeProfileHeader } from "@/components/employee/employee-profile";
 import { ManagerProfileTabs } from "@/components/manager/manager-profile";
+import { PortalSectionCard } from "@/components/portal/portal-section";
 import { getCurrentEmployeeDetail } from "@/lib/employees/self";
 import { requireRole } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
@@ -28,18 +27,17 @@ export default async function ProfileSecurityPage() {
 
       <ManagerProfileTabs active="security" />
 
-      <section className="space-y-4 border border-[var(--border-primary)] bg-[var(--surface-card)] p-6">
-        <h2 className="text-base font-semibold text-[var(--foreground-primary)]">Password</h2>
-        <p className="text-sm text-[var(--foreground-secondary)]">
-          Change your password regularly. You will need your current password to confirm the update.
-        </p>
+      <PortalSectionCard
+        description="Change your password regularly. You will need your current password to confirm the update."
+        title="Password"
+      >
         <Link
-          className="inline-flex h-11 items-center bg-[var(--accent-primary)] px-5 text-sm font-semibold text-white hover:bg-[var(--accent-hover)]"
+          className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--accent-primary)] px-5 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-hover)]"
           href="/auth/change-password"
         >
           Change password
         </Link>
-      </section>
+      </PortalSectionCard>
     </div>
   );
 }
