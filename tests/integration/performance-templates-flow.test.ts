@@ -76,6 +76,13 @@ describe("Performance Appraisal Templates Integration Lifecycle", () => {
               required: false,
               sortOrder: 0,
             },
+            {
+              title: "Mentees supported this cycle",
+              description: "Count of junior engineers mentored.",
+              questionType: "number" as const,
+              required: false,
+              sortOrder: 1,
+            },
           ],
         },
       ],

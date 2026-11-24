@@ -18,16 +18,20 @@ export type AppraisalDetail = {
   managerComments: string | null;
   templateId?: string | null;
   templateName?: string | null;
-  criteriaResponses?: Array<{
-    questionId: string;
-    sectionId: string;
-    selfRating?: number | null;
-    selfText?: string | null;
-    selfBoolean?: boolean | null;
-    managerRating?: number | null;
-    managerText?: string | null;
-    managerBoolean?: boolean | null;
-  }>;
+  criteriaResponses?: CriteriaResponse[];
+};
+
+export type CriteriaResponse = {
+  questionId: string;
+  sectionId: string;
+  selfRating?: number | null;
+  selfText?: string | null;
+  selfBoolean?: boolean | null;
+  selfNumber?: number | null;
+  managerRating?: number | null;
+  managerText?: string | null;
+  managerBoolean?: boolean | null;
+  managerNumber?: number | null;
 };
 
 export type EmployeeAppraisalListItem = {

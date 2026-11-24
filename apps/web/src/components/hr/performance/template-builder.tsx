@@ -657,6 +657,7 @@ export function TemplateBuilder({ initialData, departments }: TemplateBuilderPro
                           className="rounded-md border border-[var(--border-secondary)] bg-[var(--surface-card)] px-2 py-1.5 text-xs text-[var(--foreground-primary)]"
                         >
                           <option value="rating">Rating (1 to 5)</option>
+                          <option value="number">Number</option>
                           <option value="text">Open Text Response</option>
                           <option value="yes_no">Yes / No</option>
                         </select>

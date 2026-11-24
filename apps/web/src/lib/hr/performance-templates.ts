@@ -29,7 +29,7 @@ export type AppraisalQuestionItem = {
   sectionId: string;
   title: string;
   description: string | null;
-  questionType: "rating" | "text" | "yes_no";
+  questionType: "rating" | "text" | "yes_no" | "number";
   required: boolean;
   sortOrder: number;
 };
@@ -198,7 +198,7 @@ export async function getAppraisalTemplateDetail(templateId: string): Promise<Ap
         sectionId: q.section_id,
         title: q.title,
         description: q.description,
-        questionType: q.question_type as "rating" | "text" | "yes_no",
+        questionType: q.question_type as "rating" | "text" | "yes_no" | "number",
         required: q.required,
         sortOrder: q.sort_order,
       });

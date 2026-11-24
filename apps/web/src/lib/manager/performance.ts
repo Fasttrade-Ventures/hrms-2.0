@@ -1,5 +1,9 @@
 import { requireManagerContext } from "@/lib/manager/context";
 import { getAppraisalDetail, assertAppraisalEditable } from "@/lib/performance/appraisals";
+import {
+  getTemplateSectionsForForm,
+  parseManagerCriteriaResponses,
+} from "@/lib/performance/criteria";
 import { logAuditEvent } from "@/lib/audit/log-event";
 import type { AppraisalStatus } from "@/lib/performance/types";
 import { parseRating } from "@/lib/performance/types";
@@ -96,12 +100,20 @@ export async function submitManagerReview(appraisalId: string, formData: FormDat
   const rawComments = sanitizeLetterHtml(String(formData.get("managerComments") ?? "").trim());
   const managerComments = letterHtmlToText(rawComments).trim() ? rawComments : null;
 
+  const sections = await getTemplateSectionsForForm(appraisal.templateId);
+  const criteriaResponses = parseManagerCriteriaResponses(
+    sections,
+    formData,
+    appraisal.criteriaResponses ?? [],
+  );
+
   const supabase = await createClient();
   const { error } = await supabase
     .from("performance_appraisals")
     .update({
       manager_rating: managerRating,
       manager_comments: managerComments,
+      criteria_responses: criteriaResponses,
       status: "approved",
     })
     .eq("id", appraisalId)

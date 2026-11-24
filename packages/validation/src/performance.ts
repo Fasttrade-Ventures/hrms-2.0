@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const appraisalQuestionTypeSchema = z.enum(["rating", "text", "yes_no"]);
+export const appraisalQuestionTypeSchema = z.enum(["rating", "text", "yes_no", "number"]);
 
 export const appraisalQuestionSchema = z.object({
   id: z.string().uuid().optional(),
