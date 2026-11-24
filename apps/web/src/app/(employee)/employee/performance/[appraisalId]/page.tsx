@@ -5,6 +5,7 @@ import { StatusPill } from "@hrms/ui";
 
 import { submitSelfAppraisalAction } from "@/app/(employee)/employee/performance/actions";
 import { AppraisalSummary } from "@/components/performance/appraisal-summary";
+import { CriteriaQuestionsFields } from "@/components/performance/criteria-questions";
 import { GoalList } from "@/components/performance/goal-list";
 import { KpiScoreList } from "@/components/performance/kpi-score-list";
 import { RatingSelect } from "@/components/performance/rating-select";
@@ -15,6 +16,7 @@ import { RichText } from "@/components/ui/rich-text";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { getMyAppraisal } from "@/lib/employee/performance";
 import { requireModule } from "@/lib/entitlements";
+import { getTemplateSectionsForForm } from "@/lib/performance/criteria";
 import { listAppraisalKpis } from "@/lib/performance/kpi-service";
 import { appraisalStatusLabel, appraisalStatusTone } from "@/lib/performance/types";
 
@@ -32,10 +34,15 @@ export default async function Page({
   const kpis = appraisal
     ? await listAppraisalKpis(appraisalId).catch(() => ({ rows: [], rating: null }))
     : null;
+  const templateSections = appraisal
+    ? await getTemplateSectionsForForm(appraisal.templateId).catch(() => [])
+    : [];
 
   if (!appraisal) notFound();
 
   const canEdit = appraisal.status === "draft" && !appraisal.cycleClosed;
+  const hasCriteria = templateSections.some((s) => s.questions.length > 0);
+  const hasKpis = Boolean(kpis?.rows.length);
 
   return (
     <div className="space-y-6">
@@ -57,7 +64,7 @@ export default async function Page({
 
       <AppraisalSummary appraisal={appraisal} />
 
-      {kpis ? (
+      {hasKpis && kpis ? (
         <KpiScoreList
           appraisalId={appraisalId}
           rating={kpis.rating}
@@ -75,41 +82,59 @@ export default async function Page({
         }
         description={
           canEdit
-            ? "Rate yourself and share comments before submitting."
+            ? hasCriteria
+              ? "Answer each question, then add an overall rating and submit."
+              : "Rate yourself and share comments before submitting."
             : "Your submitted self appraisal."
         }
         title="Your review"
       >
         {canEdit ? (
-          <form action={submitSelfAppraisalAction.bind(null, appraisalId)} className="space-y-4">
+          <form action={submitSelfAppraisalAction.bind(null, appraisalId)} className="space-y-6">
+            {hasCriteria ? (
+              <CriteriaQuestionsFields
+                mode="employee_edit"
+                responses={appraisal.criteriaResponses ?? []}
+                sections={templateSections}
+              />
+            ) : null}
             <RatingSelect
               defaultValue={appraisal.selfRating}
               id="selfRating"
-              label="Self rating"
+              label="Overall self rating"
               name="selfRating"
             />
             <div className="space-y-2">
-              <Label>Comments</Label>
+              <Label>Additional comments (optional)</Label>
               <RichTextEditor
                 defaultValue={appraisal.selfComments ?? ""}
                 name="selfComments"
-                placeholder="Summarize your achievements, growth areas, and goals."
+                placeholder="Anything else you want your manager to know."
               />
             </div>
             <PortalPrimaryButton type="submit">Submit self appraisal</PortalPrimaryButton>
           </form>
         ) : (
-          <div className="space-y-3 text-sm">
-            <div className="rounded-[var(--radius-md)] bg-[var(--surface-muted)] px-3 py-2.5">
-              <p className="text-xs text-[var(--foreground-muted)]">Self rating</p>
-              <p className="mt-1 font-medium text-[var(--foreground-primary)]">
-                {appraisal.selfRating != null ? `${appraisal.selfRating}/5` : "Not submitted"}
-              </p>
-            </div>
-            <div className="rounded-[var(--radius-md)] bg-[var(--surface-muted)] px-3 py-2.5">
-              <p className="text-xs text-[var(--foreground-muted)]">Comments</p>
-              <div className="mt-1">
-                <RichText empty="No comments provided." value={appraisal.selfComments} />
+          <div className="space-y-6">
+            {hasCriteria ? (
+              <CriteriaQuestionsFields
+                mode="employee_view"
+                responses={appraisal.criteriaResponses ?? []}
+                sections={templateSections}
+              />
+            ) : null}
+            <div className="space-y-3 text-sm">
+              <div className="rounded-[var(--radius-md)] bg-[var(--surface-muted)] px-3 py-2.5">
+                <p className="text-xs text-[var(--foreground-muted)]">Overall self rating</p>
+                <p className="mt-1 font-medium text-[var(--foreground-primary)]">
+                  {appraisal.selfRating != null ? `${appraisal.selfRating}/5` : "Not submitted"}
+                </p>
+              </div>
+              <div className="rounded-[var(--radius-md)] bg-[var(--surface-muted)] px-3 py-2.5">
+                <p className="text-xs text-[var(--foreground-muted)]">Comments</p>
+                <div className="mt-1">
+                  <RichText empty="No comments provided." value={appraisal.selfComments} />
+                </div>
               </div>
             </div>
           </div>

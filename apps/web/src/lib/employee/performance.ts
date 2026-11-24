@@ -1,6 +1,7 @@
 import { requireAuth } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { assertAppraisalEditable, getAppraisalDetail } from "@/lib/performance/appraisals";
+import { getTemplateSectionsForForm, parseSelfCriteriaResponses } from "@/lib/performance/criteria";
 import { logAuditEvent } from "@/lib/audit/log-event";
 import type { EmployeeAppraisalListItem } from "@/lib/performance/types";
 import { parseRating } from "@/lib/performance/types";
@@ -66,12 +67,20 @@ export async function submitSelfAppraisal(appraisalId: string, formData: FormDat
   const rawComments = sanitizeLetterHtml(String(formData.get("selfComments") ?? "").trim());
   const selfComments = letterHtmlToText(rawComments).trim() ? rawComments : null;
 
+  const sections = await getTemplateSectionsForForm(appraisal.templateId);
+  const criteriaResponses = parseSelfCriteriaResponses(
+    sections,
+    formData,
+    appraisal.criteriaResponses ?? [],
+  );
+
   const supabase = await createClient();
   const { error } = await supabase
     .from("performance_appraisals")
     .update({
       self_rating: selfRating,
       self_comments: selfComments,
+      criteria_responses: criteriaResponses,
       status: "pending",
     })
     .eq("id", appraisalId)

@@ -128,7 +128,13 @@ export function TemplatePreviewDialog({ template, triggerButton }: TemplatePrevi
                             {q.required ? <span className="ml-1 text-destructive">*</span> : null}
                           </p>
                           <span className="shrink-0 text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
-                            {q.questionType === "rating" ? "Rating" : q.questionType === "yes_no" ? "Yes / No" : "Text"}
+                            {q.questionType === "rating"
+                              ? "Rating"
+                              : q.questionType === "yes_no"
+                                ? "Yes / No"
+                                : q.questionType === "number"
+                                  ? "Number"
+                                  : "Text"}
                           </span>
                         </div>
 
@@ -165,6 +171,13 @@ export function TemplatePreviewDialog({ template, triggerButton }: TemplatePrevi
                                 No
                               </button>
                             </div>
+                          ) : q.questionType === "number" ? (
+                            <input
+                              disabled
+                              placeholder="0"
+                              type="number"
+                              className="w-32 rounded-md border border-[var(--border-secondary)] bg-[var(--surface-muted)] p-2 text-xs text-[var(--foreground-secondary)]"
+                            />
                           ) : (
                             <textarea
                               disabled
