@@ -88,12 +88,12 @@ export function HirixCorePanel({
           <CardHeader>
             <CardTitle>Copy these now</CardTitle>
             <CardDescription>
-              BukuHR shows the key only once. Put both values in the Hirix Core backend settings.
+              BukuHR shows the key only once. In Hirix Core, open Integrations, choose BukuHR and paste both values.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <CopyField label="HRMS_API_URL" value={baseUrl} />
-            <CopyField label="HRMS_API_KEY" value={generateState.secret} />
+            <CopyField label="API URL" value={baseUrl} />
+            <CopyField label="API key" value={generateState.secret} />
           </CardContent>
         </Card>
       ) : null}
@@ -167,17 +167,16 @@ export function HirixCorePanel({
             <ol className="list-decimal space-y-2 pl-5 text-sm text-muted-foreground">
               <li>Generate the key here and copy the URL and key.</li>
               <li>
-                In the Hirix Core backend, set <code className="text-xs text-foreground">HRMS_API_URL</code> and{" "}
-                <code className="text-xs text-foreground">HRMS_API_KEY</code>, then restart it.
+                In Hirix Core, open Integrations, choose <span className="text-foreground">Connect</span> on BukuHR,
+                and paste both values.
               </li>
-              <li>In Hirix Core, open Integrations and connect BukuHR.</li>
               <li>
                 On a hire whose tax details are received, choose <span className="text-foreground">Add to BukuHR</span>.
                 The employee then appears under Employees.
               </li>
             </ol>
             <p className="mt-4 text-sm text-muted-foreground">
-              Rotating a key stops the old one at once. Update the Hirix Core settings straight after.
+              Rotating a key stops the old one at once. Use Update key in Hirix Core straight after.
             </p>
           </CardContent>
         </Card>
@@ -186,7 +185,7 @@ export function HirixCorePanel({
       <ConfirmDialog
         cancelLabel="Keep current key"
         confirmLabel="Rotate key"
-        message="The current key stops working immediately. Hirix Core cannot add employees until you save the new key in its settings."
+        message="The current key stops working immediately. Hirix Core cannot add employees until you paste the new key in Hirix Core."
         onCancel={() => setConfirm(null)}
         onConfirm={() => {
           setConfirm(null);
