@@ -7,6 +7,7 @@ import { HrFormMessage, HrPrimaryButton, HrTextInput } from "@/components/hr/emp
 
 const SCOPE_OPTIONS = [
   { id: "employees:read", label: "Read employees" },
+  { id: "employees:write", label: "Create employees (for example from Hirix)" },
   { id: "leave:read", label: "Read leave" },
   { id: "payroll:read", label: "Read payroll" },
   { id: "attendance:clock", label: "Clock attendance" },
@@ -99,6 +100,18 @@ export function ApiKeysPanel({
             <li><span className="font-mono text-xs text-foreground">GET {baseUrl}/payslips?email=staff@company.com</span> — locked payslips only</li>
           </ul>
         </div>
+
+        <div className="space-y-2">
+          <p className="font-medium">Create employees</p>
+          <p className="text-muted-foreground">
+            A key with Create employees checked can add a new employee from another system, such as a hiring tool. Create this key only for that system. It is not checked by default.
+          </p>
+          <ul className="space-y-1 text-muted-foreground">
+            <li><span className="font-mono text-xs text-foreground">POST {baseUrl}/employees</span> — fullName, email and joinDate (YYYY-MM-DD) are required. Personal, bank and statutory fields are optional. Roles and branch, department or manager ids are refused</li>
+            <li>Success is 201. A duplicate email or employee number is 409. A bad field is 400. A missing permission is 403</li>
+            <li>No activation email is sent unless the body has <span className="font-mono text-xs text-foreground">sendActivationEmail: true</span></li>
+          </ul>
+        </div>
       </section>
 
       <form action={action} className="space-y-4 rounded-xl border p-5">
@@ -112,7 +125,7 @@ export function ApiKeysPanel({
           <legend className="text-sm font-medium">What this key can do</legend>
           {SCOPE_OPTIONS.map((scope) => (
             <label className="flex items-center gap-2 text-sm" key={scope.id}>
-              <input defaultChecked name={scope.id} type="checkbox" />
+              <input defaultChecked={scope.id !== "employees:write"} name={scope.id} type="checkbox" />
               {scope.label}
             </label>
           ))}

@@ -13,7 +13,10 @@ export async function GET() {
     },
     security: [{ bearerAuth: [] }, { apiKeyAuth: [] }],
     paths: {
-      "/employees": { get: { summary: "List employees" } },
+      "/employees": {
+        get: { summary: "List employees" },
+        post: { summary: "Create an employee (needs the employees:write permission)" },
+      },
       "/employees/{id}": { get: { summary: "Get employee" } },
       "/payruns": { get: { summary: "List payruns" } },
       "/payruns/{id}": { get: { summary: "Get payrun" } },

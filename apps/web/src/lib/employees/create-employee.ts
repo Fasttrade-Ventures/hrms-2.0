@@ -8,6 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 import { getNextEmployeeNumber } from "./organization";
 import { requireOrganizationIdForWrite } from "@/lib/auth/organization-context";
+import { requireActiveSubscription } from "@/lib/billing/subscription-gate";
 
 export type CreateEmployeeResult = {
   employeeId: string;
@@ -22,12 +23,25 @@ async function getOrganizationName(admin: ReturnType<typeof createAdminClient>, 
   return data?.name ?? "your organization";
 }
 
+export type CreateEmployeeOptions = {
+  /** Set by API-key callers, which have no login session to resolve the org from. */
+  organizationId?: string;
+  source?: "ui" | "api";
+};
+
 export async function createEmployeeRecord(
   input: CreateEmployeeInput,
-  actorUserId: string,
+  actorUserId: string | null,
+  options: CreateEmployeeOptions = {},
 ): Promise<CreateEmployeeResult> {
   const admin = createAdminClient();
-  const organizationId = await requireOrganizationIdForWrite();
+  let organizationId: string;
+  if (options.organizationId) {
+    organizationId = options.organizationId;
+    await requireActiveSubscription(organizationId);
+  } else {
+    organizationId = await requireOrganizationIdForWrite();
+  }
   const { count: activeCount } = await admin
     .from("employees")
     .select("id", { count: "exact", head: true })
@@ -281,6 +295,7 @@ export async function createEmployeeRecord(
       employeeNumber,
       activationEmailSent,
       portalRole: input.portalRole,
+      source: options.source ?? "ui",
     },
   });
 

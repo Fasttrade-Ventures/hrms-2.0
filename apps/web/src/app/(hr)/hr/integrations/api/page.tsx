@@ -3,10 +3,12 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
 import { loadApiKeys } from "@/app/(hr)/hr/integrations/api/actions";
+import { loadHirixCoreStatus } from "@/app/(hr)/hr/integrations/hirix-core/actions";
 import { ApiKeysPanel } from "@/components/hr/integrations/api-keys-panel";
 import { BukucloudSettingsForm } from "@/components/hr/integrations/bukucloud-settings-form";
 import { parseDeveloperApiTab } from "@/components/hr/integrations/developer-api-tab";
 import { DeveloperApiTabs } from "@/components/hr/integrations/developer-api-tabs";
+import { HirixCorePanel } from "@/components/hr/integrations/hirix-core-panel";
 import { VirtualHirixPanel } from "@/components/hr/integrations/virtual-hirix-panel";
 import { PortalPageHeader } from "@/components/portal/portal-primitives";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +16,7 @@ import { requireRole } from "@/lib/auth/session";
 import { getEntitlements, requireModule } from "@/lib/entitlements";
 import { requireBukucloudIntegrationAccess } from "@/lib/integrations/bukucloud/access";
 import { getBukucloudSettings } from "@/lib/integrations/bukucloud/config";
+import { formatPortalDate } from "@/lib/locale";
 
 export default async function Page({
   searchParams,
@@ -32,6 +35,8 @@ export default async function Page({
   }
 
   const keys = tab === "api" ? await loadApiKeys() : [];
+  const hirixCore = tab === "hirix-core" ? await loadHirixCoreStatus() : null;
+  const dateLabel = (iso: string | null) => (iso ? formatPortalDate(new Date(iso)) : null);
   const bukucloudSettings =
     tab === "bukucloud" ? await (async () => {
       await requireBukucloudIntegrationAccess();
@@ -81,6 +86,18 @@ export default async function Page({
             </CardContent>
           </Card>
         </div>
+      ) : null}
+
+      {tab === "hirix-core" && hirixCore ? (
+        <HirixCorePanel
+          baseUrl={`${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/api/v1`}
+          status={{
+            active: hirixCore.active,
+            keyPrefix: hirixCore.keyPrefix,
+            createdLabel: dateLabel(hirixCore.createdAt),
+            lastUsedLabel: dateLabel(hirixCore.lastUsedAt),
+          }}
+        />
       ) : null}
 
       {tab === "virtual-hirix" ? (

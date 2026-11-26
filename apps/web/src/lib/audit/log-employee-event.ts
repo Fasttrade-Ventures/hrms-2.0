@@ -2,7 +2,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 type EmployeeAuditInput = {
   action: string;
-  actorUserId: string;
+  /** Null for API-key callers, which are not a user account. */
+  actorUserId: string | null;
   organizationId?: string;
   employeeId: string;
   metadata?: Record<string, unknown>;

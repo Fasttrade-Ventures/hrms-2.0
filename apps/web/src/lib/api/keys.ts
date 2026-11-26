@@ -95,7 +95,8 @@ export async function authenticateApiKey(
 
   if (error || !data || data.revoked_at) return null;
 
-  void admin
+  // Awaited on purpose: a Supabase query only runs once awaited, so a bare `void` never wrote.
+  await admin
     .from("api_keys")
     .update({ last_used_at: new Date().toISOString() })
     .eq("id", data.id);

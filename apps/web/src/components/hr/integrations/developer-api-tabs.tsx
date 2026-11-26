@@ -12,6 +12,7 @@ const TABS: Array<{ id: DeveloperApiTab; label: string }> = [
   { id: "api", label: "API keys" },
   { id: "bukucloud", label: "BukuCloud" },
   { id: "virtual-hirix", label: "Virtual Hirix" },
+  { id: "hirix-core", label: "Hirix Core" },
 ];
 
 export function DeveloperApiTabs({ active }: { active: DeveloperApiTab }) {
