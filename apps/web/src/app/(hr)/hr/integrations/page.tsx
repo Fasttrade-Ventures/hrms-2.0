@@ -46,6 +46,13 @@ export default async function IntegrationsHubPage() {
       enabled: hasIntegrations && hasPayroll,
     },
     {
+      href: "/hr/integrations/api?tab=hirix-core",
+      title: "Hirix Core",
+      description: "Add newly onboarded hires from Hirix Core to BukuHR without re-typing.",
+      tier: "Enterprise",
+      enabled: hasApi,
+    },
+    {
       href: "/hr/integrations/api?tab=virtual-hirix",
       title: "Virtual Hirix",
       description: "Connect Virtual Hirix using a Developer API key.",

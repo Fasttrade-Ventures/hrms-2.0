@@ -10,6 +10,7 @@ export type ApiContext = {
 
 export const API_SCOPES = [
   "employees:read",
+  "employees:write",
   "leave:read",
   "payroll:read",
   "attendance:clock",
