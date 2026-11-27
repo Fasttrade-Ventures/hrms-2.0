@@ -13,7 +13,7 @@ type PushSubscriptionRow = {
 const DEFAULT_DEV_VAPID_PUBLIC =
   "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U";
 const DEFAULT_DEV_VAPID_PRIVATE = "UUxI2qFj7v6mN-C5s_bE6xQ7v1v4uBqX6yB0iV8n_sM";
-const DEFAULT_VAPID_SUBJECT = "mailto:notifications@bukuhr.com";
+const DEFAULT_VAPID_SUBJECT = "mailto:notifications@hirix.ai";
 
 let vapidConfigured = false;
 

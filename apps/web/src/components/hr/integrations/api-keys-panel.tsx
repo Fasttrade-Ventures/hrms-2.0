@@ -40,13 +40,13 @@ export function ApiKeysPanel({
         <div className="space-y-2">
           <h2 className="text-base font-medium">Integration manual</h2>
           <p className="text-muted-foreground">
-            Use this when a virtual office, or any other system, needs to clock staff in BukuHR. The other system keeps its own login. BukuHR only receives the clock call.
+            Use this when a virtual office, or any other system, needs to clock staff in Hirix HR. The other system keeps its own login. Hirix HR only receives the clock call.
           </p>
         </div>
 
         <ol className="list-decimal space-y-2 pl-5 text-muted-foreground">
           <li>Create a key below and leave Clock attendance checked.</li>
-          <li>Copy the secret immediately. BukuHR shows it once.</li>
+          <li>Copy the secret immediately. Hirix HR shows it once.</li>
           <li>Store the secret on the other system. Do not put it in a public web page.</li>
           <li>When a staff member logs into that system, call clock-in. When they leave, call clock-out.</li>
         </ol>
@@ -67,7 +67,7 @@ export function ApiKeysPanel({
         <div className="space-y-3">
           <p className="font-medium">Attendance</p>
           <p className="text-muted-foreground">
-            Identify the person with <span className="font-mono text-foreground">email</span>. That must match the active employee’s email in BukuHR. This call does not ask for GPS or a selfie. The record is stored as <span className="font-mono text-foreground">virtual_office</span>.
+            Identify the person with <span className="font-mono text-foreground">email</span>. That must match the active employee’s email in Hirix HR. This call does not ask for GPS or a selfie. The record is stored as <span className="font-mono text-foreground">virtual_office</span>.
           </p>
           <div className="space-y-1">
             <p>Clock in — <span className="font-mono text-xs">POST {baseUrl}/attendance/clock-in</span></p>
@@ -87,7 +87,7 @@ export function ApiKeysPanel({
         <div className="space-y-2">
           <p className="font-medium">Staff self-service</p>
           <p className="text-muted-foreground">
-            One key with Staff self-service checked can also apply and cancel leave, submit a claim, request overtime, ask to fix a missed clock time, and read that person’s leave balance and locked payslips. Clock attendance is included. Identify the person with the same email. The person must already have a login in BukuHR, because the request still goes to their manager for approval.
+            One key with Staff self-service checked can also apply and cancel leave, submit a claim, request overtime, ask to fix a missed clock time, and read that person’s leave balance and locked payslips. Clock attendance is included. Identify the person with the same email. The person must already have a login in Hirix HR, because the request still goes to their manager for approval.
           </p>
           <ul className="space-y-1 text-muted-foreground">
             <li><span className="font-mono text-xs text-foreground">POST {baseUrl}/leave-requests</span> — leaveTypeId, startDate, endDate, optional halfDay and reason</li>

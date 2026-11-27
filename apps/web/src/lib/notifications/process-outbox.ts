@@ -218,7 +218,7 @@ export async function processNotificationOutbox(
     } else if (row.template === "celebration.notice") {
       result = await sendNoticeEmail({
         to: email,
-        subject: String(payload.subject ?? "BukuHR"),
+        subject: String(payload.subject ?? "Hirix HR"),
         message: String(payload.message ?? ""),
       });
     } else if (row.template === "reports.scheduled") {

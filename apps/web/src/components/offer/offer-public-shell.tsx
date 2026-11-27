@@ -6,7 +6,7 @@ export function OfferPublicShell({ heading, children }: { heading: string; child
   return (
     <main className="mx-auto min-h-dvh max-w-2xl space-y-6 px-4 py-10">
       <div className="space-y-1">
-        <p className="text-sm font-medium text-[var(--accent-primary)]">BukuHR</p>
+        <p className="text-sm font-medium text-[var(--accent-primary)]">Hirix HR</p>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">{heading}</h1>
       </div>
       {children}

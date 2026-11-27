@@ -43,8 +43,8 @@ export function buildPayslipAvailableEmail(input: {
       ${secureLinkSectionHtml}
       
       <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #d5d0c4; color: #7a8f7e; font-size: 12px; line-height: 1.5;">
-        <p style="margin: 0 0 4px 0;">This is an automated notification from BukuHR. Please do not reply directly to this email.</p>
-        <p style="margin: 0;">&copy; ${new Date().getFullYear()} BukuHR. All rights reserved.</p>
+        <p style="margin: 0 0 4px 0;">This is an automated notification from Hirix HR. Please do not reply directly to this email.</p>
+        <p style="margin: 0;">&copy; ${new Date().getFullYear()} Hirix HR. All rights reserved.</p>
       </div>
     </div>
   `.trim();

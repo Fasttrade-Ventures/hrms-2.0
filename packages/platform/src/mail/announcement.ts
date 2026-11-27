@@ -13,7 +13,7 @@ export function buildAnnouncementEmail(input: {
 }): { subject: string; html: string; text: string } {
   const subject = input.title.trim() || "New announcement";
   const message = input.message.trim();
-  const text = [subject, message, `Read it in BukuHR: ${input.announcementUrl}`]
+  const text = [subject, message, `Read it in Hirix HR: ${input.announcementUrl}`]
     .filter(Boolean)
     .join("\n\n");
 
@@ -24,7 +24,7 @@ export function buildAnnouncementEmail(input: {
   const html = `
     <p><strong>${escapeHtml(subject)}</strong></p>
     ${messageHtml}
-    <p><a href="${escapeHtml(input.announcementUrl)}">Read it in BukuHR</a></p>
+    <p><a href="${escapeHtml(input.announcementUrl)}">Read it in Hirix HR</a></p>
   `.trim();
 
   return { subject, html, text };

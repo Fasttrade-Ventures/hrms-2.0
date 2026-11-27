@@ -62,7 +62,7 @@ export function buildApprovalPendingEmail(input: ApprovalPendingEmailInput): {
   const html = `
     <div style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; color: #1b3a28; line-height: 1.6; margin: 0 auto; padding: 24px 16px;">
       <p style="font-size: 11px; font-weight: 700; color: #4a6b52; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 20px;">
-        BUKUHR APPROVALS
+        HIRIX HR APPROVALS
       </p>
       <h2 style="margin-top: 0; margin-bottom: 12px; font-size: 19px; font-weight: 700; color: #1b3a28; letter-spacing: -0.01em;">
         ${escapeHtml(input.requestTypeLabel)} pending your approval
@@ -98,7 +98,7 @@ export function buildApprovalPendingEmail(input: ApprovalPendingEmailInput): {
 
       <p style="margin: 24px 0;">
         <a href="${escapeHtml(input.actionUrl)}" style="background-color: #2d5e3a; color: #ffffff; padding: 12px 24px; text-decoration: none; font-size: 14px; font-weight: 600; border-radius: 6px; display: inline-block;">
-          Review &amp; Action in BukuHR
+          Review &amp; Action in Hirix HR
         </a>
       </p>
 
@@ -108,14 +108,14 @@ export function buildApprovalPendingEmail(input: ApprovalPendingEmailInput): {
       </p>
 
       <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #d5d0c4; color: #7a8f7e; font-size: 12px; line-height: 1.5;">
-        <p style="margin: 0 0 4px 0;">This is an automated notification from BukuHR. Please do not reply directly to this email.</p>
-        <p style="margin: 0;">&copy; ${new Date().getFullYear()} BukuHR. All rights reserved.</p>
+        <p style="margin: 0 0 4px 0;">This is an automated notification from Hirix HR. Please do not reply directly to this email.</p>
+        <p style="margin: 0;">&copy; ${new Date().getFullYear()} Hirix HR. All rights reserved.</p>
       </div>
     </div>
   `.trim();
 
   const text = [
-    `BUKUHR APPROVALS: ${input.requestTypeLabel.toUpperCase()} PENDING APPROVAL`,
+    `HIRIX HR APPROVALS: ${input.requestTypeLabel.toUpperCase()} PENDING APPROVAL`,
     "",
     `Hi ${input.recipientName},`,
     "",
@@ -127,7 +127,7 @@ export function buildApprovalPendingEmail(input: ApprovalPendingEmailInput): {
     dueNoticeText,
     `Review and action this request: ${input.actionUrl}`,
     "",
-    "This is an automated notification from BukuHR.",
+    "This is an automated notification from Hirix HR.",
   ]
     .filter((line) => line !== undefined)
     .join("\n");
@@ -171,7 +171,7 @@ export function buildApprovalConfirmationEmail(input: ApprovalConfirmationEmailI
   const html = `
     <div style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; color: #1b3a28; line-height: 1.6; margin: 0 auto; padding: 24px 16px;">
       <p style="font-size: 11px; font-weight: 700; color: #4a6b52; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 20px;">
-        BUKUHR SELF SERVICE
+        HIRIX HR SELF SERVICE
       </p>
       <h2 style="margin-top: 0; margin-bottom: 12px; font-size: 19px; font-weight: 700; color: #1b3a28; letter-spacing: -0.01em;">
         ${escapeHtml(input.requestTypeLabel)} submitted
@@ -203,14 +203,14 @@ export function buildApprovalConfirmationEmail(input: ApprovalConfirmationEmailI
       </p>
 
       <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #d5d0c4; color: #7a8f7e; font-size: 12px; line-height: 1.5;">
-        <p style="margin: 0 0 4px 0;">This is an automated confirmation from BukuHR. Please do not reply directly to this email.</p>
-        <p style="margin: 0;">&copy; ${new Date().getFullYear()} BukuHR. All rights reserved.</p>
+        <p style="margin: 0 0 4px 0;">This is an automated confirmation from Hirix HR. Please do not reply directly to this email.</p>
+        <p style="margin: 0;">&copy; ${new Date().getFullYear()} Hirix HR. All rights reserved.</p>
       </div>
     </div>
   `.trim();
 
   const text = [
-    `BUKUHR: ${input.requestTypeLabel.toUpperCase()} SUBMITTED`,
+    `HIRIX HR: ${input.requestTypeLabel.toUpperCase()} SUBMITTED`,
     "",
     `Hi ${input.employeeName},`,
     "",
@@ -219,9 +219,9 @@ export function buildApprovalConfirmationEmail(input: ApprovalConfirmationEmailI
     `Summary: ${input.requestSummary}`,
     detailText,
     "",
-    `Track your request status in BukuHR: ${input.viewUrl}`,
+    `Track your request status in Hirix HR: ${input.viewUrl}`,
     "",
-    "This is an automated confirmation from BukuHR.",
+    "This is an automated confirmation from Hirix HR.",
   ]
     .filter(Boolean)
     .join("\n");
@@ -270,7 +270,7 @@ export function buildApprovalDecisionEmail(input: ApprovalDecisionEmailInput): {
   const html = `
     <div style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; color: #1b3a28; line-height: 1.6; margin: 0 auto; padding: 24px 16px;">
       <p style="font-size: 11px; font-weight: 700; color: #4a6b52; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 20px;">
-        BUKUHR UPDATES
+        HIRIX HR UPDATES
       </p>
       <h2 style="margin-top: 0; margin-bottom: 12px; font-size: 19px; font-weight: 700; color: #1b3a28; letter-spacing: -0.01em;">
         ${escapeHtml(input.requestTypeLabel)} ${isApproved ? "Approved" : "Rejected"}
@@ -291,28 +291,28 @@ export function buildApprovalDecisionEmail(input: ApprovalDecisionEmailInput): {
 
       <p style="margin: 24px 0;">
         <a href="${escapeHtml(input.viewUrl)}" style="background-color: #2d5e3a; color: #ffffff; padding: 12px 24px; text-decoration: none; font-size: 14px; font-weight: 600; border-radius: 6px; display: inline-block;">
-          View Request in BukuHR
+          View Request in Hirix HR
         </a>
       </p>
 
       <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #d5d0c4; color: #7a8f7e; font-size: 12px; line-height: 1.5;">
-        <p style="margin: 0 0 4px 0;">This is an automated notification from BukuHR. Please do not reply directly to this email.</p>
-        <p style="margin: 0;">&copy; ${new Date().getFullYear()} BukuHR. All rights reserved.</p>
+        <p style="margin: 0 0 4px 0;">This is an automated notification from Hirix HR. Please do not reply directly to this email.</p>
+        <p style="margin: 0;">&copy; ${new Date().getFullYear()} Hirix HR. All rights reserved.</p>
       </div>
     </div>
   `.trim();
 
   const text = [
-    `BUKUHR: ${input.requestTypeLabel.toUpperCase()} ${actionWord.toUpperCase()}`,
+    `HIRIX HR: ${input.requestTypeLabel.toUpperCase()} ${actionWord.toUpperCase()}`,
     "",
     `Hi ${input.employeeName},`,
     "",
     `Your ${input.requestTypeLabel.toLowerCase()} request has been ${actionWord}.`,
     `Summary: ${input.requestSummary}`,
     commentText,
-    `View request details in BukuHR: ${input.viewUrl}`,
+    `View request details in Hirix HR: ${input.viewUrl}`,
     "",
-    "This is an automated notification from BukuHR.",
+    "This is an automated notification from Hirix HR.",
   ]
     .filter(Boolean)
     .join("\n");

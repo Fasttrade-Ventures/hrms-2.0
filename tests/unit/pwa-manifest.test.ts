@@ -16,8 +16,8 @@ function pngSize(file: string) {
 describe("PWA manifest", () => {
   const m = manifest();
 
-  it("is a standalone app named BukuHR that starts at the employee dashboard", () => {
-    expect(m.name).toBe("BukuHR");
+  it("is a standalone app named Hirix HR that starts at the employee dashboard", () => {
+    expect(m.name).toBe("Hirix HR");
     expect(m.display).toBe("standalone");
     expect(m.start_url).toBe("/employee/dashboard");
   });

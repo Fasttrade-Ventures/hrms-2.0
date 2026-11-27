@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 
-const DISMISSED_KEY = "bukuhr-pwa-install-dismissed";
+const DISMISSED_KEY = "hirix-pwa-install-dismissed";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -89,12 +89,12 @@ export function InstallPrompt() {
   return (
     <div
       role="region"
-      aria-label="Install BukuHR"
+      aria-label="Install Hirix HR"
       className="fixed inset-x-3 bottom-3 z-50 mx-auto flex max-w-md items-center justify-between gap-3 rounded-lg border bg-background px-4 py-3 text-sm shadow-lg"
     >
       {installEvent ? (
         <>
-          <span>Add BukuHR to your home screen</span>
+          <span>Add Hirix HR to your home screen</span>
           <div className="flex shrink-0 gap-2">
             <Button size="sm" onClick={install}>
               Install

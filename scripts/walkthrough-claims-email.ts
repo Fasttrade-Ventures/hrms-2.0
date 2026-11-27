@@ -34,7 +34,7 @@ async function runLiveWalkthrough() {
   const claimTypeId = "11111111-0000-0000-0000-000000000001"; // Medical
 
   console.log("================================================================================");
-  console.log("             BUKUHR TRANSACTIONAL EMAIL NOTIFICATION WALKTHROUGH                ");
+  console.log("             HIRIX HR TRANSACTIONAL EMAIL NOTIFICATION WALKTHROUGH              ");
   console.log("================================================================================\n");
 
   // Step 1: Create a test claim in database

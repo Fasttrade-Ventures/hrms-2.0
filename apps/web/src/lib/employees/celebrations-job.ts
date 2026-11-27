@@ -57,7 +57,7 @@ export async function performCelebrations(input?: { asOfDate?: string; organizat
         recipientUserId: userId,
         channel: "in_app",
         template: "celebration.birthday",
-        payload: { message: "Happy birthday from BukuHR." },
+        payload: { message: "Happy birthday from Hirix HR." },
         idempotencyKey: celebrationKey({
           organizationId,
           employeeId: employee.id as string,
@@ -70,7 +70,7 @@ export async function performCelebrations(input?: { asOfDate?: string; organizat
         recipientUserId: userId,
         channel: "email",
         template: "celebration.notice",
-        payload: { subject: "Happy birthday", message: "Happy birthday from BukuHR." },
+        payload: { subject: "Happy birthday", message: "Happy birthday from Hirix HR." },
         idempotencyKey: `${celebrationKey({
           organizationId,
           employeeId: employee.id as string,
@@ -88,7 +88,7 @@ export async function performCelebrations(input?: { asOfDate?: string; organizat
         recipientUserId: userId,
         channel: "in_app",
         template: "celebration.anniversary",
-        payload: { message: "Happy work anniversary from BukuHR." },
+        payload: { message: "Happy work anniversary from Hirix HR." },
         idempotencyKey: celebrationKey({
           organizationId,
           employeeId: employee.id as string,
@@ -101,7 +101,7 @@ export async function performCelebrations(input?: { asOfDate?: string; organizat
         recipientUserId: userId,
         channel: "email",
         template: "celebration.notice",
-        payload: { subject: "Happy work anniversary", message: "Happy work anniversary from BukuHR." },
+        payload: { subject: "Happy work anniversary", message: "Happy work anniversary from Hirix HR." },
         idempotencyKey: `${celebrationKey({
           organizationId,
           employeeId: employee.id as string,

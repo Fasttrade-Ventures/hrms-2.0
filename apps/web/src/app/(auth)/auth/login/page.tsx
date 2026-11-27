@@ -21,7 +21,7 @@ const saasBrand = {
   subhead:
     "Create your organization, invite your team, and manage leave, attendance, and payroll for Malaysia or Australia in one place.",
   features: [
-    "Start free with Core BukuHR",
+    "Start free with Core Hirix HR",
     "Upgrade to Professional automation anytime",
     "Invite employees with role-based access",
   ],

@@ -26,7 +26,7 @@ describe("Approval Email Builders", () => {
     });
 
     expect(subject).toBe("Action needed: Claim request from Ali bin Ahmad (Medical Claim · RM 150.00)");
-    expect(html).toContain("Review &amp; Action in BukuHR");
+    expect(html).toContain("Review &amp; Action in Hirix HR");
     expect(html).toContain("https://app.bukuhr.com/manager/approvals/step-123");
     expect(html).toContain("clinic-receipt.pdf");
     expect(html).toContain("Ali bin Ahmad");

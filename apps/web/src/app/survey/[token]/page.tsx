@@ -15,7 +15,7 @@ export default async function Page({
   return (
     <main className="mx-auto min-h-dvh max-w-3xl space-y-6 px-4 py-10">
       <div className="space-y-1">
-        <p className="text-sm font-medium text-[var(--accent-primary)]">BukuHR Pulse</p>
+        <p className="text-sm font-medium text-[var(--accent-primary)]">Hirix HR Pulse</p>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Survey</h1>
       </div>
       <PublicSurveyClient

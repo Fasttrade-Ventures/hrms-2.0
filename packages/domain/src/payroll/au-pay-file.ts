@@ -1,6 +1,6 @@
 /**
  * Australian pay file for Xero and MYOB. One CSV carries time-based earnings only.
- * BukuHR does not calculate PAYG, super, awards, or Single Touch Payroll.
+ * Hirix HR does not calculate PAYG, super, awards, or Single Touch Payroll.
  */
 
 import { daysToHours } from "../leave/hours";

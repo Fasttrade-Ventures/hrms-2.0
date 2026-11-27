@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 export async function GET() {
   return NextResponse.json({
     openapi: "3.1.0",
-    info: { title: "BukuHR Enterprise API", version: "1.0.0" },
+    info: { title: "Hirix HR Enterprise API", version: "1.0.0" },
     servers: [{ url: "/api/v1" }],
     components: {
       securitySchemes: {

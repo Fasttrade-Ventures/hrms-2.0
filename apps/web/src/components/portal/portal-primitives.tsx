@@ -10,9 +10,9 @@ export function PortalBrand() {
   return (
     <Link className="flex items-center gap-3 px-2" href="/">
       <div className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] bg-[var(--accent-primary)] text-white">
-        <span className="text-lg font-bold leading-none">B</span>
+        <span className="text-lg font-bold leading-none">H</span>
       </div>
-      <span className="text-xl font-bold text-[var(--foreground-primary)]">BukuHR</span>
+      <span className="text-xl font-bold text-[var(--foreground-primary)]">Hirix HR</span>
     </Link>
   );
 }
