@@ -16,10 +16,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BukuHR",
-  description: "BukuHR people operations",
+  title: "Hirix HR",
+  description: "Hirix HR people operations",
   // The manifest itself is emitted by app/manifest.ts at /manifest.webmanifest.
-  appleWebApp: { capable: true, title: "BukuHR", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "Hirix HR", statusBarStyle: "default" },
   icons: { apple: "/icons/icon-192.png" },
 };
 

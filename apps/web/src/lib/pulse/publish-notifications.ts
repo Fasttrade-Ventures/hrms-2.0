@@ -29,7 +29,7 @@ export async function queuePulseSurveyOpenedNotifications(input: {
 
   const idempotencyBase = `pulse:${input.runId}:open:${input.opensOn}`;
   const href = "/employee/pulse";
-  const message = `${input.title} is open. Answer once in BukuHR. Your name is not shown on the results.`;
+  const message = `${input.title} is open. Answer once in Hirix HR. Your name is not shown on the results.`;
 
   await Promise.all(
     userIds.flatMap((userId) => {

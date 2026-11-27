@@ -29,7 +29,7 @@ export async function createStripeCheckoutSession(input: {
           currency: "myr",
           unit_amount: input.amountSen,
           product_data: {
-            name: `BukuHR ${input.planName}`,
+            name: `Hirix HR ${input.planName}`,
           },
         },
       },

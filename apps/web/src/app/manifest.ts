@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "BukuHR",
-    short_name: "BukuHR",
-    description: "BukuHR employee app",
+    name: "Hirix HR",
+    short_name: "Hirix HR",
+    description: "Hirix HR employee app",
     display: "standalone",
     start_url: "/employee/dashboard",
     scope: "/",

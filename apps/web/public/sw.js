@@ -1,4 +1,4 @@
-// Service Worker for BukuHR Web Push Notifications.
+// Service Worker for Hirix HR Web Push Notifications.
 // Online-only by design: no fetch handler and no Cache API, so pages and API
 // calls (clock-in, leave) always use the live session.
 
@@ -18,17 +18,17 @@ self.addEventListener("push", (event) => {
     payload = event.data.json();
   } catch {
     payload = {
-      title: "BukuHR Notification",
+      title: "Hirix HR Notification",
       body: event.data.text(),
     };
   }
 
-  const title = payload.title || "BukuHR Notification";
+  const title = payload.title || "Hirix HR Notification";
   const options = {
     body: payload.body || "",
     icon: "/icons/icon-192.png",
     badge: "/icons/icon-192.png",
-    tag: payload.tag || "bukuhr-notification",
+    tag: payload.tag || "hirix-notification",
     data: {
       url: payload.url || "/manager/approvals",
       ...(payload.data || {}),

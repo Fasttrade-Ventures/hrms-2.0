@@ -13,7 +13,7 @@ describe("announcement email", () => {
     expect(email.subject).toBe("Office closed Friday");
     expect(email.text).toContain("The office is closed this Friday.");
     expect(email.text).toContain("http://localhost:3000/employee/announcements/abc");
-    expect(email.html).toContain("Read it in BukuHR");
+    expect(email.html).toContain("Read it in Hirix HR");
     expect(email.html).not.toContain("<script>");
   });
 });

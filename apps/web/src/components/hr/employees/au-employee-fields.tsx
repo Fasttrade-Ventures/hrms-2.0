@@ -104,7 +104,7 @@ export function AuEmployeeFields({ values = {} }: { values?: AuEmployeeFieldValu
         />
       </div>
       <p className="text-sm text-muted-foreground">
-        BukuHR stores these details for HR and the pay file. PAYG, super and Single Touch Payroll are
+        Hirix HR stores these details for HR and the pay file. PAYG, super and Single Touch Payroll are
         handled in Xero or MYOB.
       </p>
     </div>

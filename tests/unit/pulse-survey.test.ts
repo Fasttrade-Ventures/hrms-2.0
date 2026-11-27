@@ -96,7 +96,7 @@ describe("pulse survey email", () => {
       surveyUrl: "http://localhost:3000/employee/pulse",
     });
     expect(email.subject).toContain("Pulse");
-    expect(email.html).toContain("Answer in BukuHR");
+    expect(email.html).toContain("Answer in Hirix HR");
     expect(email.html).not.toContain("<script>");
     expect(email.text).toContain("http://localhost:3000/employee/pulse");
   });

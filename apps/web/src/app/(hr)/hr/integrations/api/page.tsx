@@ -46,7 +46,7 @@ export default async function Page({
             Back to integrations
           </Link>
         }
-        description="API keys and partner connections for BukuHR."
+        description="API keys and partner connections for Hirix HR."
         title="Developer API"
       />
 
@@ -67,11 +67,11 @@ export default async function Page({
           <Card size="sm">
             <CardHeader>
               <CardTitle>How sync works</CardTitle>
-              <CardDescription>Payroll totals from BukuHR map to BukuCloud journal lines.</CardDescription>
+              <CardDescription>Payroll totals from Hirix HR map to BukuCloud journal lines.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
               <p>
-                When you sync a locked or approved payrun, BukuHR sends gross pay, employer statutory
+                When you sync a locked or approved payrun, Hirix HR sends gross pay, employer statutory
                 contributions, combined payables, PCB, and net pay to your BukuCloud tenant.
               </p>
               <p>

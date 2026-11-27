@@ -113,7 +113,7 @@ function sumFlagged(lines: PayrunLine[], flag: keyof ComponentFlags): Money {
 /**
  * Non-Malaysian organizations (Australia): no EPF, SOCSO, EIS, PCB or HRDF.
  * Pay-component lines still sum into gross. Lindung and zakat behave as before.
- * BukuHR does not calculate award rates, PAYG or superannuation.
+ * Hirix HR does not calculate award rates, PAYG or superannuation.
  */
 function computeNonMalaysiaPayrun(input: EmployeePayrunInput): EmployeePayrunResult {
   const gross = input.lines.reduce((total, line) => total.add(line.amount), money(0));

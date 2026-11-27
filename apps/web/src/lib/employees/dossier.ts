@@ -147,7 +147,7 @@ export function buildEmployeeDossierPdf(
   const hasLogin = Boolean(employee.membership?.userId);
 
   return buildStyledPdf({
-    brandTitle: "BukuHR",
+    brandTitle: "Hirix HR",
     documentTitle: employee.fullName,
     subtitleLines: [
       `${employee.jobTitle?.trim() || "No job title"} · ${employee.employeeNumber}`,
@@ -171,7 +171,7 @@ export function buildEmployeeDossierPdf(
       const gd = String(g.getDate()).padStart(2, "0");
       const gm = String(g.getMonth() + 1).padStart(2, "0");
       const gt = formatPortalTime(g, country);
-      return `Generated ${gd}/${gm}/${g.getFullYear()}, ${gt} · BukuHR Employee Dossier`;
+      return `Generated ${gd}/${gm}/${g.getFullYear()}, ${gt} · Hirix HR Employee Dossier`;
     })(),
     compact: true,
   });

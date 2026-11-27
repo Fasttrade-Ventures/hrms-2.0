@@ -49,3 +49,7 @@ anti-slop/
 
 # PR drafts
 pr-description*.md
+
+# Promo video workspace & scripts
+promo-video/
+hirix-hr-promo.srt

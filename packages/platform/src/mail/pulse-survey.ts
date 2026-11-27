@@ -13,7 +13,7 @@ export function buildPulseSurveyOpenedEmail(input: {
 }): { subject: string; html: string; text: string } {
   const subject = input.title.trim() || "Pulse survey";
   const message = input.message.trim();
-  const text = [subject, message, `Open it in BukuHR: ${input.surveyUrl}`]
+  const text = [subject, message, `Open it in Hirix HR: ${input.surveyUrl}`]
     .filter(Boolean)
     .join("\n\n");
 
@@ -24,7 +24,7 @@ export function buildPulseSurveyOpenedEmail(input: {
   const html = `
     <p><strong>${escapeHtml(subject)}</strong></p>
     ${messageHtml}
-    <p><a href="${escapeHtml(input.surveyUrl)}">Answer in BukuHR</a></p>
+    <p><a href="${escapeHtml(input.surveyUrl)}">Answer in Hirix HR</a></p>
   `.trim();
 
   return { subject, html, text };
